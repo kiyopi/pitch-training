@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ピアノ音テスト - マイク許可確認</title>
+    <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status {
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .button {
+            font-size: 1.5em;
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .primary {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+        }
+        .primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
+        .secondary {
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+            box-shadow: 0 4px 15px rgba(78,205,196,0.3);
+        }
+        .secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78,205,196,0.4);
+        }
+        .info {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .log {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .timestamp {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #4ECDC4;
+        }
+    </style>
+</head>
+<body>
+    <div class="timestamp" id="timestamp">🕐 --:--:--</div>
+    
+    <div class="container">
+        <h1>🎹 ピアノ音テスト</h1>
+        
+        <div class="status" id="status">
+            📱 マイク許可とピアノ音源の動作確認
+        </div>
+
+        <button class="button primary" onclick="requestMicAndPlayPiano()">
+            🎤 マイク許可 & ピアノ音再生
+        </button>
+        
+        <button class="button secondary" onclick="playPianoOnly()">
+            🎹 ピアノ音のみ再生
+        </button>
+
+        <div class="info">
+            <h3>🎯 テスト内容</h3>
+            <ul>
+                <li>マイク許可の取得</li>
+                <li>Salamander Grand Piano音源の読み込み</li>
+                <li>基音（Bb3-Ab4）のランダム再生</li>
+                <li>2.5秒間のピアノ音再生</li>
+            </ul>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // タイムスタンプ更新
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = 
+                `🕐 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        }
+        setInterval(updateTimestamp, 1000);
+        updateTimestamp();
+
+        // ログ出力
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const now = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${now}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // ステータス更新
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            log(`📊 ${message}`);
+        }
+
+        // 基音データ（full-scale-training.jsと同じ）
+        const baseTones = [
+            { name: 'Bb3', note: 'シ♭3', frequency: 233.08, tonejs: 'Bb3' },
+            { name: 'C4',  note: 'ド4',   frequency: 261.63, tonejs: 'C4' },
+            { name: 'Db4', note: 'レ♭4', frequency: 277.18, tonejs: 'Db4' },
+            { name: 'D4',  note: 'レ4',   frequency: 293.66, tonejs: 'D4' },
+            { name: 'Eb4', note: 'ミ♭4', frequency: 311.13, tonejs: 'Eb4' },
+            { name: 'E4',  note: 'ミ4',   frequency: 329.63, tonejs: 'E4' },
+            { name: 'F4',  note: 'ファ4', frequency: 349.23, tonejs: 'F4' },
+            { name: 'Gb4', note: 'ソ♭4', frequency: 369.99, tonejs: 'Gb4' },
+            { name: 'G4',  note: 'ソ4',   frequency: 392.00, tonejs: 'G4' },
+            { name: 'Ab4', note: 'ラ♭4', frequency: 415.30, tonejs: 'Ab4' }
+        ];
+
+        // グローバル変数
+        let sampler = null;
+        let micStream = null;
+
+        // Salamander Grand Piano音源初期化
+        async function initializePiano() {
+            try {
+                log('🎹 Salamander Grand Piano音源初期化開始...');
+                
+                // 最小限のサンプル数でSamplerを作成
+                sampler = new Tone.Sampler({
+                    urls: {
+                        "C4": "C4.mp3",
+                        "D#4": "Ds4.mp3",
+                        "F#4": "Fs4.mp3",
+                        "A4": "A4.mp3"
+                    },
+                    baseUrl: "https://tonejs.github.io/audio/salamander/",
+                    volume: 6, // +6dB
+                    attack: 0.01,
+                    decay: 0.1,
+                    sustain: 0.8,
+                    release: 0.5
+                }).toDestination();
+
+                // 音源読み込み完了を待つ
+                await Tone.loaded();
+                log('✅ Salamander Grand Piano音源初期化完了');
+                return true;
+            } catch (error) {
+                log(`❌ ピアノ音源初期化失敗: ${error.message}`);
+                return false;
+            }
+        }
+
+        // マイク許可取得
+        async function requestMicrophone() {
+            try {
+                log('🎤 マイク許可要求開始...');
+                updateStatus('🎤 マイク許可を要求中...');
+                
+                micStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true 
+                });
+                
+                log('✅ マイク許可取得成功');
+                updateStatus('✅ マイク許可OK');
+                return true;
+            } catch (error) {
+                log(`❌ マイク許可取得失敗: ${error.message}`);
+                updateStatus('❌ マイク許可失敗');
+                return false;
+            }
+        }
+
+        // ピアノ音再生
+        async function playPiano() {
+            try {
+                if (!sampler) {
+                    throw new Error('ピアノ音源が初期化されていません');
+                }
+
+                // AudioContext開始
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                    log('🔊 AudioContext開始');
+                }
+
+                // ランダム基音選択
+                const randomIndex = Math.floor(Math.random() * baseTones.length);
+                const baseTone = baseTones[randomIndex];
+                
+                log(`🎵 基音選択: ${baseTone.note} (${baseTone.frequency}Hz)`);
+                updateStatus(`🎵 ${baseTone.note} を再生中...`);
+
+                // 2.5秒のピアノ音再生
+                const noteString = baseTone.tonejs;
+                
+                // 0.0秒: アタック開始
+                sampler.triggerAttack(noteString, undefined, 0.8);
+                log(`🎹 ピアノ音開始: ${noteString}`);
+                
+                // 2.0秒: リリース開始
+                setTimeout(() => {
+                    sampler.triggerRelease(noteString);
+                    log(`🎹 ピアノ音フェードアウト: ${noteString}`);
+                }, 2000);
+                
+                // 2.5秒: 完了
+                setTimeout(() => {
+                    log(`🎹 ピアノ音再生完了: ${noteString}`);
+                    updateStatus('✅ ピアノ音再生完了');
+                }, 2500);
+
+                return true;
+            } catch (error) {
+                log(`❌ ピアノ音再生失敗: ${error.message}`);
+                updateStatus('❌ ピアノ音再生失敗');
+                return false;
+            }
+        }
+
+        // マイク許可 & ピアノ音再生
+        async function requestMicAndPlayPiano() {
+            log('🚀 マイク許可 & ピアノ音テスト開始');
+            
+            // 1. マイク許可
+            const micOk = await requestMicrophone();
+            if (!micOk) return;
+            
+            // 2. ピアノ音源初期化
+            const pianoOk = await initializePiano();
+            if (!pianoOk) return;
+            
+            // 3. ピアノ音再生
+            await playPiano();
+        }
+
+        // ピアノ音のみ再生
+        async function playPianoOnly() {
+            log('🎹 ピアノ音のみテスト開始');
+            
+            // 1. ピアノ音源初期化
+            const pianoOk = await initializePiano();
+            if (!pianoOk) return;
+            
+            // 2. ピアノ音再生
+            await playPiano();
+        }
+
+        // 初期化
+        window.addEventListener('load', () => {
+            log('🎯 ピアノ音テストページ読み込み完了');
+            updateStatus('📱 マイク許可とピアノ音源の動作確認');
+        });
+    </script>
+</body>
+</html>
