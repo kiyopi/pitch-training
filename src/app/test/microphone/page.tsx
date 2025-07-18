@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mic, MicOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { useMicrophoneManager } from '@/hooks/useMicrophoneManager';
+import { useMicrophoneManager } from '../../../hooks/useMicrophoneManager';
 
 /**
  * マイクロフォンテストページ - Step 1
