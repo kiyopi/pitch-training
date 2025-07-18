@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mic, MicOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { useMicrophoneManager } from '../../../hooks/useMicrophoneManager';
@@ -21,6 +21,19 @@ import { useMicrophoneManager } from '../../../hooks/useMicrophoneManager';
 export default function MicrophoneTestPage() {
   const { microphoneState, startRecording, stopRecording, resetError } = useMicrophoneManager();
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [currentTime, setCurrentTime] = useState<string>('');
+  
+  // クライアントサイドでのみ時刻を更新（hydration mismatch回避）
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8));
+    };
+    
+    updateTime(); // 初回実行
+    const timer = setInterval(updateTime, 1000); // 1秒ごとに更新
+    
+    return () => clearInterval(timer);
+  }, []);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8);
@@ -76,7 +89,7 @@ export default function MicrophoneTestPage() {
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
       {/* タイムスタンプ表示 */}
       <div className="fixed top-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8)}
+        📱 {currentTime}
       </div>
 
       {/* メインコンテンツ */}
