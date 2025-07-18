@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
+import { useNoiseFilter } from './useNoiseFilter';
 
 /**
  * AudioContext・音声処理基盤フック - Step 2
@@ -38,6 +39,10 @@ interface AudioProcessorHook {
   stopProcessing: () => void;
   getProcessedData: () => ProcessedAudioData;
   resetError: () => void;
+  // Step 3統合: ノイズフィルタリング機能
+  noiseFilter: ReturnType<typeof useNoiseFilter>;
+  enableNoiseFiltering: (enabled: boolean) => void;
+  getFilteredData: () => ProcessedAudioData;
 }
 
 // AudioContext最適化設定
@@ -65,12 +70,21 @@ export const useAudioProcessor = (): AudioProcessorHook => {
     isInitialized: false,
   });
 
+  // Step 3統合: ノイズフィルタリング
+  const noiseFilter = useNoiseFilter();
+  const [noiseFilteringEnabled, setNoiseFilteringEnabled] = useState(false);
+
   // AudioContext・AnalyserNode・MediaStreamSourceのRef
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
   const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const isStoppingRef = useRef(false);
+  
+  // Step 3統合: フィルタリング済みAnalyserNode
+  const filteredAnalyserNodeRef = useRef<AnalyserNode | null>(null);
+  const filteredTimedomainDataRef = useRef<Float32Array | null>(null);
+  const filteredFrequencyDataRef = useRef<Uint8Array | null>(null);
 
   // 音声データバッファ
   const timedomainDataRef = useRef<Float32Array | null>(null);
@@ -102,9 +116,9 @@ export const useAudioProcessor = (): AudioProcessorHook => {
       // 既存のTone.js AudioContextとの統合確認
       let audioContext: AudioContext;
       
-      if (Tone.context.state === 'running') {
+      if (Tone.getContext().state === 'running') {
         // Tone.jsが既に動作中の場合は、そのcontextを使用
-        audioContext = Tone.context.rawContext as AudioContext;
+        audioContext = Tone.getContext().rawContext as AudioContext;
         console.log('🔗 Tone.js AudioContext統合');
       } else {
         // 新しいAudioContextを作成
@@ -212,8 +226,33 @@ export const useAudioProcessor = (): AudioProcessorHook => {
       const mediaStreamSource = audioContextRef.current.createMediaStreamSource(stream);
       mediaStreamSourceRef.current = mediaStreamSource;
 
-      // MediaStreamSource → AnalyserNode の接続
-      mediaStreamSource.connect(analyserNodeRef.current);
+      // Step 3統合: ノイズフィルタリング適用
+      let processingNode = mediaStreamSource as AudioNode;
+      
+      if (noiseFilteringEnabled) {
+        console.log('🔧 Step 3: ノイズフィルタリング有効 - フィルター適用');
+        const filteredNode = noiseFilter.applyFilters(audioContextRef.current, mediaStreamSource);
+        if (filteredNode) {
+          processingNode = filteredNode;
+          
+          // フィルタリング済み音声用のAnalyserNode作成
+          const filteredAnalyser = audioContextRef.current.createAnalyser();
+          filteredAnalyser.fftSize = ANALYSER_CONFIG.fftSize;
+          filteredAnalyser.smoothingTimeConstant = ANALYSER_CONFIG.smoothingTimeConstant;
+          filteredAnalyser.minDecibels = ANALYSER_CONFIG.minDecibels;
+          filteredAnalyser.maxDecibels = ANALYSER_CONFIG.maxDecibels;
+          
+          filteredAnalyserNodeRef.current = filteredAnalyser;
+          filteredTimedomainDataRef.current = new Float32Array(filteredAnalyser.fftSize);
+          filteredFrequencyDataRef.current = new Uint8Array(filteredAnalyser.frequencyBinCount);
+          
+          // フィルタリング済み音声をAnalyserNodeに接続
+          processingNode.connect(filteredAnalyser);
+        }
+      }
+
+      // 通常のAnalyserNodeにも接続（比較用）
+      processingNode.connect(analyserNodeRef.current);
 
       // 処理状態の更新
       setProcessorState(prev => ({
@@ -259,6 +298,16 @@ export const useAudioProcessor = (): AudioProcessorHook => {
         mediaStreamSourceRef.current.disconnect();
         mediaStreamSourceRef.current = null;
       }
+      
+      // Step 3統合: ノイズフィルターリセット
+      if (filteredAnalyserNodeRef.current) {
+        filteredAnalyserNodeRef.current.disconnect();
+        filteredAnalyserNodeRef.current = null;
+      }
+      
+      noiseFilter.resetFilters();
+      filteredTimedomainDataRef.current = null;
+      filteredFrequencyDataRef.current = null;
 
       // 状態リセット
       setProcessorState(prev => ({
@@ -344,11 +393,60 @@ export const useAudioProcessor = (): AudioProcessorHook => {
     };
   }, []);
 
+  /**
+   * ノイズフィルタリング有効/無効切り替え
+   */
+  const enableNoiseFiltering = useCallback((enabled: boolean) => {
+    setNoiseFilteringEnabled(enabled);
+    console.log(`🔧 ノイズフィルタリング${enabled ? '有効' : '無効'}化`);
+  }, []);
+
+  /**
+   * フィルタリング済み音声データの取得
+   */
+  const getFilteredData = useCallback((): ProcessedAudioData => {
+    if (!filteredTimedomainDataRef.current || !filteredFrequencyDataRef.current || !filteredAnalyserNodeRef.current) {
+      return getProcessedData(); // フィルタリング無効時は通常データを返す
+    }
+
+    const analyser = filteredAnalyserNodeRef.current;
+    const timedomainData = filteredTimedomainDataRef.current;
+    const frequencyData = filteredFrequencyDataRef.current;
+
+    // フィルタリング済みデータ取得
+    analyser.getFloatTimeDomainData(timedomainData);
+    analyser.getByteFrequencyData(frequencyData);
+
+    // RMS・Peak計算
+    let rms = 0;
+    let peak = 0;
+    
+    for (let i = 0; i < timedomainData.length; i++) {
+      const value = Math.abs(timedomainData[i]);
+      rms += value * value;
+      peak = Math.max(peak, value);
+    }
+    
+    rms = Math.sqrt(rms / timedomainData.length);
+
+    return {
+      timedomainData: new Float32Array(timedomainData),
+      frequencyData: new Uint8Array(frequencyData),
+      rms,
+      peak,
+      timestamp: Date.now(),
+    };
+  }, [getProcessedData]);
+
   return {
     processorState,
     startProcessing,
     stopProcessing,
     getProcessedData,
     resetError,
+    // Step 3統合: ノイズフィルタリング機能
+    noiseFilter,
+    enableNoiseFiltering,
+    getFilteredData,
   };
 };

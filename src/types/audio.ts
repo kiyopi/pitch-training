@@ -61,3 +61,50 @@ export interface EnhancedMicrophoneState extends MicrophoneState {
   audioProcessor: AudioProcessorState;
   processedData: ProcessedAudioData;
 }
+
+// Step 3: ノイズフィルタリング関連型定義
+export interface FilterConfig {
+  frequency: number;
+  Q: number;
+  gain: number;
+}
+
+export interface NoiseFilterConfig {
+  highpass: FilterConfig;
+  lowpass: FilterConfig;
+  notch: FilterConfig;
+}
+
+export interface NoiseFilterState {
+  isFiltering: boolean;
+  isInitialized: boolean;
+  highpassFilter: BiquadFilterNode | null;
+  lowpassFilter: BiquadFilterNode | null;
+  notchFilter: BiquadFilterNode | null;
+  gainNode: GainNode | null;
+  filterChainOutput: AudioNode | null;
+  config: NoiseFilterConfig;
+  error: string | null;
+}
+
+export interface FilterResponse {
+  frequency: number[];
+  magnitude: number[];
+  phase: number[];
+}
+
+export interface AudioQualityMetrics {
+  snrImprovement: number;
+  thd: number;
+  dynamicRange: number;
+  rmsOriginal: number;
+  rmsFiltered: number;
+  lastUpdate: number;
+}
+
+// Step 3統合後のオーディオプロセッサ状態
+export interface EnhancedAudioProcessorState extends AudioProcessorState {
+  noiseFilter: NoiseFilterState;
+  isNoiseFilteringEnabled: boolean;
+  audioQualityMetrics: AudioQualityMetrics | null;
+}
