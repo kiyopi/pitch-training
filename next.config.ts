@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // GitHub Pages対応: 静的サイト出力
-  output: 'export',
+  // GitHub Pages対応: 静的サイト出力（開発時は無効）
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
   
   // 画像最適化無効化（GitHub Pages制限）
   images: {

@@ -168,6 +168,19 @@ CLAUDE.mdの実装前承認（厳守）の項目をすべて読み上げます�
 
 ## 📱 GitHub Pages確認フロー
 
+### ⚠️ 重要: Next.jsプロジェクトでのGitHub Pages確認
+
+#### **事前必須チェック**
+```bash
+# 1. ローカルビルドテスト（必須）
+npm run build
+# エラーがないことを確認してからプッシュ
+
+# 2. GitHub Actionsワークフロー設定確認
+# .github/workflows/nextjs.yml のトリガーブランチ設定
+# branches: ["main", "作業ブランチ名"]
+```
+
 ### iPhone確認手順
 
 ```bash
@@ -175,11 +188,16 @@ CLAUDE.mdの実装前承認（厳守）の項目をすべて読み上げます�
 git add . && git commit -m "実装完了"
 git push origin microphone-v2-impl-001
 
-# 2. ユーザー様の手動作業
-# GitHub → Settings → Pages → Source を作業ブランチに変更
+# 2. Next.jsの場合（重要）
+# GitHub → Settings → Pages → Source は「GitHub Actions」を選択
+# （「Deploy from a branch」ではない）
 
-# 3. iPhone確認
-# https://kiyopi.github.io/pitch_app/
+# 3. GitHub Actions実行確認
+# https://github.com/kiyopi/pitch-training/actions
+# 緑のチェックマーク ✅ を確認
+
+# 4. iPhone確認
+# https://kiyopi.github.io/pitch-training/
 # 右上タイムスタンプで更新確認（📱 HH:MM:SS）
 ```
 
