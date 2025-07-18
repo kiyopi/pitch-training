@@ -39,6 +39,9 @@ export const useMicrophoneManager = (): MicrophoneManager => {
 
   const streamRef = useRef<MediaStream | null>(null);
   const isStoppingRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   /**
    * 音程検出最適化制約
@@ -53,6 +56,36 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       channelCount: 1,             // モノラル
     }
   });
+
+  /**
+   * 音声レベル監視機能
+   * リアルタイムで音声レベルを更新
+   */
+  const startAudioLevelMonitoring = useCallback(() => {
+    if (!analyserRef.current) return;
+    
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    
+    const updateAudioLevel = () => {
+      if (!analyser || isStoppingRef.current) return;
+      
+      analyser.getByteFrequencyData(dataArray);
+      
+      // 音声レベルの平均値を計算
+      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+      const normalizedLevel = average / 255; // 0-1の範囲に正規化
+      
+      setMicrophoneState(prev => ({
+        ...prev,
+        audioLevel: normalizedLevel
+      }));
+      
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+    };
+    
+    updateAudioLevel();
+  }, []);
 
   /**
    * マイクロフォンエラーハンドリング
@@ -116,6 +149,15 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       // ストリーム取得成功
       streamRef.current = stream;
       
+      // AudioContextとAnalyserNodeを設定
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      // 音声ストリームをAnalyserNodeに接続
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
       setMicrophoneState(prev => ({
         ...prev,
         isRecording: true,
@@ -124,6 +166,9 @@ export const useMicrophoneManager = (): MicrophoneManager => {
         error: null,
         audioLevel: 0,
       }));
+
+      // 音声レベル監視開始
+      startAudioLevelMonitoring();
 
       console.log('✅ マイクロフォン許可・音声取得成功');
       console.log('📊 音声制約:', constraints.audio);
@@ -155,6 +200,21 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       isStoppingRef.current = true;
       console.log('🛑 マイクロフォン停止開始');
 
+      // アニメーションフレーム停止
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      // AudioContext停止
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+
+      // AnalyserNode停止
+      analyserRef.current = null;
+
       // MediaStream停止
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => {
@@ -179,6 +239,17 @@ export const useMicrophoneManager = (): MicrophoneManager => {
     } catch (error) {
       console.error('❌ マイクロフォン停止エラー:', error);
       
+      // エラー時も強制的にリソースクリーンアップ
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      analyserRef.current = null;
+
       // エラー時も強制的に状態リセット
       setMicrophoneState(prev => ({
         ...prev,
