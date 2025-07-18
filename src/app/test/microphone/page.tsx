@@ -23,7 +23,7 @@ export default function MicrophoneTestPage() {
   const [debugLog, setDebugLog] = useState<string[]>([]);
 
   const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString('ja-JP');
+    const timestamp = new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8);
     const logMessage = `[${timestamp}] ${message}`;
     console.log(logMessage);
     setDebugLog(prev => [...prev.slice(-8), logMessage]);
@@ -76,7 +76,7 @@ export default function MicrophoneTestPage() {
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
       {/* タイムスタンプ表示 */}
       <div className="fixed top-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
+        📱 {new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8)}
       </div>
 
       {/* メインコンテンツ */}
@@ -131,7 +131,7 @@ export default function MicrophoneTestPage() {
                     microphoneState.permission === 'denied' ? 'text-red-600' :
                     'text-gray-600'
                   }`}>
-                    {getPermissionText()}
+                    {getPermissionText() || '不明'}
                   </span>
                 </div>
               </div>
