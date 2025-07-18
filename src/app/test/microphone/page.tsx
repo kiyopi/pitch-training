@@ -154,7 +154,7 @@ export default function MicrophoneTestPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-gray-700">音声レベル</span>
                 <span className="font-bold text-blue-600">
-                  {microphoneState.audioLevel.toFixed(2)}
+                  {typeof microphoneState.audioLevel === 'number' ? microphoneState.audioLevel.toFixed(2) : '0.00'}
                 </span>
               </div>
             </div>
