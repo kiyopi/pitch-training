@@ -225,18 +225,19 @@ export default function PitchyCleanPage() {
               </div>
             </div>
             
-            {/* 音量バー：デバッグ用常時表示 */}
-            <div className="flex justify-center items-center space-x-4">
-              <span className="text-gray-600">音量:</span>
-              <div className="w-48 bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.max(Math.min(volume, 100), 0)}%` }}
-                ></div>
+            {/* 超シンプル音量表示 */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 mb-2">
+                音量: {volume.toFixed(1)}%
               </div>
-              <span className="text-sm text-gray-600 w-12">
-                {Math.round(Math.max(Math.min(volume, 100), 0))}%
-              </span>
+              <div 
+                className="mx-auto bg-green-500 rounded"
+                style={{ 
+                  width: '200px',
+                  height: `${Math.max(volume * 2, 5)}px`,
+                  transition: 'height 0.1s'
+                }}
+              ></div>
             </div>
             
             {/* デバッグ情報表示 */}
