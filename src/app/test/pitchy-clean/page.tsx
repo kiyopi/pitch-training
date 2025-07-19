@@ -31,6 +31,7 @@ export default function PitchyCleanPage() {
     if (!analyserRef.current || !audioContextRef.current) return;
 
     const analyser = analyserRef.current;
+    console.log('🎤 detectVolume実行中'); // デバッグ追加
     
     // プロトタイプ準拠：8bit時間域データ取得
     const byteTimeDomainData = new Uint8Array(analyser.fftSize);
@@ -66,6 +67,7 @@ export default function PitchyCleanPage() {
     });
     
     setVolume(smoothedVolume);
+    console.log('🔢 音量更新:', smoothedVolume.toFixed(2)); // デバッグ追加
     
     // 次のフレーム
     animationFrameRef.current = requestAnimationFrame(detectVolume);
@@ -139,6 +141,7 @@ export default function PitchyCleanPage() {
       gainNodeRef.current = gainNode;
       
       setIsRecording(true);
+      console.log('✅ マイク開始完了、音量検出開始');
       
       // 音量検出開始
       detectVolume();
