@@ -30,6 +30,10 @@ export default function PitchyCleanPage() {
   
   // 音量スムージング用
   const previousVolumeRef = useRef<number>(0);
+  
+  // 周波数安定検出用
+  const frequencyStabilityRef = useRef<{freq: number, count: number}>({freq: 0, count: 0});
+  const noSoundCounterRef = useRef<number>(0);
 
   // 音量検出＋周波数検出統合ループ
   const detectAudio = useCallback(() => {
@@ -71,21 +75,44 @@ export default function PitchyCleanPage() {
     let detectedClarity = 0;
     
     try {
-      if (calculatedVolume > 1) { // 音量閾値チェック
+      // より厳格な音量閾値でノイズリダクション強化
+      if (calculatedVolume > 5) {
         // PitchDetectorインスタンス初期化（初回のみ）
         if (!pitchDetectorRef.current) {
           pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
-          pitchDetectorRef.current.clarityThreshold = 0.1;
+          pitchDetectorRef.current.clarityThreshold = 0.3; // より厳格な明瞭度
           pitchDetectorRef.current.maxInputAmplitude = 1.0;
         }
         
         // Pitchy周波数検出
         const [freq, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
         
-        // 有効範囲チェック（80-1200Hz、明瞭度0.1以上）
-        if (clarity > 0.1 && freq > 80 && freq < 1200) {
-          detectedFreq = Math.round(freq * 10) / 10;
-          detectedClarity = clarity;
+        // 厳格な有効範囲チェック（80-1200Hz、明瞭度0.3以上）
+        if (clarity > 0.3 && freq > 80 && freq < 1200) {
+          const roundedFreq = Math.round(freq * 10) / 10;
+          
+          // 安定性チェック: 同じ周波数帯（±5Hz）が連続で検出された場合のみ表示
+          if (Math.abs(roundedFreq - frequencyStabilityRef.current.freq) <= 5) {
+            frequencyStabilityRef.current.count++;
+            if (frequencyStabilityRef.current.count >= 3) { // 3フレーム連続
+              detectedFreq = roundedFreq;
+              detectedClarity = clarity;
+            }
+          } else {
+            // 新しい周波数帯
+            frequencyStabilityRef.current.freq = roundedFreq;
+            frequencyStabilityRef.current.count = 1;
+          }
+        }
+        
+        noSoundCounterRef.current = 0; // 音が検出されたのでカウンターリセット
+      } else {
+        // 無音状態のカウンター増加
+        noSoundCounterRef.current++;
+        
+        // 10フレーム以上無音が続いた場合、周波数表示をクリア
+        if (noSoundCounterRef.current > 10) {
+          frequencyStabilityRef.current = {freq: 0, count: 0};
         }
       }
     } catch (error) {
@@ -215,6 +242,8 @@ export default function PitchyCleanPage() {
       gainNodeRef.current = null;
       pitchDetectorRef.current = null;
       previousVolumeRef.current = 0;
+      frequencyStabilityRef.current = {freq: 0, count: 0};
+      noSoundCounterRef.current = 0;
       
       setIsRecording(false);
       setVolume(0);
