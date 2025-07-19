@@ -188,6 +188,12 @@ export default function AccuracyTestV2Page() {
         addLog('AudioContext開始完了');
       }
       
+      // 🎯 基音再生前にマイクロフォンを自動開始
+      if (!isRecording) {
+        addLog('🎤 自動マイク開始...');
+        await startRecording();
+      }
+      
       // 高品質ピアノ音源作成（C4単一音源 + 自動ピッチシフト）
       const sampler = new Tone.Sampler({
         urls: {
@@ -210,6 +216,7 @@ export default function AccuracyTestV2Page() {
       setTimeout(() => {
         sampler.triggerRelease(randomNote);
         addLog(`🔇 再生終了: ${randomNote}`);
+        addLog('🎯 基音を覚えて同じ音程で歌ってください');
         setIsPlaying(false); // 再生状態をリセット
       }, 1700);
       
@@ -240,7 +247,7 @@ export default function AccuracyTestV2Page() {
             確実動作ベース：基音とユーザー音声の相対音程精度測定
           </p>
           <div className="inline-block bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 2: ピアノ音 + マイクロフォン検出
+            自動化フロー: 基音再生 → マイク自動開始 → 音程検出
           </div>
           
           {/* 現在の基音表示 */}
@@ -389,63 +396,36 @@ export default function AccuracyTestV2Page() {
             </button>
           </div>
           
-          {/* マイクロフォン制御ボタン */}
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={startRecording}
-              disabled={isRecording}
-              className={`group relative overflow-hidden px-8 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg ${
-                isRecording
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 hover:shadow-2xl'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Play className="w-6 h-6" />
-                <span>🎤 マイク開始</span>
-              </div>
-            </button>
-            
-            <button
-              onClick={stopRecording}
-              disabled={!isRecording}
-              className={`group relative overflow-hidden px-8 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg ${
-                !isRecording
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 hover:scale-105 hover:shadow-2xl'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Square className="w-6 h-6" />
-                <span>🛑 マイク停止</span>
-              </div>
-            </button>
+          {/* マイクロフォン制御（自動化のため非表示） */}
+          <div className="text-center text-gray-500 text-sm">
+            <p>🎯 <strong>自動化フロー</strong>: 基音再生 → マイク自動開始 → 音程検出</p>
+            <p className="mt-1">マイクロフォンの手動操作は不要です</p>
           </div>
         </div>
 
         {/* 説明 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 2 確認項目</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">自動化フロー確認項目</h3>
           <div className="text-left space-y-3 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <span>ピアノ音再生が正常に動作する（Step 1確認済み）</span>
+              <span>「基音テスト再生」ボタンクリック</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>マイクロフォン許可が取得される</span>
+              <span>マイクロフォンが自動で開始される</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>ユーザーの音声・楽器が検出される</span>
+              <span>ランダム基音（ピアノ音）が1.7秒再生</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>リアルタイム周波数表示（Hz・音量）</span>
+              <span>基音終了後、同じ音程で歌う</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🎯</span>
-              <span>iPhone Safari で両機能（ピアノ音 + マイク）が動作</span>
+              <span>リアルタイム周波数検出・表示（Hz・音量）</span>
             </div>
           </div>
           
