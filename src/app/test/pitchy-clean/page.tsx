@@ -58,7 +58,8 @@ export default function PitchyCleanPage() {
     
     const rms = Math.sqrt(sum / byteTimeDomainData.length);
     const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-    const volumePercent = Math.min(Math.max(calculatedVolume / 25 * 100, 0), 100);
+    // 音量スケーリング調整: より高い値まで表示するため除数を調整
+    const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
     
     // 音量スムージング
     const smoothingFactor = 0.1;
@@ -276,24 +277,26 @@ export default function PitchyCleanPage() {
               </div>
             )}
             
-            {/* 周波数表示 */}
+            {/* 周波数表示（固定高さ） */}
             <div className="text-center">
               <h4 className="text-lg font-semibold text-gray-700 mb-3">🎵 周波数検出</h4>
-              {frequency ? (
-                <div className="space-y-2">
-                  <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    {frequency.toFixed(1)}
+              <div className="h-32 flex flex-col justify-center">
+                {frequency ? (
+                  <div className="space-y-2">
+                    <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                      {frequency.toFixed(1)}
+                    </div>
+                    <div className="text-xl text-gray-600 font-semibold">Hz</div>
+                    <div className="text-sm text-gray-500">
+                      明瞭度: {(clarity * 100).toFixed(1)}%
+                    </div>
                   </div>
-                  <div className="text-xl text-gray-600 font-semibold">Hz</div>
-                  <div className="text-sm text-gray-500">
-                    明瞭度: {(clarity * 100).toFixed(1)}%
+                ) : (
+                  <div className="text-gray-400 text-lg">
+                    🎤 音声を検出中...
                   </div>
-                </div>
-              ) : (
-                <div className="text-gray-400 text-lg">
-                  🎤 音声を検出中...
-                </div>
-              )}
+                )}
+              </div>
             </div>
             
             {/* 数値音量表示 */}
