@@ -14,7 +14,7 @@ import { PitchDetector } from "pitchy";
 
 interface FrequencyData {
   frequency: number;
-  amplitude: number;
+  amplitude: number; // RMS音量 (0-1の範囲)
   timestamp: number;
 }
 
@@ -116,10 +116,9 @@ export default function AccuracyTestV2Page() {
     }
     rmsVolume = Math.sqrt(rmsVolume / timeDomainData.length);
     
-    // 音量レベル取得（表示用・従来の方式も併用）
-    const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(frequencyData);
-    const averageAmplitude = frequencyData.reduce((sum, value) => sum + value, 0) / frequencyData.length;
+    // RMS音量を0-100%の範囲に正規化（表示用）
+    // 通常の会話音量レベル（RMS 0.01-0.3）を0-100%にマッピング
+    const normalizedVolume = Math.min(Math.max((rmsVolume - 0.01) / 0.29, 0), 1);
     
     // 有効検出フラグ
     let validDetection = false;
@@ -151,7 +150,7 @@ export default function AccuracyTestV2Page() {
           
           setFrequencyData({
             frequency: detectedFrequency,
-            amplitude: Math.round(averageAmplitude),
+            amplitude: normalizedVolume, // 正規化されたRMS音量 (0-1)
             timestamp: Date.now()
           });
           
@@ -454,11 +453,11 @@ export default function AccuracyTestV2Page() {
                   <div className="w-48 bg-gray-200 rounded-full h-3">
                     <div 
                       className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${(frequencyData.amplitude / 255) * 100}%` }}
+                      style={{ width: `${frequencyData.amplitude * 100}%` }}
                     ></div>
                   </div>
                   <span className="text-sm text-gray-600 w-12">
-                    {Math.round((frequencyData.amplitude / 255) * 100)}%
+                    {Math.round(frequencyData.amplitude * 100)}%
                   </span>
                 </div>
               </div>
