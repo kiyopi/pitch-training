@@ -4,6 +4,12 @@ import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity } from "lucide-react";
 import * as Tone from "tone";
+import { 
+  frequencyToNote, 
+  calculateRelativeInterval, 
+  evaluateRelativePitchAccuracy,
+  isValidMusicalFrequency 
+} from "@/utils/noteUtils";
 
 interface FrequencyData {
   frequency: number;
