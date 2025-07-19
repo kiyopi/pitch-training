@@ -162,7 +162,8 @@ export default function AccuracyTestV2Page() {
         }
       } else {
         // 無音時・不明瞭時は周波数表示をクリア
-        if (clarity <= 0.3 || averageAmplitude < 5) {
+        // 明瞭度0.5未満、音量15未満、または無効な周波数の場合
+        if (clarity < 0.5 || averageAmplitude < 15 || frequency <= 0) {
           setFrequencyData(null);
           // 相対音程分析もクリア（基音がある場合のみ）
           if (currentBaseFrequency > 0) {
