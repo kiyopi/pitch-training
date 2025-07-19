@@ -9,6 +9,7 @@ export default function PitchyCleanPage() {
   // 基本状態
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [baseFrequency, setBaseFrequency] = useState<number>(261.63); // ド(C4)デフォルト
   // React stateを最小限に減らし、DOM直接操作でリアルタイム更新
   // const [volume, setVolume] = useState<number>(0);
   // const [frequency, setFrequency] = useState<number | null>(null);
@@ -114,12 +115,28 @@ export default function PitchyCleanPage() {
     // 補正トリガー闾値: 55%ポイント
     const correctionThreshold = maxTargetFreq * 0.55; // 287.8Hz
     
-    // 2倍音補正チェック
+    // オクターブ誤認識の逆補正: 実際は高い音を低く表示していた問題を修正
+    // 検出値が低すぎる場合、実際はその倍音の可能性
+    if (detectedFreq >= correctionThreshold && detectedFreq <= correctedMax) {
+      // 正常範囲内: 補正不要
+      return detectedFreq;
+    }
+    
+    // 低すぎる周波数の場合、2倍に補正
     if (detectedFreq < correctionThreshold) {
       const doubledFreq = detectedFreq * 2;
       if (doubledFreq >= correctedMin && doubledFreq <= correctedMax) {
-        console.log(`🎵 2倍音補正: ${detectedFreq.toFixed(1)}Hz → ${doubledFreq.toFixed(1)}Hz`);
+        console.log(`🎵 2倍補正: ${detectedFreq.toFixed(1)}Hz → ${doubledFreq.toFixed(1)}Hz`);
         return doubledFreq;
+      }
+    }
+    
+    // 高すぎる周波数の場合、1/2に補正
+    if (detectedFreq > correctedMax) {
+      const halvedFreq = detectedFreq / 2;
+      if (halvedFreq >= correctedMin && halvedFreq <= correctedMax) {
+        console.log(`🎵 1/2補正: ${detectedFreq.toFixed(1)}Hz → ${halvedFreq.toFixed(1)}Hz`);
+        return halvedFreq;
       }
     }
     
@@ -194,8 +211,8 @@ export default function PitchyCleanPage() {
     // 音量スケーリング調整: より高い値まで表示するため除数を調整
     const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
     
-    // 音量スムージング
-    const smoothingFactor = 0.1;
+    // 音量スムージング（より反応を良く）
+    const smoothingFactor = 0.2;
     const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
     previousVolumeRef.current = smoothedVolume;
     
@@ -285,7 +302,7 @@ export default function PitchyCleanPage() {
     
     // 次のフレーム
     animationFrameRef.current = requestAnimationFrame(detectAudio);
-  }, []);
+  }, [baseFrequency]); // 基音変更時にコールバック再作成
 
   const startRecording = useCallback(async () => {
     try {
@@ -422,6 +439,34 @@ export default function PitchyCleanPage() {
 
       {/* メインコンテンツ */}
       <div className="text-center">
+        {/* 基音選択 */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">🎵 基音選択</h3>
+          <div className="flex justify-center gap-2 flex-wrap">
+            {targetFrequenciesRef.current.map((freq, index) => {
+              const notes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド(高)'];
+              return (
+                <button
+                  key={freq}
+                  onClick={() => setBaseFrequency(freq)}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    baseFrequency === freq
+                      ? 'bg-blue-500 text-white shadow-lg scale-105'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  <div className="font-bold">{notes[index]}</div>
+                  <div className="text-xs opacity-80">{freq.toFixed(1)}Hz</div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg inline-block">
+            <span className="text-sm text-blue-700">現在の基音: </span>
+            <span className="text-lg font-bold text-blue-800">{baseFrequency.toFixed(1)}Hz</span>
+          </div>
+        </div>
+        
         {/* ヘッダー */}
         <div className="mb-12">
           <div className="inline-block mb-6">
