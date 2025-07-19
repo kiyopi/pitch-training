@@ -484,16 +484,22 @@ export const useAudioProcessor = (): AudioProcessorHook => {
    * Pitch検出有効/無効切り替え
    */
   const enablePitchDetection = useCallback((enabled: boolean) => {
+    console.log(`🎵 enablePitchDetection(${enabled}) 開始`);
+    console.log(`📊 現在状態: pitchDetectionEnabled=${pitchDetectionEnabled}, isDetecting=${pitchDetector.pitchState.isDetecting}`);
+    
     setPitchDetectionEnabled(enabled);
     
     if (enabled && !pitchDetector.pitchState.isDetecting) {
+      console.log('🎵 startDetection() 実行開始');
       pitchDetector.startDetection();
+      console.log(`🎵 startDetection() 完了: isDetecting = ${pitchDetector.pitchState.isDetecting}`);
     } else if (!enabled && pitchDetector.pitchState.isDetecting) {
+      console.log('🛑 stopDetection() 実行');
       pitchDetector.stopDetection();
     }
     
-    console.log(`🎵 Pitch検出${enabled ? '有効' : '無効'}化`);
-  }, [pitchDetector]);
+    console.log(`🎵 Pitch検出${enabled ? '有効' : '無効'}化完了`);
+  }, [pitchDetector, pitchDetectionEnabled]);
 
   /**
    * Pitch検出データ取得
