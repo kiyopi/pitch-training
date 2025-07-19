@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, MicOff } from "lucide-react";
 import { PitchDetector } from "pitchy";
+import * as Tone from "tone";
 
 export default function PitchyCleanPage() {
   // 基本状態
@@ -245,31 +246,37 @@ export default function PitchyCleanPage() {
             frequencyHistoryRef.current.shift();
           }
           
-          // 履歴が5個以上ある場合、中央値で安定化
+          // 履歴が5個以上ある場合、高度な安定化処理
           if (frequencyHistoryRef.current.length >= 5) {
-            const sortedHistory = [...frequencyHistoryRef.current].sort((a, b) => a - b);
-            const medianFreq = sortedHistory[Math.floor(sortedHistory.length / 2)];
+            // 移動平均計算
+            const avgFreq = frequencyHistoryRef.current.slice(-5).reduce((sum, f) => sum + f, 0) / 5;
             
-            // 現在の安定周波数と比較
-            if (stableFrequencyRef.current === null || Math.abs(medianFreq - stableFrequencyRef.current) <= 10) {
-              // 初回または安定範囲内の場合
-              if (stableFrequencyRef.current === null || Math.abs(medianFreq - stableFrequencyRef.current) <= 5) {
-                stabilityCounterRef.current++;
-                if (stabilityCounterRef.current >= 3) {
-                  stableFrequencyRef.current = medianFreq;
-                  detectedFreq = medianFreq;
+            // 急激な変化を抑制（±20%以内）
+            if (stableFrequencyRef.current !== null && Math.abs(roundedFreq - avgFreq) / avgFreq > 0.2) {
+              // 段階的に近づける
+              detectedFreq = avgFreq + (roundedFreq - avgFreq) * 0.3;
+              detectedFreq = Math.round(detectedFreq * 10) / 10;
+              detectedClarity = clarity;
+            } else {
+              // オクターブジャンプ検出
+              if (stableFrequencyRef.current !== null) {
+                const octaveRatio = roundedFreq / stableFrequencyRef.current;
+                if (octaveRatio > 1.8 || octaveRatio < 0.55) {
+                  // オクターブジャンプを無視
+                  detectedFreq = stableFrequencyRef.current;
+                  detectedClarity = clarity;
+                } else {
+                  // 正常な変化
+                  stableFrequencyRef.current = roundedFreq;
+                  detectedFreq = roundedFreq;
                   detectedClarity = clarity;
                 }
               } else {
-                // 少し変化した場合、緊やかに更新
-                stableFrequencyRef.current = stableFrequencyRef.current * 0.7 + medianFreq * 0.3;
-                detectedFreq = Math.round(stableFrequencyRef.current * 10) / 10;
+                // 初回
+                stableFrequencyRef.current = roundedFreq;
+                detectedFreq = roundedFreq;
                 detectedClarity = clarity;
               }
-            } else {
-              // 大きく変化した場合、リセット
-              stabilityCounterRef.current = 1;
-              stableFrequencyRef.current = medianFreq;
             }
           }
         }
@@ -448,7 +455,25 @@ export default function PitchyCleanPage() {
               return (
                 <button
                   key={freq}
-                  onClick={() => setBaseFrequency(freq)}
+                  onClick={async () => {
+                    setBaseFrequency(freq);
+                    // Tone.jsで基音再生
+                    try {
+                      await Tone.start();
+                      const synth = new Tone.Synth({
+                        oscillator: { type: "sine" },
+                        envelope: {
+                          attack: 0.01,
+                          decay: 0.1,
+                          sustain: 0.5,
+                          release: 0.5
+                        }
+                      }).toDestination();
+                      synth.triggerAttackRelease(freq, "2n");
+                    } catch (e) {
+                      console.error('基音再生エラー:', e);
+                    }
+                  }}
                   className={`px-4 py-2 rounded-lg transition-all ${
                     baseFrequency === freq
                       ? 'bg-blue-500 text-white shadow-lg scale-105'
@@ -461,25 +486,19 @@ export default function PitchyCleanPage() {
               );
             })}
           </div>
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg inline-block">
-            <span className="text-sm text-blue-700">現在の基音: </span>
-            <span className="text-lg font-bold text-blue-800">{baseFrequency.toFixed(1)}Hz</span>
+          <div className="mt-6 p-6 bg-blue-100 rounded-xl shadow-lg">
+            <div className="text-2xl text-blue-800 mb-2">現在の基音</div>
+            <div className="text-6xl font-bold text-blue-900">
+              {['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド(高)'][targetFrequenciesRef.current.indexOf(baseFrequency)]}
+            </div>
+            <div className="text-3xl text-blue-700 mt-2">{baseFrequency.toFixed(1)} Hz</div>
           </div>
         </div>
         
         {/* ヘッダー */}
         <div className="mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🎯</span>
-          </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            音量＋周波数検出テスト
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            動的オクターブ補正 + Pitchy統合実装
-          </p>
           <div className="inline-block bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 2: 動的オクターブ補正 + 倍音制御システム
+            🎯 動的オクターブ補正 + 倍音制御システム
           </div>
         </div>
 
