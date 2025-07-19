@@ -30,16 +30,23 @@ export default function SimpleFrequencyTestPage() {
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   
-  // 時刻表示の更新
+  // 時刻表示の更新（hydration mismatch対策）
   useEffect(() => {
     const updateTime = () => {
       setCurrentTime(new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8));
     };
     
+    // クライアントサイドでのみ実行
     updateTime();
     const timer = setInterval(updateTime, 1000);
     
     return () => clearInterval(timer);
+  }, []);
+
+  // hydration完了まで時刻を非表示
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
   }, []);
 
   // 周波数検出関数（最小限）
@@ -180,10 +187,12 @@ export default function SimpleFrequencyTestPage() {
 
   return (
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {currentTime}
-      </div>
+      {/* タイムスタンプ表示（hydration mismatch対策） */}
+      {isClient && (
+        <div className="fixed top-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
+          📱 {currentTime}
+        </div>
+      )}
 
       {/* メインコンテンツ */}
       <div className="text-center">
