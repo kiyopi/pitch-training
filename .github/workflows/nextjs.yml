@@ -2,7 +2,7 @@
 #
 # To get started with Next.js see: https://nextjs.org/docs/getting-started
 #
-name: Deploy Next.js site to Pages
+name: Deploy Next.js site to Pages (Development Branch)
 
 on:
   # Runs on pushes targeting the default branch
@@ -18,16 +18,18 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, canceling in-progress runs when new ones are queued.
-# This prevents multiple simultaneous deployments from different branches.
+# Allow only one concurrent deployment globally, canceling all competing runs.
+# This prevents multiple simultaneous deployments from any source.
 concurrency:
-  group: "pages-${{ github.ref }}"
+  group: "pages-global-deploy"
   cancel-in-progress: true
 
 jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    # Only run on development branch
+    if: github.ref == 'refs/heads/pitch-training-nextjs-v2-impl-001'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -87,6 +89,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    # Only run on development branch
+    if: github.ref == 'refs/heads/pitch-training-nextjs-v2-impl-001'
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
