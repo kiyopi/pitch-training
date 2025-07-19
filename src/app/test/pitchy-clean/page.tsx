@@ -225,46 +225,43 @@ export default function PitchyCleanPage() {
               </div>
             </div>
             
-            {/* プロトタイプ準拠：音量バー（volume > 1の時のみ表示） */}
-            {volume > 1 ? (
-              <div className="flex justify-center items-center space-x-4">
-                <span className="text-gray-600">音量:</span>
-                <div className="w-48 bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(volume, 100)}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm text-gray-600 w-12">
-                  {Math.round(Math.min(volume, 100))}%
-                </span>
+            {/* 音量バー：デバッグ用常時表示 */}
+            <div className="flex justify-center items-center space-x-4">
+              <span className="text-gray-600">音量:</span>
+              <div className="w-48 bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max(Math.min(volume, 100), 0)}%` }}
+                ></div>
               </div>
-            ) : (
-              <div className="flex justify-center items-center space-x-4">
-                <span className="text-gray-600">音量:</span>
-                <div className="w-48 bg-gray-200 rounded-full h-3">
-                  <div className="bg-gray-300 h-3 rounded-full w-1"></div>
-                </div>
-                <span className="text-sm text-gray-500 w-12">待機中</span>
-              </div>
-            )}
+              <span className="text-sm text-gray-600 w-12">
+                {Math.round(Math.max(Math.min(volume, 100), 0))}%
+              </span>
+            </div>
             
             {/* デバッグ情報表示 */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
               <h4 className="text-sm font-bold text-gray-700 mb-2">🔍 デバッグ情報</h4>
-              <div className="grid grid-cols-3 gap-4 text-xs text-gray-600">
+              <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
                 <div>
                   <span className="font-semibold">生音量:</span>
-                  <br />{debugInfo.raw.toFixed(1)}
+                  <br />{debugInfo.raw.toFixed(3)}
                 </div>
                 <div>
                   <span className="font-semibold">計算値:</span>
-                  <br />{debugInfo.calculated.toFixed(1)}
+                  <br />{debugInfo.calculated.toFixed(3)}
                 </div>
                 <div>
                   <span className="font-semibold">正規化:</span>
-                  <br />{debugInfo.normalized.toFixed(1)}%
+                  <br />{debugInfo.normalized.toFixed(3)}%
                 </div>
+                <div>
+                  <span className="font-semibold">表示音量:</span>
+                  <br />{volume.toFixed(3)}
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-blue-600">
+                <span className="font-semibold">バー幅:</span> {Math.max(Math.min(volume, 100), 0).toFixed(1)}%
               </div>
             </div>
           </div>
