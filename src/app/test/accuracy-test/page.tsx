@@ -539,13 +539,27 @@ export default function AccuracyTestPage() {
                 {currentDetection.accuracy.message}
               </div>
               
-              {/* 結果記録ボタン */}
-              <button
-                onClick={recordResult}
-                className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105"
-              >
-                ✅ この結果を記録
-              </button>
+              {/* 基音再生・結果記録ボタン */}
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => currentBaseTone && playTone(currentBaseTone, 2)}
+                  disabled={!currentBaseTone || playerState.isPlaying}
+                  className={`px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 hover:scale-105 ${
+                    !currentBaseTone || playerState.isPlaying
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg'
+                  }`}
+                >
+                  🎵 基音を再生
+                </button>
+                
+                <button
+                  onClick={recordResult}
+                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg"
+                >
+                  ✅ この結果を記録
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -725,11 +739,15 @@ export default function AccuracyTestPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>基音と同じ音程で歌い、「結果を記録」</span>
+              <span>基音と同じ音程で歌う（「🎵 基音を再生」で再確認可能）</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">5</span>
-              <span>5回テスト後、統計結果を確認</span>
+              <span>歌唱後「✅ この結果を記録」→自動的に次のテストへ</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">6</span>
+              <span>5回完了後、統計結果で精度分析</span>
             </div>
           </div>
         </div>
