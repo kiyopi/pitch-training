@@ -256,8 +256,13 @@ export default function AccuracyTestPage() {
     });
     
     setIsTestActive(true);
+    
+    // マイクロフォンを自動開始
+    await startRecording();
+    
+    // 基音再生
     await playNextBaseTone();
-  }, [playerState.isLoaded]);
+  }, [playerState.isLoaded, startRecording]);
 
   // 次の基音再生
   const playNextBaseTone = useCallback(async () => {
@@ -277,8 +282,23 @@ export default function AccuracyTestPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '基音再生エラー';
       setError(`基音再生エラー: ${errorMessage}`);
+      console.error('❌ 基音再生エラー:', err);
     }
   }, [playTone]);
+
+  // 基音再生（ユーザークリック用）
+  const playCurrentBaseTone = useCallback(async () => {
+    if (!currentBaseTone) return;
+    
+    try {
+      await playTone(currentBaseTone, 2);
+      console.log('🎵 基音再生（ユーザークリック）:', currentBaseTone);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '基音再生エラー';
+      setError(`基音再生エラー: ${errorMessage}`);
+      console.error('❌ 基音再生エラー:', err);
+    }
+  }, [currentBaseTone, playTone]);
 
   // 結果記録
   const recordResult = useCallback(() => {
@@ -542,7 +562,7 @@ export default function AccuracyTestPage() {
               {/* 基音再生・結果記録ボタン */}
               <div className="flex gap-4 justify-center">
                 <button
-                  onClick={() => currentBaseTone && playTone(currentBaseTone, 2)}
+                  onClick={playCurrentBaseTone}
                   disabled={!currentBaseTone || playerState.isPlaying}
                   className={`px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 hover:scale-105 ${
                     !currentBaseTone || playerState.isPlaying
@@ -687,38 +707,40 @@ export default function AccuracyTestPage() {
             )}
           </div>
           
-          {/* マイクロフォン制御 */}
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={startRecording}
-              disabled={isRecording || !isTestActive}
-              className={`group relative overflow-hidden px-6 py-3 rounded-xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-                isRecording || !isTestActive
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 hover:shadow-2xl'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Play className="w-5 h-5" />
-                <span>🎤 マイク開始</span>
-              </div>
-            </button>
-            
-            <button
-              onClick={stopRecording}
-              disabled={!isRecording}
-              className={`group relative overflow-hidden px-6 py-3 rounded-xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-                !isRecording
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 hover:scale-105 hover:shadow-2xl'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Square className="w-5 h-5" />
-                <span>🛑 マイク停止</span>
-              </div>
-            </button>
-          </div>
+          {/* マイクロフォン制御（デバッグ用・通常は非表示） */}
+          {false && (
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={startRecording}
+                disabled={isRecording || !isTestActive}
+                className={`group relative overflow-hidden px-6 py-3 rounded-xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
+                  isRecording || !isTestActive
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 hover:shadow-2xl'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Play className="w-5 h-5" />
+                  <span>🎤 マイク開始</span>
+                </div>
+              </button>
+              
+              <button
+                onClick={stopRecording}
+                disabled={!isRecording}
+                className={`group relative overflow-hidden px-6 py-3 rounded-xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
+                  !isRecording
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 hover:scale-105 hover:shadow-2xl'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Square className="w-5 h-5" />
+                  <span>🛑 マイク停止</span>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 使用方法 */}
@@ -735,7 +757,7 @@ export default function AccuracyTestPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>「マイク開始」で音声検出開始</span>
+              <span>基音再生後、自動的にマイクロフォンが開始されます</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
