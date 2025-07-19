@@ -4,6 +4,12 @@ import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity } from "lucide-react";
 import * as Tone from "tone";
+import { 
+  frequencyToNote, 
+  calculateRelativeInterval, 
+  evaluateRelativePitchAccuracy,
+  isValidMusicalFrequency 
+} from "@/utils/noteUtils";
 
 interface FrequencyData {
   frequency: number;
@@ -11,15 +17,57 @@ interface FrequencyData {
   timestamp: number;
 }
 
+interface RelativePitchData {
+  baseFrequency: number;
+  userFrequency: number;
+  cents: number;
+  semitones: number;
+  intervalName: string;
+  accuracy: ReturnType<typeof evaluateRelativePitchAccuracy>;
+  userNote: ReturnType<typeof frequencyToNote>;
+}
+
+interface TestResult {
+  id: number;
+  baseNote: string;
+  baseFrequency: number;
+  userNote: string;
+  userFrequency: number;
+  cents: number;
+  score: number;
+  accuracy: string;
+  intervalName: string;
+  timestamp: number;
+}
+
+interface SessionStats {
+  totalTests: number;
+  averageScore: number;
+  averageCents: number;
+  bestScore: number;
+  worstScore: number;
+  accuracyDistribution: { [key: string]: number };
+  completed: boolean;
+}
+
 export default function AccuracyTestV2Page() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
+  const [currentBaseFrequency, setCurrentBaseFrequency] = useState<number>(0);
   
   // マイクロフォン関連状態
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [frequencyData, setFrequencyData] = useState<FrequencyData | null>(null);
+  const [relativePitchData, setRelativePitchData] = useState<RelativePitchData | null>(null);
+  
+  // 🎯 Step 4: セッション管理状態
+  const [sessionActive, setSessionActive] = useState(false);
+  const [currentTestNumber, setCurrentTestNumber] = useState(0);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
+  const [waitingForUserInput, setWaitingForUserInput] = useState(false);
   
   // Audio processing refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -33,6 +81,12 @@ export default function AccuracyTestV2Page() {
   const baseNoteNames = {
     'C4': 'ド（低）', 'D4': 'レ（低）', 'E4': 'ミ（低）', 'F4': 'ファ（低）', 'G4': 'ソ（低）',
     'A4': 'ラ（中）', 'B4': 'シ（中）', 'C5': 'ド（高）', 'D5': 'レ（高）', 'E5': 'ミ（高）'
+  };
+  
+  // 基音の周波数マッピング
+  const baseNoteFrequencies: { [key: string]: number } = {
+    'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00,
+    'A4': 440.00, 'B4': 493.88, 'C5': 523.25, 'D5': 587.33, 'E5': 659.25
   };
   
   const addLog = (message: string) => {
@@ -74,11 +128,28 @@ export default function AccuracyTestV2Page() {
         amplitude: maxAmplitude,
         timestamp: Date.now()
       });
+      
+      // 🎯 Step 3: 相対音程計算（基音がある場合）
+      if (currentBaseFrequency > 0 && isValidMusicalFrequency(detectedFrequency)) {
+        const userNote = frequencyToNote(detectedFrequency);
+        const relativeInterval = calculateRelativeInterval(currentBaseFrequency, detectedFrequency);
+        const accuracy = evaluateRelativePitchAccuracy(relativeInterval.cents);
+        
+        setRelativePitchData({
+          baseFrequency: currentBaseFrequency,
+          userFrequency: detectedFrequency,
+          cents: relativeInterval.cents,
+          semitones: relativeInterval.semitones,
+          intervalName: relativeInterval.intervalName,
+          accuracy,
+          userNote
+        });
+      }
     }
     
     // 次のフレーム
     animationFrameRef.current = requestAnimationFrame(detectFrequency);
-  }, []);
+  }, [currentBaseFrequency]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -175,12 +246,16 @@ export default function AccuracyTestV2Page() {
     
     // ランダムな基音を選択
     const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
+    const baseFrequency = baseNoteFrequencies[randomNote];
+    
     setCurrentBaseNote(randomNote);
+    setCurrentBaseFrequency(baseFrequency);
+    setRelativePitchData(null); // リセット
     
     setIsPlaying(true);
     
     try {
-      addLog(`🎲 ランダム基音: ${baseNoteNames[randomNote as keyof typeof baseNoteNames]}`);
+      addLog(`🎲 ランダム基音: ${baseNoteNames[randomNote as keyof typeof baseNoteNames]} (${baseFrequency.toFixed(1)}Hz)`);
       
       // AudioContext開始
       if (Tone.getContext().state !== 'running') {
@@ -247,7 +322,7 @@ export default function AccuracyTestV2Page() {
             確実動作ベース：基音とユーザー音声の相対音程精度測定
           </p>
           <div className="inline-block bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            自動化フロー: 基音再生 → マイク自動開始 → 音程検出
+            Step 3 完了: 基音再生 → マイク自動開始 → 相対音程分析
           </div>
           
           {/* 現在の基音表示 */}
@@ -354,6 +429,94 @@ export default function AccuracyTestV2Page() {
           </div>
         )}
 
+        {/* 🎯 Step 3: 相対音程分析表示 */}
+        {relativePitchData && currentBaseNote && (
+          <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center justify-center space-x-2">
+              <span className="text-2xl">🎯</span>
+              <span>相対音程分析</span>
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 基音情報 */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <h4 className="font-bold text-blue-800 mb-3">🎵 基音</h4>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
+                  </div>
+                  <div className="text-sm text-blue-600">
+                    {currentBaseNote} ({relativePitchData.baseFrequency.toFixed(1)}Hz)
+                  </div>
+                </div>
+              </div>
+              
+              {/* ユーザー音声情報 */}
+              <div className="bg-green-50 rounded-xl p-4">
+                <h4 className="font-bold text-green-800 mb-3">🎤 あなたの音程</h4>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-green-600">
+                    {relativePitchData.userNote.fullNote}
+                  </div>
+                  <div className="text-sm text-green-600">
+                    {relativePitchData.userFrequency.toFixed(1)}Hz
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 相対音程結果 */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+              <div className="text-center space-y-4">
+                <div className="text-lg font-bold text-gray-800">
+                  音程関係: <span className="text-purple-600">{relativePitchData.intervalName}</span>
+                </div>
+                
+                <div className="flex justify-center items-center space-x-8">
+                  {/* セント偏差 */}
+                  <div className="text-center">
+                    <div className={`text-3xl font-bold ${
+                      relativePitchData.accuracy.color === 'green' ? 'text-green-600' :
+                      relativePitchData.accuracy.color === 'blue' ? 'text-blue-600' :
+                      relativePitchData.accuracy.color === 'cyan' ? 'text-cyan-600' :
+                      relativePitchData.accuracy.color === 'orange' ? 'text-orange-600' :
+                      'text-red-600'
+                    }`}>
+                      {relativePitchData.cents > 0 ? '+' : ''}{relativePitchData.cents}
+                    </div>
+                    <div className="text-sm text-gray-600">セント</div>
+                  </div>
+                  
+                  {/* 精度評価 */}
+                  <div className="text-center">
+                    <div className={`text-3xl font-bold ${
+                      relativePitchData.accuracy.color === 'green' ? 'text-green-600' :
+                      relativePitchData.accuracy.color === 'blue' ? 'text-blue-600' :
+                      relativePitchData.accuracy.color === 'cyan' ? 'text-cyan-600' :
+                      relativePitchData.accuracy.color === 'orange' ? 'text-orange-600' :
+                      'text-red-600'
+                    }`}>
+                      {relativePitchData.accuracy.score}
+                    </div>
+                    <div className="text-sm text-gray-600">点</div>
+                  </div>
+                </div>
+                
+                {/* 精度メッセージ */}
+                <div className={`text-lg font-semibold ${
+                  relativePitchData.accuracy.color === 'green' ? 'text-green-600' :
+                  relativePitchData.accuracy.color === 'blue' ? 'text-blue-600' :
+                  relativePitchData.accuracy.color === 'cyan' ? 'text-cyan-600' :
+                  relativePitchData.accuracy.color === 'orange' ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  {relativePitchData.accuracy.message}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* エラー表示 */}
         {error && (
           <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -405,7 +568,7 @@ export default function AccuracyTestV2Page() {
 
         {/* 説明 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">自動化フロー確認項目</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 3 完了: 相対音程分析機能</h3>
           <div className="text-left space-y-3 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
@@ -424,8 +587,12 @@ export default function AccuracyTestV2Page() {
               <span>基音終了後、同じ音程で歌う</span>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🎯</span>
+              <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">5</span>
               <span>リアルタイム周波数検出・表示（Hz・音量）</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🎯</span>
+              <span>相対音程分析・精度評価（セント偏差・スコア）</span>
             </div>
           </div>
           
@@ -437,6 +604,8 @@ export default function AccuracyTestV2Page() {
               <div>✅ Web Audio API（マイクロフォン処理）</div>
               <div>✅ リアルタイム周波数解析（FFT 2048）</div>
               <div>✅ ノイズフィルタリング（振幅閾値 &gt; 10）</div>
+              <div>✅ 相対音程計算（セント・音程名・精度評価）</div>
+              <div>✅ 音名表示（C4, D4等）＋周波数マッピング</div>
               <div>✅ iPhone Safari対応（44.1kHz, モノラル）</div>
             </div>
           </div>
