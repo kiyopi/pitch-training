@@ -40,7 +40,10 @@ export default function PitchyCleanPage() {
     // プロトタイプ準拠：スケーリング（200倍・100倍）
     const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
     
-    setVolume(calculatedVolume);
+    // プロトタイプ準拠：音量正規化（30で割って100倍して0-100%に）
+    const volumePercent = Math.min(Math.max(calculatedVolume / 30 * 100, 0), 100);
+    
+    setVolume(volumePercent);
     
     // 次のフレーム
     animationFrameRef.current = requestAnimationFrame(detectVolume);
