@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, MicOff, Play, RotateCcw, CheckCircle } from "lucide-react";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
+import { PitchDetector } from "pitchy";
 
 // Phase管理システム
 type TrainingPhase = 'welcome' | 'micTest' | 'training' | 'evaluation' | 'results';
@@ -241,6 +242,27 @@ function MicTestPhase({
   const volumeBarRef = useRef<HTMLDivElement>(null);
   const volumeTextRef = useRef<HTMLDivElement>(null);
   const volumeStatusRef = useRef<HTMLDivElement>(null);
+  const frequencyDisplayRef = useRef<HTMLDivElement>(null);
+  
+  // 音程検出用
+  const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+
+  // 周波数から音程名（C3形式）への変換
+  const frequencyToNoteName = useCallback((frequency: number): string => {
+    const A4 = 440;
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    
+    // A4を基準に半音単位の差分を計算
+    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+    
+    // オクターブとノート名を計算
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    const noteIndex = ((semitonesFromA4 + 9) % 12 + 12) % 12;
+    
+    return `${noteNames[noteIndex]}${octave}`;
+  }, []);
 
   // DOM直接更新関数（React state不使用）
   const updateVolumeDisplay = useCallback((volume: number) => {
@@ -275,11 +297,39 @@ function MicTestPhase({
     }
   }, []);
 
+  // 周波数表示更新関数
+  const updateFrequencyDisplay = useCallback((freq: number | null) => {
+    if (frequencyDisplayRef.current) {
+      if (freq && freq > 80 && freq < 1200) {
+        const noteName = frequencyToNoteName(freq);
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center">
+            <div class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+              ${noteName}
+            </div>
+            <div class="text-2xl text-gray-700 font-semibold">
+              ${freq.toFixed(1)} Hz
+            </div>
+          </div>
+        `;
+      } else {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center text-gray-400">
+            🎵 ドの音を発声してください
+          </div>
+        `;
+      }
+    }
+  }, [frequencyToNoteName]);
+
   // 音量レベル監視（DOM直接更新）
   useEffect(() => {
     if (microphoneState.isRecording) {
       const volumePercent = microphoneState.audioLevel * 100;
       updateVolumeDisplay(volumePercent);
+      
+      // TODO: 音程検出機能も統合予定
+      // 現在はマイクマネージャーからの音程データ取得が必要
     }
   }, [microphoneState.audioLevel, microphoneState.isRecording, updateVolumeDisplay]);
 
@@ -326,7 +376,7 @@ function MicTestPhase({
           </div>
           <div className="flex items-center space-x-3">
             <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-            <span>「ラララ〜」と声を出して音量バーを確認</span>
+            <span>「ドの音を発声」して音量バーと音程を確認</span>
           </div>
           <div className="flex items-center space-x-3">
             <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
@@ -335,10 +385,24 @@ function MicTestPhase({
         </div>
       </div>
 
-      {/* 音量レベル表示 */}
+      {/* 音量レベル + 音程表示 */}
       {microphoneState.isRecording && (
-        <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">🔊 音量レベル</h3>
+        <div className="mb-8 space-y-6">
+          {/* 音程表示 */}
+          <div className="p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">🎵 検出された音程</h3>
+            <div className="h-24 flex items-center justify-center">
+              <div ref={frequencyDisplayRef}>
+                <div className="text-center text-gray-400">
+                  🎵 ドの音を発声してください
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 音量レベル表示 */}
+          <div className="p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">🔊 音量レベル</h3>
           
           {/* 音量バー（DOM直接操作） */}
           <div className="mb-4">
@@ -364,7 +428,7 @@ function MicTestPhase({
           {/* 音量ガイド */}
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              「ラララ〜」と声を出して<br/>
+              ドの音を発声して<br/>
               <span className="font-bold text-green-600">30%以上</span>になるよう調整してください
             </p>
           </div>
@@ -423,7 +487,8 @@ function MicTestPhase({
         <div className="text-sm text-yellow-700 space-y-1">
           <div>• マイクに近づきすぎないでください</div>
           <div>• 周囲の騒音を最小限に抑えてください</div>
-          <div>• 音量が小さい場合は、より大きな声で話してください</div>
+          <div>• ドの音程で明瞭に発声してください</div>
+          <div>• 音程が表示されない場合は、より大きな声で発声してください</div>
         </div>
       </div>
     </>
