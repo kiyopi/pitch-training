@@ -47,6 +47,11 @@ export default function PitchyCleanPage() {
   const frequencyHistoryRef = useRef<number[]>([]);
   const stableFrequencyRef = useRef<number | null>(null);
   const stabilityCounterRef = useRef<number>(0);
+  
+  // 動的オクターブ補正システム用
+  const targetFrequenciesRef = useRef<number[]>([
+    261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25 // ドレミファソラシド (C4-C5)
+  ]);
 
   // 音量検出＋周波数検出統合ループ
   // DOM直接更新関数（React state不使用）
@@ -95,6 +100,69 @@ export default function PitchyCleanPage() {
         </div>
       `;
     }
+  };
+
+  // 動的オクターブ補正関数
+  const applyDynamicOctaveCorrection = (detectedFreq: number, targetFreqs: number[]): number => {
+    const minTargetFreq = Math.min(...targetFreqs);
+    const maxTargetFreq = Math.max(...targetFreqs);
+    
+    // 動的範囲計算: 80%-120%
+    const correctedMin = minTargetFreq * 0.8;  // 209.3Hz
+    const correctedMax = maxTargetFreq * 1.2;  // 627.9Hz
+    
+    // 補正トリガー闾値: 55%ポイント
+    const correctionThreshold = maxTargetFreq * 0.55; // 287.8Hz
+    
+    // 2倍音補正チェック
+    if (detectedFreq < correctionThreshold) {
+      const doubledFreq = detectedFreq * 2;
+      if (doubledFreq >= correctedMin && doubledFreq <= correctedMax) {
+        console.log(`🎵 2倍音補正: ${detectedFreq.toFixed(1)}Hz → ${doubledFreq.toFixed(1)}Hz`);
+        return doubledFreq;
+      }
+    }
+    
+    // 4倍音補正チェック（極端な低周波数）
+    if (detectedFreq < correctionThreshold / 2) {
+      const quadrupledFreq = detectedFreq * 4;
+      if (quadrupledFreq >= correctedMin && quadrupledFreq <= correctedMax) {
+        console.log(`🎵 4倍音補正: ${detectedFreq.toFixed(1)}Hz → ${quadrupledFreq.toFixed(1)}Hz`);
+        return quadrupledFreq;
+      }
+    }
+    
+    // 相対音程ベースの妥当性チェック
+    const validateRelativePitch = (freq: number): boolean => {
+      // 最も近い目標周波数を取得
+      const closestTarget = targetFreqs.reduce((prev, curr) => 
+        Math.abs(curr - freq) < Math.abs(prev - freq) ? curr : prev
+      );
+      
+      const relativePitch = freq / closestTarget;
+      const octaveRatio = Math.log2(relativePitch);
+      
+      // 正常範囲: -0.5 < ratio < 1.5 (オクターブエラーではない)
+      return octaveRatio >= -0.5 && octaveRatio <= 1.5;
+    };
+    
+    // 相対音程チェックでNGの場合、オクターブ補正を再試行
+    if (!validateRelativePitch(detectedFreq)) {
+      const doubledFreq = detectedFreq * 2;
+      if (validateRelativePitch(doubledFreq) && doubledFreq <= correctedMax) {
+        console.log(`🎵 相対音程補正: ${detectedFreq.toFixed(1)}Hz → ${doubledFreq.toFixed(1)}Hz`);
+        return doubledFreq;
+      }
+      
+      const halvedFreq = detectedFreq / 2;
+      if (validateRelativePitch(halvedFreq) && halvedFreq >= correctedMin) {
+        console.log(`🎵 相対音程補正: ${detectedFreq.toFixed(1)}Hz → ${halvedFreq.toFixed(1)}Hz`);
+        return halvedFreq;
+      }
+    }
+    
+    // 補正不要の場合、元の値を返す
+    return detectedFreq;
   };
 
   const detectAudio = useCallback(() => {
@@ -150,7 +218,9 @@ export default function PitchyCleanPage() {
         
         // 適度な有効範囲チェック（80-1200Hz、明瞭度0.15以上）
         if (clarity > 0.15 && freq > 80 && freq < 1200) {
-          const roundedFreq = Math.round(freq * 10) / 10;
+          // 動的オクターブ補正適用
+          const correctedFreq = applyDynamicOctaveCorrection(freq, targetFrequenciesRef.current);
+          const roundedFreq = Math.round(correctedFreq * 10) / 10;
           
           // 周波数履歴に追加（最大10個まで保持）
           frequencyHistoryRef.current.push(roundedFreq);
@@ -361,10 +431,10 @@ export default function PitchyCleanPage() {
             音量＋周波数検出テスト
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            カスタム音量バー + Pitchy統合実装
+            動的オクターブ補正 + Pitchy統合実装
           </p>
           <div className="inline-block bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 2: カスタム音量表示 + 高精度周波数検出
+            Step 2: 動的オクターブ補正 + 倍音制御システム
           </div>
         </div>
 
@@ -469,7 +539,7 @@ export default function PitchyCleanPage() {
 
         {/* 説明 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 2: カスタム音量表示 + 高精度周波数検出</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 2: 動的オクターブ補正 + 倍音制御システム</h3>
           <div className="text-left space-y-3 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
@@ -481,7 +551,7 @@ export default function PitchyCleanPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>Pitchy: McLeod Pitch Method による高精度周波数検出</span>
+              <span>動的オクターブ補正: 倍音誤検出の自動回避システム</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
@@ -494,7 +564,7 @@ export default function PitchyCleanPage() {
             <h4 className="font-bold text-gray-700 mb-3">🔧 使用ライブラリ</h4>
             <div className="grid grid-cols-1 gap-2 text-sm text-gray-600">
               <div>✅ カスタム音量バー: レスポンシブ音量レベル表示</div>
-              <div>✅ Pitchy: McLeod Pitch Method（最高精度周波数検出）</div>
+              <div>✅ 動的オクターブ補正: 55%闾値システムで倍音除去</div>
               <div>✅ Web Audio API: ノイズリダクション＋リアルタイム処理</div>
               <div>✅ TypeScript: 型安全な実装</div>
             </div>
