@@ -2,9 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [nextjs-training-v3-impl-001]
+    branches: [pitch-training-nextjs-v2-impl-001]
   pull_request:
-    branches: [nextjs-training-v3-impl-001]
+    branches: [pitch-training-nextjs-v2-impl-001]
 
 # GitHub Pages用の権限設定
 permissions:
