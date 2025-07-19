@@ -9,10 +9,18 @@ export default function PitchyCleanPage() {
   // 基本状態
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [volume, setVolume] = useState<number>(0);
-  const [frequency, setFrequency] = useState<number | null>(null);
-  const [clarity, setClarity] = useState<number>(0);
-  const [debugInfo, setDebugInfo] = useState<{raw: number, calculated: number, normalized: number}>({raw: 0, calculated: 0, normalized: 0});
+  // React stateを最小限に減らし、DOM直接操作でリアルタイム更新
+  // const [volume, setVolume] = useState<number>(0);
+  // const [frequency, setFrequency] = useState<number | null>(null);
+  // const [clarity, setClarity] = useState<number>(0);
+  // const [debugInfo, setDebugInfo] = useState<{raw: number, calculated: number, normalized: number}>({raw: 0, calculated: 0, normalized: 0});
+  
+  // DOM直接操作用のref
+  const volumeBarRef = useRef<HTMLDivElement>(null);
+  const volumeTextRef = useRef<HTMLDivElement>(null);
+  const frequencyDisplayRef = useRef<HTMLDivElement>(null);
+  const clarityDisplayRef = useRef<HTMLDivElement>(null);
+  const debugInfoRef = useRef<HTMLDivElement>(null);
   
   // Audio processing refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -41,6 +49,54 @@ export default function PitchyCleanPage() {
   const stabilityCounterRef = useRef<number>(0);
 
   // 音量検出＋周波数検出統合ループ
+  // DOM直接更新関数（React state不使用）
+  const updateVolumeDisplay = (volume: number) => {
+    if (volumeBarRef.current) {
+      const clampedVolume = Math.max(0, Math.min(100, volume));
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.backgroundColor = 
+        volume > 80 ? '#ef4444' : volume > 60 ? '#f59e0b' : '#10b981';
+    }
+    if (volumeTextRef.current) {
+      volumeTextRef.current.textContent = `${volume.toFixed(1)}%`;
+    }
+  };
+  
+  const updateFrequencyDisplay = (freq: number | null, clarity: number) => {
+    if (frequencyDisplayRef.current) {
+      if (freq) {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            ${freq.toFixed(1)}
+          </div>
+          <div class="text-xl text-gray-600 font-semibold">Hz</div>
+        `;
+      } else {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-gray-400 text-lg">
+            🎤 音声を検出中...
+          </div>
+        `;
+      }
+    }
+    if (clarityDisplayRef.current) {
+      clarityDisplayRef.current.textContent = `明瞭度: ${(clarity * 100).toFixed(1)}%`;
+    }
+  };
+  
+  const updateDebugInfo = (info: {raw: number, calculated: number, normalized: number}) => {
+    if (debugInfoRef.current) {
+      debugInfoRef.current.innerHTML = `
+        <div class="grid grid-cols-2 gap-4 text-xs text-gray-600">
+          <div><span class="font-semibold">音量:</span><br/>${info.normalized.toFixed(1)}%</div>
+          <div><span class="font-semibold">生音量:</span><br/>${info.raw.toFixed(1)}</div>
+          <div><span class="font-semibold">計算値:</span><br/>${info.calculated.toFixed(1)}</div>
+          <div><span class="font-semibold">正規化:</span><br/>${info.normalized.toFixed(1)}</div>
+        </div>
+      `;
+    }
+  };
+
   const detectAudio = useCallback(() => {
     if (!analyserRef.current || !audioContextRef.current) return;
 
@@ -148,11 +204,10 @@ export default function PitchyCleanPage() {
       console.warn('Pitchy detection error:', error);
     }
     
-    // 状態更新
-    setVolume(smoothedVolume);
-    setFrequency(detectedFreq);
-    setClarity(detectedClarity);
-    setDebugInfo({
+    // DOM直接操作でリアルタイム更新（React state不使用）
+    updateVolumeDisplay(smoothedVolume);
+    updateFrequencyDisplay(detectedFreq, detectedClarity);
+    updateDebugInfo({
       raw: Math.max(rms * 200, maxAmplitude * 100),
       calculated: calculatedVolume,
       normalized: volumePercent
@@ -278,9 +333,10 @@ export default function PitchyCleanPage() {
       stabilityCounterRef.current = 0;
       
       setIsRecording(false);
-      setVolume(0);
-      setFrequency(null);
-      setClarity(0);
+      // DOM直接リセット
+      updateVolumeDisplay(0);
+      updateFrequencyDisplay(null, 0);
+      updateDebugInfo({raw: 0, calculated: 0, normalized: 0});
       
     } catch (err) {
       console.error('❌ 停止エラー:', err);
@@ -317,77 +373,50 @@ export default function PitchyCleanPage() {
           <h3 className="text-xl font-bold text-gray-800 mb-6">🎵 音量＋周波数検出</h3>
           
           <div className="space-y-8">
-            {/* カスタム音量バー可視化 */}
+            {/* DOM直接操作音量バー可視化 */}
             {isRecording && (
               <div className="text-center">
                 <h4 className="text-lg font-semibold text-gray-700 mb-3">📊 ライブ音量可視化</h4>
                 <div className="flex justify-center">
                   <div className="bg-gray-200 rounded-full h-6 w-80 overflow-hidden">
                     <div 
+                      ref={volumeBarRef}
                       className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100 ease-out"
-                      style={{
-                        width: `${Math.max(0, Math.min(100, volume))}%`,
-                        backgroundColor: volume > 80 ? '#ef4444' : volume > 60 ? '#f59e0b' : '#10b981'
-                      }}
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>
                 <div className="mt-2 text-sm text-gray-500">
-                  音量: {volume.toFixed(1)}%
+                  音量: <span ref={volumeTextRef}>0.0%</span>
                 </div>
               </div>
             )}
             
-            {/* 周波数表示（固定高さ） */}
+            {/* DOM直接操作周波数表示（固定高さ） */}
             <div className="text-center">
               <h4 className="text-lg font-semibold text-gray-700 mb-3">🎵 周波数検出</h4>
               <div className="h-32 flex flex-col justify-center">
-                {frequency ? (
-                  <div className="space-y-2">
-                    <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                      {frequency.toFixed(1)}
-                    </div>
-                    <div className="text-xl text-gray-600 font-semibold">Hz</div>
-                    <div className="text-sm text-gray-500">
-                      明瞭度: {(clarity * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                ) : (
+                <div ref={frequencyDisplayRef} className="space-y-2">
                   <div className="text-gray-400 text-lg">
                     🎤 音声を検出中...
                   </div>
-                )}
+                </div>
+                <div ref={clarityDisplayRef} className="text-sm text-gray-500 mt-2">
+                  明瞭度: 0.0%
+                </div>
               </div>
             </div>
             
-            {/* 数値音量表示 */}
-            <div className="text-center">
-              <h4 className="text-lg font-semibold text-gray-700 mb-3">🔊 音量レベル</h4>
-              <div className="text-3xl font-bold text-green-600">
-                {volume.toFixed(1)}%
-              </div>
-            </div>
-            
-            {/* デバッグ情報 */}
+            {/* DOM直接操作デバッグ情報 */}
             {isRecording && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <h4 className="text-sm font-bold text-gray-700 mb-2">🔍 デバッグ情報</h4>
-                <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-                  <div>
-                    <span className="font-semibold">周波数:</span>
-                    <br />{frequency ? `${frequency.toFixed(1)} Hz` : 'N/A'}
-                  </div>
-                  <div>
-                    <span className="font-semibold">明瞭度:</span>
-                    <br />{(clarity * 100).toFixed(1)}%
-                  </div>
-                  <div>
-                    <span className="font-semibold">音量:</span>
-                    <br />{volume.toFixed(1)}%
-                  </div>
-                  <div>
-                    <span className="font-semibold">生音量:</span>
-                    <br />{debugInfo.raw.toFixed(1)}
+                <div ref={debugInfoRef}>
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
+                    <div><span className="font-semibold">音量:</span><br/>0.0%</div>
+                    <div><span className="font-semibold">生音量:</span><br/>0.0</div>
+                    <div><span className="font-semibold">計算値:</span><br/>0.0</div>
+                    <div><span className="font-semibold">正規化:</span><br/>0.0</div>
                   </div>
                 </div>
               </div>
