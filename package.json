@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_ENV=development next dev --turbopack -H 0.0.0.0",
+    "dev:safe": "NODE_ENV=development next dev --port 3001",
+    "dev:debug": "NODE_ENV=development next dev --turbopack --experimental-debug",
+    "dev:simple": "NODE_ENV=development node simple-server.js",
     "build": "next build",
     "export": "next build && next export",
     "start": "next start",
     "lint": "next lint",
-    "github-pages": "npm run build && touch out/.nojekyll"
+    "github-pages": "npm run build && touch out/.nojekyll",
+    "clean": "rm -rf .next && rm -rf out",
+    "port-check": "lsof -i :3000",
+    "kill-port": "npx kill-port 3000"
   },
   "dependencies": {
     "chart.js": "^4.5.0",
@@ -20,6 +26,7 @@
     "next": "15.4.1",
     "pitchy": "^4.1.0",
     "react": "19.1.0",
+    "react-audio-visualize": "^1.2.0",
     "react-dom": "19.1.0",
     "react-share": "^5.2.2",
     "tailwind-merge": "^3.3.1",

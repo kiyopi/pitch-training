@@ -1,256 +1,309 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+'use client';
 
-// Type definitions
-interface AudioConfig {
-  sampleRate: number;
-  bufferSize: number;
-  lowFrequencyCutoff: number;
-  fftSize: number;
-}
+import { useState, useRef, useCallback } from 'react';
+
+/**
+ * マイクロフォン管理フック - Step 1: 基本許可・音声取得
+ * 
+ * 目的: 最小限のマイクロフォン制御機能を提供
+ * 対象: 基本的なON/OFF制御、許可状態管理、エラーハンドリング
+ * 
+ * HYBRID許可システム完全除去済み
+ * iPhone Safari対応済み
+ * 停止ボタン機能統合済み
+ */
 
 interface MicrophoneState {
   isRecording: boolean;
-  isInitialized: boolean;
   error: string | null;
+  permission: 'granted' | 'denied' | 'prompt';
   audioLevel: number;
+  isInitialized: boolean;
 }
 
-interface MicrophoneManagerHook {
+interface MicrophoneManager {
   microphoneState: MicrophoneState;
   startRecording: () => Promise<boolean>;
   stopRecording: () => void;
-  getAudioData: () => Float32Array | null;
-  cleanup: () => void;
+  resetError: () => void;
 }
 
-// Default audio configuration
-const defaultAudioConfig: AudioConfig = {
-  sampleRate: 44100,
-  bufferSize: 4096,
-  lowFrequencyCutoff: 25, // 23-25Hz low frequency noise filtering
-  fftSize: 4096,
-};
-
-export const useMicrophoneManager = (
-  audioConfig: Partial<AudioConfig> = {}
-): MicrophoneManagerHook => {
-  const finalConfig = { ...defaultAudioConfig, ...audioConfig };
-  
+export const useMicrophoneManager = (): MicrophoneManager => {
   const [microphoneState, setMicrophoneState] = useState<MicrophoneState>({
     isRecording: false,
-    isInitialized: false,
     error: null,
+    permission: 'prompt',
     audioLevel: 0,
+    isInitialized: false,
   });
 
-  // Refs for audio processing
   const streamRef = useRef<MediaStream | null>(null);
+  const isStoppingRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const filterRef = useRef<BiquadFilterNode | null>(null);
-  const dataArrayRef = useRef<Float32Array | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Create noise filter (23-25Hz low frequency filtering)
-  const createNoiseFilter = useCallback((audioContext: AudioContext): BiquadFilterNode => {
-    const highPassFilter = audioContext.createBiquadFilter();
-    highPassFilter.type = 'highpass';
-    highPassFilter.frequency.setValueAtTime(finalConfig.lowFrequencyCutoff, audioContext.currentTime);
-    highPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-    return highPassFilter;
-  }, [finalConfig.lowFrequencyCutoff]);
-
-  // Initialize audio context and processing chain
-  const initializeAudio = useCallback(async (stream: MediaStream): Promise<boolean> => {
-    try {
-      // Create audio context
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({
-        sampleRate: finalConfig.sampleRate,
-      });
-
-      // Create analyser node
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = finalConfig.fftSize;
-      analyser.smoothingTimeConstant = 0.3;
-
-      // Create microphone source
-      const microphone = audioContext.createMediaStreamSource(stream);
-
-      // Create noise filter
-      const filter = createNoiseFilter(audioContext);
-
-      // Connect audio processing chain
-      microphone.connect(filter);
-      filter.connect(analyser);
-
-      // Initialize data array for frequency analysis
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Float32Array(bufferLength);
-
-      // Store references
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      microphoneRef.current = microphone;
-      filterRef.current = filter;
-      dataArrayRef.current = dataArray;
-
-      setMicrophoneState(prev => ({
-        ...prev,
-        isInitialized: true,
-        error: null,
-      }));
-
-      return true;
-    } catch (error) {
-      console.error('Audio initialization failed:', error);
-      setMicrophoneState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Audio initialization failed',
-      }));
-      return false;
+  /**
+   * 音程検出最適化制約
+   * autoGainControl、echoCancellation、noiseSuppression を無効化
+   */
+  const getOptimalConstraints = (): MediaStreamConstraints => ({
+    audio: {
+      autoGainControl: false,      // 最重要: 自動ゲイン制御無効
+      echoCancellation: false,     // 最重要: エコーキャンセル無効
+      noiseSuppression: false,     // 最重要: ノイズ抑制無効
+      sampleRate: 44100,           // 高品質サンプリング
+      channelCount: 1,             // モノラル
     }
-  }, [finalConfig.sampleRate, finalConfig.fftSize, createNoiseFilter]);
+  });
 
-  // Audio level monitoring
-  const updateAudioLevel = useCallback(() => {
-    if (!analyserRef.current || !dataArrayRef.current) return;
-
-    try {
-      analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
+  /**
+   * 音声レベル監視機能（プロトタイプ準拠の高精度計算）
+   * テストページの実装知見を適用
+   */
+  const startAudioLevelMonitoring = useCallback(() => {
+    if (!analyserRef.current) return;
+    
+    const analyser = analyserRef.current;
+    const previousVolumeRef = { current: 0 }; // 音量スムージング用
+    
+    const updateAudioLevel = () => {
+      if (!analyser || isStoppingRef.current) return;
       
-      // Calculate RMS level
+      // 🔊 音量検出用：8bit配列取得（プロトタイプ準拠）
+      const byteTimeDomainData = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(byteTimeDomainData);
+      
+      // 🔊 音量計算（プロトタイプ準拠）
       let sum = 0;
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        sum += dataArrayRef.current[i] * dataArrayRef.current[i];
+      let maxAmplitude = 0;
+      
+      for (let i = 0; i < byteTimeDomainData.length; i++) {
+        const sample = (byteTimeDomainData[i] - 128) / 128;
+        sum += sample * sample;
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
       }
-      const rms = Math.sqrt(sum / dataArrayRef.current.length);
-      const audioLevel = Math.min(Math.max(rms * 100, 0), 100);
-
+      
+      const rms = Math.sqrt(sum / byteTimeDomainData.length);
+      const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
+      
+      // 音量スケーリング調整: 適切なレベル表示のため /12 に再調整
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      
+      // ノイズフロア除去: 5%以下はノイズとして0%表示
+      const noiseThreshold = 5;
+      const volumePercent = rawVolumePercent > noiseThreshold ? rawVolumePercent : 0;
+      
+      // 音量スムージング（より反応を良く）
+      const smoothingFactor = 0.2;
+      const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
+      previousVolumeRef.current = smoothedVolume;
+      
+      // 0-1の範囲に正規化してstate更新
+      const normalizedLevel = Math.min(smoothedVolume / 100, 1.0);
+      
       setMicrophoneState(prev => ({
         ...prev,
-        audioLevel,
+        audioLevel: normalizedLevel
       }));
+      
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+    };
+    
+    updateAudioLevel();
+  }, []);
 
-      if (microphoneState.isRecording) {
-        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
-      }
-    } catch (error) {
-      console.error('Audio level update failed:', error);
+  /**
+   * マイクロフォンエラーハンドリング
+   * 詳細なエラーメッセージを提供
+   */
+  const handleMicrophoneError = (error: Error): string => {
+    console.error('Microphone error:', error);
+    
+    switch (error.name) {
+      case 'NotAllowedError':
+        return 'マイクロフォンへのアクセスが拒否されました。ブラウザの設定を確認してください。';
+      case 'NotFoundError':
+        return 'マイクロフォンが見つかりません。デバイスを確認してください。';
+      case 'NotReadableError':
+        return 'マイクロフォンが他のアプリで使用中です。他のアプリを終了してください。';
+      case 'OverconstrainedError':
+        return 'マイクロフォンの設定に問題があります。';
+      case 'SecurityError':
+        return 'セキュリティ制約によりマイクロフォンにアクセスできません。';
+      default:
+        return `マイクロフォンエラー: ${error.message}`;
     }
-  }, [microphoneState.isRecording]);
+  };
 
-  // Start recording
+  /**
+   * マイクロフォン録音開始
+   * 許可取得と音声ストリーム開始
+   */
   const startRecording = useCallback(async (): Promise<boolean> => {
     try {
-      setMicrophoneState(prev => ({ ...prev, error: null }));
-
-      // Get media stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: finalConfig.sampleRate,
-        },
-      });
-
-      streamRef.current = stream;
-
-      // Initialize audio processing
-      const success = await initializeAudio(stream);
-      if (!success) {
-        stream.getTracks().forEach(track => track.stop());
+      // 既に録音中の場合は無視
+      if (microphoneState.isRecording || isStoppingRef.current) {
+        console.log('⚠️ 既に録音中または停止処理中');
         return false;
       }
 
+      // セキュリティコンテキスト確認
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setMicrophoneState(prev => ({
+          ...prev,
+          error: 'このブラウザではマイクロフォンがサポートされていません。'
+        }));
+        return false;
+      }
+
+      // HTTPS確認
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        setMicrophoneState(prev => ({
+          ...prev,
+          error: 'HTTPSまたはlocalhostでのみマイクロフォンが使用できます。'
+        }));
+        return false;
+      }
+
+      console.log('🎙️ マイクロフォン許可要求開始');
+
+      // 最適化制約でマイクロフォンアクセス要求
+      const constraints = getOptimalConstraints();
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // ストリーム取得成功
+      streamRef.current = stream;
+      
+      // AudioContextとAnalyserNodeを設定
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      // 音声ストリームをAnalyserNodeに接続
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
       setMicrophoneState(prev => ({
         ...prev,
         isRecording: true,
+        isInitialized: true,
+        permission: 'granted',
+        error: null,
+        audioLevel: 0,
       }));
 
-      // Start audio level monitoring
-      updateAudioLevel();
+      // 音声レベル監視開始
+      startAudioLevelMonitoring();
+
+      console.log('✅ マイクロフォン許可・音声取得成功');
+      console.log('📊 音声制約:', constraints.audio);
 
       return true;
+
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      const errorMessage = handleMicrophoneError(error as Error);
+      
       setMicrophoneState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to start recording',
+        isRecording: false,
+        permission: 'denied',
+        error: errorMessage,
+        audioLevel: 0,
       }));
+
+      console.error('❌ マイクロフォン開始失敗:', error);
       return false;
     }
-  }, [finalConfig.sampleRate, initializeAudio, updateAudioLevel]);
+  }, [microphoneState.isRecording]);
 
-  // Stop recording
+  /**
+   * マイクロフォン録音停止
+   * 停止ボタン機能統合済み
+   */
   const stopRecording = useCallback(() => {
     try {
-      // Cancel animation frame
+      isStoppingRef.current = true;
+      console.log('🛑 マイクロフォン停止開始');
+
+      // アニメーションフレーム停止
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
 
-      // Stop media stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-
-      // Close audio context
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      // AudioContext停止
+      if (audioContextRef.current) {
         audioContextRef.current.close();
+        audioContextRef.current = null;
       }
 
-      // Clear references
-      audioContextRef.current = null;
+      // AnalyserNode停止
       analyserRef.current = null;
-      microphoneRef.current = null;
-      filterRef.current = null;
-      dataArrayRef.current = null;
 
+      // MediaStream停止
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;  // iPhone Safari確実停止
+        });
+        streamRef.current = null;
+        console.log('✅ MediaStream停止完了');
+      }
+
+      // 状態リセット
       setMicrophoneState(prev => ({
         ...prev,
         isRecording: false,
         isInitialized: false,
         audioLevel: 0,
+        error: null,
       }));
+
+      console.log('✅ マイクロフォン完全停止');
+
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error('❌ マイクロフォン停止エラー:', error);
+      
+      // エラー時も強制的にリソースクリーンアップ
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      analyserRef.current = null;
+
+      // エラー時も強制的に状態リセット
+      setMicrophoneState(prev => ({
+        ...prev,
+        isRecording: false,
+        isInitialized: false,
+        audioLevel: 0,
+        error: '停止処理中にエラーが発生しました。',
+      }));
+    } finally {
+      isStoppingRef.current = false;
     }
   }, []);
 
-  // Get current audio data for pitch detection
-  const getAudioData = useCallback((): Float32Array | null => {
-    if (!analyserRef.current || !dataArrayRef.current || !microphoneState.isRecording) {
-      return null;
-    }
-
-    try {
-      analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
-      return new Float32Array(dataArrayRef.current);
-    } catch (error) {
-      console.error('Failed to get audio data:', error);
-      return null;
-    }
-  }, [microphoneState.isRecording]);
-
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    stopRecording();
-  }, [stopRecording]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+  /**
+   * エラーリセット
+   * ユーザーがエラーを確認後にリセット
+   */
+  const resetError = useCallback(() => {
+    setMicrophoneState(prev => ({
+      ...prev,
+      error: null,
+    }));
+  }, []);
 
   return {
     microphoneState,
     startRecording,
     stopRecording,
-    getAudioData,
-    cleanup,
+    resetError,
   };
 };

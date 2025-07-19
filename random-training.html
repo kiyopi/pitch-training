@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 ランダム基音モード - 相対音感トレーニング</title>
+    <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .start-button {
+            font-size: 2rem;
+            padding: 1.5rem 3rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            box-shadow: 0 8px 20px rgba(255,107,107,0.4);
+            position: relative;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .start-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .start-button:hover::before {
+            left: 100%;
+        }
+
+        .start-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(255,107,107,0.5);
+        }
+
+        .start-button:active {
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            margin-top: 2rem;
+        }
+
+        .back-link:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 3rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .start-button {
+                font-size: 1.5rem;
+                padding: 1.2rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎲</div>
+            <h1 class="title">ランダム基音モード</h1>
+            <p class="subtitle">相対音感トレーニング</p>
+        </div>
+
+        <button class="start-button" onclick="startTraining()">
+            🎹 スタート
+        </button>
+
+        <div>
+            <a href="index.html" class="back-link">
+                ← トップページに戻る
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 基音データ
+        const baseTones = [
+            { name: 'Bb3', note: 'シ♭3', frequency: 233.08, tonejs: 'Bb3' },
+            { name: 'C4',  note: 'ド4',   frequency: 261.63, tonejs: 'C4' },
+            { name: 'Db4', note: 'レ♭4', frequency: 277.18, tonejs: 'Db4' },
+            { name: 'D4',  note: 'レ4',   frequency: 293.66, tonejs: 'D4' },
+            { name: 'Eb4', note: 'ミ♭4', frequency: 311.13, tonejs: 'Eb4' },
+            { name: 'E4',  note: 'ミ4',   frequency: 329.63, tonejs: 'E4' },
+            { name: 'F4',  note: 'ファ4', frequency: 349.23, tonejs: 'F4' },
+            { name: 'Gb4', note: 'ソ♭4', frequency: 369.99, tonejs: 'Gb4' },
+            { name: 'G4',  note: 'ソ4',   frequency: 392.00, tonejs: 'G4' },
+            { name: 'Ab4', note: 'ラ♭4', frequency: 415.30, tonejs: 'Ab4' }
+        ];
+
+        let sampler = null;
+
+        // ピアノ音源初期化
+        async function initializePiano() {
+            if (sampler) return true;
+            
+            try {
+                sampler = new Tone.Sampler({
+                    urls: {
+                        "C4": "C4.mp3",
+                        "D#4": "Ds4.mp3",
+                        "F#4": "Fs4.mp3",
+                        "A4": "A4.mp3"
+                    },
+                    baseUrl: "https://tonejs.github.io/audio/salamander/",
+                    volume: 6
+                }).toDestination();
+
+                await Tone.loaded();
+                return true;
+            } catch (error) {
+                console.error('ピアノ音源初期化失敗:', error);
+                return false;
+            }
+        }
+
+        // ピアノ音再生
+        async function playPiano() {
+            if (!sampler) {
+                const initialized = await initializePiano();
+                if (!initialized) return;
+            }
+
+            // AudioContext開始
+            if (Tone.getContext().state !== 'running') {
+                await Tone.start();
+            }
+
+            // ランダム基音選択
+            const randomIndex = Math.floor(Math.random() * baseTones.length);
+            const baseTone = baseTones[randomIndex];
+            
+            console.log(`基音: ${baseTone.note} (${baseTone.frequency}Hz)`);
+
+            // ピアノ音再生
+            const noteString = baseTone.tonejs;
+            sampler.triggerAttack(noteString, undefined, 0.8);
+            
+            // 2秒後にリリース
+            setTimeout(() => {
+                if (sampler) {
+                    sampler.triggerRelease(noteString);
+                }
+            }, 2000);
+        }
+
+        // スタートボタン処理
+        async function startTraining() {
+            await playPiano();
+        }
+    </script>
+</body>
+</html>
