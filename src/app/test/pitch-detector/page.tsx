@@ -52,9 +52,13 @@ export default function PitchDetectorTestPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Pitch検出結果の履歴更新
+  // Pitch検出結果の履歴更新（修正版）
   useEffect(() => {
-    if (!pitchDetector.pitchState.isDetecting) return;
+    if (!processorState.isProcessing || !pitchDetector.pitchState.isDetecting) {
+      return;
+    }
+    
+    console.log('🎵 リアルタイムPitch検出ループ開始');
 
     const interval = setInterval(() => {
       const pitchResult = pitchDetector.getPitchResult();
@@ -74,8 +78,11 @@ export default function PitchDetectorTestPage() {
       }
     }, 200); // 200ms間隔で更新
 
-    return () => clearInterval(interval);
-  }, [pitchDetector.pitchState.isDetecting, pitchDetector]);
+    return () => {
+      console.log('🛑 リアルタイムPitch検出ループ停止');
+      clearInterval(interval);
+    };
+  }, [processorState.isProcessing, pitchDetector.pitchState.isDetecting]);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString('ja-JP') || new Date().toTimeString().slice(0, 8);

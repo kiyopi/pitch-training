@@ -2,6 +2,31 @@
 
 ## 🎵 プロジェクト概要
 
+### 🚨 **開発環境認識 - 最重要確認事項**
+
+#### **現在の開発環境（絶対確認）**
+**GitHubリポジトリ**: `https://github.com/kiyopi/pitch-training.git`  
+**GitHub Pages URL**: `https://kiyopi.github.io/pitch-training/`  
+**現在のブランチ**: `pitch-training-nextjs-v2-impl-001`
+**開発技術**: **Next.js 15.4.1 + TypeScript + React**
+**作業ディレクトリ**: `/Users/isao/Documents/pitch_app` 
+
+⚠️ **重要**: URLは必ず `pitch-training` リポジトリを使用すること
+
+#### **🚨 環境認識エラー防止ルール**
+1. **仕様書は古いプロトタイプ時代のもの**: 参考情報として活用のみ
+2. **実際の開発は Next.js**: 新規ページ作成は `/src/app/` 以下
+3. **デプロイはGitHub Actions**: 必ず `npm run build` + GitHub Pages
+4. **テスト確認は2段階**: GitHub Pages + ローカル開発サーバー
+5. **プロトタイプ手法禁止**: HTML直接作成・手動デプロイは一切禁止
+
+#### **必須確認プロトコル**
+```
+仕様書確認時に必ず宣言:
+"この仕様書は参考情報です。実際の開発は Next.js で実行します。"
+"新規作成は /src/app/ 以下に作成し、GitHub Actions でデプロイします。"
+```
+
 ### アプリケーションの目的
 **相対音感トレーニングアプリ**
 - **目標**: ユーザーの相対音感（音程の相対的な関係を聞き分ける能力）を効果的に鍛える
@@ -123,6 +148,22 @@ alias verify-stable="git log --oneline -1 && echo '期待値: 1e44e2e バージ�
 ⚠️ **作業ログ更新義務**: 各作業段階でWORK_LOG.mdを即座更新
 
 ## 🚨 Claude確認強制プロトコル
+
+### 🔴 **環境認識エラー防止プロトコル（最優先）**
+**仕様書確認時・新規作成指示時に必ず実行:**
+
+#### 1. 環境認識宣言（必須）
+```
+"確認: この仕様書は参考情報です。実際の開発は Next.js で実行します。"
+"新規作成は /src/app/ 以下に作成し、GitHub Actions でデプロイします。"
+"プロトタイプ手法（HTML直接作成・手動デプロイ）は一切使用しません。"
+```
+
+#### 2. 技術スタック確認
+- **開発**: Next.js 15.4.1 + TypeScript + React
+- **デプロイ**: GitHub Actions → GitHub Pages
+- **テスト**: GitHub Pages + ローカル開発サーバー
+- **禁止**: HTML直接作成、手動デプロイ、プロトタイプ手法
 
 ### 必須実行コマンド（例外なし）
 **「CLAUDE.mdを確認して」の指示を受けた場合、以下を必ず実行:**

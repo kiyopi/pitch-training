@@ -1,5 +1,12 @@
 # Step 4: Pitchy音程検出統合 実装仕様書 v1.0
 
+## 🚨 **環境認識警告**
+**⚠️ この仕様書は参考情報です。実際の開発は Next.js で実行します。**
+- **開発環境**: Next.js 15.4.1 + TypeScript + React  
+- **新規作成**: `/src/app/` 以下に作成
+- **デプロイ**: GitHub Actions → GitHub Pages
+- **禁止**: HTML直接作成・手動デプロイ
+
 ## 📋 概要
 
 ### 目的
