@@ -234,12 +234,22 @@ export default function PitchyCleanPage() {
                 音量: {volume.toFixed(1)}%
               </div>
               {/* 固定の外枠 */}
-              <div className="mx-auto w-48 h-20 bg-gray-200 border-2 border-gray-400 rounded flex items-end">
+              <div 
+                className="mx-auto border-2 border-gray-400 rounded flex items-end"
+                style={{
+                  width: '192px',
+                  height: '80px',
+                  backgroundColor: '#e5e7eb'
+                }}
+              >
                 {/* 可変の内側バー */}
                 <div 
-                  className="w-full bg-green-500 rounded-b transition-all duration-100"
                   style={{ 
-                    height: `${Math.min(Math.max(volume, 0), 100)}%`
+                    width: '100%',
+                    height: `${Math.min(Math.max(volume, 0), 100)}%`,
+                    backgroundColor: '#10b981',
+                    borderRadius: '0 0 6px 6px',
+                    transition: 'height 0.1s ease'
                   }}
                 ></div>
               </div>
