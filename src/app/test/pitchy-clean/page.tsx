@@ -34,6 +34,11 @@ export default function PitchyCleanPage() {
   // 周波数安定検出用
   const frequencyStabilityRef = useRef<{freq: number, count: number}>({freq: 0, count: 0});
   const noSoundCounterRef = useRef<number>(0);
+  
+  // 周波数スムージング用
+  const frequencyHistoryRef = useRef<number[]>([]);
+  const stableFrequencyRef = useRef<number | null>(null);
+  const stabilityCounterRef = useRef<number>(0);
 
   // 音量検出＋周波数検出統合ループ
   const detectAudio = useCallback(() => {
@@ -91,17 +96,38 @@ export default function PitchyCleanPage() {
         if (clarity > 0.15 && freq > 80 && freq < 1200) {
           const roundedFreq = Math.round(freq * 10) / 10;
           
-          // 安定性チェック: 同じ周波数帯（±8Hz）が連続で検出された場合のみ表示
-          if (Math.abs(roundedFreq - frequencyStabilityRef.current.freq) <= 8) {
-            frequencyStabilityRef.current.count++;
-            if (frequencyStabilityRef.current.count >= 2) { // 2フレーム連続で十分
-              detectedFreq = roundedFreq;
-              detectedClarity = clarity;
+          // 周波数履歴に追加（最大10個まで保持）
+          frequencyHistoryRef.current.push(roundedFreq);
+          if (frequencyHistoryRef.current.length > 10) {
+            frequencyHistoryRef.current.shift();
+          }
+          
+          // 履歴が5個以上ある場合、中央値で安定化
+          if (frequencyHistoryRef.current.length >= 5) {
+            const sortedHistory = [...frequencyHistoryRef.current].sort((a, b) => a - b);
+            const medianFreq = sortedHistory[Math.floor(sortedHistory.length / 2)];
+            
+            // 現在の安定周波数と比較
+            if (stableFrequencyRef.current === null || Math.abs(medianFreq - stableFrequencyRef.current) <= 10) {
+              // 初回または安定範囲内の場合
+              if (stableFrequencyRef.current === null || Math.abs(medianFreq - stableFrequencyRef.current) <= 5) {
+                stabilityCounterRef.current++;
+                if (stabilityCounterRef.current >= 3) {
+                  stableFrequencyRef.current = medianFreq;
+                  detectedFreq = medianFreq;
+                  detectedClarity = clarity;
+                }
+              } else {
+                // 少し変化した場合、緊やかに更新
+                stableFrequencyRef.current = stableFrequencyRef.current * 0.7 + medianFreq * 0.3;
+                detectedFreq = Math.round(stableFrequencyRef.current * 10) / 10;
+                detectedClarity = clarity;
+              }
+            } else {
+              // 大きく変化した場合、リセット
+              stabilityCounterRef.current = 1;
+              stableFrequencyRef.current = medianFreq;
             }
-          } else {
-            // 新しい周波数帯
-            frequencyStabilityRef.current.freq = roundedFreq;
-            frequencyStabilityRef.current.count = 1;
           }
         }
         
@@ -113,6 +139,9 @@ export default function PitchyCleanPage() {
         // 15フレーム以上無音が続いた場合、周波数表示をクリア（少し長めに）
         if (noSoundCounterRef.current > 15) {
           frequencyStabilityRef.current = {freq: 0, count: 0};
+          frequencyHistoryRef.current = [];
+          stableFrequencyRef.current = null;
+          stabilityCounterRef.current = 0;
         }
       }
     } catch (error) {
@@ -244,6 +273,9 @@ export default function PitchyCleanPage() {
       previousVolumeRef.current = 0;
       frequencyStabilityRef.current = {freq: 0, count: 0};
       noSoundCounterRef.current = 0;
+      frequencyHistoryRef.current = [];
+      stableFrequencyRef.current = null;
+      stabilityCounterRef.current = 0;
       
       setIsRecording(false);
       setVolume(0);
