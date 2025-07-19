@@ -628,6 +628,24 @@ function MicTestPhase({
         )}
       </div>
 
+      {/* マイク不許可時のメッセージ */}
+      {microphoneState.permission === 'denied' && !microphoneState.isRecording && (
+        <div className="mb-6 p-6 bg-orange-50 rounded-2xl border border-orange-300 max-w-md mx-auto">
+          <h4 className="font-bold text-orange-800 mb-3">🎤 マイクの許可が必要です</h4>
+          <p className="text-orange-700 mb-4">
+            マイクを許可しないとトレーニングができません。<br/>
+            もう一度マイクの許可をお願いします。
+          </p>
+          <button
+            onClick={handleStartTest}
+            className="w-full px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors font-bold"
+          >
+            <Mic className="w-5 h-5 inline mr-2" />
+            マイクを許可する
+          </button>
+        </div>
+      )}
+
       {/* テスト完了・進行ボタン */}
       <div className="space-x-4">
         <button
@@ -640,7 +658,12 @@ function MicTestPhase({
         
         <button
           onClick={onNext}
-          className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg"
+          disabled={microphoneState.permission === 'denied' && !microphoneState.isRecording}
+          className={`px-8 py-3 rounded-xl transition-all duration-300 shadow-lg font-bold ${
+            microphoneState.permission === 'denied' && !microphoneState.isRecording
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105'
+          }`}
         >
           <CheckCircle className="w-5 h-5 inline mr-2" />
           トレーニング開始
