@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, MicOff, Play, RotateCcw, CheckCircle } from "lucide-react";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
@@ -224,7 +224,7 @@ function WelcomePhase({ onNext }: { onNext: () => void }) {
   );
 }
 
-// Phase 1: マイクテスト（完全実装）
+// Phase 1: マイクテスト（DOM直接操作対応）
 function MicTestPhase({ 
   onNext, 
   onBack, 
@@ -236,6 +236,52 @@ function MicTestPhase({
 }) {
   const { microphoneState, startRecording, stopRecording, resetError } = useMicrophoneManager();
   const [testCompleted, setTestCompleted] = useState(false);
+  
+  // DOM直接操作用のref
+  const volumeBarRef = useRef<HTMLDivElement>(null);
+  const volumeTextRef = useRef<HTMLDivElement>(null);
+  const volumeStatusRef = useRef<HTMLDivElement>(null);
+
+  // DOM直接更新関数（React state不使用）
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    if (volumeBarRef.current) {
+      const clampedVolume = Math.max(0, Math.min(100, volume));
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      
+      // 音量レベルに応じた色変更
+      if (volume > 30) {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-green-400 to-green-600';
+      } else if (volume > 10) {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-yellow-400 to-yellow-600';
+      } else {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-red-400 to-red-600';
+      }
+    }
+    
+    if (volumeTextRef.current) {
+      volumeTextRef.current.textContent = `${volume.toFixed(1)}%`;
+      volumeTextRef.current.className = `text-2xl font-bold ${
+        volume > 30 ? 'text-green-600' : 
+        volume > 10 ? 'text-yellow-600' : 
+        'text-red-600'
+      }`;
+    }
+    
+    if (volumeStatusRef.current) {
+      volumeStatusRef.current.textContent = 
+        volume > 30 ? '✅ 良好' : 
+        volume > 10 ? '⚠️ やや小さい' : 
+        '❌ 音声が小さすぎます';
+    }
+  }, []);
+
+  // 音量レベル監視（DOM直接更新）
+  useEffect(() => {
+    if (microphoneState.isRecording) {
+      const volumePercent = microphoneState.audioLevel * 100;
+      updateVolumeDisplay(volumePercent);
+    }
+  }, [microphoneState.audioLevel, microphoneState.isRecording, updateVolumeDisplay]);
 
   // マイクテスト開始
   const handleStartTest = useCallback(async () => {
@@ -294,33 +340,24 @@ function MicTestPhase({
         <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
           <h3 className="text-lg font-bold text-gray-800 mb-4">🔊 音量レベル</h3>
           
-          {/* 音量バー */}
+          {/* 音量バー（DOM直接操作） */}
           <div className="mb-4">
             <div className="bg-gray-200 rounded-full h-6 w-full overflow-hidden">
               <div 
-                className={`h-full transition-all duration-100 ease-out ${
-                  microphoneState.audioLevel > 0.3 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
-                  microphoneState.audioLevel > 0.1 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 
-                  'bg-gradient-to-r from-red-400 to-red-600'
-                }`}
-                style={{ width: `${Math.min(microphoneState.audioLevel * 100, 100)}%` }}
+                ref={volumeBarRef}
+                className="h-full transition-all duration-100 ease-out bg-gradient-to-r from-red-400 to-red-600"
+                style={{ width: '0%' }}
               />
             </div>
           </div>
           
-          {/* 音量パーセンテージ */}
+          {/* 音量パーセンテージ（DOM直接操作） */}
           <div className="text-center">
-            <div className={`text-2xl font-bold ${
-              microphoneState.audioLevel > 0.3 ? 'text-green-600' : 
-              microphoneState.audioLevel > 0.1 ? 'text-yellow-600' : 
-              'text-red-600'
-            }`}>
-              {(microphoneState.audioLevel * 100).toFixed(1)}%
+            <div ref={volumeTextRef} className="text-2xl font-bold text-red-600">
+              0.0%
             </div>
-            <div className="text-sm text-gray-500 mt-1">
-              {microphoneState.audioLevel > 0.3 ? '✅ 良好' : 
-               microphoneState.audioLevel > 0.1 ? '⚠️ やや小さい' : 
-               '❌ 音声が小さすぎます'}
+            <div ref={volumeStatusRef} className="text-sm text-gray-500 mt-1">
+              ❌ 音声が小さすぎます
             </div>
           </div>
 
