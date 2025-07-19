@@ -77,6 +77,7 @@ export default function AccuracyTestV2Page() {
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
+  const lastDetectionTimeRef = useRef<number>(0);
   
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
@@ -138,6 +139,9 @@ export default function AccuracyTestV2Page() {
       if (clarity > 0.7 && frequency > 80 && frequency < 2000) {
         const detectedFrequency = Math.round(frequency * 10) / 10;
         
+        // 有効な周波数検出時刻を記録
+        lastDetectionTimeRef.current = Date.now();
+        
         setFrequencyData({
           frequency: detectedFrequency,
           amplitude: Math.round(averageAmplitude),
@@ -160,15 +164,15 @@ export default function AccuracyTestV2Page() {
             userNote
           });
         }
-      } else {
-        // 無音時・不明瞭時は周波数表示をクリア
-        // 明瞭度0.5未満、音量15未満、または無効な周波数の場合
-        if (clarity < 0.5 || averageAmplitude < 15 || frequency <= 0) {
-          setFrequencyData(null);
-          // 相対音程分析もクリア（基音がある場合のみ）
-          if (currentBaseFrequency > 0) {
-            setRelativePitchData(null);
-          }
+      }
+      
+      // タイムアウトベースの周波数表示クリア（500ms無検出でクリア）
+      const now = Date.now();
+      if (lastDetectionTimeRef.current > 0 && (now - lastDetectionTimeRef.current) > 500) {
+        setFrequencyData(null);
+        // 相対音程分析もクリア（基音がある場合のみ）
+        if (currentBaseFrequency > 0) {
+          setRelativePitchData(null);
         }
       }
     } catch (error) {
