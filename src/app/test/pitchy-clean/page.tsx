@@ -9,6 +9,7 @@ export default function PitchyCleanPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState<number>(0);
+  const [debugInfo, setDebugInfo] = useState<{raw: number, calculated: number, normalized: number}>({raw: 0, calculated: 0, normalized: 0});
   
   // Audio processing refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -49,13 +50,20 @@ export default function PitchyCleanPage() {
     // プロトタイプ準拠：スケーリング（200倍・100倍）
     const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
     
-    // プロトタイプ準拠：音量正規化（30で割って100倍して0-100%に）
-    const volumePercent = Math.min(Math.max(calculatedVolume / 30 * 100, 0), 100);
+    // プロトタイプ準拠：音量正規化（25で割って100倍して0-100%に調整）
+    const volumePercent = Math.min(Math.max(calculatedVolume / 25 * 100, 0), 100);
     
-    // 音量スムージング（急激な変動を抑制）
-    const smoothingFactor = 0.3;
+    // 音量スムージング（リアルタイム性重視で軽減）
+    const smoothingFactor = 0.1; // 0.3 → 0.1
     const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
     previousVolumeRef.current = smoothedVolume;
+    
+    // デバッグ情報更新
+    setDebugInfo({
+      raw: Math.max(rms * 200, maxAmplitude * 100),
+      calculated: calculatedVolume,
+      normalized: volumePercent
+    });
     
     setVolume(smoothedVolume);
     
@@ -217,18 +225,47 @@ export default function PitchyCleanPage() {
               </div>
             </div>
             
-            {/* 音量バー */}
-            <div className="flex justify-center items-center space-x-4">
-              <span className="text-gray-600">音量:</span>
-              <div className="w-48 bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min(volume, 100)}%` }}
-                ></div>
+            {/* プロトタイプ準拠：音量バー（volume > 1の時のみ表示） */}
+            {volume > 1 ? (
+              <div className="flex justify-center items-center space-x-4">
+                <span className="text-gray-600">音量:</span>
+                <div className="w-48 bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(volume, 100)}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm text-gray-600 w-12">
+                  {Math.round(Math.min(volume, 100))}%
+                </span>
               </div>
-              <span className="text-sm text-gray-600 w-12">
-                {Math.round(Math.min(volume, 100))}%
-              </span>
+            ) : (
+              <div className="flex justify-center items-center space-x-4">
+                <span className="text-gray-600">音量:</span>
+                <div className="w-48 bg-gray-200 rounded-full h-3">
+                  <div className="bg-gray-300 h-3 rounded-full w-1"></div>
+                </div>
+                <span className="text-sm text-gray-500 w-12">待機中</span>
+              </div>
+            )}
+            
+            {/* デバッグ情報表示 */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-bold text-gray-700 mb-2">🔍 デバッグ情報</h4>
+              <div className="grid grid-cols-3 gap-4 text-xs text-gray-600">
+                <div>
+                  <span className="font-semibold">生音量:</span>
+                  <br />{debugInfo.raw.toFixed(1)}
+                </div>
+                <div>
+                  <span className="font-semibold">計算値:</span>
+                  <br />{debugInfo.calculated.toFixed(1)}
+                </div>
+                <div>
+                  <span className="font-semibold">正規化:</span>
+                  <br />{debugInfo.normalized.toFixed(1)}%
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -294,7 +331,7 @@ export default function PitchyCleanPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>音量スムージング：急激な変動抑制（係数0.3）</span>
+              <span>音量調整：正規化係数25、スムージング0.1、条件付き表示</span>
             </div>
           </div>
         </div>
