@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity, Volume2, BarChart3, Target } from 'lucide-react';
 import { frequencyToNote, isValidMusicalFrequency, TRAINING_BASE_TONES, calculateRelativeInterval, evaluateRelativePitchAccuracy, BaseTone, getNoteColor } from '../../../utils/noteUtils';
-import { useTonePlayer } from '../../../hooks/useTonePlayer';
+import { useSimpleTonePlayer } from '../../../hooks/useSimpleTonePlayer';
 
 /**
  * 精度テストページ
@@ -72,8 +72,8 @@ export default function AccuracyTestPage() {
     };
   } | null>(null);
   
-  // Tone.js プレイヤー
-  const { playerState, playTone, stopTone, initialize } = useTonePlayer();
+  // Simple Tone プレイヤー
+  const { playerState, playTone, stopTone, initialize } = useSimpleTonePlayer();
   
   // Audio processing refs
   const audioContextRef = useRef<AudioContext | null>(null);
