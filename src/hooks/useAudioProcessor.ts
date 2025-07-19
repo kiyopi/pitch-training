@@ -199,7 +199,7 @@ export const useAudioProcessor = (): AudioProcessorHook => {
       // 周波数領域データ取得（音量・スペクトラム用）
       analyser.getByteFrequencyData(frequencyData);
 
-      // Step 4統合: Pitch検出実行
+      // Step 4統合: Pitch検出実行（デバッグ版）
       if (pitchDetectionEnabled && pitchDetector.pitchState.isDetecting) {
         // フィルタリング済み音声があればそれを使用、なければ通常音声を使用
         const audioDataForPitch = (noiseFilteringEnabled && filteredTimedomainDataRef.current) 
@@ -212,7 +212,18 @@ export const useAudioProcessor = (): AudioProcessorHook => {
         }
         
         // Pitch検出実行
-        pitchDetector.detectPitch(audioDataForPitch);
+        const result = pitchDetector.detectPitch(audioDataForPitch);
+        if (result) {
+          console.log(`🎵 Pitch検出成功: ${result.note} (${result.pitch.toFixed(1)}Hz)`);
+        }
+      } else {
+        // デバッグ: 条件が満たされない理由をログ出力
+        if (!pitchDetectionEnabled) {
+          console.log('⚠️ pitchDetectionEnabled = false');
+        }
+        if (!pitchDetector.pitchState.isDetecting) {
+          console.log('⚠️ pitchState.isDetecting = false');
+        }
       }
 
       // 次のフレームをスケジュール
