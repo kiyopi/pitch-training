@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import { useNoiseFilter } from './useNoiseFilter';
+import { usePitchDetector } from './usePitchDetector';
 
 /**
  * AudioContext・音声処理基盤フック - Step 2
@@ -43,6 +44,10 @@ interface AudioProcessorHook {
   noiseFilter: ReturnType<typeof useNoiseFilter>;
   enableNoiseFiltering: (enabled: boolean) => void;
   getFilteredData: () => ProcessedAudioData;
+  // Step 4統合: Pitch検出機能
+  pitchDetector: ReturnType<typeof usePitchDetector>;
+  enablePitchDetection: (enabled: boolean) => void;
+  getPitchData: () => ReturnType<ReturnType<typeof usePitchDetector>['getPitchResult']>;
 }
 
 // AudioContext最適化設定
@@ -73,6 +78,10 @@ export const useAudioProcessor = (): AudioProcessorHook => {
   // Step 3統合: ノイズフィルタリング
   const noiseFilter = useNoiseFilter();
   const [noiseFilteringEnabled, setNoiseFilteringEnabled] = useState(false);
+
+  // Step 4統合: Pitch検出
+  const pitchDetector = usePitchDetector();
+  const [pitchDetectionEnabled, setPitchDetectionEnabled] = useState(false);
 
   // AudioContext・AnalyserNode・MediaStreamSourceのRef
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -190,12 +199,28 @@ export const useAudioProcessor = (): AudioProcessorHook => {
       // 周波数領域データ取得（音量・スペクトラム用）
       analyser.getByteFrequencyData(frequencyData);
 
+      // Step 4統合: Pitch検出実行
+      if (pitchDetectionEnabled && pitchDetector.pitchState.isDetecting) {
+        // フィルタリング済み音声があればそれを使用、なければ通常音声を使用
+        const audioDataForPitch = (noiseFilteringEnabled && filteredTimedomainDataRef.current) 
+          ? filteredTimedomainDataRef.current 
+          : timedomainData;
+        
+        // フィルタリング済み音声を更新
+        if (noiseFilteringEnabled && filteredAnalyserNodeRef.current && filteredTimedomainDataRef.current) {
+          filteredAnalyserNodeRef.current.getFloatTimeDomainData(filteredTimedomainDataRef.current);
+        }
+        
+        // Pitch検出実行
+        pitchDetector.detectPitch(audioDataForPitch);
+      }
+
       // 次のフレームをスケジュール
       animationFrameRef.current = requestAnimationFrame(processAudioData);
     } catch (error) {
       console.error('音声データ処理エラー:', error);
     }
-  }, []);
+  }, [pitchDetectionEnabled, pitchDetector, noiseFilteringEnabled]);
 
   /**
    * 音声処理開始
@@ -308,6 +333,12 @@ export const useAudioProcessor = (): AudioProcessorHook => {
       noiseFilter.resetFilters();
       filteredTimedomainDataRef.current = null;
       filteredFrequencyDataRef.current = null;
+
+      // Step 4統合: Pitch検出停止
+      if (pitchDetector.pitchState.isDetecting) {
+        console.log('🛑 Step 4: Pitch検出停止');
+        pitchDetector.stopDetection();
+      }
 
       // 状態リセット
       setProcessorState(prev => ({
@@ -438,6 +469,28 @@ export const useAudioProcessor = (): AudioProcessorHook => {
     };
   }, [getProcessedData]);
 
+  /**
+   * Pitch検出有効/無効切り替え
+   */
+  const enablePitchDetection = useCallback((enabled: boolean) => {
+    setPitchDetectionEnabled(enabled);
+    
+    if (enabled && !pitchDetector.pitchState.isDetecting) {
+      pitchDetector.startDetection();
+    } else if (!enabled && pitchDetector.pitchState.isDetecting) {
+      pitchDetector.stopDetection();
+    }
+    
+    console.log(`🎵 Pitch検出${enabled ? '有効' : '無効'}化`);
+  }, [pitchDetector]);
+
+  /**
+   * Pitch検出データ取得
+   */
+  const getPitchData = useCallback(() => {
+    return pitchDetector.getPitchResult();
+  }, [pitchDetector]);
+
   return {
     processorState,
     startProcessing,
@@ -448,5 +501,9 @@ export const useAudioProcessor = (): AudioProcessorHook => {
     noiseFilter,
     enableNoiseFiltering,
     getFilteredData,
+    // Step 4統合: Pitch検出機能
+    pitchDetector,
+    enablePitchDetection,
+    getPitchData,
   };
 };
