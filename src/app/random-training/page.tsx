@@ -432,6 +432,7 @@ function MicTestPhase({
               <span className="font-bold text-green-600">30%以上</span>になるよう調整してください
             </p>
           </div>
+          </div>
         </div>
       )}
 
