@@ -456,7 +456,7 @@ export default function AccuracyTestV2Page() {
               <div>✅ Tone.js + Salamander Piano（ピアノ音源）</div>
               <div>✅ Web Audio API（マイクロフォン処理）</div>
               <div>✅ リアルタイム周波数解析（FFT 2048）</div>
-              <div>✅ ノイズフィルタリング（振幅閾値 > 10）</div>
+              <div>✅ ノイズフィルタリング（振幅閾値 &gt; 10）</div>
               <div>✅ iPhone Safari対応（44.1kHz, モノラル）</div>
             </div>
           </div>
