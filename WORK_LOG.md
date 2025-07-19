@@ -46,40 +46,28 @@
 
 ## 🔄 現在作業中
 
-### iPhone確認フロー策定
-- **GitHub Pages確認**: ✅ 完了 https://kiyopi.github.io/pitch-training/test/pitch-detector/
-- **ローカル確認準備**: QRコード生成フロー策定中
+### 精度テストページ v2 実装（2025-07-19 継続セッション）
+- **作業開始**: 13:00頃
+- **対象ブランチ**: `pitch-training-nextjs-v2-impl-001`
+- **実装方針**: training/randomをベースとした段階的実装
+- **Step 1**: ✅ **完了** - `/src/app/test/accuracy-test-v2/page.tsx` 作成完了
+- **確認済み**: Tone.js + Salamander Piano実装を完全移植
 
 ---
 
 ## ⏳ 次回タスク
 
-### 1. **VSCode復旧作業**
-```bash
-# VSCode軽量設定で再起動
-code . --disable-extensions
-# TypeScript設定最適化
-# メモリ監視体制構築
-```
+### 精度テストページ v2 残り作業
+1. **Step 1動作確認**: ローカル環境でピアノ音再生確認
+2. **Step 2実装**: マイクロフォン機能移植（test/simple-frequencyから完全移植）
+3. **Step 3実装**: 相対音程計算・表示機能追加
+4. **Step 4実装**: 5回テストセッション・統計分析機能
+5. **iPhone Safari確認**: 全機能動作確認
 
-### 2. **iPhone実機確認**
-```bash
-# ローカルサーバー起動
-npm run dev
-# QRコード生成
-qrcode-terminal "http://172.16.81.52:3000"
-# iPhone Safari確認
-```
-
-### 3. **Step 4完成度確認**
-- **仕様書との照合**: STEP4_PITCHY_INTEGRATION_SPECIFICATION.md
-- **実装チェックリスト**: 全項目完了確認
-- **テスト実行**: iPhone Safari動作確認
-
-### 4. **次期バージョン準備**
-- **バージョン**: v2.0.0-simple-clean 準備
-- **ブランチ**: simple-pitch-impl-001 → final ブランチ
-- **プルリクエスト**: メインブランチマージ準備
+### VSCode クラッシュ対策継続
+- **軽量モード**: 必要最小限の拡張機能のみ
+- **メモリ監視**: Activity Monitor確認
+- **段階的実装**: 小さな変更→動作確認のサイクル
 
 ---
 
