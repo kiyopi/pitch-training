@@ -58,23 +58,44 @@ export const useMicrophoneManager = (): MicrophoneManager => {
   });
 
   /**
-   * 音声レベル監視機能
-   * リアルタイムで音声レベルを更新
+   * 音声レベル監視機能（プロトタイプ準拠の高精度計算）
+   * テストページの実装知見を適用
    */
   const startAudioLevelMonitoring = useCallback(() => {
     if (!analyserRef.current) return;
     
     const analyser = analyserRef.current;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const previousVolumeRef = { current: 0 }; // 音量スムージング用
     
     const updateAudioLevel = () => {
       if (!analyser || isStoppingRef.current) return;
       
-      analyser.getByteFrequencyData(dataArray);
+      // 🔊 音量検出用：8bit配列取得（プロトタイプ準拠）
+      const byteTimeDomainData = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(byteTimeDomainData);
       
-      // 音声レベルの平均値を計算
-      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-      const normalizedLevel = average / 255; // 0-1の範囲に正規化
+      // 🔊 音量計算（プロトタイプ準拠）
+      let sum = 0;
+      let maxAmplitude = 0;
+      
+      for (let i = 0; i < byteTimeDomainData.length; i++) {
+        const sample = (byteTimeDomainData[i] - 128) / 128;
+        sum += sample * sample;
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
+      }
+      
+      const rms = Math.sqrt(sum / byteTimeDomainData.length);
+      const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
+      // 音量スケーリング調整: より高い値まで表示するため除数を調整
+      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      
+      // 音量スムージング（より反応を良く）
+      const smoothingFactor = 0.2;
+      const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
+      previousVolumeRef.current = smoothedVolume;
+      
+      // 0-1の範囲に正規化してstate更新
+      const normalizedLevel = Math.min(smoothedVolume / 100, 1.0);
       
       setMicrophoneState(prev => ({
         ...prev,
