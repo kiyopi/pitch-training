@@ -141,7 +141,6 @@ export default function AccuracyTestV2Page() {
         
         // 有効な周波数検出時刻を記録
         lastDetectionTimeRef.current = Date.now();
-        addLog(`🎵 周波数検出: ${detectedFrequency}Hz (明瞭度: ${clarity.toFixed(2)})`);
         
         setFrequencyData({
           frequency: detectedFrequency,
@@ -170,7 +169,6 @@ export default function AccuracyTestV2Page() {
       // タイムアウトベースの周波数表示クリア（500ms無検出でクリア）
       const now = Date.now();
       if (lastDetectionTimeRef.current > 0 && (now - lastDetectionTimeRef.current) > 500) {
-        addLog(`🔇 タイムアウト検出: ${now - lastDetectionTimeRef.current}ms経過で表示クリア`);
         setFrequencyData(null);
         lastDetectionTimeRef.current = 0; // リセット
         // 相対音程分析もクリア（基音がある場合のみ）
