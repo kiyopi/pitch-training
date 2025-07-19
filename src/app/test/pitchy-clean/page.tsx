@@ -15,6 +15,15 @@ export default function PitchyCleanPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  // ノイズリダクションフィルター refs
+  const highPassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const lowPassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const notchFilterRef = useRef<BiquadFilterNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  
+  // 音量スムージング用
+  const previousVolumeRef = useRef<number>(0);
 
   // 音量検出ループ（プロトタイプ準拠）
   const detectVolume = useCallback(() => {
@@ -43,7 +52,12 @@ export default function PitchyCleanPage() {
     // プロトタイプ準拠：音量正規化（30で割って100倍して0-100%に）
     const volumePercent = Math.min(Math.max(calculatedVolume / 30 * 100, 0), 100);
     
-    setVolume(volumePercent);
+    // 音量スムージング（急激な変動を抑制）
+    const smoothingFactor = 0.3;
+    const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
+    previousVolumeRef.current = smoothedVolume;
+    
+    setVolume(smoothedVolume);
     
     // 次のフレーム
     animationFrameRef.current = requestAnimationFrame(detectVolume);
@@ -74,13 +88,47 @@ export default function PitchyCleanPage() {
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.8;
       
-      // MediaStreamSource作成・接続
+      // プロトタイプ準拠：ノイズリダクションフィルター作成
+      // ハイパスフィルター: 40Hz以下の低周波ノイズカット
+      const highPassFilter = audioContext.createBiquadFilter();
+      highPassFilter.type = 'highpass';
+      highPassFilter.frequency.setValueAtTime(40, audioContext.currentTime);
+      highPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      // ローパスフィルター: 4kHz以上の高周波ノイズカット
+      const lowPassFilter = audioContext.createBiquadFilter();
+      lowPassFilter.type = 'lowpass';
+      lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
+      lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      // ノッチフィルター: 60Hz電源ノイズカット
+      const notchFilter = audioContext.createBiquadFilter();
+      notchFilter.type = 'notch';
+      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+      notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
+      
+      // ゲインノード: 音量調整（1.2倍）
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(1.2, audioContext.currentTime);
+      
+      // MediaStreamSource作成
       const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
+      
+      // プロトタイプ準拠：ノイズリダクションチェーン接続
+      // マイク → ハイパス → ローパス → ノッチ → ゲイン → アナライザー
+      source.connect(highPassFilter);
+      highPassFilter.connect(lowPassFilter);
+      lowPassFilter.connect(notchFilter);
+      notchFilter.connect(gainNode);
+      gainNode.connect(analyser);
       
       // Refs保存
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
+      highPassFilterRef.current = highPassFilter;
+      lowPassFilterRef.current = lowPassFilter;
+      notchFilterRef.current = notchFilter;
+      gainNodeRef.current = gainNode;
       
       setIsRecording(true);
       
@@ -115,6 +163,11 @@ export default function PitchyCleanPage() {
       
       // Refs初期化
       analyserRef.current = null;
+      highPassFilterRef.current = null;
+      lowPassFilterRef.current = null;
+      notchFilterRef.current = null;
+      gainNodeRef.current = null;
+      previousVolumeRef.current = 0;
       
       setIsRecording(false);
       setVolume(0);
@@ -145,7 +198,7 @@ export default function PitchyCleanPage() {
             クリーン実装テスト：基本マイク + 音量表示
           </p>
           <div className="inline-block bg-gradient-to-r from-blue-100 to-green-100 text-blue-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 1: 基本マイク + プロトタイプ準拠音量計算
+            Step 1: マイク + ノイズリダクション + 音量安定化
           </div>
         </div>
 
@@ -225,7 +278,7 @@ export default function PitchyCleanPage() {
 
         {/* 説明 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 1: 基本マイク + 音量表示</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 1: マイク + ノイズリダクション + 音量安定化</h3>
           <div className="text-left space-y-3 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
@@ -233,15 +286,15 @@ export default function PitchyCleanPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>プロトタイプ準拠：FFTサイズ2048、スムージング0.8</span>
+              <span>ノイズリダクション：ハイパス(40Hz) → ローパス(4kHz) → ノッチ(60Hz)</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>プロトタイプ準拠：8bit時間域データ、128中心正規化</span>
+              <span>音量計算：8bit時間域データ + 128中心正規化 + RMS×200スケーリング</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>プロトタイプ準拠：RMS×200、maxAmplitude×100スケーリング</span>
+              <span>音量スムージング：急激な変動抑制（係数0.3）</span>
             </div>
           </div>
         </div>
