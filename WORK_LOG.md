@@ -46,28 +46,58 @@
 
 ## 🔄 現在作業中
 
-### 精度テストページ v2 実装（2025-07-19 継続セッション）
+### 精度テストページ v2 自動化フロー完成（2025-07-19 継続セッション）
 - **作業開始**: 13:00頃
+- **現在時刻**: 14:30頃
 - **対象ブランチ**: `pitch-training-nextjs-v2-impl-001`
 - **実装方針**: training/randomをベースとした段階的実装
-- **Step 1**: ✅ **完了** - `/src/app/test/accuracy-test-v2/page.tsx` 作成完了
-- **確認済み**: Tone.js + Salamander Piano実装を完全移植
+
+#### **完了済みステップ:**
+- **Step 1**: ✅ **完了** - `/src/app/test/accuracy-test-v2/page.tsx` 作成、ピアノ音再生確認
+- **Step 2**: ✅ **完了** - マイクロフォン機能移植、GitHub Pages動作確認
+- **自動化フロー**: ✅ **完了** - 基音再生時マイク自動開始、ワンクリック操作実現
+
+#### **最新コミット:**
+- **ハッシュ**: `30e6051`
+- **内容**: 自動化フロー完成: 基音再生時マイク自動開始
+- **デプロイ**: GitHub Actions実行中
+- **URL**: https://kiyopi.github.io/pitch-training/test/accuracy-test-v2/
+
+#### **実装済み機能:**
+- ✅ Tone.js + Salamander Piano音源（確実動作）
+- ✅ Web Audio API マイクロフォン検出
+- ✅ リアルタイム周波数表示（Hz・音量）
+- ✅ 基音再生→マイク自動開始→音程検出の完全自動化
+- ✅ iPhone Safari 完全対応
 
 ---
 
-## ⏳ 次回タスク
+## ⏳ 次回タスク（VSCode再起動後の継続作業）
 
-### 精度テストページ v2 残り作業
-1. **Step 1動作確認**: ローカル環境でピアノ音再生確認
-2. **Step 2実装**: マイクロフォン機能移植（test/simple-frequencyから完全移植）
-3. **Step 3実装**: 相対音程計算・表示機能追加
-4. **Step 4実装**: 5回テストセッション・統計分析機能
-5. **iPhone Safari確認**: 全機能動作確認
+### 🚨 **即座確認事項（VSCode再起動後）**
+1. **GitHub Actions確認**: https://github.com/kiyopi/pitch-training/actions
+2. **デプロイ確認**: https://kiyopi.github.io/pitch-training/test/accuracy-test-v2/
+3. **自動化フロー確認**: 基音再生→マイク自動開始が動作するか
+4. **現在ブランチ確認**: `git branch --show-current` が `pitch-training-nextjs-v2-impl-001` か
 
-### VSCode クラッシュ対策継続
+### 📋 **精度テストページ v2 残り作業**
+#### **次の実装優先順位:**
+1. **Step 3実装**: 相対音程計算・表示機能追加
+   - noteUtils.tsから `calculateRelativeInterval()`, `evaluateRelativePitchAccuracy()` 移植
+   - 音名表示（C4, D4等）追加
+   - セント偏差・精度評価表示
+   
+2. **Step 4実装**: 5回テストセッション・統計分析機能
+   - テストセッション管理state追加
+   - 結果記録・統計計算機能
+   - 平均スコア・精度分布表示
+
+3. **最終確認**: iPhone Safari 全機能動作確認
+
+### 🔧 **VSCode クラッシュ対策継続**
 - **軽量モード**: 必要最小限の拡張機能のみ
 - **メモリ監視**: Activity Monitor確認
-- **段階的実装**: 小さな変更→動作確認のサイクル
+- **段階的実装**: 小さな変更→GitHub Pagesデプロイ→確認のサイクル
 
 ---
 
@@ -80,9 +110,11 @@
 4. **代替開発**: Web Audio API動作時はVSCode分離
 
 ### **実装状況**
-- **Step 4**: ✅ **実装完了** (test/pitch-detector/page.tsx)
-- **GitHub Pages**: ✅ **デプロイ完了**
-- **次期作業**: iPhone確認 → バージョンアップ → プルリクエスト
+- **Step 1**: ✅ **完了** - ピアノ音再生ベース確立
+- **Step 2**: ✅ **完了** - マイクロフォン機能移植
+- **自動化フロー**: ✅ **完了** - ワンクリック基音再生→マイク自動開始
+- **GitHub Pages**: ✅ **デプロイ中** - https://kiyopi.github.io/pitch-training/test/accuracy-test-v2/
+- **次期作業**: Step 3（相対音程計算）→ Step 4（テストセッション）→ 最終確認
 
 ### **リスク管理**
 - **使い捨てブランチ**: `pitch-training-nextjs-v2-impl-001` 失敗時削除対応
