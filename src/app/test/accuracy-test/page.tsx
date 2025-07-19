@@ -73,7 +73,7 @@ export default function AccuracyTestPage() {
   } | null>(null);
   
   // Tone.js プレイヤー
-  const { playerState, playTone, stopTone } = useTonePlayer();
+  const { playerState, playTone, stopTone, initialize } = useTonePlayer();
   
   // Audio processing refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -387,6 +387,70 @@ export default function AccuracyTestPage() {
           </div>
         </div>
 
+        {/* システム状態表示 */}
+        <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-6">🔧 システム状態</h3>
+          
+          <div className="flex items-center justify-center space-x-6 mb-4">
+            {/* プレイヤー状態 */}
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${
+                playerState.isLoaded ? 'text-green-600' : 
+                playerState.error ? 'text-red-600' : 'text-yellow-600'
+              }`}>
+                {playerState.isLoaded ? '✅' : playerState.error ? '❌' : '⏳'}
+              </div>
+              <div className="text-sm text-gray-600">プレイヤー</div>
+              <div className="text-xs text-gray-500">
+                {playerState.error ? 'エラー' :
+                 playerState.isLoaded ? '準備完了' : '初期化中...'}
+              </div>
+            </div>
+            
+            {/* マイク状態 */}
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${
+                isRecording ? 'text-green-600' : 
+                error ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {isRecording ? '🎤' : error ? '❌' : '⭕'}
+              </div>
+              <div className="text-sm text-gray-600">マイク</div>
+              <div className="text-xs text-gray-500">
+                {error ? 'エラー' : isRecording ? '録音中' : '待機中'}
+              </div>
+            </div>
+            
+            {/* テスト状態 */}
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${
+                isTestActive ? 'text-blue-600' : 'text-gray-600'
+              }`}>
+                {isTestActive ? '🎯' : '⏹️'}
+              </div>
+              <div className="text-sm text-gray-600">テスト</div>
+              <div className="text-xs text-gray-500">
+                {isTestActive ? '実行中' : '停止中'}
+              </div>
+            </div>
+          </div>
+          
+          {/* プレイヤーエラー詳細・再初期化ボタン */}
+          {(playerState.error || !playerState.isLoaded) && (
+            <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="text-yellow-700 text-sm mb-3">
+                {playerState.error ? `プレイヤーエラー: ${playerState.error}` : 'プレイヤー初期化中...'}
+              </div>
+              <button
+                onClick={() => initialize()}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+              >
+                🔄 プレイヤー再初期化
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* テスト進行状況 */}
         <div className="mb-12 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-6">📊 テスト進行状況</h3>
@@ -584,10 +648,16 @@ export default function AccuracyTestPage() {
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 hover:scale-105 hover:shadow-2xl'
                 }`}
+                title={!playerState.isLoaded ? 'プレイヤーの初期化をお待ちください' : ''}
               >
                 <div className="flex items-center space-x-3">
                   <Target className="w-6 h-6" />
-                  <span>🎯 精度テスト開始</span>
+                  <span>
+                    {!playerState.isLoaded 
+                      ? '⏳ プレイヤー初期化中...' 
+                      : '🎯 精度テスト開始'
+                    }
+                  </span>
                 </div>
               </button>
             ) : (
