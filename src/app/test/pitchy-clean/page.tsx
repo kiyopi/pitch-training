@@ -3,8 +3,14 @@
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, MicOff } from "lucide-react";
-import { LiveAudioVisualizer } from "react-audio-visualize";
 import { PitchDetector } from "pitchy";
+import dynamic from "next/dynamic";
+
+// react-audio-visualizeを動的インポート（SSR無効化）
+const LiveAudioVisualizer = dynamic(
+  () => import("react-audio-visualize").then((mod) => ({ default: mod.LiveAudioVisualizer })),
+  { ssr: false }
+);
 
 export default function PitchyCleanPage() {
   // 基本状態
