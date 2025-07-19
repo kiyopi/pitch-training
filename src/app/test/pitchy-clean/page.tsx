@@ -1,16 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, MicOff } from "lucide-react";
 import { PitchDetector } from "pitchy";
-import dynamic from "next/dynamic";
-
-// react-audio-visualizeを動的インポート（SSR無効化）
-const LiveAudioVisualizer = dynamic(
-  () => import("react-audio-visualize").then((mod) => ({ default: mod.LiveAudioVisualizer })),
-  { ssr: false }
-);
 
 export default function PitchyCleanPage() {
   // 基本状態
@@ -250,10 +243,10 @@ export default function PitchyCleanPage() {
             音量＋周波数検出テスト
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            react-audio-visualize + Pitchy統合実装
+            カスタム音量バー + Pitchy統合実装
           </p>
           <div className="inline-block bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 2: ライブラリベース音量表示 + 高精度周波数検出
+            Step 2: カスタム音量表示 + 高精度周波数検出
           </div>
         </div>
 
@@ -262,19 +255,23 @@ export default function PitchyCleanPage() {
           <h3 className="text-xl font-bold text-gray-800 mb-6">🎵 音量＋周波数検出</h3>
           
           <div className="space-y-8">
-            {/* ライブ音量表示（react-audio-visualize） */}
-            {isRecording && mediaRecorderRef.current && (
+            {/* カスタム音量バー可視化 */}
+            {isRecording && (
               <div className="text-center">
                 <h4 className="text-lg font-semibold text-gray-700 mb-3">📊 ライブ音量可視化</h4>
                 <div className="flex justify-center">
-                  <LiveAudioVisualizer
-                    mediaRecorder={mediaRecorderRef.current}
-                    width={300}
-                    height={100}
-                    barWidth={2}
-                    gap={1}
-                    barColor="#10b981"
-                  />
+                  <div className="bg-gray-200 rounded-full h-6 w-80 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100 ease-out"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, volume))}%`,
+                        backgroundColor: volume > 80 ? '#ef4444' : volume > 60 ? '#f59e0b' : '#10b981'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 text-sm text-gray-500">
+                  音量: {volume.toFixed(1)}%
                 </div>
               </div>
             )}
@@ -379,7 +376,7 @@ export default function PitchyCleanPage() {
 
         {/* 説明 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 2: ライブラリベース音量表示 + 高精度周波数検出</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Step 2: カスタム音量表示 + 高精度周波数検出</h3>
           <div className="text-left space-y-3 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
@@ -387,7 +384,7 @@ export default function PitchyCleanPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>react-audio-visualize: プロ品質のライブ音量可視化</span>
+              <span>カスタム音量バー: リアルタイム音量レベル可視化</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
@@ -403,7 +400,7 @@ export default function PitchyCleanPage() {
           <div className="mt-6 p-4 bg-gray-50 rounded-xl">
             <h4 className="font-bold text-gray-700 mb-3">🔧 使用ライブラリ</h4>
             <div className="grid grid-cols-1 gap-2 text-sm text-gray-600">
-              <div>✅ react-audio-visualize: ライブ音量可視化（2,700+プロジェクト使用）</div>
+              <div>✅ カスタム音量バー: レスポンシブ音量レベル表示</div>
               <div>✅ Pitchy: McLeod Pitch Method（最高精度周波数検出）</div>
               <div>✅ Web Audio API: ノイズリダクション＋リアルタイム処理</div>
               <div>✅ TypeScript: 型安全な実装</div>
