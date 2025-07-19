@@ -518,9 +518,10 @@ function MicTestPhase({
     setTestCompleted(true);
   }, [stopRecording]);
 
-  // テスト完了判定（音量30%以上）
+  // テスト完了判定
   const isVolumeGood = microphoneState.audioLevel > 0.3;
-  const canComplete = microphoneState.isRecording && isVolumeGood && testCompleted;
+  const canProceedWithGoodVolume = microphoneState.isRecording && isVolumeGood; // 録音中で音量良好
+  const canProceedAfterTest = testCompleted && !microphoneState.isRecording; // テスト停止済み
 
   return (
     <>
@@ -551,7 +552,7 @@ function MicTestPhase({
           </div>
           <div className="flex items-center space-x-3">
             <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-            <span>音量が30%以上になることを確認</span>
+            <span>音量が30%以上になるか、テスト停止後に次へ進む</span>
           </div>
         </div>
       </div>
@@ -640,13 +641,13 @@ function MicTestPhase({
           戻る
         </button>
         
-        {canComplete && (
+        {(canProceedWithGoodVolume || canProceedAfterTest) && (
           <button
             onClick={onNext}
             className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg"
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
-            テスト完了 - トレーニング開始
+            {canProceedWithGoodVolume ? 'テスト完了 - トレーニング開始' : 'トレーニングへ進む'}
           </button>
         )}
       </div>
