@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, MicOff, RotateCcw, CheckCircle, Volume2 } from "lucide-react";
+import { ArrowLeft, Mic, RotateCcw, CheckCircle, Volume2 } from "lucide-react";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
 import { PitchDetector } from "pitchy";
 import * as Tone from 'tone';
@@ -410,7 +410,7 @@ function MicTestPhase({
   onError: (error: string) => void; 
 }) {
   const { microphoneState, startRecording, stopRecording, resetError } = useMicrophoneManager();
-  const [testCompleted, setTestCompleted] = useState(false);
+  // const [testCompleted, setTestCompleted] = useState(false); // テスト停止ボタン削除に伴い不要
   
   // DOM直接操作用のref
   const volumeBarRef = useRef<HTMLDivElement>(null);
@@ -512,11 +512,11 @@ function MicTestPhase({
     }
   }, [startRecording, microphoneState.error, onError]);
 
-  // マイクテスト停止
-  const handleStopTest = useCallback(() => {
-    stopRecording();
-    setTestCompleted(true);
-  }, [stopRecording]);
+  // マイクテスト停止（将来の機能用）
+  // const handleStopTest = useCallback(() => {
+  //   stopRecording();
+  //   setTestCompleted(true);
+  // }, [stopRecording]);
 
   // 音量状態判定
   const isVolumeGood = microphoneState.audioLevel > 0.3;
@@ -617,15 +617,14 @@ function MicTestPhase({
             </div>
           </button>
         ) : (
-          <button
-            onClick={handleStopTest}
-            className="group relative overflow-hidden px-10 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 hover:scale-105 hover:shadow-2xl"
-          >
-            <div className="flex items-center space-x-3">
-              <MicOff className="w-6 h-6" />
-              <span>🛑 テスト停止</span>
+          <div className="px-10 py-4 text-xl text-gray-600">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="animate-pulse">
+                <Mic className="w-6 h-6 text-green-600" />
+              </div>
+              <span>🎤 マイクテスト中...</span>
             </div>
-          </button>
+          </div>
         )}
       </div>
 
