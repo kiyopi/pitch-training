@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity } from 'lucide-react';
+import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity, Music } from 'lucide-react';
+import { frequencyToNote, isValidMusicalFrequency, evaluatePitchAccuracy, getNoteColor } from '../../../utils/noteUtils';
 
 /**
  * シンプル周波数表示テストページ
@@ -15,6 +16,12 @@ interface FrequencyData {
   frequency: number;
   amplitude: number;
   timestamp: number;
+  note?: {
+    note: string;
+    octave: number;
+    fullNote: string;
+    cents: number;
+  };
 }
 
 export default function SimpleFrequencyTestPage() {
@@ -76,10 +83,19 @@ export default function SimpleFrequencyTestPage() {
     
     // 振幅が十分な場合のみ更新（ノイズフィルタリング）
     if (maxAmplitude > 10) {
+      const detectedFrequency = Math.round(frequency * 10) / 10;
+      
+      // 音名変換（音楽的に有効な周波数の場合のみ）
+      let noteInfo = undefined;
+      if (isValidMusicalFrequency(detectedFrequency)) {
+        noteInfo = frequencyToNote(detectedFrequency);
+      }
+      
       setFrequencyData({
-        frequency: Math.round(frequency * 10) / 10, // 小数点1桁まで
+        frequency: detectedFrequency,
         amplitude: maxAmplitude,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        note: noteInfo
       });
     }
     
@@ -202,13 +218,13 @@ export default function SimpleFrequencyTestPage() {
             <span className="text-8xl">🎤</span>
           </div>
           <h1 className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            シンプル周波数表示
+            周波数・音名表示
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            マイクロフォン音声の周波数をリアルタイム表示
+            マイクロフォン音声の周波数と音名をリアルタイム表示
           </p>
           <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-lg font-bold">
-            最小機能版
+            音名変換機能付き
           </div>
         </div>
 
@@ -235,32 +251,60 @@ export default function SimpleFrequencyTestPage() {
           </div>
         </div>
 
-        {/* 周波数表示 */}
+        {/* 周波数・音名表示 */}
         {isRecording && (
           <div className="mb-12 p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100">
             <h3 className="text-xl font-bold text-gray-800 mb-8 flex items-center justify-center space-x-2">
               <Activity className="w-6 h-6" />
-              <span>リアルタイム周波数</span>
+              <span>リアルタイム検出</span>
             </h3>
             
             {frequencyData ? (
-              <div className="space-y-6">
-                {/* 主要周波数表示 */}
+              <div className="space-y-8">
+                {/* 音名表示（音楽的周波数の場合） */}
+                {frequencyData.note && (
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <div 
+                        className="text-8xl font-bold mb-2 inline-block px-6 py-4 rounded-2xl text-white shadow-lg"
+                        style={{ backgroundColor: getNoteColor(frequencyData.note.note) }}
+                      >
+                        {frequencyData.note.fullNote}
+                      </div>
+                    </div>
+                    
+                    {/* セント偏差表示 */}
+                    <div className="flex justify-center items-center space-x-4 mb-6">
+                      <Music className="w-5 h-5 text-gray-600" />
+                      <span className="text-gray-600">音程精度:</span>
+                      <span 
+                        className={`text-lg font-bold text-${evaluatePitchAccuracy(frequencyData.note.cents).color}-600`}
+                      >
+                        {frequencyData.note.cents >= 0 ? '+' : ''}{frequencyData.note.cents}¢
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold text-white bg-${evaluatePitchAccuracy(frequencyData.note.cents).color}-500`}>
+                        {evaluatePitchAccuracy(frequencyData.note.cents).accuracy}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 周波数表示 */}
                 <div className="text-center">
-                  <div className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
                     {frequencyData.frequency.toFixed(1)}
                   </div>
-                  <div className="text-2xl text-gray-600 font-semibold">
+                  <div className="text-xl text-gray-600 font-semibold">
                     Hz
                   </div>
                 </div>
                 
                 {/* 振幅表示 */}
                 <div className="flex justify-center items-center space-x-4">
-                  <span className="text-gray-600">振幅:</span>
+                  <span className="text-gray-600">音量:</span>
                   <div className="w-48 bg-gray-200 rounded-full h-3">
                     <div 
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-300"
                       style={{ width: `${(frequencyData.amplitude / 255) * 100}%` }}
                     ></div>
                   </div>
@@ -268,6 +312,15 @@ export default function SimpleFrequencyTestPage() {
                     {Math.round((frequencyData.amplitude / 255) * 100)}%
                   </span>
                 </div>
+                
+                {/* 無効な音楽周波数の場合 */}
+                {!frequencyData.note && (
+                  <div className="text-center">
+                    <div className="text-gray-500 bg-gray-100 px-4 py-2 rounded-lg inline-block">
+                      音楽的範囲外の周波数
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center text-gray-500">
@@ -347,18 +400,22 @@ export default function SimpleFrequencyTestPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>リアルタイムで周波数が表示される</span>
+              <span>周波数・音名・音程精度がリアルタイム表示</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🎵</span>
+              <span>音楽的な周波数（80-4000Hz）で音名とセント偏差を表示</span>
             </div>
           </div>
         </div>
 
         {/* 戻るボタン */}
         <Link 
-          href="/test/audio-processor"
+          href="/test/microphone"
           className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>AudioProcessor テストに戻る</span>
+          <span>マイクテストに戻る</span>
         </Link>
       </div>
     </div>
