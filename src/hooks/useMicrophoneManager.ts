@@ -86,8 +86,13 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       
       const rms = Math.sqrt(sum / byteTimeDomainData.length);
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // 音量スケーリング調整: より高い値まで表示するため除数を調整
-      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      
+      // 音量スケーリング調整: /12 → /8 でより高い値に調整
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / 8 * 100, 0), 100);
+      
+      // ノイズフロア除去: 5%以下はノイズとして0%表示
+      const noiseThreshold = 5;
+      const volumePercent = rawVolumePercent > noiseThreshold ? rawVolumePercent : 0;
       
       // 音量スムージング（より反応を良く）
       const smoothingFactor = 0.2;
