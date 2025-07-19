@@ -2,17 +2,190 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, MicOff, Play, RotateCcw, CheckCircle } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, RotateCcw, CheckCircle, Volume2 } from "lucide-react";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
 import { PitchDetector } from "pitchy";
+import * as Tone from 'tone';
 
 // Phase管理システム
 type TrainingPhase = 'welcome' | 'micTest' | 'training' | 'evaluation' | 'results';
+
+// 基音データベース（実装計画書仕様準拠）
+interface BaseTone {
+  name: string;
+  note: string;
+  frequency: number;
+  tonejs: string;
+}
+
+const BASE_TONES: BaseTone[] = [
+  { name: 'Bb3', note: 'シ♭3', frequency: 233.08, tonejs: 'Bb3' },
+  { name: 'C4',  note: 'ド4',   frequency: 261.63, tonejs: 'C4' },
+  { name: 'Db4', note: 'レ♭4', frequency: 277.18, tonejs: 'Db4' },
+  { name: 'D4',  note: 'レ4',   frequency: 293.66, tonejs: 'D4' },
+  { name: 'Eb4', note: 'ミ♭4', frequency: 311.13, tonejs: 'Eb4' },
+  { name: 'E4',  note: 'ミ4',   frequency: 329.63, tonejs: 'E4' },
+  { name: 'F4',  note: 'ファ4', frequency: 349.23, tonejs: 'F4' },
+  { name: 'Gb4', note: 'ソ♭4', frequency: 369.99, tonejs: 'Gb4' },
+  { name: 'G4',  note: 'ソ4',   frequency: 392.00, tonejs: 'G4' },
+  { name: 'Ab4', note: 'ラ♭4', frequency: 415.30, tonejs: 'Ab4' }
+];
+
+// 基音管理フック
+const useBaseFrequency = () => {
+  const [currentBaseTone, setCurrentBaseTone] = useState<BaseTone | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const samplerRef = useRef<Tone.Sampler | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 初期化
+  const initialize = useCallback(async (): Promise<boolean> => {
+    try {
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+
+      const sampler = new Tone.Sampler({
+        urls: {
+          A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
+          A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
+          A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
+          A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
+          A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
+          A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
+          A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3",
+          A7: "A7.mp3", C8: "C8.mp3"
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        attack: 0.1,
+        release: 0.3,
+      }).toDestination();
+
+      sampler.volume.value = -12;
+      samplerRef.current = sampler;
+
+      await new Promise<void>((resolve) => {
+        const checkLoaded = () => {
+          if (sampler.loaded) {
+            resolve();
+          } else {
+            setTimeout(checkLoaded, 100);
+          }
+        };
+        checkLoaded();
+      });
+
+      setIsLoaded(true);
+      console.log('✅ 基音システム初期化完了');
+      return true;
+    } catch (error) {
+      console.error('❌ 基音システム初期化失敗:', error);
+      setError(error instanceof Error ? error.message : '基音システム初期化に失敗しました');
+      return false;
+    }
+  }, []);
+
+  // ランダム基音選択
+  const selectRandomBaseTone = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * BASE_TONES.length);
+    const selectedTone = BASE_TONES[randomIndex];
+    setCurrentBaseTone(selectedTone);
+    console.log(`🎲 ランダム基音選択: ${selectedTone.note} (${selectedTone.frequency}Hz)`);
+    return selectedTone;
+  }, []);
+
+  // 基音再生
+  const playBaseTone = useCallback(async (duration: number = 2): Promise<void> => {
+    try {
+      if (!samplerRef.current || !currentBaseTone) {
+        throw new Error('基音システムが準備されていません');
+      }
+
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+
+      if (isPlaying) {
+        stopBaseTone();
+      }
+
+      setIsPlaying(true);
+      samplerRef.current.triggerAttack(currentBaseTone.tonejs);
+      console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
+
+      timeoutRef.current = setTimeout(() => {
+        if (samplerRef.current && currentBaseTone) {
+          samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+        }
+        setIsPlaying(false);
+        console.log('🎹 基音再生終了');
+      }, duration * 1000);
+
+    } catch (error) {
+      console.error('❌ 基音再生エラー:', error);
+      setError(error instanceof Error ? error.message : '基音再生に失敗しました');
+      setIsPlaying(false);
+    }
+  }, [currentBaseTone, isPlaying]);
+
+  // 基音停止
+  const stopBaseTone = useCallback(() => {
+    try {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      if (samplerRef.current && currentBaseTone) {
+        samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+      }
+
+      setIsPlaying(false);
+      console.log('🛑 基音再生停止');
+    } catch (error) {
+      console.error('❌ 基音停止エラー:', error);
+    }
+  }, [currentBaseTone]);
+
+  // クリーンアップ
+  const cleanup = useCallback(() => {
+    try {
+      stopBaseTone();
+      if (samplerRef.current) {
+        samplerRef.current.dispose();
+        samplerRef.current = null;
+      }
+      setIsLoaded(false);
+      setCurrentBaseTone(null);
+      setError(null);
+      console.log('🧹 基音システムクリーンアップ完了');
+    } catch (error) {
+      console.error('❌ 基音システムクリーンアップエラー:', error);
+    }
+  }, [stopBaseTone]);
+
+  return {
+    currentBaseTone,
+    isLoaded,
+    isPlaying,
+    error,
+    initialize,
+    selectRandomBaseTone,
+    playBaseTone,
+    stopBaseTone,
+    cleanup
+  };
+};
 
 export default function RandomTrainingPage() {
   // Phase状態管理
   const [currentPhase, setCurrentPhase] = useState<TrainingPhase>('welcome');
   const [error, setError] = useState<string | null>(null);
+  
+  // 基音システム統合
+  const baseFrequency = useBaseFrequency();
 
   // Phase遷移関数
   const goToPhase = useCallback((phase: TrainingPhase) => {
@@ -67,6 +240,7 @@ export default function RandomTrainingPage() {
             onEvaluation={() => goToPhase('evaluation')}
             onEnd={() => goToPhase('results')}
             onError={setError}
+            baseFrequency={baseFrequency}
           />
         )}
         
@@ -491,36 +665,185 @@ function MicTestPhase({
   );
 }
 
-// Phase 2: トレーニング（仮実装）
+// Phase 2: トレーニング（Step 2: 基音システム実装）
 function TrainingPhase({ 
   onEvaluation, 
   onEnd, 
-  onError 
+  onError,
+  baseFrequency
 }: { 
   onEvaluation: () => void; 
   onEnd: () => void; 
-  onError: (error: string) => void; 
+  onError: (error: string) => void;
+  baseFrequency: ReturnType<typeof useBaseFrequency>;
 }) {
+  const [isInitialized, setIsInitialized] = useState(false);
+  // const [showBaseTone, setShowBaseTone] = useState(true); // 将来の機能用
+
+  // 初期化とランダム基音選択
+  useEffect(() => {
+    const initializeTraining = async () => {
+      try {
+        const success = await baseFrequency.initialize();
+        if (success) {
+          baseFrequency.selectRandomBaseTone();
+          setIsInitialized(true);
+        } else {
+          onError('基音システムの初期化に失敗しました');
+        }
+      } catch (error) {
+        console.error('トレーニング初期化エラー:', error);
+        onError('トレーニングの初期化に失敗しました');
+      }
+    };
+
+    if (!isInitialized) {
+      initializeTraining();
+    }
+
+    // クリーンアップ
+    return () => {
+      baseFrequency.cleanup();
+    };
+  }, [baseFrequency, isInitialized, onError]);
+
+  // 基音再生ハンドラー
+  const handlePlayBaseTone = useCallback(async () => {
+    try {
+      await baseFrequency.playBaseTone(2); // 2秒間再生
+    } catch (error) {
+      console.error('基音再生エラー:', error);
+      onError('基音の再生に失敗しました');
+    }
+  }, [baseFrequency, onError]);
+
+  // 新しい基音を選択
+  const handleNewBaseTone = useCallback(() => {
+    baseFrequency.selectRandomBaseTone();
+  }, [baseFrequency]);
+
+  if (!isInitialized) {
+    return (
+      <div className="text-center">
+        <div className="text-6xl mb-4">🎼</div>
+        <h2 className="text-3xl font-bold mb-6">🎵 トレーニング準備中</h2>
+        <p className="mb-8 text-gray-600">基音システムを初期化しています...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center">
-      <h2 className="text-3xl font-bold mb-6">🎵 トレーニング中</h2>
-      <p className="mb-8 text-gray-600">基音再生と8音階歌唱を行います</p>
-      
+    <>
+      {/* ヘッダー */}
+      <div className="mb-8">
+        <div className="text-6xl mb-4">🎵</div>
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+          ランダム基音トレーニング
+        </h2>
+        <p className="text-xl text-gray-600">基音を聞いて、ドレミファソラシドを正確に歌いましょう</p>
+      </div>
+
+      {/* 基音表示エリア */}
+      {baseFrequency.currentBaseTone && (
+        <div className="mb-8 p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-2xl mx-auto">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">🎹 現在の基音</h3>
+          
+          {/* 基音情報表示 */}
+          <div className="text-center mb-6">
+            <div className="text-8xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+              {baseFrequency.currentBaseTone.note}
+            </div>
+            <div className="text-3xl text-gray-700 mb-2">
+              {baseFrequency.currentBaseTone.name}
+            </div>
+            <div className="text-xl text-gray-600">
+              {baseFrequency.currentBaseTone.frequency.toFixed(1)} Hz
+            </div>
+          </div>
+
+          {/* 基音制御ボタン */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={handlePlayBaseTone}
+              disabled={baseFrequency.isPlaying}
+              className={`group flex items-center space-x-3 px-8 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg ${
+                baseFrequency.isPlaying
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 hover:scale-105 hover:shadow-2xl'
+              }`}
+            >
+              <Volume2 className="w-6 h-6" />
+              <span>{baseFrequency.isPlaying ? '🎵 再生中...' : '🎹 基音を聞く (2秒)'}</span>
+            </button>
+            
+            <button
+              onClick={handleNewBaseTone}
+              disabled={baseFrequency.isPlaying}
+              className="group flex items-center space-x-3 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-5 h-5" />
+              <span>🎲 別の基音にする</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 進行状況 */}
+      <div className="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-200 max-w-2xl mx-auto">
+        <h3 className="text-lg font-bold text-blue-800 mb-4">📋 Step 2: 基音システム実装完了</h3>
+        <div className="space-y-3 text-blue-700 text-left">
+          <div className="flex items-center space-x-3">
+            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+            <span>10種類基音データベース作成 (Bb3〜Ab4)</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+            <span>Tone.js基音再生機能実装</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+            <span>ランダム基音選択システム</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+            <span>基音表示UI実装</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">→</span>
+            <span className="font-semibold">次: Step 3 - 録音・検出システム実装</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ナビゲーションボタン */}
       <div className="space-x-4">
         <button
           onClick={onEvaluation}
-          className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg font-bold"
         >
-          評価へ
+          <CheckCircle className="w-5 h-5 inline mr-2" />
+          Step 3: 録音システムへ進む
         </button>
         <button
           onClick={onEnd}
-          className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          className="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors"
         >
-          終了
+          トレーニング終了
         </button>
       </div>
-    </div>
+
+      {/* ヒント */}
+      <div className="mt-8 p-4 bg-yellow-50 rounded-xl border border-yellow-200 max-w-md mx-auto">
+        <h4 className="font-bold text-yellow-800 mb-2">💡 使い方</h4>
+        <div className="text-sm text-yellow-700 space-y-1">
+          <div>• 「基音を聞く」で2秒間基音が再生されます</div>
+          <div>• 基音を覚えたら、ドレミファソラシドを歌う準備をしましょう</div>
+          <div>• 「別の基音にする」で異なる基音に変更できます</div>
+          <div>• 次のステップで実際の音程録音を行います</div>
+        </div>
+      </div>
+    </>
   );
 }
 
