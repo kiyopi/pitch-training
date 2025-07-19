@@ -160,6 +160,15 @@ export default function AccuracyTestV2Page() {
             userNote
           });
         }
+      } else {
+        // 無音時・不明瞭時は周波数表示をクリア
+        if (clarity <= 0.3 || averageAmplitude < 5) {
+          setFrequencyData(null);
+          // 相対音程分析もクリア（基音がある場合のみ）
+          if (currentBaseFrequency > 0) {
+            setRelativePitchData(null);
+          }
+        }
       }
     } catch (error) {
       // Pitchy処理エラーの場合はスキップ
