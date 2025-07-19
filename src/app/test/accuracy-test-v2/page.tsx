@@ -121,72 +121,72 @@ export default function AccuracyTestV2Page() {
     analyser.getByteFrequencyData(frequencyData);
     const averageAmplitude = frequencyData.reduce((sum, value) => sum + value, 0) / frequencyData.length;
     
-    // RMS音量による最小音量閾値チェック（0.01 = 約-40dB）
-    if (rmsVolume < 0.01) {
-      // 音量が小さすぎる場合は検出をスキップ
-      animationFrameRef.current = requestAnimationFrame(detectFrequency);
-      return;
-    }
+    // 有効検出フラグ
+    let validDetection = false;
     
     try {
-      // PitchDetectorインスタンスを初期化（初回のみ）
-      if (!pitchDetectorRef.current) {
-        pitchDetectorRef.current = PitchDetector.forFloat32Array(optimalSize);
-        // 明瞭度閾値設定（0.6で実用的なバランス）
-        pitchDetectorRef.current.clarityThreshold = 0.6;
-        // 最大入力振幅設定（0-1の範囲）
-        pitchDetectorRef.current.maxInputAmplitude = 1.0;
-        // 最小音量設定（RMS値で0.01 = 約-40dB）
-        pitchDetectorRef.current.minVolumeAbsolute = 0.01;
-      }
-      
-      // Pitchy（McLeod Pitch Method）で基音検出
-      const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
-      
-      // 明瞭度チェック（0.6以上で信頼できる結果）
-      if (clarity > 0.6 && frequency > 80 && frequency < 2000) {
-        const detectedFrequency = Math.round(frequency * 10) / 10;
-        
-        // 有効な周波数検出時刻を記録
-        lastDetectionTimeRef.current = Date.now();
-        
-        setFrequencyData({
-          frequency: detectedFrequency,
-          amplitude: Math.round(averageAmplitude),
-          timestamp: Date.now()
-        });
-        
-        // 🎯 Step 3: 相対音程計算（基音がある場合）
-        if (currentBaseFrequency > 0 && isValidMusicalFrequency(detectedFrequency)) {
-          const userNote = frequencyToNote(detectedFrequency);
-          const relativeInterval = calculateRelativeInterval(currentBaseFrequency, detectedFrequency);
-          const accuracy = evaluateRelativePitchAccuracy(relativeInterval.cents);
-          
-          setRelativePitchData({
-            baseFrequency: currentBaseFrequency,
-            userFrequency: detectedFrequency,
-            cents: relativeInterval.cents,
-            semitones: relativeInterval.semitones,
-            intervalName: relativeInterval.intervalName,
-            accuracy,
-            userNote
-          });
+      // RMS音量による最小音量閾値チェック（0.01 = 約-40dB）
+      if (rmsVolume >= 0.01) {
+        // PitchDetectorインスタンスを初期化（初回のみ）
+        if (!pitchDetectorRef.current) {
+          pitchDetectorRef.current = PitchDetector.forFloat32Array(optimalSize);
+          // 明瞭度閾値設定（0.6で実用的なバランス）
+          pitchDetectorRef.current.clarityThreshold = 0.6;
+          // 最大入力振幅設定（0-1の範囲）
+          pitchDetectorRef.current.maxInputAmplitude = 1.0;
+          // 最小音量設定（RMS値で0.01 = 約-40dB）
+          pitchDetectorRef.current.minVolumeAbsolute = 0.01;
         }
-      }
-      
-      // タイムアウトベースの周波数表示クリア（500ms無検出でクリア）
-      const now = Date.now();
-      if (lastDetectionTimeRef.current > 0 && (now - lastDetectionTimeRef.current) > 500) {
-        setFrequencyData(null);
-        lastDetectionTimeRef.current = 0; // リセット
-        // 相対音程分析もクリア（基音がある場合のみ）
-        if (currentBaseFrequency > 0) {
-          setRelativePitchData(null);
+        
+        // Pitchy（McLeod Pitch Method）で基音検出
+        const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
+        
+        // 明瞭度チェック（0.6以上で信頼できる結果）
+        if (clarity > 0.6 && frequency > 80 && frequency < 2000) {
+          const detectedFrequency = Math.round(frequency * 10) / 10;
+          
+          // 有効な周波数検出時刻を記録
+          validDetection = true;
+          lastDetectionTimeRef.current = Date.now();
+          
+          setFrequencyData({
+            frequency: detectedFrequency,
+            amplitude: Math.round(averageAmplitude),
+            timestamp: Date.now()
+          });
+          
+          // 🎯 Step 3: 相対音程計算（基音がある場合）
+          if (currentBaseFrequency > 0 && isValidMusicalFrequency(detectedFrequency)) {
+            const userNote = frequencyToNote(detectedFrequency);
+            const relativeInterval = calculateRelativeInterval(currentBaseFrequency, detectedFrequency);
+            const accuracy = evaluateRelativePitchAccuracy(relativeInterval.cents);
+            
+            setRelativePitchData({
+              baseFrequency: currentBaseFrequency,
+              userFrequency: detectedFrequency,
+              cents: relativeInterval.cents,
+              semitones: relativeInterval.semitones,
+              intervalName: relativeInterval.intervalName,
+              accuracy,
+              userNote
+            });
+          }
         }
       }
     } catch (error) {
       // Pitchy処理エラーの場合はスキップ
       console.warn('Pitchy detection error:', error);
+    }
+    
+    // 🚨 重要: タイムアウトチェックを必ず実行（tryブロック外）
+    const now = Date.now();
+    if (!validDetection && lastDetectionTimeRef.current > 0 && (now - lastDetectionTimeRef.current) > 500) {
+      setFrequencyData(null);
+      lastDetectionTimeRef.current = 0; // リセット
+      // 相対音程分析もクリア（基音がある場合のみ）
+      if (currentBaseFrequency > 0) {
+        setRelativePitchData(null);
+      }
     }
     
     // 次のフレーム
