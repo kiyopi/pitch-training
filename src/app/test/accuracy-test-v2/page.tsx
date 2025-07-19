@@ -104,44 +104,50 @@ export default function AccuracyTestV2Page() {
     const analyser = analyserRef.current;
     const sampleRate = audioContextRef.current.sampleRate;
     
-    // 最適化されたサイズのデータ取得（1024サンプル）
-    const optimalSize = 1024;
-    const timeDomainData = new Float32Array(optimalSize);
+    // プロトタイプ準拠：時間域データ取得（FFTサイズ使用）
+    const timeDomainData = new Float32Array(analyser.fftSize);
     analyser.getFloatTimeDomainData(timeDomainData);
     
-    // RMS音量計算（より正確な音量検出）
-    let rmsVolume = 0;
-    for (let i = 0; i < timeDomainData.length; i++) {
-      rmsVolume += timeDomainData[i] * timeDomainData[i];
-    }
-    rmsVolume = Math.sqrt(rmsVolume / timeDomainData.length);
+    // プロトタイプ準拠：8bit時間域データ取得（音量計算用）
+    const byteTimeDomainData = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(byteTimeDomainData);
     
-    // RMS音量を0-100%の範囲に正規化（表示用）
-    // 通常の会話音量レベル（RMS 0.01-0.3）を0-100%にマッピング
-    const normalizedVolume = Math.min(Math.max((rmsVolume - 0.01) / 0.29, 0), 1);
+    // プロトタイプ準拠：音量計算（128中心の8bitデータ）
+    let sum = 0;
+    let maxAmplitude = 0;
+    
+    for (let i = 0; i < byteTimeDomainData.length; i++) {
+      const sample = (byteTimeDomainData[i] - 128) / 128;
+      sum += sample * sample;
+      maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
+    }
+    
+    const rms = Math.sqrt(sum / byteTimeDomainData.length);
+    // プロトタイプ準拠：スケーリング（200倍・100倍）
+    const volume = Math.max(rms * 200, maxAmplitude * 100);
+    const normalizedVolume = Math.min(volume / 100, 1); // 0-1正規化
     
     // 有効検出フラグ
     let validDetection = false;
     
     try {
-      // RMS音量による最小音量閾値チェック（0.01 = 約-40dB）
-      if (rmsVolume >= 0.01) {
+      // プロトタイプ準拠：音量による最小閾値チェック（volume > 1）
+      if (volume > 1) {
         // PitchDetectorインスタンスを初期化（初回のみ）
         if (!pitchDetectorRef.current) {
-          pitchDetectorRef.current = PitchDetector.forFloat32Array(optimalSize);
-          // 明瞭度閾値設定（0.6で実用的なバランス）
-          pitchDetectorRef.current.clarityThreshold = 0.6;
+          // プロトタイプ準拠：FFTサイズでPitchDetector作成
+          pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
+          // プロトタイプ準拠：明瞭度閾値0.1
+          pitchDetectorRef.current.clarityThreshold = 0.1;
           // 最大入力振幅設定（0-1の範囲）
           pitchDetectorRef.current.maxInputAmplitude = 1.0;
-          // 最小音量設定（RMS値で0.01 = 約-40dB）
-          pitchDetectorRef.current.minVolumeAbsolute = 0.01;
         }
         
         // Pitchy（McLeod Pitch Method）で基音検出
         const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
         
-        // 明瞭度チェック（0.6以上で信頼できる結果）
-        if (clarity > 0.6 && frequency > 80 && frequency < 2000) {
+        // プロトタイプ準拠：明瞭度・周波数範囲チェック（0.1以上、80-1200Hz）
+        if (clarity > 0.1 && frequency > 80 && frequency < 1200) {
           const detectedFrequency = Math.round(frequency * 10) / 10;
           
           // 有効な周波数検出時刻を記録
@@ -150,7 +156,7 @@ export default function AccuracyTestV2Page() {
           
           setFrequencyData({
             frequency: detectedFrequency,
-            amplitude: normalizedVolume, // 正規化されたRMS音量 (0-1)
+            amplitude: normalizedVolume, // プロトタイプ準拠の音量 (0-1)
             timestamp: Date.now()
           });
           
@@ -214,9 +220,9 @@ export default function AccuracyTestV2Page() {
       const audioContext = new AudioContext({ sampleRate: 44100 });
       const analyser = audioContext.createAnalyser();
       
-      // AnalyserNode設定（最適化されたサイズ）
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.3;
+      // AnalyserNode設定（プロトタイプ準拠）
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
       
       // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
