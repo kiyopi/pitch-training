@@ -104,19 +104,25 @@ export default function AccuracyTestV2Page() {
     const analyser = analyserRef.current;
     const sampleRate = audioContextRef.current.sampleRate;
     
-    // 時間領域データを取得（Pitchy用）
-    const timeDomainData = new Float32Array(analyser.fftSize);
+    // 最適化されたサイズのデータ取得（1024サンプル）
+    const optimalSize = 1024;
+    const timeDomainData = new Float32Array(optimalSize);
     analyser.getFloatTimeDomainData(timeDomainData);
     
-    // 音量レベル取得（表示用）
+    // RMS音量計算（より正確な音量検出）
+    let rmsVolume = 0;
+    for (let i = 0; i < timeDomainData.length; i++) {
+      rmsVolume += timeDomainData[i] * timeDomainData[i];
+    }
+    rmsVolume = Math.sqrt(rmsVolume / timeDomainData.length);
+    
+    // 音量レベル取得（表示用・従来の方式も併用）
     const frequencyData = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(frequencyData);
-    
-    // 平均音量計算
     const averageAmplitude = frequencyData.reduce((sum, value) => sum + value, 0) / frequencyData.length;
     
-    // 最小音量閾値チェック
-    if (averageAmplitude < 10) {
+    // RMS音量による最小音量閾値チェック（0.01 = 約-40dB）
+    if (rmsVolume < 0.01) {
       // 音量が小さすぎる場合は検出をスキップ
       animationFrameRef.current = requestAnimationFrame(detectFrequency);
       return;
@@ -125,18 +131,20 @@ export default function AccuracyTestV2Page() {
     try {
       // PitchDetectorインスタンスを初期化（初回のみ）
       if (!pitchDetectorRef.current) {
-        pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
-        // 明瞭度閾値設定（0.8で高精度）
-        pitchDetectorRef.current.clarityThreshold = 0.8;
-        // 最小音量設定（-30dB）
-        pitchDetectorRef.current.minVolumeDecibels = -30;
+        pitchDetectorRef.current = PitchDetector.forFloat32Array(optimalSize);
+        // 明瞭度閾値設定（0.6で実用的なバランス）
+        pitchDetectorRef.current.clarityThreshold = 0.6;
+        // 最大入力振幅設定（0-1の範囲）
+        pitchDetectorRef.current.maxInputAmplitude = 1.0;
+        // 最小音量設定（RMS値で0.01 = 約-40dB）
+        pitchDetectorRef.current.minVolumeAbsolute = 0.01;
       }
       
       // Pitchy（McLeod Pitch Method）で基音検出
       const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
       
-      // 明瞭度チェック（0.7以上で信頼できる結果）
-      if (clarity > 0.7 && frequency > 80 && frequency < 2000) {
+      // 明瞭度チェック（0.6以上で信頼できる結果）
+      if (clarity > 0.6 && frequency > 80 && frequency < 2000) {
         const detectedFrequency = Math.round(frequency * 10) / 10;
         
         // 有効な周波数検出時刻を記録
@@ -207,9 +215,9 @@ export default function AccuracyTestV2Page() {
       const audioContext = new AudioContext({ sampleRate: 44100 });
       const analyser = audioContext.createAnalyser();
       
-      // AnalyserNode設定
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
+      // AnalyserNode設定（最適化されたサイズ）
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.3;
       
       // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
