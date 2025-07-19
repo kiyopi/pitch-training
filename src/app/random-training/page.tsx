@@ -304,11 +304,8 @@ function MicTestPhase({
         const noteName = frequencyToNoteName(freq);
         frequencyDisplayRef.current.innerHTML = `
           <div class="text-center">
-            <div class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-              ${noteName}
-            </div>
-            <div class="text-2xl text-gray-700 font-semibold">
-              ${freq.toFixed(1)} Hz
+            <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              ${noteName} - ${freq.toFixed(1)} Hz
             </div>
           </div>
         `;
@@ -385,24 +382,11 @@ function MicTestPhase({
         </div>
       </div>
 
-      {/* 音量レベル + 音程表示 */}
+      {/* 音量レベル + 音程表示統合 */}
       {microphoneState.isRecording && (
-        <div className="mb-8 space-y-6">
-          {/* 音程表示 */}
+        <div className="mb-8">
           <div className="p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">🎵 検出された音程</h3>
-            <div className="h-24 flex items-center justify-center">
-              <div ref={frequencyDisplayRef}>
-                <div className="text-center text-gray-400">
-                  🎵 ドの音を発声してください
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* 音量レベル表示 */}
-          <div className="p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">🔊 音量レベル</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">🎵 音量レベル + 音程検出</h3>
           
           {/* 音量バー（DOM直接操作） */}
           <div className="mb-4">
@@ -416,7 +400,7 @@ function MicTestPhase({
           </div>
           
           {/* 音量パーセンテージ（DOM直接操作） */}
-          <div className="text-center">
+          <div className="text-center mb-4">
             <div ref={volumeTextRef} className="text-2xl font-bold text-red-600">
               0.0%
             </div>
@@ -425,8 +409,19 @@ function MicTestPhase({
             </div>
           </div>
 
+          {/* 音程表示（統合） */}
+          <div className="text-center mb-4">
+            <div className="h-16 flex items-center justify-center">
+              <div ref={frequencyDisplayRef}>
+                <div className="text-center text-gray-400">
+                  🎵 ドの音を発声してください
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 音量ガイド */}
-          <div className="mt-4 text-center">
+          <div className="text-center">
             <p className="text-sm text-gray-600">
               ドの音を発声して<br/>
               <span className="font-bold text-green-600">30%以上</span>になるよう調整してください
