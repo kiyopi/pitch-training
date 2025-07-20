@@ -41,13 +41,14 @@ const useBaseFrequency = () => {
   const samplerRef = useRef<Tone.Sampler | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 初期化
+  // 初期化（iPhone Safari対応強化）
   const initialize = useCallback(async (): Promise<boolean> => {
     try {
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-      }
-
+      console.log('🔄 基音システム初期化開始...');
+      
+      // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
+      // await Tone.start() はユーザーアクション時に実行
+      
       const sampler = new Tone.Sampler({
         urls: {
           A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
@@ -67,10 +68,19 @@ const useBaseFrequency = () => {
       sampler.volume.value = -12;
       samplerRef.current = sampler;
 
-      await new Promise<void>((resolve) => {
+      // iPhone Safari: 読み込み完了を待つ（タイムアウト付き）
+      const loadPromise = new Promise<void>((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 100; // 10秒タイムアウト
+        
         const checkLoaded = () => {
+          attempts++;
           if (sampler.loaded) {
+            console.log(`✅ Sampler読み込み完了 (${attempts * 100}ms)`);
             resolve();
+          } else if (attempts >= maxAttempts) {
+            console.warn('⚠️ Sampler読み込みタイムアウト、続行します');
+            resolve(); // タイムアウトでも続行
           } else {
             setTimeout(checkLoaded, 100);
           }
@@ -78,6 +88,7 @@ const useBaseFrequency = () => {
         checkLoaded();
       });
 
+      await loadPromise;
       setIsLoaded(true);
       console.log('✅ 基音システム初期化完了');
       return true;
@@ -97,36 +108,56 @@ const useBaseFrequency = () => {
     return selectedTone;
   }, []);
 
-  // 基音再生
+  // 基音再生（iPhone Safari対応強化）
   const playBaseTone = useCallback(async (duration: number = 2): Promise<void> => {
     try {
       if (!samplerRef.current || !currentBaseTone) {
         throw new Error('基音システムが準備されていません');
       }
 
+      // iPhone Safari: ユーザーインタラクション後にTone.js再初期化
       if (Tone.context.state !== 'running') {
+        console.log('🔄 AudioContext再開中...');
         await Tone.start();
+        
+        // iPhone Safari: 少し待機してAudioContextが完全に有効になるまで待つ
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       if (isPlaying) {
         stopBaseTone();
+        // 停止完了まで少し待機
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // Samplerが読み込み完了しているか確認
+      if (!samplerRef.current.loaded) {
+        console.log('⏳ Sampler読み込み待機中...');
+        let attempts = 0;
+        while (!samplerRef.current.loaded && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!samplerRef.current.loaded) {
+          throw new Error('音源の読み込みが完了していません');
+        }
       }
 
       setIsPlaying(true);
-      samplerRef.current.triggerAttack(currentBaseTone.tonejs);
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
-
+      
+      // iPhone Safari: triggerAttackReleaseを使用
+      samplerRef.current.triggerAttackRelease(currentBaseTone.tonejs, duration);
+      
       timeoutRef.current = setTimeout(() => {
-        if (samplerRef.current && currentBaseTone) {
-          samplerRef.current.triggerRelease(currentBaseTone.tonejs);
-        }
         setIsPlaying(false);
         console.log('🎹 基音再生終了');
       }, duration * 1000);
 
     } catch (error) {
       console.error('❌ 基音再生エラー:', error);
-      setError(error instanceof Error ? error.message : '基音再生に失敗しました');
+      setError(error instanceof Error ? error.message : '基音再生に失敗しました。音量を確認してください。');
       setIsPlaying(false);
     }
   }, [currentBaseTone, isPlaying]);
@@ -685,6 +716,7 @@ function MicTestPhase({
           戻る
         </button>
         
+        {/* マイクテスト中: 音量良好でアクティブ+エフェクト、そうでなければ非アクティブ */}
         {microphoneState.permission === 'denied' && !microphoneState.isRecording ? (
           <button
             onClick={onNext}
@@ -692,7 +724,7 @@ function MicTestPhase({
             className="px-8 py-3 rounded-xl bg-gray-300 text-gray-500 cursor-not-allowed shadow-lg font-bold"
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
-            トレーニング開始
+            マイク許可が必要
           </button>
         ) : hasBeenGood && microphoneState.isRecording ? (
           <div className="relative inline-block">
@@ -721,22 +753,40 @@ function MicTestPhase({
         ) : (
           <button
             onClick={onNext}
-            className="px-8 py-3 rounded-xl transition-all duration-300 shadow-lg font-bold bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105"
+            disabled={microphoneState.isRecording && !isVolumeGood}
+            className={`px-8 py-3 rounded-xl shadow-lg font-bold transition-all duration-300 ${
+              microphoneState.isRecording && !isVolumeGood
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105'
+            }`}
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
-            トレーニング開始
+            {microphoneState.isRecording && !isVolumeGood 
+              ? 'マイク音量を調整してください'
+              : 'トレーニング開始'}
           </button>
         )}
       </div>
 
       {/* ヒント */}
       <div className="mt-8 p-4 bg-yellow-50 rounded-xl border border-yellow-200 max-w-md mx-auto">
-        <h4 className="font-bold text-yellow-800 mb-2">💡 ヒント</h4>
+        <h4 className="font-bold text-yellow-800 mb-2">💡 マイクテスト中のヒント</h4>
         <div className="text-sm text-yellow-700 space-y-1">
-          <div>• マイクに近づきすぎないでください</div>
-          <div>• 周囲の騒音を最小限に抑えてください</div>
-          <div>• ドの音程で明瞭に発声してください</div>
-          <div>• 音程が表示されない場合は、より大きな声で発声してください</div>
+          {microphoneState.isRecording ? (
+            <>
+              <div>• 🎵 <strong>周波数確認中</strong>: 高い声・低い声でどれくらいの周波数になるか確認しましょう</div>
+              <div>• 📊 音量レベルが30%以上になると「トレーニング開始」ボタンがアクティブになります</div>
+              <div>• ✨ 音量が良好になるとボタンにエフェクトが表示されます</div>
+              <div>• 🎤 マイクに近づきすぎず、適度な距離を保ってください</div>
+            </>
+          ) : (
+            <>
+              <div>• マイクに近づきすぎないでください</div>
+              <div>• 周囲の騒音を最小限に抑えてください</div>
+              <div>• ドの音程で明瞭に発声してください</div>
+              <div>• 音程が表示されない場合は、より大きな声で発声してください</div>
+            </>
+          )}
         </div>
       </div>
     </>
