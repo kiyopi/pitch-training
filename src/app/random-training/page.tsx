@@ -858,21 +858,30 @@ function TrainingPhase({
   useEffect(() => {
     const initializeTraining = async () => {
       try {
+        console.log('🔄 基音システム初期化開始...');
         const success = await baseFrequency.initialize();
         if (success) {
-          baseFrequency.selectRandomBaseTone();
+          console.log('✅ 基音システム初期化成功');
+          const selectedTone = baseFrequency.selectRandomBaseTone();
+          console.log('🎲 基音選択完了:', selectedTone);
           setIsInitialized(true);
         } else {
-          onError('基音システムの初期化に失敗しました');
+          console.error('❌ 基音システム初期化失敗');
+          onError('基音システムの初期化に失敗しました。ページを再読み込みしてください。');
         }
       } catch (error) {
-        console.error('トレーニング初期化エラー:', error);
-        onError('トレーニングの初期化に失敗しました');
+        console.error('❌ トレーニング初期化エラー:', error);
+        onError('トレーニングの初期化に失敗しました。ページを再読み込みしてください。');
       }
     };
 
     if (!isInitialized) {
-      initializeTraining();
+      // 少し遅延して初期化（DOM準備完了後）
+      const timer = setTimeout(() => {
+        initializeTraining();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
 
     // クリーンアップ
@@ -916,10 +925,16 @@ function TrainingPhase({
   // 基音再生ハンドラー
   const handlePlayBaseTone = useCallback(async () => {
     try {
+      // 基音が選択されていない場合、強制的に選択
+      if (!baseFrequency.currentBaseTone) {
+        console.log('🔧 基音未選択のため強制選択実行');
+        baseFrequency.selectRandomBaseTone();
+      }
+      
       await baseFrequency.playBaseTone(2); // 2秒間再生
     } catch (error) {
       console.error('基音再生エラー:', error);
-      onError('基音の再生に失敗しました');
+      onError('基音の再生に失敗しました。ページを再読み込みしてください。');
     }
   }, [baseFrequency, onError]);
 
@@ -934,10 +949,23 @@ function TrainingPhase({
   // 8音階録音開始
   const handleStartRecording = useCallback(async () => {
     try {
+      // 基音が選択されていない場合、強制的に選択
+      if (!baseFrequency.currentBaseTone) {
+        console.log('🔧 録音開始時に基音強制選択');
+        const selectedTone = baseFrequency.selectRandomBaseTone();
+        if (!selectedTone) {
+          // それでも失敗した場合、デフォルト基音を使用
+          console.log('🔧 デフォルト基音（C4）を使用');
+          // baseFrequency.currentBaseTone が更新されるまで少し待つ
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
       const success = await startRecording();
-      if (success && baseFrequency.currentBaseTone && microphoneState.audioContext && microphoneState.analyser) {
-        // 目標周波数をpitch detectionに設定
-        const targetFreqs = getTargetFrequencies(baseFrequency.currentBaseTone.frequency);
+      if (success && microphoneState.audioContext && microphoneState.analyser) {
+        // 基音が確定した状態で目標周波数を設定
+        const currentTone = baseFrequency.currentBaseTone || BASE_TONES[1]; // デフォルトC4
+        const targetFreqs = getTargetFrequencies(currentTone.frequency);
         pitchDetection.setTargetFrequencies(targetFreqs);
         
         // 音程検出開始
@@ -946,15 +974,15 @@ function TrainingPhase({
         setRecordingMode('recording');
         setCurrentNoteIndex(0);
         setIsRecording(true);
-        console.log('✅ 8音階録音開始');
+        console.log('✅ 8音階録音開始:', currentTone);
       } else {
-        onError('録音の開始に失敗しました');
+        onError('録音の開始に失敗しました。マイクロフォンの許可を確認してください。');
       }
     } catch (error) {
       console.error('録音開始エラー:', error);
-      onError('録音の開始に失敗しました');
+      onError('録音の開始に失敗しました。ページを再読み込みしてください。');
     }
-  }, [startRecording, baseFrequency.currentBaseTone, microphoneState.audioContext, microphoneState.analyser, getTargetFrequencies, pitchDetection, onError]);
+  }, [startRecording, baseFrequency, microphoneState.audioContext, microphoneState.analyser, getTargetFrequencies, pitchDetection, onError]);
   
   // 次の音階に進む
   const handleNextNote = useCallback(() => {
@@ -1042,6 +1070,22 @@ function TrainingPhase({
               <RotateCcw className="w-5 h-5" />
               <span>🎲 別の基音にする</span>
             </button>
+            
+            {/* 緊急用：手動基音選択 */}
+            {!baseFrequency.currentBaseTone && isInitialized && (
+              <button
+                onClick={() => {
+                  const randomTone = BASE_TONES[Math.floor(Math.random() * BASE_TONES.length)];
+                  console.log('🔧 手動基音選択:', randomTone);
+                  // 直接基音設定を試行
+                  handleNewBaseTone();
+                }}
+                className="group flex items-center space-x-3 px-6 py-3 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl transition-all duration-300 hover:scale-105 border border-orange-300"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span>🔧 基音を手動選択</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1140,16 +1184,29 @@ function TrainingPhase({
         </div>
       )}
 
+      {/* デバッグ情報表示 */}
+      {recordingMode === 'baseTone' && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-md mx-auto">
+          <h4 className="font-bold text-gray-700 mb-2">🔍 システム状態</h4>
+          <div className="text-sm text-gray-600 space-y-1">
+            <div>初期化状態: {isInitialized ? '✅ 完了' : '⏳ 処理中...'}</div>
+            <div>基音システム: {baseFrequency.isLoaded ? '✅ 読み込み完了' : '⏳ 読み込み中...'}</div>
+            <div>基音選択: {baseFrequency.currentBaseTone ? `✅ ${baseFrequency.currentBaseTone.note}` : '❌ 未選択'}</div>
+            <div>録音ボタン: {!baseFrequency.currentBaseTone ? '❌ 無効（基音未選択）' : '✅ 有効'}</div>
+          </div>
+        </div>
+      )}
+
       {/* ナビゲーションボタン */}
       <div className="space-x-4">
         {recordingMode === 'baseTone' && (
           <button
             onClick={handleStartRecording}
-            disabled={!baseFrequency.currentBaseTone}
+            disabled={!isInitialized}
             className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Mic className="w-5 h-5 inline mr-2" />
-            🎵 8音階歌唱録音開始
+            {!isInitialized ? '⏳ 初期化中...' : '🎵 8音階歌唱録音開始'}
           </button>
         )}
         <button
