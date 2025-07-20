@@ -685,18 +685,18 @@ function MicTestPhase({
             <CheckCircle className="w-5 h-5 inline mr-2" />
             トレーニング開始
           </button>
-        ) : isVolumeGood && microphoneState.isRecording ? (
-          <div className="relative">
+        ) : hasBeenGood && microphoneState.isRecording ? (
+          <div className="relative inline-block">
             {/* パルス効果の背景レイヤー1 */}
             <div 
-              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              className="absolute -inset-3 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
               style={{
                 animation: 'pulse-expand 2s ease-out infinite'
               }}
             />
             {/* パルス効果の背景レイヤー2 */}
             <div 
-              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              className="absolute -inset-3 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
               style={{
                 animation: 'pulse-expand 2s ease-out 1s infinite'
               }}
