@@ -411,6 +411,7 @@ function MicTestPhase({
 }) {
   const { microphoneState, startRecording, stopRecording, resetError } = useMicrophoneManager();
   // const [testCompleted, setTestCompleted] = useState(false); // テスト停止ボタン削除に伴い不要
+  const [hasBeenGood, setHasBeenGood] = useState(false);
   
   // DOM直接操作用のref
   const volumeBarRef = useRef<HTMLDivElement>(null);
@@ -520,6 +521,13 @@ function MicTestPhase({
 
   // 音量状態判定
   const isVolumeGood = microphoneState.audioLevel > 0.3;
+  
+  // 一度音量が良好になったらエフェクト固定
+  useEffect(() => {
+    if (isVolumeGood && microphoneState.isRecording) {
+      setHasBeenGood(true);
+    }
+  }, [isVolumeGood, microphoneState.isRecording]);
 
   return (
     <>
