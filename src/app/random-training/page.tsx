@@ -529,8 +529,8 @@ function MicTestPhase({
   // 音量レベル監視（DOM直接更新）
   useEffect(() => {
     if (microphoneState.isRecording) {
-      const volumePercent = microphoneState.audioLevel * 100;
-      updateVolumeDisplay(volumePercent);
+      // audioLevelは既に0-100の範囲なので直接使用
+      updateVolumeDisplay(microphoneState.audioLevel);
       
       // TODO: 音程検出機能も統合予定
       // 現在はマイクマネージャーからの音程データ取得が必要
@@ -551,8 +551,8 @@ function MicTestPhase({
   //   setTestCompleted(true);
   // }, [stopRecording]);
 
-  // 音量状態判定
-  const isVolumeGood = microphoneState.audioLevel > 0.3;
+  // 音量状態判定（audioLevelは0-100の範囲）
+  const isVolumeGood = microphoneState.audioLevel > 30;
   
   // 一度音量が良好になったらエフェクト固定
   useEffect(() => {
@@ -939,9 +939,8 @@ function TrainingPhase({
         // 音程検出更新
         const { frequency, clarity } = pitchDetection.updateDetection();
         
-        // 音量表示更新
-        const volumePercent = microphoneState.audioLevel * 100;
-        updateVolumeDisplay(volumePercent);
+        // 音量表示更新（audioLevelは既に0-100の範囲）
+        updateVolumeDisplay(microphoneState.audioLevel);
         
         // 音程表示更新
         updateFrequencyDisplay(frequency, currentTargetFreq, currentNote);

@@ -103,12 +103,11 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
       previousVolumeRef.current = smoothedVolume;
       
-      // 0-1の範囲に正規化してstate更新
-      const normalizedLevel = Math.min(smoothedVolume / 100, 1.0);
-      
+      // 0-100の範囲でstate更新（正規化なし）
+      // テストページの実装に合わせて、直接パーセンテージを提供
       setMicrophoneState(prev => ({
         ...prev,
-        audioLevel: normalizedLevel
+        audioLevel: smoothedVolume
       }));
       
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
