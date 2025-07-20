@@ -38,7 +38,7 @@ const useBaseFrequency = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const samplerRef = useRef<Tone.Sampler | null>(null);
+  const synthRef = useRef<Tone.Synth | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初期化（iPhone Safari対応強化）
@@ -49,46 +49,23 @@ const useBaseFrequency = () => {
       // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
       // await Tone.start() はユーザーアクション時に実行
       
-      const sampler = new Tone.Sampler({
-        urls: {
-          A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
-          A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
-          A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
-          A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
-          A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
-          A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
-          A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3",
-          A7: "A7.mp3", C8: "C8.mp3"
+      // SamplerからSynthに変更（外部ファイル読み込み不要でiPhone Safari対応）
+      const synth = new Tone.Synth({
+        oscillator: { 
+          type: "sine"  // シンプルで安定した音
         },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        attack: 0.1,
-        release: 0.3,
+        envelope: {
+          attack: 0.02,   // ピアノのようなアタック感
+          decay: 0.1,
+          sustain: 0.7,   // 長めのサスティン
+          release: 0.8    // 自然な減衰
+        }
       }).toDestination();
 
-      sampler.volume.value = -12;
-      samplerRef.current = sampler;
+      synth.volume.value = -8; // 音量調整
+      synthRef.current = synth;
 
-      // iPhone Safari: 読み込み完了を待つ（タイムアウト付き）
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 100; // 10秒タイムアウト
-        
-        const checkLoaded = () => {
-          attempts++;
-          if (sampler.loaded) {
-            console.log(`✅ Sampler読み込み完了 (${attempts * 100}ms)`);
-            resolve();
-          } else if (attempts >= maxAttempts) {
-            console.warn('⚠️ Sampler読み込みタイムアウト、続行します');
-            resolve(); // タイムアウトでも続行
-          } else {
-            setTimeout(checkLoaded, 100);
-          }
-        };
-        checkLoaded();
-      });
-
-      await loadPromise;
+      // Synthは即座に使用可能（外部ファイル読み込み不要）
       setIsLoaded(true);
       console.log('✅ 基音システム初期化完了');
       return true;
@@ -111,7 +88,7 @@ const useBaseFrequency = () => {
   // 基音再生（iPhone Safari対応強化）
   const playBaseTone = useCallback(async (duration: number = 2): Promise<void> => {
     try {
-      if (!samplerRef.current || !currentBaseTone) {
+      if (!synthRef.current || !currentBaseTone) {
         throw new Error('基音システムが準備されていません');
       }
 
@@ -130,25 +107,13 @@ const useBaseFrequency = () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      // Samplerが読み込み完了しているか確認
-      if (!samplerRef.current.loaded) {
-        console.log('⏳ Sampler読み込み待機中...');
-        let attempts = 0;
-        while (!samplerRef.current.loaded && attempts < 50) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-        
-        if (!samplerRef.current.loaded) {
-          throw new Error('音源の読み込みが完了していません');
-        }
-      }
+      // Synthは即座に使用可能（読み込み待機不要）
 
       setIsPlaying(true);
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
       
-      // iPhone Safari: triggerAttackReleaseを使用
-      samplerRef.current.triggerAttackRelease(currentBaseTone.tonejs, duration);
+      // iPhone Safari: Synthで基音再生（周波数で指定）
+      synthRef.current.triggerAttackRelease(currentBaseTone.frequency, duration);
       
       timeoutRef.current = setTimeout(() => {
         setIsPlaying(false);
@@ -170,8 +135,8 @@ const useBaseFrequency = () => {
         timeoutRef.current = null;
       }
 
-      if (samplerRef.current && currentBaseTone) {
-        samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+      if (synthRef.current) {
+        synthRef.current.triggerRelease();
       }
 
       setIsPlaying(false);
@@ -185,9 +150,9 @@ const useBaseFrequency = () => {
   const cleanup = useCallback(() => {
     try {
       stopBaseTone();
-      if (samplerRef.current) {
-        samplerRef.current.dispose();
-        samplerRef.current = null;
+      if (synthRef.current) {
+        synthRef.current.dispose();
+        synthRef.current = null;
       }
       setIsLoaded(false);
       setCurrentBaseTone(null);
@@ -753,15 +718,15 @@ function MicTestPhase({
         ) : (
           <button
             onClick={onNext}
-            disabled={microphoneState.isRecording && !isVolumeGood}
+            disabled={!hasBeenGood}
             className={`px-8 py-3 rounded-xl shadow-lg font-bold transition-all duration-300 ${
-              microphoneState.isRecording && !isVolumeGood
+              !hasBeenGood
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105'
             }`}
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
-            {microphoneState.isRecording && !isVolumeGood 
+            {!hasBeenGood 
               ? 'マイク音量を調整してください'
               : 'トレーニング開始'}
           </button>
