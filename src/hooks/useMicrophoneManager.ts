@@ -19,6 +19,8 @@ interface MicrophoneState {
   permission: 'granted' | 'denied' | 'prompt';
   audioLevel: number;
   isInitialized: boolean;
+  audioContext: AudioContext | null;
+  analyser: AnalyserNode | null;
 }
 
 interface MicrophoneManager {
@@ -35,6 +37,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
     permission: 'prompt',
     audioLevel: 0,
     isInitialized: false,
+    audioContext: null,
+    analyser: null,
   });
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -191,6 +195,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
         permission: 'granted',
         error: null,
         audioLevel: 0,
+        audioContext: audioContextRef.current,
+        analyser: analyserRef.current,
       }));
 
       // 音声レベル監視開始
@@ -210,6 +216,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
         permission: 'denied',
         error: errorMessage,
         audioLevel: 0,
+        audioContext: null,
+        analyser: null,
       }));
 
       console.error('❌ マイクロフォン開始失敗:', error);
@@ -258,6 +266,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
         isInitialized: false,
         audioLevel: 0,
         error: null,
+        audioContext: null,
+        analyser: null,
       }));
 
       console.log('✅ マイクロフォン完全停止');
@@ -283,6 +293,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
         isInitialized: false,
         audioLevel: 0,
         error: '停止処理中にエラーが発生しました。',
+        audioContext: null,
+        analyser: null,
       }));
     } finally {
       isStoppingRef.current = false;

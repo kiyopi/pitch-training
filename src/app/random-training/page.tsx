@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, RotateCcw, CheckCircle, Volume2 } from "lucide-react";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
+import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { PitchDetector } from "pitchy";
 import * as Tone from 'tone';
 
@@ -742,7 +743,7 @@ function MicTestPhase({
   );
 }
 
-// Phase 2: トレーニング（Step 2: 基音システム実装）
+// Phase 2: トレーニング（Step 3統合: 録音・検出システム実装）
 function TrainingPhase({ 
   onEvaluation, 
   onEnd, 
@@ -755,7 +756,103 @@ function TrainingPhase({
   baseFrequency: ReturnType<typeof useBaseFrequency>;
 }) {
   const [isInitialized, setIsInitialized] = useState(false);
-  // const [showBaseTone, setShowBaseTone] = useState(true); // 将来の機能用
+  const [recordingMode, setRecordingMode] = useState<'baseTone' | 'recording'>('baseTone');
+  const [currentNoteIndex, setCurrentNoteIndex] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  
+  // マイクロフォン・音程検出統合
+  const { microphoneState, startRecording, stopRecording } = useMicrophoneManager();
+  const pitchDetection = usePitchDetection({
+    clarityThreshold: 0.15,
+    minFrequency: 80,
+    maxFrequency: 1200,
+    volumeThreshold: 3
+  });
+  
+  // ドレミファソラシド音階名
+  const SCALE_NOTES = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド(高)'];
+  
+  // DOM直接操作用refs（60FPS更新）
+  const frequencyDisplayRef = useRef<HTMLDivElement>(null);
+  const volumeBarRef = useRef<HTMLDivElement>(null);
+  const noteProgressRef = useRef<HTMLDivElement>(null);
+  
+  // 目標周波数計算（相対音程）
+  const getTargetFrequencies = useCallback((baseFreq: number): number[] => {
+    const semitoneRatio = Math.pow(2, 1/12);
+    return [
+      baseFreq,                           // ド
+      baseFreq * Math.pow(semitoneRatio, 2),  // レ
+      baseFreq * Math.pow(semitoneRatio, 4),  // ミ
+      baseFreq * Math.pow(semitoneRatio, 5),  // ファ
+      baseFreq * Math.pow(semitoneRatio, 7),  // ソ
+      baseFreq * Math.pow(semitoneRatio, 9),  // ラ
+      baseFreq * Math.pow(semitoneRatio, 11), // シ
+      baseFreq * 2                        // ド(高)
+    ];
+  }, []);
+  
+  // 周波数から音程名への変換
+  const frequencyToNoteName = useCallback((frequency: number): string => {
+    const A4 = 440;
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    const noteIndex = ((semitonesFromA4 + 9) % 12 + 12) % 12;
+    return `${noteNames[noteIndex]}${octave}`;
+  }, []);
+  
+  // DOM直接操作更新関数（60FPS対応）
+  const updateFrequencyDisplay = useCallback((freq: number | null, targetFreq: number | null, currentNote: string) => {
+    if (frequencyDisplayRef.current) {
+      if (freq && targetFreq) {
+        const noteName = frequencyToNoteName(freq);
+        const difference = freq - targetFreq;
+        const cents = Math.round(1200 * Math.log2(freq / targetFreq));
+        const isAccurate = Math.abs(cents) <= 20; // ±20セント以内で合格
+        
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center space-y-2">
+            <div class="text-lg font-semibold text-gray-700">目標: ${currentNote} (${targetFreq.toFixed(1)}Hz)</div>
+            <div class="text-3xl font-bold ${isAccurate ? 'text-green-600' : 'text-blue-600'}">
+              ${noteName} - ${freq.toFixed(1)} Hz
+            </div>
+            <div class="text-lg font-semibold ${isAccurate ? 'text-green-600' : Math.abs(cents) <= 50 ? 'text-yellow-600' : 'text-red-600'}">
+              ${cents > 0 ? '+' : ''}${cents} セント ${isAccurate ? '✅' : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center text-gray-400">
+            <div class="text-2xl mb-2">🎵 ${currentNote} を歌ってください</div>
+            <div class="text-lg">音声を検出中...</div>
+          </div>
+        `;
+      }
+    }
+  }, [frequencyToNoteName]);
+  
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    if (volumeBarRef.current) {
+      const clampedVolume = Math.max(0, Math.min(100, volume));
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.backgroundColor = 
+        volume > 30 ? '#10b981' : volume > 10 ? '#f59e0b' : '#ef4444';
+    }
+  }, []);
+  
+  const updateNoteProgress = useCallback((noteIndex: number, total: number) => {
+    if (noteProgressRef.current) {
+      const progress = ((noteIndex + 1) / total) * 100;
+      noteProgressRef.current.innerHTML = `
+        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+          <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-4 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+        </div>
+        <div class="text-center text-sm text-gray-600">進行状況: ${noteIndex + 1} / ${total}</div>
+      `;
+    }
+  }, []);
 
   // 初期化とランダム基音選択
   useEffect(() => {
@@ -783,6 +880,38 @@ function TrainingPhase({
       baseFrequency.cleanup();
     };
   }, [baseFrequency, isInitialized, onError]);
+  
+  // リアルタイム音程検出・表示更新（60FPS）
+  useEffect(() => {
+    if (!isRecording || !baseFrequency.currentBaseTone) return;
+    
+    const targetFreqs = getTargetFrequencies(baseFrequency.currentBaseTone.frequency);
+    const currentTargetFreq = targetFreqs[currentNoteIndex];
+    const currentNote = SCALE_NOTES[currentNoteIndex];
+    
+    const updateLoop = () => {
+      if (isRecording) {
+        // 音程検出更新
+        const { frequency, clarity } = pitchDetection.updateDetection();
+        
+        // 音量表示更新
+        const volumePercent = microphoneState.audioLevel * 100;
+        updateVolumeDisplay(volumePercent);
+        
+        // 音程表示更新
+        updateFrequencyDisplay(frequency, currentTargetFreq, currentNote);
+        
+        // 進行状況更新
+        updateNoteProgress(currentNoteIndex, SCALE_NOTES.length);
+        
+        requestAnimationFrame(updateLoop);
+      }
+    };
+    
+    if (isRecording) {
+      updateLoop();
+    }
+  }, [isRecording, baseFrequency.currentBaseTone, currentNoteIndex, getTargetFrequencies, pitchDetection, microphoneState.audioLevel, updateVolumeDisplay, updateFrequencyDisplay, updateNoteProgress]);
 
   // 基音再生ハンドラー
   const handlePlayBaseTone = useCallback(async () => {
@@ -797,7 +926,58 @@ function TrainingPhase({
   // 新しい基音を選択
   const handleNewBaseTone = useCallback(() => {
     baseFrequency.selectRandomBaseTone();
+    setRecordingMode('baseTone');
+    setCurrentNoteIndex(0);
+    setIsRecording(false);
   }, [baseFrequency]);
+  
+  // 8音階録音開始
+  const handleStartRecording = useCallback(async () => {
+    try {
+      const success = await startRecording();
+      if (success && baseFrequency.currentBaseTone && microphoneState.audioContext && microphoneState.analyser) {
+        // 目標周波数をpitch detectionに設定
+        const targetFreqs = getTargetFrequencies(baseFrequency.currentBaseTone.frequency);
+        pitchDetection.setTargetFrequencies(targetFreqs);
+        
+        // 音程検出開始
+        pitchDetection.startDetection(microphoneState.audioContext, microphoneState.analyser);
+        
+        setRecordingMode('recording');
+        setCurrentNoteIndex(0);
+        setIsRecording(true);
+        console.log('✅ 8音階録音開始');
+      } else {
+        onError('録音の開始に失敗しました');
+      }
+    } catch (error) {
+      console.error('録音開始エラー:', error);
+      onError('録音の開始に失敗しました');
+    }
+  }, [startRecording, baseFrequency.currentBaseTone, microphoneState.audioContext, microphoneState.analyser, getTargetFrequencies, pitchDetection, onError]);
+  
+  // 次の音階に進む
+  const handleNextNote = useCallback(() => {
+    if (currentNoteIndex < SCALE_NOTES.length - 1) {
+      setCurrentNoteIndex(prev => prev + 1);
+    } else {
+      // 8音階完了
+      setIsRecording(false);
+      stopRecording();
+      pitchDetection.stopDetection();
+      console.log('✅ 8音階録音完了');
+      onEvaluation();
+    }
+  }, [currentNoteIndex, stopRecording, pitchDetection, onEvaluation]);
+  
+  // 録音停止
+  const handleStopRecording = useCallback(() => {
+    setIsRecording(false);
+    setRecordingMode('baseTone');
+    stopRecording();
+    pitchDetection.stopDetection();
+    console.log('🛑 録音停止');
+  }, [stopRecording, pitchDetection]);
 
   if (!isInitialized) {
     return (
@@ -866,42 +1046,112 @@ function TrainingPhase({
         </div>
       )}
 
-      {/* Step 2 進行状況 */}
-      <div className="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-200 max-w-2xl mx-auto">
-        <h3 className="text-lg font-bold text-blue-800 mb-4">📋 Step 2: 基音システム実装完了</h3>
-        <div className="space-y-3 text-blue-700 text-left">
-          <div className="flex items-center space-x-3">
-            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-            <span>10種類基音データベース作成 (Bb3〜Ab4)</span>
+      {/* Step 3 統合: 8音階録音システム */}
+      {recordingMode === 'recording' && (
+        <div className="mb-8 p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 max-w-3xl mx-auto">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">🎵 8音階歌唱録音</h3>
+          
+          {/* 進行状況バー */}
+          <div ref={noteProgressRef} className="mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+              <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-4 rounded-full transition-all duration-300" style={{width: `${((currentNoteIndex + 1) / SCALE_NOTES.length) * 100}%`}}></div>
+            </div>
+            <div className="text-center text-sm text-gray-600">進行状況: {currentNoteIndex + 1} / {SCALE_NOTES.length}</div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-            <span>Tone.js基音再生機能実装</span>
+          
+          {/* 現在の音階表示 */}
+          <div className="text-center mb-6">
+            <div className="text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+              {SCALE_NOTES[currentNoteIndex]}
+            </div>
+            <div className="text-xl text-gray-600">
+              ({currentNoteIndex + 1}/{SCALE_NOTES.length})
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-            <span>ランダム基音選択システム</span>
+          
+          {/* 音量レベル表示 */}
+          <div className="mb-6">
+            <div className="text-center mb-3">
+              <span className="text-lg font-semibold text-gray-700">音量レベル</span>
+            </div>
+            <div className="bg-gray-200 rounded-full h-4 w-full overflow-hidden">
+              <div 
+                ref={volumeBarRef}
+                className="h-full transition-all duration-100 ease-out"
+                style={{ width: '0%', backgroundColor: '#ef4444' }}
+              />
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-            <span>基音表示UI実装</span>
+          
+          {/* リアルタイム音程検出表示 */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+            <div ref={frequencyDisplayRef} className="min-h-[120px] flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <div className="text-2xl mb-2">🎵 {SCALE_NOTES[currentNoteIndex]} を歌ってください</div>
+                <div className="text-lg">音声を検出中...</div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">→</span>
-            <span className="font-semibold">次: Step 3 - 録音・検出システム実装</span>
+          
+          {/* 録音制御ボタン */}
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={handleNextNote}
+              className="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg font-bold"
+            >
+              {currentNoteIndex < SCALE_NOTES.length - 1 ? '次の音階へ' : '録音完了'}
+            </button>
+            <button
+              onClick={handleStopRecording}
+              className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
+            >
+              録音停止
+            </button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Step 3 進行状況（基音モード時表示） */}
+      {recordingMode === 'baseTone' && (
+        <div className="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-200 max-w-2xl mx-auto">
+          <h3 className="text-lg font-bold text-blue-800 mb-4">📋 Step 3: 録音・検出システム実装完了</h3>
+          <div className="space-y-3 text-blue-700 text-left">
+            <div className="flex items-center space-x-3">
+              <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span>Pitchy統合音程検出フック作成</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span>8音階順次録音システム実装</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span>リアルタイム周波数表示機能</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span>進行状況管理システム</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">→</span>
+              <span className="font-semibold">準備完了: 8音階歌唱録音を開始できます</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ナビゲーションボタン */}
       <div className="space-x-4">
-        <button
-          onClick={onEvaluation}
-          className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg font-bold"
-        >
-          <CheckCircle className="w-5 h-5 inline mr-2" />
-          Step 3: 録音システムへ進む
-        </button>
+        {recordingMode === 'baseTone' && (
+          <button
+            onClick={handleStartRecording}
+            disabled={!baseFrequency.currentBaseTone}
+            className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all duration-300 hover:scale-105 shadow-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mic className="w-5 h-5 inline mr-2" />
+            🎵 8音階歌唱録音開始
+          </button>
+        )}
         <button
           onClick={onEnd}
           className="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors"
@@ -914,10 +1164,21 @@ function TrainingPhase({
       <div className="mt-8 p-4 bg-yellow-50 rounded-xl border border-yellow-200 max-w-md mx-auto">
         <h4 className="font-bold text-yellow-800 mb-2">💡 使い方</h4>
         <div className="text-sm text-yellow-700 space-y-1">
-          <div>• 「基音を聞く」で2秒間基音が再生されます</div>
-          <div>• 基音を覚えたら、ドレミファソラシドを歌う準備をしましょう</div>
-          <div>• 「別の基音にする」で異なる基音に変更できます</div>
-          <div>• 次のステップで実際の音程録音を行います</div>
+          {recordingMode === 'baseTone' ? (
+            <>
+              <div>• 「基音を聞く」で2秒間基音が再生されます</div>
+              <div>• 基音を覚えたら「8音階歌唱録音開始」をクリック</div>
+              <div>• ドレミファソラシドを順番に正確に歌いましょう</div>
+              <div>• リアルタイムで音程と誤差が表示されます</div>
+            </>
+          ) : (
+            <>
+              <div>• 表示された音階名を見て正確に歌ってください</div>
+              <div>• 目標周波数と現在の音程が表示されます</div>
+              <div>• ±20セント以内で緑色の✅が表示されます</div>
+              <div>• 「次の音階へ」で進む、「録音完了」で評価に進みます</div>
+            </>
+          )}
         </div>
       </div>
     </>
