@@ -440,7 +440,15 @@ function MicTestPhase({
   const updateVolumeDisplay = useCallback((volume: number) => {
     if (volumeBarRef.current) {
       const clampedVolume = Math.max(0, Math.min(100, volume));
+      
+      // iPhone Safari対応: より強制的なスタイル更新
       volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.minWidth = clampedVolume > 0 ? '2px' : '0px'; // 最小幅確保
+      
+      // デバッグ用ログ（開発時のみ）
+      if (clampedVolume > 0) {
+        console.log(`🔊 音量更新: ${clampedVolume.toFixed(1)}% (原値: ${volume.toFixed(1)})`);
+      }
       
       // 音量レベルに応じた色変更
       if (volume > 30) {
@@ -727,7 +735,7 @@ function MicTestPhase({
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
             {!hasBeenGood 
-              ? 'マイク音量を調整してください'
+              ? 'マイクの音量を調整してください'
               : 'トレーニング開始'}
           </button>
         )}
@@ -838,9 +846,17 @@ function TrainingPhase({
   const updateVolumeDisplay = useCallback((volume: number) => {
     if (volumeBarRef.current) {
       const clampedVolume = Math.max(0, Math.min(100, volume));
+      
+      // iPhone Safari対応: より強制的なスタイル更新
       volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.minWidth = clampedVolume > 0 ? '2px' : '0px'; // 最小幅確保
       volumeBarRef.current.style.backgroundColor = 
         volume > 30 ? '#10b981' : volume > 10 ? '#f59e0b' : '#ef4444';
+      
+      // デバッグ用ログ（トレーニング中のみ）
+      if (clampedVolume > 0) {
+        console.log(`🎵 録音中音量: ${clampedVolume.toFixed(1)}% (原値: ${volume.toFixed(1)})`);
+      }
     }
   }, []);
   
