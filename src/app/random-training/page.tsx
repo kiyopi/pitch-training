@@ -611,15 +611,31 @@ function MicTestPhase({
       {/* 制御ボタン */}
       <div className="mb-8 space-y-4">
         {!microphoneState.isRecording ? (
-          <button
-            onClick={handleStartTest}
-            className="group relative overflow-hidden px-10 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 hover:scale-105 hover:shadow-2xl"
-          >
-            <div className="flex items-center space-x-3">
-              <Mic className="w-6 h-6" />
-              <span>🎤 マイクテスト開始</span>
-            </div>
-          </button>
+          <div className="relative">
+            {/* パルス効果の背景レイヤー1 */}
+            <div 
+              className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
+              style={{
+                animation: 'pulse-expand 2s ease-out infinite'
+              }}
+            />
+            {/* パルス効果の背景レイヤー2 */}
+            <div 
+              className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
+              style={{
+                animation: 'pulse-expand 2s ease-out 1s infinite'
+              }}
+            />
+            <button
+              onClick={handleStartTest}
+              className="relative px-10 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-200 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 hover:scale-105"
+            >
+              <div className="flex items-center space-x-3">
+                <Mic className="w-6 h-6" />
+                <span>🎤 マイクテスト開始</span>
+              </div>
+            </button>
+          </div>
         ) : (
           <div className="px-10 py-4 text-xl text-gray-600">
             <div className="flex items-center justify-center space-x-3">
@@ -660,22 +676,48 @@ function MicTestPhase({
           戻る
         </button>
         
-        <button
-          onClick={onNext}
-          disabled={microphoneState.permission === 'denied' && !microphoneState.isRecording}
-          className={`px-8 py-3 rounded-xl transition-all duration-300 shadow-lg font-bold ${
-            microphoneState.permission === 'denied' && !microphoneState.isRecording
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : isVolumeGood && microphoneState.isRecording
-              ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105 animate-pulse shadow-2xl'
-              : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105'
-          }`}
-        >
-          <CheckCircle className={`w-5 h-5 inline mr-2 ${
-            isVolumeGood && microphoneState.isRecording ? 'animate-bounce' : ''
-          }`} />
-          トレーニング開始
-        </button>
+        {microphoneState.permission === 'denied' && !microphoneState.isRecording ? (
+          <button
+            onClick={onNext}
+            disabled
+            className="px-8 py-3 rounded-xl bg-gray-300 text-gray-500 cursor-not-allowed shadow-lg font-bold"
+          >
+            <CheckCircle className="w-5 h-5 inline mr-2" />
+            トレーニング開始
+          </button>
+        ) : isVolumeGood && microphoneState.isRecording ? (
+          <div className="relative">
+            {/* パルス効果の背景レイヤー1 */}
+            <div 
+              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              style={{
+                animation: 'pulse-expand 2s ease-out infinite'
+              }}
+            />
+            {/* パルス効果の背景レイヤー2 */}
+            <div 
+              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              style={{
+                animation: 'pulse-expand 2s ease-out 1s infinite'
+              }}
+            />
+            <button
+              onClick={onNext}
+              className="relative px-8 py-3 rounded-xl transition-all duration-200 bg-gradient-to-r from-green-600 to-blue-600 text-white hover:from-green-700 hover:to-blue-700 hover:scale-105 shadow-lg font-bold"
+            >
+              <CheckCircle className="w-5 h-5 inline mr-2" />
+              トレーニング開始
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onNext}
+            className="px-8 py-3 rounded-xl transition-all duration-300 shadow-lg font-bold bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105"
+          >
+            <CheckCircle className="w-5 h-5 inline mr-2" />
+            トレーニング開始
+          </button>
+        )}
       </div>
 
       {/* ヒント */}
