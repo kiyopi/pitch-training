@@ -802,33 +802,20 @@ function TrainingPhase({
     return `${noteNames[noteIndex]}${octave}`;
   }, []);
   
-  // DOM直接操作更新関数（60FPS対応）
+  // DOM直接操作更新関数（60FPS対応）- innerHTML使用回避
   const updateFrequencyDisplay = useCallback((freq: number | null, targetFreq: number | null, currentNote: string) => {
     if (frequencyDisplayRef.current) {
       if (freq && targetFreq) {
         const noteName = frequencyToNoteName(freq);
-        const difference = freq - targetFreq;
         const cents = Math.round(1200 * Math.log2(freq / targetFreq));
         const isAccurate = Math.abs(cents) <= 20; // ±20セント以内で合格
         
-        frequencyDisplayRef.current.innerHTML = `
-          <div class="text-center space-y-2">
-            <div class="text-lg font-semibold text-gray-700">目標: ${currentNote} (${targetFreq.toFixed(1)}Hz)</div>
-            <div class="text-3xl font-bold ${isAccurate ? 'text-green-600' : 'text-blue-600'}">
-              ${noteName} - ${freq.toFixed(1)} Hz
-            </div>
-            <div class="text-lg font-semibold ${isAccurate ? 'text-green-600' : Math.abs(cents) <= 50 ? 'text-yellow-600' : 'text-red-600'}">
-              ${cents > 0 ? '+' : ''}${cents} セント ${isAccurate ? '✅' : ''}
-            </div>
-          </div>
-        `;
+        // React安全な方法でテキスト更新
+        frequencyDisplayRef.current.textContent = `目標: ${currentNote} (${targetFreq.toFixed(1)}Hz) | 検出: ${noteName} - ${freq.toFixed(1)} Hz | ${cents > 0 ? '+' : ''}${cents} セント ${isAccurate ? '✅' : ''}`;
+        frequencyDisplayRef.current.className = `text-center text-lg font-semibold ${isAccurate ? 'text-green-600' : 'text-blue-600'}`;
       } else {
-        frequencyDisplayRef.current.innerHTML = `
-          <div class="text-center text-gray-400">
-            <div class="text-2xl mb-2">🎵 ${currentNote} を歌ってください</div>
-            <div class="text-lg">音声を検出中...</div>
-          </div>
-        `;
+        frequencyDisplayRef.current.textContent = `🎵 ${currentNote} を歌ってください - 音声を検出中...`;
+        frequencyDisplayRef.current.className = 'text-center text-gray-400';
       }
     }
   }, [frequencyToNoteName]);
@@ -845,12 +832,9 @@ function TrainingPhase({
   const updateNoteProgress = useCallback((noteIndex: number, total: number) => {
     if (noteProgressRef.current) {
       const progress = ((noteIndex + 1) / total) * 100;
-      noteProgressRef.current.innerHTML = `
-        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
-          <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-4 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
-        </div>
-        <div class="text-center text-sm text-gray-600">進行状況: ${noteIndex + 1} / ${total}</div>
-      `;
+      // React安全な方法でテキスト更新
+      noteProgressRef.current.textContent = `進行状況: ${noteIndex + 1} / ${total} (${progress.toFixed(1)}%)`;
+      noteProgressRef.current.className = 'text-center text-sm text-gray-600';
     }
   }, []);
 
@@ -883,12 +867,14 @@ function TrainingPhase({
       
       return () => clearTimeout(timer);
     }
-
-    // クリーンアップ
+  }, [baseFrequency, isInitialized, onError]);
+  
+  // コンポーネントアンマウント時のみクリーンアップ
+  useEffect(() => {
     return () => {
       baseFrequency.cleanup();
     };
-  }, [baseFrequency, isInitialized, onError]);
+  }, []); // 空の依存配列でマウント時のみ実行
   
   // リアルタイム音程検出・表示更新（60FPS）
   useEffect(() => {
@@ -922,19 +908,28 @@ function TrainingPhase({
     }
   }, [isRecording, baseFrequency.currentBaseTone, currentNoteIndex, getTargetFrequencies, pitchDetection, microphoneState.audioLevel, updateVolumeDisplay, updateFrequencyDisplay, updateNoteProgress]);
 
-  // 基音再生ハンドラー
+  // 基音再生ハンドラー（Phase変更を防ぐ）
   const handlePlayBaseTone = useCallback(async () => {
     try {
+      console.log('🎹 基音再生開始リクエスト');
+      
       // 基音が選択されていない場合、強制的に選択
       if (!baseFrequency.currentBaseTone) {
         console.log('🔧 基音未選択のため強制選択実行');
         baseFrequency.selectRandomBaseTone();
       }
       
-      await baseFrequency.playBaseTone(2); // 2秒間再生
+      if (baseFrequency.currentBaseTone) {
+        console.log('🎹 基音再生実行:', baseFrequency.currentBaseTone.note);
+        await baseFrequency.playBaseTone(2); // 2秒間再生
+        console.log('✅ 基音再生完了');
+      } else {
+        console.warn('⚠️ 基音が選択されていません');
+      }
     } catch (error) {
-      console.error('基音再生エラー:', error);
-      onError('基音の再生に失敗しました。ページを再読み込みしてください。');
+      console.error('❌ 基音再生エラー:', error);
+      // エラーでも元のphaseに戻らないようにする
+      onError('基音の再生に失敗しました。もう一度お試しください。');
     }
   }, [baseFrequency, onError]);
 
