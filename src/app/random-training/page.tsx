@@ -734,9 +734,7 @@ function MicTestPhase({
             }`}
           >
             <CheckCircle className="w-5 h-5 inline mr-2" />
-            {!hasBeenGood 
-              ? 'マイクの音量を調整してください'
-              : 'トレーニング開始'}
+            トレーニング開始
           </button>
         )}
       </div>
