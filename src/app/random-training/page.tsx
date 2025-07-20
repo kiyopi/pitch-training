@@ -52,13 +52,13 @@ const useBaseFrequency = () => {
       // SamplerからSynthに変更（外部ファイル読み込み不要でiPhone Safari対応）
       const synth = new Tone.Synth({
         oscillator: { 
-          type: "sine"  // シンプルで安定した音
+          type: "triangle"  // より楽器らしい音（sineよりもリッチ）
         },
         envelope: {
-          attack: 0.02,   // ピアノのようなアタック感
-          decay: 0.1,
-          sustain: 0.7,   // 長めのサスティン
-          release: 0.8    // 自然な減衰
+          attack: 0.01,   // 素早いアタック
+          decay: 0.3,     // 長めのディケイ
+          sustain: 0.4,   // 適度なサスティン
+          release: 1.2    // ピアノらしい減衰
         }
       }).toDestination();
 
