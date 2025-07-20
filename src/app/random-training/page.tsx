@@ -622,14 +622,14 @@ function MicTestPhase({
           <div className="relative inline-block">
             {/* パルス効果の背景レイヤー1 */}
             <div 
-              className="absolute -inset-4 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
+              className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
               style={{
                 animation: 'pulse-expand 2s ease-out infinite'
               }}
             />
             {/* パルス効果の背景レイヤー2 */}
             <div 
-              className="absolute -inset-4 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
+              className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-blue-400/70 to-green-400/70 border border-blue-300"
               style={{
                 animation: 'pulse-expand 2s ease-out 1s infinite'
               }}
@@ -697,14 +697,14 @@ function MicTestPhase({
           <div className="relative inline-block">
             {/* パルス効果の背景レイヤー1 */}
             <div 
-              className="absolute -inset-3 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
               style={{
                 animation: 'pulse-expand 2s ease-out infinite'
               }}
             />
             {/* パルス効果の背景レイヤー2 */}
             <div 
-              className="absolute -inset-3 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
+              className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-green-400/70 to-blue-400/70 border border-green-300"
               style={{
                 animation: 'pulse-expand 2s ease-out 1s infinite'
               }}
