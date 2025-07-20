@@ -596,9 +596,13 @@ function MicTestPhase({
           {/* 音量ガイド */}
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              ドの音を発声して<br/>
-              <span className="font-bold text-green-600">30%以上</span>になるよう調整してください
+              ドの音を発声してマイクテストをしてください
             </p>
+            {isVolumeGood && microphoneState.isRecording && (
+              <p className="text-sm text-green-600 mt-2 font-bold animate-pulse">
+                ✅ マイクテスト良好！トレーニングを開始できます
+              </p>
+            )}
           </div>
           </div>
         </div>
@@ -662,10 +666,14 @@ function MicTestPhase({
           className={`px-8 py-3 rounded-xl transition-all duration-300 shadow-lg font-bold ${
             microphoneState.permission === 'denied' && !microphoneState.isRecording
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : isVolumeGood && microphoneState.isRecording
+              ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105 animate-pulse shadow-2xl'
               : 'bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 hover:scale-105'
           }`}
         >
-          <CheckCircle className="w-5 h-5 inline mr-2" />
+          <CheckCircle className={`w-5 h-5 inline mr-2 ${
+            isVolumeGood && microphoneState.isRecording ? 'animate-bounce' : ''
+          }`} />
           トレーニング開始
         </button>
       </div>
