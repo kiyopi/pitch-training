@@ -9,8 +9,9 @@ import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
 import { frequencyToNote, evaluateRelativePitchAccuracy } from "@/utils/noteUtils";
 
 export default function HybridAudioTestPage() {
-  // React状態管理
+  // React状態管理（SSR hydration問題対策）
   const [currentBaseTone, setCurrentBaseTone] = useState<BaseTone | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isPlayingPiano, setIsPlayingPiano] = useState(false);
   const [testResults, setTestResults] = useState<Array<{
     baseTone: BaseTone;
@@ -42,9 +43,18 @@ export default function HybridAudioTestPage() {
   const [detectedNote, setDetectedNote] = useState({ note: '', octave: 0, fullNote: '' });
 
   /**
+   * Hydration完了処理
+   */
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  /**
    * コンポーネント初期化
    */
   useEffect(() => {
+    if (!isHydrated) return;
+    
     console.log('🚀 HybridAudioTest: 初期化開始');
 
     // VanillaAudioEngine初期化
@@ -76,7 +86,7 @@ export default function HybridAudioTestPage() {
         audioEngineRef.current.dispose();
       }
     };
-  }, []);
+  }, [isHydrated]);
 
   /**
    * 音声データ取得コールバック（60FPS用）
@@ -108,10 +118,23 @@ export default function HybridAudioTestPage() {
       
       if (success && hybridInterfaceRef.current) {
         // DOM直接操作による60FPS可視化開始
-        hybridInterfaceRef.current.start(getAudioDisplayData);
+        hybridInterfaceRef.current.start(() => {
+          const currentLevel = microphoneState.audioLevel || 0;
+          const mockFreq = currentLevel > 10 ? 220 + (currentLevel * 2) : 0;
+          const mockClarity = currentLevel > 10 ? Math.min(currentLevel / 50, 1) : 0;
+          
+          return {
+            volume: currentLevel,
+            frequency: mockFreq,
+            note: detectedNote.note || '—',
+            octave: detectedNote.octave || 0,
+            clarity: mockClarity,
+            isValidSound: mockFreq > 80 && mockClarity > 0.3
+          };
+        });
         hybridInterfaceRef.current.addDebugMessage('マイクロフォン＋可視化開始');
         
-        console.log('✅ マイクロフォン＋ハイブリッド可視化開始');
+        console.log('🚀 HybridAudioInterface: 60FPS更新開始');
       } else {
         console.error('❌ マイクロフォン開始失敗');
       }
@@ -132,6 +155,7 @@ export default function HybridAudioTestPage() {
     if (hybridInterfaceRef.current) {
       hybridInterfaceRef.current.stop();
       hybridInterfaceRef.current.addDebugMessage('マイクロフォン＋可視化停止');
+      console.log('⏹️ HybridAudioInterface: 60FPS更新停止');
     }
     
     // 検出データリセット
@@ -297,8 +321,8 @@ export default function HybridAudioTestPage() {
               </div>
             </button>
             
-            {/* 現在の基音表示 */}
-            {currentBaseTone && (
+            {/* 現在の基音表示（SSR対策） */}
+            {isHydrated && currentBaseTone && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
                   <span className="font-bold">基音:</span> {currentBaseTone.note}

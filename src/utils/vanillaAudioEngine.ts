@@ -94,10 +94,23 @@ export class VanillaAudioEngine {
   }
 
   /**
-   * プロトタイプ準拠のピアノ音再生
+   * iPhone AudioContext問題対策
+   */
+  private async ensureAudioContextResumed(): Promise<void> {
+    if (Tone.context.state === 'suspended') {
+      console.log('🔊 VanillaAudioEngine: AudioContext復旧開始');
+      await Tone.context.resume();
+      console.log('✅ VanillaAudioEngine: AudioContext復旧完了');
+    }
+  }
+
+  /**
+   * プロトタイプ準拠のピアノ音再生（iPhone対応強化）
    */
   async playBaseTone(note: string): Promise<boolean> {
     try {
+      // iPhone AudioContext問題対策
+      await this.ensureAudioContextResumed();
       // 初期化確認
       if (!await this.initialize()) {
         throw new Error('音源初期化失敗');
