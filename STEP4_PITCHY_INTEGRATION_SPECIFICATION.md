@@ -34,6 +34,155 @@ Next.js 15.4.1 + TypeScript + Pitchy + 相対音感トレーニングアプリ
 - **信頼度評価**: 検出結果の信頼度スコア
 - **平滑化処理**: ノイズ除去と安定化
 
+### 2.1 動的オクターブ補正・倍音誤検出回避システム
+
+#### 問題概要
+人間の歌唱音程検出では、基音に加えて2倍音、3倍音、4倍音が同時に検出されるため、Pitchy音程検出では上位倍音が誤って基音として認識される問題が発生。これにより実際の歌唱音程より1-2オクターブ高い周波数が検出される現象。
+
+#### システム要件
+- **基音検出精度**: ユーザーの歌唱における真の基音を99%以上の精度で検出
+- **倍音除去**: 2倍音、3倍音、4倍音の誤検出を動的に回避
+- **リアルタイム処理**: 50ms以下での高速補正処理
+- **安定性**: 継続的な歌唱中での一貫した基音検出
+
+#### 技術実装仕様
+
+##### HarmonicCorrectionConfig インターフェース
+```typescript
+interface HarmonicCorrectionConfig {
+  // 人間の声域範囲フィルタ (C3-C6: 130.81-1046.50Hz)
+  minHumanFreq: number;    // 130.81 (C3)
+  maxHumanFreq: number;    // 1046.50 (C6)
+  
+  // 音楽的妥当性評価設定
+  musicalValidityWeight: number;     // 0.4
+  frequencyStabilityWeight: number;  // 0.3
+  harmonicConsistencyWeight: number; // 0.3
+  
+  // セント許容誤差
+  maxCentsDeviation: number;         // 50
+}
+```
+
+##### 動的オクターブ補正アルゴリズム
+```typescript
+const correctHarmonicFrequency = (
+  detectedFreq: number,
+  previousFreq: number | null,
+  config: HarmonicCorrectionConfig
+): number => {
+  // 1. 基音候補生成（倍音から逆算）
+  const fundamentalCandidates = [
+    detectedFreq,        // そのまま（基音の可能性）
+    detectedFreq / 2.0,  // 2倍音から基音を逆算
+    detectedFreq / 3.0,  // 3倍音から基音を逆算
+    detectedFreq / 4.0,  // 4倍音から基音を逆算
+    detectedFreq * 2.0,  // 基音から2倍音（低音域誤検出補正）
+  ].filter(freq => 
+    freq >= config.minHumanFreq && 
+    freq <= config.maxHumanFreq
+  );
+
+  // 2. 各候補の評価スコア計算
+  let bestCandidate = detectedFreq;
+  let bestScore = -1;
+
+  for (const candidate of fundamentalCandidates) {
+    const score = evaluateFundamentalCandidate(
+      candidate, 
+      previousFreq, 
+      config
+    );
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestCandidate = candidate;
+    }
+  }
+
+  return bestCandidate;
+};
+```
+
+##### 基音候補評価システム
+```typescript
+const evaluateFundamentalCandidate = (
+  candidate: number,
+  previousFreq: number | null,
+  config: HarmonicCorrectionConfig
+): number => {
+  // 1. 音楽的妥当性スコア（最近接音名との距離）
+  const musicalScore = calculateMusicalValidity(candidate, config.maxCentsDeviation);
+  
+  // 2. 周波数安定性スコア（前回検出値との連続性）
+  const stabilityScore = previousFreq ? 
+    calculateFrequencyStability(candidate, previousFreq) : 0.5;
+  
+  // 3. 倍音一貫性スコア（基音らしさ）
+  const harmonicScore = calculateHarmonicConsistency(candidate);
+  
+  // 重み付き総合評価
+  return (
+    musicalScore * config.musicalValidityWeight +
+    stabilityScore * config.frequencyStabilityWeight +
+    harmonicScore * config.harmonicConsistencyWeight
+  );
+};
+```
+
+##### 音楽的妥当性評価
+```typescript
+const calculateMusicalValidity = (frequency: number, maxCents: number): number => {
+  const midiNote = 12 * Math.log2(frequency / 440) + 69;
+  const nearestMidiNote = Math.round(midiNote);
+  const centsDeviation = Math.abs((midiNote - nearestMidiNote) * 100);
+  
+  // セント偏差に基づく妥当性（0-1スケール）
+  return Math.max(0, 1 - (centsDeviation / maxCents));
+};
+```
+
+##### 周波数安定性評価
+```typescript
+const calculateFrequencyStability = (current: number, previous: number): number => {
+  const ratio = Math.max(current, previous) / Math.min(current, previous);
+  
+  // 10%以内の変動で高スコア、50%超過で最低スコア
+  if (ratio <= 1.1) return 1.0;      // 10%以内: 完全安定
+  if (ratio <= 1.3) return 0.8;      // 30%以内: 高安定
+  if (ratio <= 1.5) return 0.4;      // 50%以内: 中程度
+  return 0.0;                        // 50%超過: 不安定
+};
+```
+
+##### 倍音一貫性評価
+```typescript
+const calculateHarmonicConsistency = (frequency: number): number => {
+  // 基音域（130-523Hz）で高スコア、高音域で減点
+  if (frequency >= 130.81 && frequency <= 523.25) {
+    return 1.0;  // C3-C5域: 基音として最適
+  } else if (frequency <= 130.81) {
+    return 0.6;  // 低音域: やや不自然
+  } else {
+    // 高音域: オクターブ距離に応じて減点
+    const octavesAboveC5 = Math.log2(frequency / 523.25);
+    return Math.max(0.2, 1.0 - octavesAboveC5 * 0.3);
+  }
+};
+```
+
+#### 実装時注意事項
+1. **リアルタイム性能**: 各フレーム（20-50ms）での高速処理が必須
+2. **メモリ効率**: 候補配列の使い回し、不要なオブジェクト生成回避  
+3. **エラーハンドリング**: 候補が0件の場合のフォールバック処理
+4. **デバッグ対応**: 補正前後の周波数ログ出力（開発時）
+
+#### 期待効果
+- **基音検出精度**: 現在60-70% → 95%以上に向上
+- **オクターブ誤認**: ほぼ完全に除去
+- **歌唱体験**: 正確な音程フィードバックによる学習効果向上
+- **システム信頼性**: 安定した基音検出による判定精度向上
+
 ---
 
 ## 🔧 Step 4実装設計
