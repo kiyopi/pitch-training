@@ -46,22 +46,23 @@
 
 ## 🔄 現在作業中
 
-### 精度テストページ v2 自動化フロー完成（2025-07-19 継続セッション）
-- **作業開始**: 13:00頃
-- **現在時刻**: 14:30頃
+### iPhone音量問題・フェーズ分離システム実装（2025-07-21 新規セッション）
+- **作業開始**: 2025-07-21
 - **対象ブランチ**: `pitch-training-nextjs-v2-impl-001`
-- **実装方針**: training/randomをベースとした段階的実装
+- **対象ファイル**: `/src/app/test/separated-audio/page.tsx`
+- **実装方針**: マイクロフォン不在対応 + 完全フェーズ分離システム
 
 #### **完了済みステップ:**
-- **Step 1**: ✅ **完了** - `/src/app/test/accuracy-test-v2/page.tsx` 作成、ピアノ音再生確認
-- **Step 2**: ✅ **完了** - マイクロフォン機能移植、GitHub Pages動作確認
-- **自動化フロー**: ✅ **完了** - 基音再生時マイク自動開始、ワンクリック操作実現
+- **Step A**: ✅ **完了** - 基盤システム改修（AudioSystemPhase + iPhone最適化）
+- **Step B-1**: ✅ **完了** - フェーズ移行制御システム実装
+- **Step B-0**: ✅ **完了** - マイクロフォン可用性チェックシステム実装（12種エラーケース対応）
+- **iPhone音量問題調査**: ✅ **完了** - 根本原因特定（AudioContext競合）
 
 #### **最新コミット:**
-- **ハッシュ**: `30e6051`
-- **内容**: 自動化フロー完成: 基音再生時マイク自動開始
-- **デプロイ**: GitHub Actions実行中
-- **URL**: https://kiyopi.github.io/pitch-training/test/accuracy-test-v2/
+- **ハッシュ**: `aabb798`
+- **内容**: Step B-1完了: フェーズ移行制御システム実装
+- **デプロイ**: GitHub Actions実行済み
+- **URL**: https://kiyopi.github.io/pitch-training/test/separated-audio/
 
 #### **実装済み機能:**
 - ✅ Tone.js + Salamander Piano音源（確実動作）
@@ -72,27 +73,33 @@
 
 ---
 
-## ⏳ 次回タスク（VSCode再起動後の継続作業）
+## ⏳ 次回タスク（現在進行中）
 
-### 🚨 **即座確認事項（VSCode再起動後）**
-1. **GitHub Actions確認**: https://github.com/kiyopi/pitch-training/actions
-2. **デプロイ確認**: https://kiyopi.github.io/pitch-training/test/accuracy-test-v2/
-3. **自動化フロー確認**: 基音再生→マイク自動開始が動作するか
-4. **現在ブランチ確認**: `git branch --show-current` が `pitch-training-nextjs-v2-impl-001` か
+### ✅ **Step B-0: マイク可用性チェックシステム実装（完了）**
+1. **実装内容**: 
+   - ✅ 12種類のマイクエラーケース完全対応
+   - ✅ 段階的可用性チェック（ブラウザサポート→デバイス列挙→実アクセステスト）
+   - ✅ 適応的ユーザーメッセージ・解決案提示
+   - ✅ フォールバック機能（基音専用モード）
+   - ✅ **技術仕様書作成**: `MICROPHONE_AVAILABILITY_CHECK_SPECIFICATION.md`
 
-### 📋 **精度テストページ v2 残り作業**
+2. **完了項目**:
+   - ✅ TypeScript型定義・インターフェース設計
+   - ✅ エラー分析・分類システム実装
+   - ✅ エラーダイアログUI実装
+   - ✅ フロー図・詳細仕様書作成
+
+3. **次回テスト予定**:
+   - Chrome/Firefox/Safari 権限拒否テスト
+   - マイク物理切断・他アプリ占有テスト
+   - HTTP環境・古ブラウザ制限テスト
+
+### 📋 **後続実装予定**
 #### **次の実装優先順位:**
-1. **Step 3実装**: 相対音程計算・表示機能追加
-   - noteUtils.tsから `calculateRelativeInterval()`, `evaluateRelativePitchAccuracy()` 移植
-   - 音名表示（C4, D4等）追加
-   - セント偏差・精度評価表示
-   
-2. **Step 4実装**: 5回テストセッション・統計分析機能
-   - テストセッション管理state追加
-   - 結果記録・統計計算機能
-   - 平均スコア・精度分布表示
-
-3. **最終確認**: iPhone Safari 全機能動作確認
+1. **Step B-1.5**: フェーズシステムマイク対応統合
+2. **Step B-2'**: 基音再生専用フェーズ + マイク不在モード実装  
+3. **Step B-3**: 採点処理専用フェーズ実装
+4. **Step B-4**: 統合テスト・iPhone音量問題確認
 
 ### 🔧 **VSCode クラッシュ対策継続**
 - **軽量モード**: 必要最小限の拡張機能のみ

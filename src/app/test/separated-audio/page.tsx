@@ -1035,6 +1035,200 @@ export default function SeparatedAudioTestPage() {
     }
   }, [addLog]);
 
+  // Step B-2': リスニング専用UI更新関数
+  const updateListeningOnlyUI = useCallback((mode: 'random' | 'continuous' | 'chromatic', message: string) => {
+    if (testDisplayRef.current) {
+      const modeColors: Record<string, string> = {
+        'random': 'from-blue-50 to-indigo-100',
+        'continuous': 'from-green-50 to-emerald-100', 
+        'chromatic': 'from-purple-50 to-pink-100'
+      };
+      
+      const modeIcons: Record<string, string> = {
+        'random': '🎲',
+        'continuous': '🔄',
+        'chromatic': '🎵'
+      };
+      
+      const modeNames: Record<string, string> = {
+        'random': 'ランダムリスニング',
+        'continuous': '連続リスニング',
+        'chromatic': 'クロマティックリスニング'
+      };
+      
+      testDisplayRef.current.innerHTML = `
+        <div class="w-full h-full p-4">
+          <div class="bg-gradient-to-br ${modeColors[mode]} rounded-xl p-6 h-full shadow-lg border">
+            <div class="flex items-center justify-center mb-4">
+              <span class="text-3xl mr-3">${modeIcons[mode]}</span>
+              <div class="text-xl font-bold text-gray-800">${modeNames[mode]}</div>
+            </div>
+            <div class="text-center text-gray-700 leading-relaxed whitespace-pre-line">
+              ${message}
+            </div>
+            <div class="mt-4 text-center">
+              <div class="inline-block px-4 py-2 bg-white bg-opacity-70 rounded-lg text-sm text-gray-600">
+                🎤 マイク機能無効 - リスニング専用モード
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }, []);
+
+  // Step B-2': 基音再生専用フェーズ実装（マイク不在モード対応）
+  const executeBaseToneOnlyPhase = useCallback(async (trainingMode?: 'random' | 'continuous' | 'chromatic') => {
+    addLog('🎹 Step B-2\': 基音再生専用フェーズ開始');
+    updateSystemStatusWithPhase(AudioSystemPhase.BASE_TONE_PHASE, '基音専用モード - マイク機能無し');
+    
+    try {
+      // 1. マイクシステム完全停止確認
+      if (streamRef.current || audioContextRef.current) {
+        addLog('🔇 マイク残存検出 - 完全停止実行');
+        await stopMicrophoneSystemCompletely();
+      }
+      
+      // 2. 基音システム初期化（iPhone最適化）
+      if (!samplerRef.current) {
+        addLog('🎹 Salamander Piano Sampler初期化中...');
+        updateSystemStatus('基音システム準備中...', 'yellow');
+        
+        // Tone.js AudioContext開始（ユーザー操作後）
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+        }
+        
+        samplerRef.current = new Tone.Sampler({
+          urls: { "C4": "C4.mp3" },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1.5
+        }).toDestination();
+        
+        await new Promise(resolve => {
+          const checkLoaded = () => {
+            if (samplerRef.current?.loaded) {
+              resolve(undefined);
+            } else {
+              setTimeout(checkLoaded, 100);
+            }
+          };
+          checkLoaded();
+        });
+        
+        setIsInitialized(true);
+        addLog('✅ Salamander Piano準備完了');
+      }
+      
+      // 3. モード別基音実行
+      switch (trainingMode) {
+        case 'random':
+          await executeRandomListeningMode();
+          break;
+        case 'continuous':
+          await executeContinuousListeningMode();
+          break;
+        case 'chromatic':
+          await executeChromaticListeningMode();
+          break;
+        default:
+          // デフォルトランダムモード
+          await executeRandomListeningMode();
+      }
+      
+    } catch (error) {
+      addLog(`❌ Step B-2'実行エラー: ${error}`);
+      await transitionToErrorState(`基音専用フェーズエラー: ${error}`);
+    }
+  }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, transitionToErrorState, updateSystemStatus]);
+
+  // Step B-2': ランダムリスニングモード実装
+  const executeRandomListeningMode = useCallback(async () => {
+    addLog('🎲 ランダム基音リスニングモード開始');
+    updateListeningOnlyUI('random', '10種類の基音からランダム選択でリスニング練習');
+    
+    const baseTone = selectRandomBaseTone();
+    setCurrentBaseTone(baseTone);
+    
+    if (samplerRef.current && baseTone) {
+      addLog(`🎵 基音再生: ${baseTone.note} (${baseTone.frequency.toFixed(2)}Hz)`);
+      
+      // iPhone音量最適化（マイク無効時は最大音量）
+      samplerRef.current.volume.value = -6; // iPhone最適化音量
+      samplerRef.current.triggerAttackRelease(baseTone.tonejs, '2n');
+      
+      updateListeningOnlyUI('random', `🎵 再生中: ${baseTone.note} (${baseTone.frequency.toFixed(2)}Hz)\n🎯 この音を基準に相対音程を確認してください`);
+    }
+  }, [addLog, selectRandomBaseTone, updateListeningOnlyUI]);
+
+  // Step B-2': 連続リスニングモード実装
+  const executeContinuousListeningMode = useCallback(async () => {
+    addLog('🔄 連続基音リスニングモード開始');
+    updateListeningOnlyUI('continuous', '同じ基音で連続リスニング練習 (5ラウンド)');
+    
+    const baseTone = currentBaseTone || selectRandomBaseTone();
+    setCurrentBaseTone(baseTone);
+    
+    if (samplerRef.current && baseTone) {
+      for (let round = 1; round <= 5; round++) {
+        addLog(`🎵 ラウンド${round}/5: ${baseTone.note} 再生`);
+        
+        samplerRef.current.volume.value = -6; // iPhone最適化
+        samplerRef.current.triggerAttackRelease(baseTone.tonejs, '2n');
+        
+        updateListeningOnlyUI('continuous', `🔄 ラウンド${round}/5\n🎵 基音: ${baseTone.note} (${baseTone.frequency.toFixed(2)}Hz)\n⏱️ 次のラウンドまで3秒...`);
+        
+        // ラウンド間待機
+        if (round < 5) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+      }
+      
+      updateListeningOnlyUI('continuous', `✅ 連続リスニング完了\n🎯 基音: ${baseTone.note}\n📈 集中力・記憶力向上に効果的`);
+    }
+  }, [addLog, currentBaseTone, selectRandomBaseTone, updateListeningOnlyUI]);
+
+  // Step B-2': クロマティックリスニングモード実装
+  const executeChromaticListeningMode = useCallback(async () => {
+    addLog('🎵 クロマティック基音リスニングモード開始');
+    updateListeningOnlyUI('chromatic', '12音半音階での系統的リスニング練習');
+    
+    const chromaticNotes = [
+      { note: 'C', octave: 4, frequency: 261.63 },
+      { note: 'C#', octave: 4, frequency: 277.18 },
+      { note: 'D', octave: 4, frequency: 293.66 },
+      { note: 'D#', octave: 4, frequency: 311.13 },
+      { note: 'E', octave: 4, frequency: 329.63 },
+      { note: 'F', octave: 4, frequency: 349.23 },
+      { note: 'F#', octave: 4, frequency: 369.99 },
+      { note: 'G', octave: 4, frequency: 392.00 },
+      { note: 'G#', octave: 4, frequency: 415.30 },
+      { note: 'A', octave: 4, frequency: 440.00 },
+      { note: 'A#', octave: 4, frequency: 466.16 },
+      { note: 'B', octave: 4, frequency: 493.88 }
+    ];
+    
+    if (samplerRef.current) {
+      for (let i = 0; i < chromaticNotes.length; i++) {
+        const note = chromaticNotes[i];
+        
+        addLog(`🎵 ${i + 1}/12: ${note.note}${note.octave} (${note.frequency.toFixed(2)}Hz)`);
+        
+        samplerRef.current.volume.value = -6;
+        samplerRef.current.triggerAttackRelease(`${note.note}${note.octave}`, '1n');
+        
+        updateListeningOnlyUI('chromatic', `🎵 ${i + 1}/12: ${note.note}${note.octave}\n🎯 周波数: ${note.frequency.toFixed(2)}Hz\n📊 半音間隔: ${i > 0 ? Math.round(1200 * Math.log2(note.frequency / chromaticNotes[i-1].frequency)) : 0}セント`);
+        
+        // 音間待機（2秒）
+        if (i < chromaticNotes.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      updateListeningOnlyUI('chromatic', `✅ 12音クロマティック完了\n🎯 全半音階リスニング習得\n🎼 精密な音程感覚向上`);
+    }
+  }, [addLog, updateListeningOnlyUI]);
+
   // 旧マイクロフォンシステム停止（Step A改修により非推奨、完全停止版を使用）
   const stopMicrophoneSystem = useCallback(() => {
     addLog('⚠️ 旧stopMicrophoneSystem呼び出し - stopMicrophoneSystemCompletelyを使用してください');
@@ -1375,6 +1569,62 @@ export default function SeparatedAudioTestPage() {
               ? "⚠️ iPhone音量問題回避のため、ノイズフィルター有効時はマイク停止後に基音再生してください"
               : "基音システムは分離確認用 - iPhone音量問題の検証に使用"}
           </div>
+        </div>
+
+        {/* Step B-2': 基音再生専用フェーズ（マイク不在モード対応）*/}
+        <div className="mb-6">
+          <div className="text-center text-sm font-bold text-gray-700 mb-3">
+            🎹 Step B-2&apos;: 基音再生専用フェーズ（3つのトレーニングモード）
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <button
+              onClick={() => executeBaseToneOnlyPhase('random')}
+              className="px-4 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              <div className="text-2xl mb-1">🎲</div>
+              <div className="text-sm">ランダム基音</div>
+              <div className="text-xs opacity-80">10種基音ランダム</div>
+            </button>
+            
+            <button
+              onClick={() => executeBaseToneOnlyPhase('continuous')}
+              className="px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              <div className="text-2xl mb-1">🔄</div>
+              <div className="text-sm">連続ラウンド</div>
+              <div className="text-xs opacity-80">5ラウンド連続</div>
+            </button>
+            
+            <button
+              onClick={() => executeBaseToneOnlyPhase('chromatic')}
+              className="px-4 py-3 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              <div className="text-2xl mb-1">🎵</div>
+              <div className="text-sm">クロマティック</div>
+              <div className="text-xs opacity-80">12音半音階</div>
+            </button>
+          </div>
+          
+          <div className="text-center space-y-1">
+            <div className="text-xs text-gray-600">
+              マイクロフォン不在時の代替トレーニングモード
+            </div>
+            <div className="text-xs text-gray-500">
+              🎯 相対音程の聴覚的理解・音感向上に効果的
+            </div>
+          </div>
+          
+          {appOperationMode === AppOperationMode.LISTENING_ONLY && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center justify-center space-x-2">
+                <span className="text-yellow-600">⚠️</span>
+                <span className="text-yellow-800 text-sm font-medium">
+                  マイク不在モード: 採点機能なし、リスニング専用
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* DOM操作テストボタン */}
