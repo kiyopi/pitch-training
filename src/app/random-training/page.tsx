@@ -56,7 +56,7 @@ const useBaseFrequency = () => {
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,     // 自然な減衰
-        volume: 0         // 最大音量（accuracy-test-v2と同じ）
+        volume: 3         // iPhone音量増強: 0 → 3dB
       }).toDestination();
 
       samplerRef.current = sampler;
@@ -110,7 +110,7 @@ const useBaseFrequency = () => {
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
       
       // Samplerで基音再生（Tone.js形式のノート名で指定）
-      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.7);
+      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.9);
       
       // 手動でリリース（duration秒後）
       setTimeout(() => {
