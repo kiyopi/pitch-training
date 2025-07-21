@@ -4,6 +4,7 @@ import { useRef, useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, TestTube2 } from 'lucide-react';
 import * as Tone from 'tone';
+import { PitchDetector } from 'pitchy';
 
 // 基音定義（Tone.js Salamander Piano用）
 const BASE_TONES = [
@@ -30,6 +31,15 @@ export default function SeparatedAudioTestPage() {
   const samplerRef = useRef<Tone.Sampler | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentBaseTone, setCurrentBaseTone] = useState<typeof BASE_TONES[0] | null>(null);
+
+  // マイクロフォンシステム用のRef・State
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const [isMicInitialized, setIsMicInitialized] = useState(false);
+  const [currentFrequency, setCurrentFrequency] = useState<number | null>(null);
 
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
@@ -177,11 +187,166 @@ export default function SeparatedAudioTestPage() {
     }, 1000);
   }, [updateSystemStatus, updatePhaseIndicator, updateTestDisplay, addLog]);
 
+  // マイクロフォンシステム初期化
+  const initializeMicrophoneSystem = useCallback(async () => {
+    try {
+      addLog('🎤 マイクロフォンシステム初期化開始');
+      updateSystemStatus('マイクシステム初期化中...', 'yellow');
+
+      // マイクロフォンアクセス要求
+      streamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          autoGainControl: false,
+          echoCancellation: false,
+          noiseSuppression: false,
+          sampleRate: 44100,
+          channelCount: 1,
+        }
+      });
+
+      // AudioContext・Analyser設定
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 2048;
+
+      // 音声ストリーム接続
+      const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
+      source.connect(analyserRef.current);
+
+      // Pitchy音程検出器初期化
+      pitchDetectorRef.current = PitchDetector.forFloat32Array(analyserRef.current.fftSize);
+      pitchDetectorRef.current.clarityThreshold = 0.15;
+
+      setIsMicInitialized(true);
+      updateSystemStatus('マイクシステム準備完了', 'green');
+      addLog('✅ マイクロフォンシステム初期化完了');
+
+    } catch (error) {
+      addLog(`❌ マイクシステム初期化失敗: ${error}`);
+      updateSystemStatus('マイクシステム初期化失敗', 'red');
+    }
+  }, [addLog, updateSystemStatus]);
+
+  // リアルタイム周波数検出
+  const detectFrequency = useCallback(() => {
+    if (!analyserRef.current || !pitchDetectorRef.current) {
+      return null;
+    }
+
+    const timeDomainData = new Float32Array(analyserRef.current.fftSize);
+    analyserRef.current.getFloatTimeDomainData(timeDomainData);
+
+    const sampleRate = 44100;
+    const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
+
+    // 有効範囲・明瞭度チェック
+    if (clarity > 0.15 && frequency > 80 && frequency < 1200) {
+      return Math.round(frequency * 10) / 10;
+    }
+
+    return null;
+  }, []);
+
+  // 周波数検出ループ開始
+  const startFrequencyDetection = useCallback(() => {
+    if (!isMicInitialized) {
+      addLog('❌ マイクシステム未初期化');
+      return;
+    }
+
+    addLog('🎵 周波数検出開始');
+    updateSystemStatus('周波数検出中...', 'blue');
+
+    const detectLoop = () => {
+      const frequency = detectFrequency();
+      setCurrentFrequency(frequency);
+
+      // DOM直接操作で周波数表示更新
+      if (testDisplayRef.current) {
+        if (frequency) {
+          testDisplayRef.current.innerHTML = `
+            <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-green-800 mb-2">${frequency.toFixed(1)} Hz</div>
+                <div class="text-lg text-green-600">音程検出中</div>
+                <div class="text-sm text-green-500 mt-1">Pitchy - McLeod Pitch Method</div>
+              </div>
+            </div>
+          `;
+        } else {
+          testDisplayRef.current.innerHTML = `
+            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div class="text-center">
+                <div class="text-xl text-gray-500">🎤 音声を発声してください</div>
+                <div class="text-sm text-gray-400 mt-1">周波数検出待機中...</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(detectLoop);
+    };
+
+    detectLoop();
+  }, [isMicInitialized, detectFrequency, addLog, updateSystemStatus]);
+
+  // 周波数検出停止
+  const stopFrequencyDetection = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    setCurrentFrequency(null);
+    updateSystemStatus('周波数検出停止', 'gray');
+    addLog('⏹️ 周波数検出停止');
+
+    if (testDisplayRef.current) {
+      testDisplayRef.current.innerHTML = `
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-gray-500">周波数検出停止</div>
+        </div>
+      `;
+    }
+  }, [updateSystemStatus, addLog]);
+
+  // マイクロフォンシステム停止
+  const stopMicrophoneSystem = useCallback(() => {
+    stopFrequencyDetection();
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false; // iPhone Safari確実停止
+      });
+      streamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    analyserRef.current = null;
+    pitchDetectorRef.current = null;
+    setIsMicInitialized(false);
+    updateSystemStatus('マイクシステム停止', 'gray');
+    addLog('🔇 マイクロフォンシステム停止');
+  }, [stopFrequencyDetection, updateSystemStatus, addLog]);
+
   // コンポーネント初期化
   useEffect(() => {
     addLog('🚀 分離型音声システム開始');
     updateSystemStatus('システム初期化中...', 'yellow');
   }, [addLog, updateSystemStatus]);
+
+  // コンポーネント終了時のクリーンアップ
+  useEffect(() => {
+    return () => {
+      stopMicrophoneSystem();
+    };
+  }, [stopMicrophoneSystem]);
   return (
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50">
       {/* タイムスタンプ表示 */}
@@ -202,8 +367,8 @@ export default function SeparatedAudioTestPage() {
           <p className="text-lg text-gray-600 mb-4">
             Direct DOM Audio System - Phase 1 基盤構築
           </p>
-          <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-4 py-2 rounded-full text-sm font-bold">
-            Step 1-3: 基音再生システム単体（マイクなし）
+          <div className="inline-block bg-gradient-to-r from-green-100 to-blue-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold">
+            Step 1-4: マイクロフォンシステム単体（基音なし）
           </div>
         </div>
 
@@ -227,50 +392,81 @@ export default function SeparatedAudioTestPage() {
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
               <span className="text-green-600 font-semibold">Step 1-2: DOM直接操作基盤構築完了</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span className="text-green-600 font-semibold">Step 1-3: 基音再生システム単体完了</span>
+            </div>
             <div ref={phaseIndicatorRef}>
               <div className="flex items-center space-x-3">
                 <span className="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">⚡</span>
-                <span className="text-yellow-600 font-semibold">Step 1-3: 基音再生システム単体（実装中）</span>
+                <span className="text-yellow-600 font-semibold">Step 1-4: マイクロフォンシステム単体（実装中）</span>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-gray-300 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span className="text-gray-500">Step 1-4: マイクロフォンシステム単体</span>
             </div>
           </div>
         </div>
 
-        {/* 基音再生テスト表示エリア */}
+        {/* マイクロフォンテスト表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">🎵 基音再生テスト結果</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">🎤 マイクロフォンテスト結果</h3>
           <div ref={testDisplayRef} className="text-lg">
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-gray-500">基音再生テスト待機中...</div>
+              <div className="text-gray-500">マイクロフォンテスト待機中...</div>
             </div>
+          </div>
+        </div>
+
+        {/* マイクロフォンシステム制御ボタン */}
+        <div className="mb-6 space-y-4">
+          <div className="flex space-x-4 justify-center">
+            <button
+              onClick={initializeMicrophoneSystem}
+              disabled={isMicInitialized}
+              className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+            >
+              🎤 マイクシステム初期化
+            </button>
+            <button
+              onClick={startFrequencyDetection}
+              disabled={!isMicInitialized}
+              className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+            >
+              🎵 周波数検出開始
+            </button>
+            <button
+              onClick={stopFrequencyDetection}
+              disabled={!isMicInitialized}
+              className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+            >
+              ⏹️ 検出停止
+            </button>
+          </div>
+          <div className="text-center text-sm text-gray-600">
+            {!isMicInitialized && "まずマイクシステムを初期化してください"}
+            {isMicInitialized && "マイクシステム準備完了 - 周波数検出をテストできます"}
           </div>
         </div>
 
         {/* 基音再生システム制御ボタン */}
         <div className="mb-6 space-y-4">
+          <div className="text-center text-sm font-bold text-gray-700 mb-3">基音再生システム（参考用）</div>
           <div className="flex space-x-4 justify-center">
             <button
               onClick={initializeBaseToneSystem}
               disabled={isInitialized}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md disabled:opacity-50 disabled:hover:scale-100"
             >
-              🎹 基音システム初期化
+              🎹 基音初期化
             </button>
             <button
               onClick={playBaseTone}
               disabled={!isInitialized}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md disabled:opacity-50 disabled:hover:scale-100"
             >
-              🎲 ランダム基音再生
+              🎲 基音再生
             </button>
           </div>
-          <div className="text-center text-sm text-gray-600">
-            {!isInitialized && "まず基音システムを初期化してください"}
-            {isInitialized && "基音システム準備完了 - ランダム基音再生をテストできます"}
+          <div className="text-center text-xs text-gray-500">
+            基音システムは分離確認用 - Step 1-4の主目的はマイクロフォンシステム単体テスト
           </div>
         </div>
 
@@ -278,9 +474,9 @@ export default function SeparatedAudioTestPage() {
         <div className="mb-8">
           <button
             onClick={handleDomTest}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md"
           >
-            🔬 DOM直接操作テスト実行
+            🔬 DOM直接操作テスト
           </button>
         </div>
 
