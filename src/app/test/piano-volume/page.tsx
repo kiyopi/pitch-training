@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
 import * as Tone from "tone";
+import { createVolumeBooster, isIOS } from "@/utils/iOSVolumeBooster";
 
 export default function PianoVolumeTestPage() {
   const [debugLog, setDebugLog] = useState<string[]>([]);
@@ -20,12 +21,16 @@ export default function PianoVolumeTestPage() {
     { value: 0, label: "0dB (標準)" },
     { value: 6, label: "6dB (プロトタイプ)" },
     { value: 12, label: "12dB (増強)" },
-    { value: 18, label: "18dB (最大増強)" }
+    { value: 18, label: "18dB (最大増強)" },
+    { value: 999, label: "iOS特殊増幅 (+36dB)" } // iOS用特殊処理
   ];
 
   const playBaseTone = async (volume: number) => {
     try {
-      addLog(`🎹 音量設定: ${volume}dB`);
+      const isSpecialVolume = volume === 999;
+      const displayVolume = isSpecialVolume ? "iOS特殊増幅" : `${volume}dB`;
+      
+      addLog(`🎹 音量設定: ${displayVolume}`);
       setCurrentVolume(volume);
       
       // AudioContext開始
@@ -34,29 +39,72 @@ export default function PianoVolumeTestPage() {
         addLog('AudioContext開始完了');
       }
       
-      // Tone.Sampler直接実装（プロトタイプ準拠）
-      const sampler = new Tone.Sampler({
-        urls: {
-          "C4": "C4.mp3"
-        },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1.5,
-        volume: volume // 音量設定テスト
-      }).toDestination();
-      
-      // 音源読み込み待機
-      addLog('ピアノ音源読み込み中...');
-      await Tone.loaded();
-      
-      // C4を1.7秒間再生（プロトタイプ準拠）
-      addLog(`♪ 再生中: C4 (${volume}dB)`);
-      sampler.triggerAttack("C4", undefined, 0.8);
-      
-      // 1.7秒後に手動でリリース
-      setTimeout(() => {
-        sampler.triggerRelease("C4");
-        addLog(`🔇 再生終了: C4 (${volume}dB)`);
-      }, 1700);
+      // iOS特殊増幅処理の分岐
+      if (isSpecialVolume && isIOS()) {
+        addLog('📱 iOS検出: 特殊増幅チェーン使用');
+        
+        // iOS用音量ブースター作成
+        const volumeBooster = createVolumeBooster();
+        if (!volumeBooster) {
+          addLog('❌ ブースター作成失敗');
+          return;
+        }
+        
+        // Sampler作成（基本音量）
+        const sampler = new Tone.Sampler({
+          urls: { "C4": "C4.mp3" },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1.5,
+          volume: 6 // 基本音量
+        });
+        
+        // ブースターチェーンに接続
+        const finalOutput = volumeBooster.connect(sampler);
+        finalOutput.toDestination();
+        
+        addLog('🔗 増幅チェーン接続完了 (3段階×12dB = +36dB)');
+        
+        // 音源読み込み待機
+        await Tone.loaded();
+        
+        // C4を1.7秒間再生
+        addLog(`♪ 再生中: C4 (iOS特殊増幅)`);
+        sampler.triggerAttack("C4", undefined, 0.8);
+        
+        setTimeout(() => {
+          sampler.triggerRelease("C4");
+          addLog(`🔇 再生終了: C4 (iOS特殊増幅)`);
+          
+          // リソース解放
+          volumeBooster.dispose();
+          sampler.dispose();
+        }, 1700);
+        
+      } else {
+        // 通常処理（PC用またはiOS以外の特殊増幅なし）
+        if (isSpecialVolume) {
+          addLog('💻 PC環境: 通常処理を使用');
+          volume = 18; // PCでは18dBに置き換え
+        }
+        
+        const sampler = new Tone.Sampler({
+          urls: { "C4": "C4.mp3" },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1.5,
+          volume: volume
+        }).toDestination();
+        
+        addLog('ピアノ音源読み込み中...');
+        await Tone.loaded();
+        
+        addLog(`♪ 再生中: C4 (${volume}dB)`);
+        sampler.triggerAttack("C4", undefined, 0.8);
+        
+        setTimeout(() => {
+          sampler.triggerRelease("C4");
+          addLog(`🔇 再生終了: C4 (${volume}dB)`);
+        }, 1700);
+      }
       
     } catch (error) {
       addLog(`❌ エラー: ${error}`);
