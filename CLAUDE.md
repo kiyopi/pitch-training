@@ -150,6 +150,10 @@ alias verify-stable="git log --oneline -1 && echo '期待値: 1e44e2e バージ�
 11. **エラー発生時対応**: 問題発生時は即座に作業停止、ERROR_LOG.mdに記録
 12. **推測実行禁止**: 不明な点での推測による実行を絶対禁止
 13. **完了時記録**: 作業完了時にWORK_LOG.mdに結果と次回引き継ぎを記録
+14. **要件定義書確認義務**: 実装開始前にCOMPREHENSIVE_REQUIREMENTS_SPECIFICATION.mdで要件を確認
+15. **技術仕様照合**: 該当する技術仕様書（PITCHY_SPECS.md等）との整合性確認
+16. **設計原則適合**: 実装内容が設計原則・制約に準拠することを確認
+17. **Direct DOM Audio System**: 音声UI更新はDOM直接操作（旧HYBRID権限システムとは別物）
 
 ⚠️ **絶対禁止**: ユーザー承認なしの実装開始
 ⚠️ **必須参照**: 修正時は必ず設計原則書を参照

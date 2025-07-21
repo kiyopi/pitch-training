@@ -27,6 +27,28 @@
 
 ---
 
+## 🏷️ 用語定義・混同防止
+
+### Direct DOM Audio System（DDAS）
+- **定義**: 音声関連UIのDOM直接操作システム
+- **技術**: Next.js + React状態管理 + DOM直接更新 + Web Audio API
+- **目的**: 高速フィードバック・iPhone音質最適化・60FPS UI更新
+- **実装方式**: 基音再生とマイク検出の完全分離
+
+### 旧HYBRID権限システム（使用禁止）
+- **定義**: マイクロフォン許可管理システム
+- **状態**: 2025年7月18日より使用禁止
+- **理由**: 音声再生機能停止問題
+- **対象ファイル**: HYBRID_MICROPHONE_PERMISSION_REQUIREMENTS.md、HYBRID_SYSTEM_SUSPENSION_NOTICE.md
+
+### 重要な区別
+- **技術的関連性**: なし（完全に別のシステム）
+- **混同防止**: 「ハイブリッド」という用語の意味が全く異なる
+- **現在推進**: Direct DOM Audio System
+- **使用禁止**: 旧HYBRID権限システム
+
+---
+
 ## 🎯 1. プロジェクト概要
 
 ### 1.1 アプリケーションの目的
