@@ -343,6 +343,10 @@ export default function SeparatedAudioTestPage() {
   const [currentTrainingMode, setCurrentTrainingMode] = useState<TrainingModeConfig | null>(null);
   const [trainingModePath, setTrainingModePath] = useState<string>('/test/separated-audio');
 
+  // Step B-2': モードボタン状態管理
+  const [isExecutingTrainingMode, setIsExecutingTrainingMode] = useState(false);
+  const [lastFrequencyBeforeMode, setLastFrequencyBeforeMode] = useState<number | null>(null);
+
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
     if (systemStatusRef.current) {
@@ -1055,6 +1059,15 @@ export default function SeparatedAudioTestPage() {
         'continuous': '連続リスニング',
         'chromatic': 'クロマティックリスニング'
       };
+
+      // 周波数表示を保持
+      const frequencyDisplay = (currentFrequency || lastFrequencyBeforeMode) 
+        ? `<div class="mb-3 text-center">
+             <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
+               検出周波数: ${(currentFrequency || lastFrequencyBeforeMode)?.toFixed(1)} Hz
+             </span>
+           </div>`
+        : '';
       
       testDisplayRef.current.innerHTML = `
         <div class="w-full p-4">
@@ -1063,6 +1076,7 @@ export default function SeparatedAudioTestPage() {
               <span class="text-3xl mr-3">${modeIcons[mode]}</span>
               <div class="text-xl font-bold text-gray-800">${modeNames[mode]}</div>
             </div>
+            ${frequencyDisplay}
             <div class="text-center text-gray-700 leading-relaxed whitespace-pre-line text-sm">
               ${message}
             </div>
@@ -1075,11 +1089,24 @@ export default function SeparatedAudioTestPage() {
         </div>
       `;
     }
-  }, []);
+  }, [currentFrequency, lastFrequencyBeforeMode]);
 
   // Step B-2': 基音再生専用フェーズ実装（マイク不在モード対応）
   const executeBaseToneOnlyPhase = useCallback(async (trainingMode?: 'random' | 'continuous' | 'chromatic') => {
+    // 既に実行中の場合は無視
+    if (isExecutingTrainingMode) {
+      addLog('⚠️ トレーニングモード実行中 - 重複実行防止');
+      return;
+    }
+
     addLog('🎹 Step B-2\': 基音再生専用フェーズ開始');
+    setIsExecutingTrainingMode(true);
+    
+    // 現在の周波数を保存
+    if (currentFrequency) {
+      setLastFrequencyBeforeMode(currentFrequency);
+    }
+    
     updateSystemStatusWithPhase(AudioSystemPhase.BASE_TONE_PHASE, '基音専用モード - マイク機能無し');
     
     try {
@@ -1139,8 +1166,14 @@ export default function SeparatedAudioTestPage() {
     } catch (error) {
       addLog(`❌ Step B-2'実行エラー: ${error}`);
       await transitionToErrorState(`基音専用フェーズエラー: ${error}`);
+    } finally {
+      // 実行状態をリセット
+      setTimeout(() => {
+        setIsExecutingTrainingMode(false);
+        addLog('✅ トレーニングモード実行完了 - ボタン再有効化');
+      }, 2000); // 2秒後に再有効化
     }
-  }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, transitionToErrorState, updateSystemStatus]);
+  }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, transitionToErrorState, updateSystemStatus, isExecutingTrainingMode, currentFrequency]);
 
   // Step B-2': ランダムリスニングモード実装
   const executeRandomListeningMode = useCallback(async () => {
@@ -1580,29 +1613,50 @@ export default function SeparatedAudioTestPage() {
           <div className="grid grid-cols-3 gap-4 mb-4">
             <button
               onClick={() => executeBaseToneOnlyPhase('random')}
-              className="px-4 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+              disabled={isExecutingTrainingMode}
+              className={`px-4 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-lg font-bold transition-all duration-300 shadow-lg ${
+                isExecutingTrainingMode 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:scale-105'
+              }`}
             >
               <div className="text-2xl mb-1">🎲</div>
               <div className="text-sm">ランダム基音</div>
-              <div className="text-xs opacity-80">10種基音ランダム</div>
+              <div className="text-xs opacity-80">
+                {isExecutingTrainingMode ? '実行中...' : '10種基音ランダム'}
+              </div>
             </button>
             
             <button
               onClick={() => executeBaseToneOnlyPhase('continuous')}
-              className="px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+              disabled={isExecutingTrainingMode}
+              className={`px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-lg font-bold transition-all duration-300 shadow-lg ${
+                isExecutingTrainingMode 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:scale-105'
+              }`}
             >
               <div className="text-2xl mb-1">🔄</div>
               <div className="text-sm">連続ラウンド</div>
-              <div className="text-xs opacity-80">5ラウンド連続</div>
+              <div className="text-xs opacity-80">
+                {isExecutingTrainingMode ? '実行中...' : '5ラウンド連続'}
+              </div>
             </button>
             
             <button
               onClick={() => executeBaseToneOnlyPhase('chromatic')}
-              className="px-4 py-3 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+              disabled={isExecutingTrainingMode}
+              className={`px-4 py-3 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-lg font-bold transition-all duration-300 shadow-lg ${
+                isExecutingTrainingMode 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:scale-105'
+              }`}
             >
               <div className="text-2xl mb-1">🎵</div>
               <div className="text-sm">クロマティック</div>
-              <div className="text-xs opacity-80">12音半音階</div>
+              <div className="text-xs opacity-80">
+                {isExecutingTrainingMode ? '実行中...' : '12音半音階'}
+              </div>
             </button>
           </div>
           
