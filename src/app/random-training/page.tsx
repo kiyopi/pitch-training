@@ -38,7 +38,7 @@ const useBaseFrequency = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const synthRef = useRef<Tone.Synth | null>(null);
+  const synthRef = useRef<Tone.PolySynth | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初期化（iPhone Safari対応強化）
@@ -49,21 +49,26 @@ const useBaseFrequency = () => {
       // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
       // await Tone.start() はユーザーアクション時に実行
       
-      // SamplerからSynthに変更（外部ファイル読み込み不要でiPhone Safari対応）
-      const synth = new Tone.Synth({
-        oscillator: { 
-          type: "triangle"  // より楽器らしい音（sineよりもリッチ）
-        },
-        envelope: {
-          attack: 0.01,   // 素早いアタック
-          decay: 0.3,     // 長めのディケイ
-          sustain: 0.4,   // 適度なサスティン
-          release: 1.2    // ピアノらしい減衰
+      // PolySynthで豊かな音色を実現（外部ファイル読み込み不要でiPhone Safari対応）
+      const polySynth = new Tone.PolySynth({
+        voice: Tone.Synth,
+        options: {
+          oscillator: {
+            type: "fatsawtooth",  // より豊かな倍音
+            count: 3,             // 3つのオシレーター
+            spread: 30            // デチューン幅
+          },
+          envelope: {
+            attack: 0.005,  // ピアノのような速いアタック
+            decay: 0.1,     // 短めのディケイ
+            sustain: 0.3,   // 適度なサスティン
+            release: 1      // 自然な減衰
+          }
         }
       }).toDestination();
 
-      synth.volume.value = -8; // 音量調整
-      synthRef.current = synth;
+      polySynth.volume.value = -12; // 音量調整（PolySynthは音が大きいため）
+      synthRef.current = polySynth;
 
       // Synthは即座に使用可能（外部ファイル読み込み不要）
       setIsLoaded(true);
