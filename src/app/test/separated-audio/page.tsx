@@ -261,24 +261,28 @@ export default function SeparatedAudioTestPage() {
       const frequency = detectFrequency();
       setCurrentFrequency(frequency);
 
-      // DOM直接操作で周波数表示更新
+      // DOM直接操作で周波数表示更新（固定高さ対応）
       if (testDisplayRef.current) {
         if (frequency) {
           testDisplayRef.current.innerHTML = `
-            <div class="p-4 bg-green-50 rounded-lg border border-green-200">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-green-800 mb-2">${frequency.toFixed(1)} Hz</div>
-                <div class="text-lg text-green-600">音程検出中</div>
-                <div class="text-sm text-green-500 mt-1">Pitchy - McLeod Pitch Method</div>
+            <div class="w-full h-full flex items-center justify-center">
+              <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-green-800 mb-2">${frequency.toFixed(1)} Hz</div>
+                  <div class="text-lg text-green-600">音程検出中</div>
+                  <div class="text-sm text-green-500 mt-1">Pitchy - McLeod Pitch Method</div>
+                </div>
               </div>
             </div>
           `;
         } else {
           testDisplayRef.current.innerHTML = `
-            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div class="text-center">
-                <div class="text-xl text-gray-500">🎤 音声を発声してください</div>
-                <div class="text-sm text-gray-400 mt-1">周波数検出待機中...</div>
+            <div class="w-full h-full flex items-center justify-center">
+              <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="text-center">
+                  <div class="text-xl text-gray-500">🎤 音声を発声してください</div>
+                  <div class="text-sm text-gray-400 mt-1">周波数検出待機中...</div>
+                </div>
               </div>
             </div>
           `;
@@ -304,8 +308,10 @@ export default function SeparatedAudioTestPage() {
 
     if (testDisplayRef.current) {
       testDisplayRef.current.innerHTML = `
-        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div class="text-gray-500">周波数検出停止</div>
+        <div class="w-full h-full flex items-center justify-center">
+          <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div class="text-gray-500">周波数検出停止</div>
+          </div>
         </div>
       `;
     }
@@ -408,9 +414,11 @@ export default function SeparatedAudioTestPage() {
         {/* マイクロフォンテスト表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4">🎤 マイクロフォンテスト結果</h3>
-          <div ref={testDisplayRef} className="text-lg">
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-gray-500">マイクロフォンテスト待機中...</div>
+          <div ref={testDisplayRef} className="text-lg h-32 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-gray-500">マイクロフォンテスト待機中...</div>
+              </div>
             </div>
           </div>
         </div>
