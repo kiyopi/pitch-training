@@ -526,6 +526,112 @@ export default function SeparatedAudioTestPage() {
     }
   }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, stopBaseToneSystemCompletely, isIOSSafari]);
 
+  // Step B-1: 安全なフェーズ移行制御システム
+  const transitionPhase = useCallback(async (
+    fromPhase: AudioSystemPhase, 
+    toPhase: AudioSystemPhase
+  ): Promise<boolean> => {
+    try {
+      addLog(`🔄 フェーズ移行開始: ${fromPhase} → ${toPhase}`);
+      updateSystemStatusWithPhase(AudioSystemPhase.TRANSITIONING, `${fromPhase}→${toPhase}移行中...`);
+      
+      // 1. 現在フェーズのクリーンアップ
+      await cleanupCurrentPhase(fromPhase);
+      
+      // 2. iOS Safari移行待機（AudioContext安定化）
+      const waitTime = isIOSSafari() ? 300 : 100;
+      addLog(`⏳ フェーズ間待機: ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      // 3. 次フェーズの初期化
+      await initializeNextPhase(toPhase);
+      
+      updateSystemStatusWithPhase(toPhase);
+      addLog(`✅ フェーズ移行完了: ${toPhase}`);
+      
+      return true;
+    } catch (error) {
+      addLog(`❌ フェーズ移行失敗: ${error}`);
+      await transitionToErrorState(`フェーズ移行エラー: ${error}`);
+      return false;
+    }
+  }, [addLog, updateSystemStatusWithPhase, isIOSSafari]);
+
+  // Step B-1: 現在フェーズのクリーンアップ
+  const cleanupCurrentPhase = useCallback(async (phase: AudioSystemPhase) => {
+    addLog(`🧹 ${phase}フェーズクリーンアップ開始`);
+    
+    try {
+      switch (phase) {
+        case AudioSystemPhase.BASE_TONE_PHASE:
+          await stopBaseToneSystemCompletely();
+          addLog('✅ 基音システム完全停止完了');
+          break;
+          
+        case AudioSystemPhase.SCORING_PHASE:
+          await stopMicrophoneSystemCompletely();
+          addLog('✅ マイクシステム完全停止完了');
+          break;
+          
+        case AudioSystemPhase.IDLE:
+          // アイドル状態からの移行：念のため両システム停止
+          await Promise.all([
+            stopBaseToneSystemCompletely(),
+            stopMicrophoneSystemCompletely()
+          ]);
+          addLog('✅ 全システム停止完了（アイドル→移行）');
+          break;
+          
+        case AudioSystemPhase.TRANSITIONING:
+        case AudioSystemPhase.ERROR_STATE:
+          // 移行中・エラー状態からの復旧：全停止
+          await Promise.all([
+            stopBaseToneSystemCompletely(),
+            stopMicrophoneSystemCompletely()
+          ]);
+          addLog('✅ 全システム停止完了（復旧処理）');
+          break;
+          
+        default:
+          addLog(`⚠️ 未知のフェーズ: ${phase}`);
+      }
+    } catch (error) {
+      addLog(`⚠️ クリーンアップエラー: ${error}`);
+      // エラーが発生してもフェーズ移行は続行（ベストエフォート）
+    }
+  }, [addLog, stopBaseToneSystemCompletely, stopMicrophoneSystemCompletely]);
+
+  // Step B-1: 次フェーズの初期化
+  const initializeNextPhase = useCallback(async (phase: AudioSystemPhase) => {
+    addLog(`🚀 ${phase}フェーズ初期化開始`);
+    
+    try {
+      switch (phase) {
+        case AudioSystemPhase.BASE_TONE_PHASE:
+          addLog('🎹 基音再生フェーズ準備中...');
+          // 基音システムは必要時に初期化（遅延初期化）
+          break;
+          
+        case AudioSystemPhase.SCORING_PHASE:
+          addLog('🎤 採点処理フェーズ準備中...');
+          // マイクシステムは必要時に初期化（遅延初期化）
+          break;
+          
+        case AudioSystemPhase.IDLE:
+          addLog('⏸️ アイドル状態準備完了');
+          // アイドル状態：特別な初期化なし
+          break;
+          
+        default:
+          throw new Error(`初期化不可能なフェーズ: ${phase}`);
+      }
+      
+      addLog(`✅ ${phase}フェーズ初期化完了`);
+    } catch (error) {
+      throw new Error(`フェーズ初期化失敗: ${error}`);
+    }
+  }, [addLog]);
+
   // 旧マイクロフォンシステム停止（Step A改修により非推奨、完全停止版を使用）
   const stopMicrophoneSystem = useCallback(() => {
     addLog('⚠️ 旧stopMicrophoneSystem呼び出し - stopMicrophoneSystemCompletelyを使用してください');
@@ -534,7 +640,7 @@ export default function SeparatedAudioTestPage() {
 
   // Step A: コンポーネント初期化（フェーズ管理対応）
   useEffect(() => {
-    addLog('🚀 分離型音声システム開始（Step A: 基盤システム改修版）');
+    addLog('🚀 分離型音声システム開始（Step B-1: フェーズ移行制御システム版）');
     updateSystemStatusWithPhase(AudioSystemPhase.IDLE, 'システム初期化完了');
     
     if (isIOSSafari()) {
@@ -572,11 +678,11 @@ export default function SeparatedAudioTestPage() {
           <p className="text-lg text-gray-600 mb-4">
             Direct DOM Audio System - Phase 1 基盤構築
           </p>
-          <div className="inline-block bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 px-4 py-2 rounded-full text-sm font-bold">
-            Step A: 基盤システム改修（フェーズ分離準備）
+          <div className="inline-block bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 px-4 py-2 rounded-full text-sm font-bold">
+            Step B-1: フェーズ移行制御システム
           </div>
           <div className="mt-2 text-sm text-gray-600">
-            AudioSystemPhase + 完全停止関数 + iPhone最適化
+            安全な基音↔採点フェーズ切り替え + iPhone最適化待機
           </div>
         </div>
 
@@ -610,8 +716,8 @@ export default function SeparatedAudioTestPage() {
             </div>
             <div ref={phaseIndicatorRef}>
               <div className="flex items-center space-x-3">
-                <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🔧</span>
-                <span className="text-purple-600 font-semibold">Step A: 基盤システム改修完了</span>
+                <span className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🔄</span>
+                <span className="text-blue-600 font-semibold">Step B-1: フェーズ移行制御システム実装</span>
               </div>
             </div>
           </div>
