@@ -91,8 +91,8 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       const rms = Math.sqrt(sum / byteTimeDomainData.length);
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // 音量スケーリング調整: iPhone対応のため感度を最適化 /4.5 に調整
-      const rawVolumePercent = Math.min(Math.max(calculatedVolume / 4.5 * 100, 0), 100);
+      // 音量スケーリング調整: iPhone対応のため感度を最適化 /3.5 に調整
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / 3.5 * 100, 0), 100);
       
       // ノイズフロア除去: 5%以下はノイズとして0%表示
       const noiseThreshold = 5;

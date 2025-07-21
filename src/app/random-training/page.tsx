@@ -56,7 +56,7 @@ const useBaseFrequency = () => {
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,     // 自然な減衰
-        volume: -5        // 音量調整
+        volume: 0         // 最大音量（accuracy-test-v2と同じ）
       }).toDestination();
 
       samplerRef.current = sampler;
