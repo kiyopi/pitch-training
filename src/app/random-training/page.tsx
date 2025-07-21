@@ -382,7 +382,7 @@ function WelcomePhase({ onNext }: { onNext: () => void }) {
         >
           <div className="flex items-center space-x-3">
             <Mic className="w-8 h-8" />
-            <span>🎤 マイクテストを開始して相対音感を鍛える</span>
+            <span>🎤 マイクテスト開始</span>
           </div>
         </button>
       </div>
@@ -615,11 +615,6 @@ function MicTestPhase({
             <p className="text-sm text-gray-600">
               ドの音を発声してマイクテストをしてください
             </p>
-            {isVolumeGood && microphoneState.isRecording && (
-              <p className="text-sm text-green-600 mt-2 font-bold animate-pulse">
-                ✅ マイクテスト良好！トレーニングを開始できます
-              </p>
-            )}
           </div>
           </div>
         </div>

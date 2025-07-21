@@ -91,12 +91,20 @@ export const useMicrophoneManager = (): MicrophoneManager => {
       const rms = Math.sqrt(sum / byteTimeDomainData.length);
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // 音量スケーリング調整: iPhone対応のため感度を最適化 /3.5 に調整
-      const rawVolumePercent = Math.min(Math.max(calculatedVolume / 3.5 * 100, 0), 100);
+      // プラットフォーム適応型音量処理（VOLUME_LEVEL_INVESTIGATION.mdの調査結果に基づく）
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       
-      // ノイズフロア除去: 5%以下はノイズとして0%表示
-      const noiseThreshold = 5;
-      const volumePercent = rawVolumePercent > noiseThreshold ? rawVolumePercent : 0;
+      // プラットフォーム別パラメータ設定
+      const volumeConfig = {
+        divisor: isIOS ? 2.0 : 4.0,           // iPhone: 小さい除数で音量向上、PC: 大きい除数でノイズ抑制
+        noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値でノイズ除去
+      };
+      
+      // 適応的音量スケーリング
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
+      
+      // プラットフォーム適応ノイズフロア除去
+      const volumePercent = rawVolumePercent > volumeConfig.noiseThreshold ? rawVolumePercent : 0;
       
       // 音量スムージング（より反応を良く）
       const smoothingFactor = 0.2;
