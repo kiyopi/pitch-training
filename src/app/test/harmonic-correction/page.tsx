@@ -377,13 +377,13 @@ export default function HarmonicCorrectionTest() {
 
       // AnalyserNode設定
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048;
+      analyserRef.current.fftSize = 4096; // PitchDetectorと一致させる
       analyserRef.current.smoothingTimeConstant = 0.3;
 
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
 
-      // PitchDetector初期化
+      // PitchDetector初期化（fftSizeと一致）
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyserRef.current.fftSize);
 
       setIsMicInitialized(true);
