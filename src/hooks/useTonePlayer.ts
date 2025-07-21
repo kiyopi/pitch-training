@@ -49,7 +49,7 @@ const BASE_TONE_CANDIDATES: BaseTone[] = [
 
 // Default configuration
 const defaultConfig: TonePlayerConfig = {
-  volume: -12, // dB
+  volume: 6, // プロトタイプ準拠の音量設定（iPhone音量差異解消）
   attack: 0.1,
   decay: 0.2,
   sustain: 0.7,
