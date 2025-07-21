@@ -369,27 +369,27 @@ export default function HybridAudioTestPage() {
             <h3 className="text-xl font-bold text-gray-800 mb-4">🎹 基音再生</h3>
             <button
               onClick={handlePlayRandomBaseTone}
-              disabled={isPlayingPiano}
+              disabled={baseFrequency.isPlaying}
               className={`w-full px-6 py-4 rounded-xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-                isPlayingPiano
+                baseFrequency.isPlaying
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 hover:scale-105'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Play className="w-6 h-6" />
-                <span>{isPlayingPiano ? '🎵 再生中...' : '🎲 ランダム基音'}</span>
+                <span>{baseFrequency.isPlaying ? '🎵 再生中...' : '🎲 ランダム基音'}</span>
               </div>
             </button>
             
-            {/* 現在の基音表示（SSR対策） */}
-            {isHydrated && currentBaseTone && (
+            {/* 現在の基音表示 */}
+            {baseFrequency.currentBaseTone && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
-                  <span className="font-bold">基音:</span> {currentBaseTone.note}
+                  <span className="font-bold">基音:</span> {baseFrequency.currentBaseTone.note}
                 </p>
                 <p className="text-xs text-blue-600">
-                  {currentBaseTone.frequency.toFixed(2)} Hz
+                  {baseFrequency.currentBaseTone.frequency.toFixed(2)} Hz
                 </p>
               </div>
             )}
@@ -421,15 +421,6 @@ export default function HybridAudioTestPage() {
               </button>
             )}
             
-            {/* 精度記録ボタン */}
-            {microphoneState.isRecording && currentBaseTone && (
-              <button
-                onClick={recordAccuracy}
-                className="w-full mt-3 px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all duration-300"
-              >
-                📊 精度記録
-              </button>
-            )}
           </div>
         </div>
 
@@ -473,51 +464,29 @@ export default function HybridAudioTestPage() {
                 🎤 音声を検出中...
               </div>
               
-              {/* 音名表示（DOM直接操作） */}
-              <div ref={noteDisplayRef} className="text-lg text-gray-400">
-                ♪ ---
+              {/* 音名表示（将来実装予定） */}
+              <div className="text-lg text-gray-400">
+                ♪ --- (音程検出準備中)
               </div>
               
-              {/* クラリティ表示（DOM直接操作） */}
-              <div ref={clarityDisplayRef} className="text-sm text-gray-500">
-                🎯 精度: --- (検出中)
+              {/* クラリティ表示（将来実装予定） */}
+              <div className="text-sm text-gray-500">
+                🎯 精度: --- (音程検出準備中)
               </div>
             </div>
           </div>
         </div>
 
-        {/* デバッグログ（DOM直接操作） */}
-        <div className="bg-gray-50 rounded-xl shadow-lg p-6 mb-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">📝 デバッグログ（リアルタイム）</h3>
-          <div ref={debugLogRef} className="text-xs text-gray-600 font-mono space-y-1 max-h-32 overflow-y-auto">
-            デバッグログなし
+
+        {/* テスト結果履歴（将来実装予定） */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">📊 テスト機能（準備中）</h3>
+          <div className="text-center text-gray-500 py-8">
+            <div className="text-4xl mb-4">🚧</div>
+            <p className="text-lg">精度テスト機能は将来実装予定です</p>
+            <p className="text-sm mt-2">現在は基本的な音声機能の動作確認中</p>
           </div>
         </div>
-
-        {/* テスト結果履歴 */}
-        {testResults.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">📊 精度テスト履歴</h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {testResults.map((result, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm">
-                  <div>
-                    <span className="font-semibold">{result.baseTone.note}</span>
-                    <span className="text-gray-600 ml-2">{result.userFreq.toFixed(1)}Hz</span>
-                  </div>
-                  <div className={`font-bold ${
-                    result.accuracy === 'perfect' ? 'text-green-600' :
-                    result.accuracy === 'excellent' ? 'text-blue-600' :
-                    result.accuracy === 'good' ? 'text-cyan-600' :
-                    result.accuracy === 'fair' ? 'text-orange-600' : 'text-red-600'
-                  }`}>
-                    {result.score}点
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* 戻るボタン */}
         <Link 
