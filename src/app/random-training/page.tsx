@@ -39,6 +39,8 @@ const useBaseFrequency = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const samplerRef = useRef<Tone.Sampler | null>(null);
+  const gainNodeRef = useRef<Tone.Gain | null>(null);
+  const compressorRef = useRef<Tone.Compressor | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初期化（iPhone Safari対応強化）
@@ -49,6 +51,16 @@ const useBaseFrequency = () => {
       // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
       // await Tone.start() はユーザーアクション時に実行
       
+      // iPhone音量増強: GainNode + Compressor による音声増幅システム
+      const gainNode = new Tone.Gain(2.5); // 2.5倍ゲイン増幅
+      const compressor = new Tone.Compressor({
+        threshold: -30,    // 圧縮開始レベル
+        ratio: 6,          // 圧縮比率
+        attack: 0.003,     // アタック時間
+        release: 0.1,      // リリース時間
+        knee: 30           // ニー（圧縮特性）
+      });
+
       // Salamander Grand Piano音源を使用（最重要仕様）
       const sampler = new Tone.Sampler({
         urls: {
@@ -56,10 +68,18 @@ const useBaseFrequency = () => {
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,     // 自然な減衰
-        volume: 10        // iPhone音量増強: 3 → 10dB（目標音量達成）
-      }).toDestination();
+        volume: 0         // 基本音量（GainNodeで増幅）
+      });
 
+      // 音声チェーン構築: Sampler → GainNode → Compressor → Destination
+      sampler.connect(gainNode);
+      gainNode.connect(compressor);
+      compressor.toDestination();
+
+      // Refs保存
       samplerRef.current = sampler;
+      gainNodeRef.current = gainNode;
+      compressorRef.current = compressor;
 
       // 音源読み込み待機
       console.log('🎹 ピアノ音源読み込み中...');
@@ -154,14 +174,25 @@ const useBaseFrequency = () => {
   const cleanup = useCallback(() => {
     try {
       stopBaseTone();
+      
+      // 音声チェーンのクリーンアップ
+      if (compressorRef.current) {
+        compressorRef.current.dispose();
+        compressorRef.current = null;
+      }
+      if (gainNodeRef.current) {
+        gainNodeRef.current.dispose();
+        gainNodeRef.current = null;
+      }
       if (samplerRef.current) {
         samplerRef.current.dispose();
         samplerRef.current = null;
       }
+      
       setIsLoaded(false);
       setCurrentBaseTone(null);
       setError(null);
-      console.log('🧹 基音システムクリーンアップ完了');
+      console.log('🧹 基音システム（音声チェーン含む）クリーンアップ完了');
     } catch (error) {
       console.error('❌ 基音システムクリーンアップエラー:', error);
     }
@@ -280,12 +311,25 @@ function WelcomePhase({ onNext }: { onNext: () => void }) {
   return (
     <>
       {/* ヘッダー */}
-      <div className="mb-12">
+      <div className="mb-8">
         <div className="text-8xl mb-6">🎲</div>
         <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
           ランダム基音モード
         </h1>
         <p className="text-2xl text-gray-600 mb-8">相対音感トレーニング</p>
+        
+        {/* マイクテストボタン（最上部に移動） */}
+        <div className="mb-8">
+          <button
+            onClick={onNext}
+            className="group relative overflow-hidden px-12 py-6 rounded-3xl text-2xl font-bold text-white transition-all duration-300 shadow-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 hover:scale-105 hover:shadow-2xl"
+          >
+            <div className="flex items-center space-x-3">
+              <Mic className="w-8 h-8" />
+              <span>🎤 マイクテスト開始</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* アプリの目的説明 */}
@@ -374,18 +418,6 @@ function WelcomePhase({ onNext }: { onNext: () => void }) {
         </div>
       </div>
 
-      {/* 開始ボタン */}
-      <div className="mb-8">
-        <button
-          onClick={onNext}
-          className="group relative overflow-hidden px-12 py-6 rounded-3xl text-2xl font-bold text-white transition-all duration-300 shadow-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 hover:scale-105 hover:shadow-2xl"
-        >
-          <div className="flex items-center space-x-3">
-            <Mic className="w-8 h-8" />
-            <span>🎤 マイクテスト開始</span>
-          </div>
-        </button>
-      </div>
 
       {/* 補助説明 */}
       <div className="p-6 bg-yellow-50 rounded-2xl border border-yellow-200">
