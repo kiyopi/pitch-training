@@ -1,280 +1,341 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Play, Mic, MicOff } from "lucide-react";
-import { VanillaAudioEngine, PROTOTYPE_BASE_TONES, type BaseTone } from "@/utils/vanillaAudioEngine";
-import { HybridAudioInterface, createHybridAudioInterfaceFromRefs, type AudioDisplayData } from "@/utils/hybridAudioInterface";
+import { ArrowLeft, Play, Mic, MicOff, AlertCircle, Activity, Volume2 } from "lucide-react";
+import * as Tone from "tone";
 import { useMicrophoneManager } from "@/hooks/useMicrophoneManager";
-import { frequencyToNote, evaluateRelativePitchAccuracy } from "@/utils/noteUtils";
+import { HybridAudioInterface, type AudioDisplayData } from "@/utils/hybridAudioInterface";
+
+// 基音データベース（random-training準拠）
+interface BaseTone {
+  name: string;
+  note: string;
+  frequency: number;
+  tonejs: string;
+}
+
+const BASE_TONES: BaseTone[] = [
+  { name: 'Bb3', note: 'シ♭3', frequency: 233.08, tonejs: 'Bb3' },
+  { name: 'C4',  note: 'ド4',   frequency: 261.63, tonejs: 'C4' },
+  { name: 'Db4', note: 'レ♭4', frequency: 277.18, tonejs: 'Db4' },
+  { name: 'D4',  note: 'レ4',   frequency: 293.66, tonejs: 'D4' },
+  { name: 'Eb4', note: 'ミ♭4', frequency: 311.13, tonejs: 'Eb4' },
+  { name: 'E4',  note: 'ミ4',   frequency: 329.63, tonejs: 'E4' },
+  { name: 'F4',  note: 'ファ4', frequency: 349.23, tonejs: 'F4' },
+  { name: 'Gb4', note: 'ソ♭4', frequency: 369.99, tonejs: 'Gb4' },
+  { name: 'G4',  note: 'ソ4',   frequency: 392.00, tonejs: 'G4' },
+  { name: 'Ab4', note: 'ラ♭4', frequency: 415.30, tonejs: 'Ab4' }
+];
+
+// random-training準拠の基音管理フック
+const useBaseFrequency = () => {
+  const [currentBaseTone, setCurrentBaseTone] = useState<BaseTone | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const samplerRef = useRef<Tone.Sampler | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 初期化（iPhone Safari対応強化）
+  const initialize = useCallback(async (): Promise<boolean> => {
+    try {
+      console.log('🔄 基音システム初期化開始...');
+      
+      // プロトタイプ準拠のシンプル音量実装（iPhone音量問題解決）
+      const sampler = new Tone.Sampler({
+        urls: {
+          "C4": "C4.mp3",
+          "D#4": "Ds4.mp3",
+          "F#4": "Fs4.mp3", 
+          "A4": "A4.mp3"
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5,     // 自然な減衰
+        volume: 6         // プロトタイプと同じ音量設定
+      }).toDestination(); // 直接接続（プロトタイプ準拠）
+
+      samplerRef.current = sampler;
+
+      console.log('🎹 ピアノ音源読み込み中...');
+      await Tone.loaded();
+      
+      setIsLoaded(true);
+      console.log('✅ 基音システム初期化完了（Salamander Piano）');
+      return true;
+    } catch (error) {
+      console.error('❌ 基音システム初期化失敗:', error);
+      setError(error instanceof Error ? error.message : '基音システム初期化に失敗しました');
+      return false;
+    }
+  }, []);
+
+  // ランダム基音選択
+  const selectRandomBaseTone = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * BASE_TONES.length);
+    const selectedTone = BASE_TONES[randomIndex];
+    setCurrentBaseTone(selectedTone);
+    console.log(`🎲 ランダム基音選択: ${selectedTone.note} (${selectedTone.frequency}Hz)`);
+    return selectedTone;
+  }, []);
+
+  // 基音再生（iPhone Safari対応強化）
+  const playBaseTone = useCallback(async (duration: number = 2): Promise<void> => {
+    try {
+      if (!samplerRef.current || !currentBaseTone) {
+        throw new Error('基音システムが準備されていません');
+      }
+
+      // iPhone Safari: ユーザーインタラクション後にTone.js再初期化
+      if (Tone.context.state !== 'running') {
+        console.log('🔄 AudioContext再開中...');
+        await Tone.start();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      if (isPlaying) {
+        stopBaseTone();
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      setIsPlaying(true);
+      console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
+      
+      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.8);
+      
+      setTimeout(() => {
+        if (samplerRef.current && currentBaseTone) {
+          samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+        }
+      }, duration * 1000);
+      
+      timeoutRef.current = setTimeout(() => {
+        setIsPlaying(false);
+        console.log('🎹 基音再生終了');
+      }, duration * 1000);
+
+    } catch (error) {
+      console.error('❌ 基音再生エラー:', error);
+      setError(error instanceof Error ? error.message : '基音再生に失敗しました');
+      setIsPlaying(false);
+    }
+  }, [currentBaseTone, isPlaying]);
+
+  // 基音停止
+  const stopBaseTone = useCallback(() => {
+    try {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      if (samplerRef.current && currentBaseTone) {
+        samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+      }
+
+      setIsPlaying(false);
+      console.log('🛑 基音再生停止');
+    } catch (error) {
+      console.error('❌ 基音停止エラー:', error);
+    }
+  }, [currentBaseTone]);
+
+  // クリーンアップ
+  const cleanup = useCallback(() => {
+    try {
+      stopBaseTone();
+      
+      if (samplerRef.current) {
+        samplerRef.current.dispose();
+        samplerRef.current = null;
+      }
+      
+      setIsLoaded(false);
+      setCurrentBaseTone(null);
+      setError(null);
+      console.log('🧹 基音システムクリーンアップ完了');
+    } catch (error) {
+      console.error('❌ 基音システムクリーンアップエラー:', error);
+    }
+  }, [stopBaseTone]);
+
+  return {
+    currentBaseTone,
+    isLoaded,
+    isPlaying,
+    error,
+    initialize,
+    selectRandomBaseTone,
+    playBaseTone,
+    stopBaseTone,
+    cleanup
+  };
+};
 
 export default function HybridAudioTestPage() {
-  // React状態管理（SSR hydration問題対策）
-  const [currentBaseTone, setCurrentBaseTone] = useState<BaseTone | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [isPlayingPiano, setIsPlayingPiano] = useState(false);
-  const [testResults, setTestResults] = useState<Array<{
-    baseTone: BaseTone;
-    userFreq: number;
-    accuracy: string;
-    score: number;
-    timestamp: Date;
-  }>>([]);
+  // 基音システム統合
+  const baseFrequency = useBaseFrequency();
+  const [error, setError] = useState<string | null>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  
+  // マイクロフォンシステム
+  const { microphoneState, startRecording, stopRecording } = useMicrophoneManager();
+  
+  const addLog = (message: string) => {
+    console.log(message);
+    setDebugLog(prev => [...prev.slice(-4), message]);
+  };
 
-  // DOM直接操作用のRef
+  // DOM直接操作用のRef（random-trainingスタイル）
   const volumeBarRef = useRef<HTMLDivElement>(null);
   const volumeTextRef = useRef<HTMLSpanElement>(null);
   const volumeStatusRef = useRef<HTMLDivElement>(null);
   const frequencyDisplayRef = useRef<HTMLDivElement>(null);
-  const noteDisplayRef = useRef<HTMLDivElement>(null);
-  const clarityDisplayRef = useRef<HTMLDivElement>(null);
   const debugLogRef = useRef<HTMLDivElement>(null);
 
   // ハイブリッドシステム用のRef
-  const audioEngineRef = useRef<VanillaAudioEngine | null>(null);
   const hybridInterfaceRef = useRef<HybridAudioInterface | null>(null);
 
-  // マイクロフォン管理フック
-  const { microphoneState, startRecording, stopRecording } = useMicrophoneManager();
+  // DOM直接更新関数（random-training準拠）
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    if (volumeBarRef.current) {
+      const clampedVolume = Math.max(0, Math.min(100, volume));
+      
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.minWidth = clampedVolume > 0 ? '2px' : '0px';
+      
+      // 音量レベルに応じた色変更
+      if (volume > 30) {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-green-400 to-green-600';
+      } else if (volume > 10) {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-yellow-400 to-yellow-600';
+      } else {
+        volumeBarRef.current.className = 'h-full transition-all duration-100 ease-out bg-gradient-to-r from-red-400 to-red-600';
+      }
+    }
+    
+    if (volumeTextRef.current) {
+      volumeTextRef.current.textContent = `${volume.toFixed(1)}%`;
+      volumeTextRef.current.className = `text-2xl font-bold ${
+        volume > 30 ? 'text-green-600' : 
+        volume > 10 ? 'text-yellow-600' : 
+        'text-red-600'
+      }`;
+    }
+    
+    if (volumeStatusRef.current) {
+      volumeStatusRef.current.textContent = 
+        volume > 30 ? '✅ 良好' : 
+        volume > 10 ? '⚠️ やや小さい' : 
+        '❌ 音声が小さすぎます';
+    }
+  }, []);
+  
+  // 周波数表示更新関数
+  const updateFrequencyDisplay = useCallback((freq: number | null) => {
+    if (frequencyDisplayRef.current) {
+      if (freq && freq > 80 && freq < 1200) {
+        // TODO: 音程名変換機能を統合
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center">
+            <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              ${freq.toFixed(1)} Hz
+            </div>
+          </div>
+        `;
+      } else {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center text-gray-400">
+            🎵 音声を発声してください
+          </div>
+        `;
+      }
+    }
+  }, []);
 
-  // 音程検出用の状態
-  const [detectedFrequency, setDetectedFrequency] = useState(0);
-  const [pitchClarity, setPitchClarity] = useState(0);
-  const [detectedNote, setDetectedNote] = useState({ note: '', octave: 0, fullNote: '' });
-
+  // マイク音量監視（DOM直接更新）
+  useEffect(() => {
+    if (microphoneState.isRecording) {
+      updateVolumeDisplay(microphoneState.audioLevel);
+    }
+  }, [microphoneState.audioLevel, microphoneState.isRecording, updateVolumeDisplay]);
+  
   /**
-   * Hydration完了処理
+   * コンポーネント初期化（random-trainingベース）
    */
   useEffect(() => {
-    setIsHydrated(true);
+    addLog('🚀 HybridAudioTest: 初期化開始');
+    
+    // 基音システム初期化
+    baseFrequency.initialize();
+    
+    addLog('✅ HybridAudioTest: 初期化完了');
+    
+    return () => {
+      baseFrequency.cleanup();
+    };
   }, []);
 
   /**
-   * コンポーネント初期化
+   * ランダム基音再生（random-training準拠）
    */
-  useEffect(() => {
-    if (!isHydrated) return;
-    
-    console.log('🚀 HybridAudioTest: 初期化開始');
-
-    // VanillaAudioEngine初期化
-    audioEngineRef.current = new VanillaAudioEngine({
-      volume: 6,    // プロトタイプ準拠（iPhone音量問題解決済み）
-      velocity: 0.8, // プロトタイプ準拠
-      duration: 2000 // プロトタイプ準拠の2秒再生
-    });
-
-    // ハイブリッドインターフェース初期化（DOM直接操作）
-    hybridInterfaceRef.current = createHybridAudioInterfaceFromRefs({
-      volumeBarRef,
-      volumeTextRef,
-      volumeStatusRef,
-      frequencyDisplayRef,
-      noteDisplayRef,
-      clarityDisplayRef,
-      debugLogRef
-    });
-
-    console.log('✅ HybridAudioTest: 初期化完了');
-
-    // クリーンアップ
-    return () => {
-      if (hybridInterfaceRef.current) {
-        hybridInterfaceRef.current.dispose();
-      }
-      if (audioEngineRef.current) {
-        audioEngineRef.current.dispose();
-      }
-    };
-  }, [isHydrated]);
-
-  /**
-   * 音声データ取得コールバック（60FPS用）
-   */
-  const getAudioDisplayData = useCallback((): AudioDisplayData => {
-    // マイクロフォンからのデータを使用
-    const volume = microphoneState.audioLevel;
-    const frequency = detectedFrequency;
-    const isValidSound = volume > 5 && frequency > 80;
-    
-    return {
-      volume,
-      frequency,
-      note: detectedNote.note,
-      octave: detectedNote.octave,
-      clarity: pitchClarity,
-      isValidSound
-    };
-  }, [microphoneState.audioLevel, detectedFrequency, detectedNote.note, detectedNote.octave, pitchClarity]);
-
-  /**
-   * マイクロフォン開始（自動でDOM可視化開始）
-   */
-  const handleStartMicrophone = async () => {
+  const handlePlayRandomBaseTone = useCallback(async () => {
     try {
-      console.log('🎤 マイクロフォン開始');
+      if (!baseFrequency.isLoaded) {
+        addLog('⚠️ 基音システム未初期化');
+        await baseFrequency.initialize();
+      }
+      
+      // ランダム基音選択
+      const selectedTone = baseFrequency.selectRandomBaseTone();
+      addLog(`🎲 ランダム基音: ${selectedTone.note} (${selectedTone.frequency}Hz)`);
+      
+      // 基音再生
+      await baseFrequency.playBaseTone(2);
+      addLog(`🎵 基音再生: ${selectedTone.note}`);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addLog(`❌ 基音再生エラー: ${errorMessage}`);
+      setError(errorMessage);
+    }
+  }, [baseFrequency]);
+
+  /**
+   * マイクロフォン開始（random-training準拠）
+   */
+  const handleStartMicrophone = useCallback(async () => {
+    try {
+      addLog('🎤 マイクロフォン開始');
       
       const success = await startRecording();
-      
-      if (success && hybridInterfaceRef.current) {
-        // DOM直接操作による60FPS可視化開始
-        hybridInterfaceRef.current.start(() => {
-          const currentLevel = microphoneState.audioLevel || 0;
-          const mockFreq = currentLevel > 10 ? 220 + (currentLevel * 2) : 0;
-          const mockClarity = currentLevel > 10 ? Math.min(currentLevel / 50, 1) : 0;
-          
-          return {
-            volume: currentLevel,
-            frequency: mockFreq,
-            note: detectedNote.note || '—',
-            octave: detectedNote.octave || 0,
-            clarity: mockClarity,
-            isValidSound: mockFreq > 80 && mockClarity > 0.3
-          };
-        });
-        hybridInterfaceRef.current.addDebugMessage('マイクロフォン＋可視化開始');
-        
-        console.log('🚀 HybridAudioInterface: 60FPS更新開始');
+      if (success) {
+        addLog('✅ マイクロフォン開始成功');
       } else {
-        console.error('❌ マイクロフォン開始失敗');
-      }
-      
-    } catch (error) {
-      console.error('❌ マイクロフォン開始エラー:', error);
-    }
-  };
-
-  /**
-   * マイクロフォン停止
-   */
-  const handleStopMicrophone = () => {
-    console.log('🛑 マイクロフォン停止');
-    
-    stopRecording();
-    
-    if (hybridInterfaceRef.current) {
-      hybridInterfaceRef.current.stop();
-      hybridInterfaceRef.current.addDebugMessage('マイクロフォン＋可視化停止');
-      console.log('⏹️ HybridAudioInterface: 60FPS更新停止');
-    }
-    
-    // 検出データリセット
-    setDetectedFrequency(0);
-    setPitchClarity(0);
-    setDetectedNote({ note: '', octave: 0, fullNote: '' });
-    
-    console.log('✅ マイクロフォン＋可視化停止完了');
-  };
-
-  /**
-   * ランダム基音再生（VanillaAudioEngine使用）
-   */
-  const handlePlayRandomBaseTone = async () => {
-    if (isPlayingPiano || !audioEngineRef.current) {
-      console.warn('⚠️ ピアノ再生スキップ（再生中または未初期化）');
-      return;
-    }
-
-    setIsPlayingPiano(true);
-    
-    try {
-      console.log('🎲 ランダム基音再生開始');
-      
-      // VanillaAudioEngine でランダム基音再生
-      const selectedTone = await audioEngineRef.current.playRandomBaseTone();
-      
-      if (selectedTone) {
-        setCurrentBaseTone(selectedTone);
-        
-        if (hybridInterfaceRef.current) {
-          hybridInterfaceRef.current.addDebugMessage(`基音: ${selectedTone.note} (${selectedTone.frequency}Hz)`);
+        addLog('❌ マイクロフォン開始失敗');
+        if (microphoneState.error) {
+          setError(microphoneState.error);
         }
-        
-        console.log(`✅ 基音再生: ${selectedTone.note} (${selectedTone.frequency}Hz)`);
-        
-        // プロトタイプ準拠の2秒後に自動停止
-        setTimeout(() => {
-          setIsPlayingPiano(false);
-          console.log('🔇 基音再生終了');
-        }, 2000);
-        
-      } else {
-        throw new Error('基音再生失敗');
       }
-      
     } catch (error) {
-      console.error('❌ 基音再生エラー:', error);
-      setIsPlayingPiano(false);
-      
-      if (hybridInterfaceRef.current) {
-        hybridInterfaceRef.current.addDebugMessage(`基音再生エラー: ${error}`);
-      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addLog(`❌ マイクロフォンエラー: ${errorMessage}`);
+      setError(errorMessage);
     }
-  };
-
+  }, [startRecording, microphoneState.error]);
+  
   /**
-   * 音程検出処理（将来的にPitchy統合用プレースホルダー）
+   * マイクロフォン停止（random-training準拠）
    */
-  useEffect(() => {
-    if (microphoneState.isRecording && microphoneState.audioLevel > 10) {
-      // TODO: Pitchy統合で実際の周波数検出を追加
-      // 現在は音量レベルのみを使用したモックデータ
-      const mockFreq = 220 + (microphoneState.audioLevel * 2); // A3ベースのモック
-      const mockClarity = Math.min(microphoneState.audioLevel / 50, 1);
-      
-      setDetectedFrequency(mockFreq);
-      setPitchClarity(mockClarity);
-      
-      // 音名計算
-      if (mockFreq > 80 && mockClarity > 0.3) {
-        const noteInfo = frequencyToNote(mockFreq);
-        setDetectedNote({
-          note: noteInfo.note,
-          octave: noteInfo.octave,
-          fullNote: noteInfo.fullNote
-        });
-      }
-    } else {
-      setDetectedFrequency(0);
-      setPitchClarity(0);
-      setDetectedNote({ note: '', octave: 0, fullNote: '' });
-    }
-  }, [
-    microphoneState.isRecording,
-    microphoneState.audioLevel
-  ]);
+  const handleStopMicrophone = useCallback(() => {
+    addLog('🛑 マイクロフォン停止');
+    stopRecording();
+    addLog('✅ マイクロフォン停止完了');
+  }, [stopRecording]);
 
-  /**
-   * 精度評価記録
-   */
-  const recordAccuracy = () => {
-    if (!currentBaseTone || detectedFrequency <= 0) {
-      console.warn('⚠️ 精度記録スキップ（基音なしまたは周波数検出なし）');
-      return;
-    }
 
-    // 相対音程精度評価
-    const baseFreq = currentBaseTone.frequency;
-    const userFreq = detectedFrequency;
-    const cents = Math.round(1200 * Math.log2(userFreq / baseFreq));
-    const accuracy = evaluateRelativePitchAccuracy(cents);
-    
-    const result = {
-      baseTone: currentBaseTone,
-      userFreq,
-      accuracy: accuracy.accuracy,
-      score: accuracy.score,
-      timestamp: new Date()
-    };
-    
-    setTestResults(prev => [result, ...prev.slice(0, 9)]); // 最大10件保持
-    
-    console.log(`📊 精度記録: ${accuracy.accuracy} (${accuracy.score}点)`);
-    
-    if (hybridInterfaceRef.current) {
-      hybridInterfaceRef.current.addDebugMessage(`精度: ${accuracy.accuracy} (${accuracy.score}点)`);
-    }
-  };
+
+
 
   return (
     <div className="max-w-6xl mx-auto min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-purple-50">
