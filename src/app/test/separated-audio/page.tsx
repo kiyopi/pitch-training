@@ -30,6 +30,24 @@ const BASE_TONES = [
   { note: "ラ", frequency: 440.00, tonejs: "A4" },
 ];
 
+// Step B-2: ユーザー音声倍音補正システム - 設定インターフェース
+interface HarmonicCorrectionConfig {
+  fundamentalSearchRange: number;    // 基音探索範囲（±50Hz）
+  harmonicRatios: number[];          // 倍音比率 [0.5, 2.0, 3.0, 4.0]
+  confidenceThreshold: number;       // 確信度しきい値（0.8）
+  stabilityBuffer: number[];         // 安定化バッファ（過去5フレーム）
+  vocalRange: { min: number, max: number }; // 人間音域（130-1047Hz, C3-C6）
+}
+
+// デフォルト倍音補正設定
+const DEFAULT_HARMONIC_CONFIG: HarmonicCorrectionConfig = {
+  fundamentalSearchRange: 50,
+  harmonicRatios: [0.5, 2.0, 3.0, 4.0],  // 1/2倍音, 2倍音, 3倍音, 4倍音
+  confidenceThreshold: 0.8,
+  stabilityBuffer: [],
+  vocalRange: { min: 130.81, max: 1046.50 } // C3-C6
+};
+
 export default function SeparatedAudioTestPage() {
   // DOM直接操作用のRef（Direct DOM Audio System基盤）
   const systemStatusRef = useRef<HTMLDivElement>(null);
@@ -64,6 +82,12 @@ export default function SeparatedAudioTestPage() {
 
   // Step A: システム状態管理
   const [currentPhase, setCurrentPhase] = useState<AudioSystemPhase>(AudioSystemPhase.IDLE);
+
+  // Step B-2: 倍音補正システム用のRef・State
+  const harmonicCorrectionConfigRef = useRef<HarmonicCorrectionConfig>(DEFAULT_HARMONIC_CONFIG);
+  const previousFrequencyRef = useRef<number | null>(null);
+  const frequencyHistoryRef = useRef<number[]>([]);  // Step 3.1: 履歴バッファ管理
+  const stabilityBufferRef = useRef<number[]>([]);
 
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
@@ -286,6 +310,91 @@ export default function SeparatedAudioTestPage() {
     }
   }, [addLog, updateSystemStatus]);
 
+  // Step B-2: 音楽的妥当性評価 - ドレミファソラシド近似度
+  const calculateMusicalScore = useCallback((frequency: number): number => {
+    const C4 = 261.63; // Middle C
+    
+    // 最も近い半音階音名への距離を計算
+    const semitonesFromC4 = Math.log2(frequency / C4) * 12;
+    const nearestSemitone = Math.round(semitonesFromC4);
+    const distanceFromSemitone = Math.abs(semitonesFromC4 - nearestSemitone);
+    
+    // 半音階に近いほど高スコア（±50セント以内で最高点）
+    return Math.max(0, 1.0 - (distanceFromSemitone / 0.5));
+  }, []);
+
+  // Step B-2: 基音安定化システム - 履歴バッファによる異常値除去
+  const stabilizeFrequency = useCallback((
+    currentFreq: number,
+    historyBuffer: number[],
+    stabilityThreshold: number = 0.1
+  ): number => {
+    // 履歴バッファに追加（最大5フレーム保持）
+    historyBuffer.push(currentFreq);
+    if (historyBuffer.length > 5) historyBuffer.shift();
+    
+    // 中央値ベースの安定化（外れ値除去）
+    const sorted = [...historyBuffer].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    
+    // 急激な変化を抑制（段階的変化）
+    const maxChange = median * stabilityThreshold;
+    const stabilized = Math.abs(currentFreq - median) > maxChange 
+      ? median + Math.sign(currentFreq - median) * maxChange
+      : currentFreq;
+      
+    return stabilized;
+  }, []);
+
+  // Step B-2: 動的オクターブ補正アルゴリズム - 倍音誤検出回避（iPhone最適化版）
+  const correctHarmonicFrequency = useCallback((
+    detectedFreq: number,
+    previousFreq: number | null,
+    config: HarmonicCorrectionConfig
+  ): number => {
+    // Step 3.2: iPhone最適化 - 配列再利用によるメモリ効率化
+    const fundamentalCandidates = [
+      detectedFreq,                    // そのまま（基音の可能性）
+      detectedFreq / 2.0,             // 1オクターブ下（2倍音 → 基音）
+      detectedFreq / 3.0,             // 3倍音 → 基音
+      detectedFreq / 4.0,             // 4倍音 → 基音
+      detectedFreq * 2.0,             // 1オクターブ上（低く歌った場合）
+    ];
+    
+    // iPhone最適化: 事前フィルタリングで計算負荷軽減
+    let bestFreq = detectedFreq;
+    let bestScore = -1;
+    
+    for (let i = 0; i < fundamentalCandidates.length; i++) {
+      const freq = fundamentalCandidates[i];
+      
+      // 高速フィルタリング: 人間音域外は即座に除外（処理負荷軽減）
+      if (freq < config.vocalRange.min || freq > config.vocalRange.max) {
+        continue;
+      }
+      
+      // 軽量化評価（iPhone最適化）
+      const vocalRangeScore = 1.0; // 既に音域内確認済み
+      
+      const continuityScore = previousFreq 
+        ? 1.0 - Math.min(Math.abs(freq - previousFreq) / previousFreq, 1.0)
+        : 0.5;
+      
+      // 音楽的妥当性評価（軽量版）
+      const musicalScore = calculateMusicalScore(freq);
+      
+      const totalScore = (vocalRangeScore * 0.4) + (continuityScore * 0.4) + (musicalScore * 0.2);
+      
+      // 最高スコア更新（map/reduce不使用でメモリ効率化）
+      if (totalScore > bestScore) {
+        bestScore = totalScore;
+        bestFreq = freq;
+      }
+    }
+      
+    return bestFreq;
+  }, [calculateMusicalScore]);
+
   // リアルタイム周波数検出
   const detectFrequency = useCallback(() => {
     if (!analyserRef.current || !pitchDetectorRef.current) {
@@ -298,13 +407,30 @@ export default function SeparatedAudioTestPage() {
     const sampleRate = 44100;
     const [frequency, clarity] = pitchDetectorRef.current.findPitch(timeDomainData, sampleRate);
 
-    // 有効範囲・明瞭度チェック
+    // Step B-2: 倍音補正システム統合 - 単純フィルターを高度な倍音補正に置換
     if (clarity > 0.15 && frequency > 80 && frequency < 1200) {
-      return Math.round(frequency * 10) / 10;
+      // 1. 動的オクターブ補正（倍音誤検出回避）
+      const correctedFreq = correctHarmonicFrequency(
+        frequency, 
+        previousFrequencyRef.current, 
+        DEFAULT_HARMONIC_CONFIG
+      );
+      
+      // 2. 基音安定化（履歴バッファによる異常値除去）
+      const stabilizedFreq = stabilizeFrequency(
+        correctedFreq,
+        frequencyHistoryRef.current,
+        0.1
+      );
+      
+      // 3. 前回周波数更新（連続性評価用）
+      previousFrequencyRef.current = stabilizedFreq;
+      
+      return Math.round(stabilizedFreq * 10) / 10;
     }
 
     return null;
-  }, []);
+  }, [correctHarmonicFrequency, stabilizeFrequency]);
 
   // 周波数検出ループ開始
   const startFrequencyDetection = useCallback(() => {
