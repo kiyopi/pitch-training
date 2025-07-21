@@ -46,6 +46,20 @@
 - **ランダム基音システム**: 10種類の基音からランダム選択
 - **リアルタイム可視化**: 周波数・音量・進行状況の即座表示
 
+### 🎹 基音再生仕様（最重要）
+**⚠️ 必須**: 基音は**Tone.Sampler + Salamander Grand Piano**を使用すること
+- **禁止**: Synth、PolySynth等の合成音源
+- **理由**: ピアノ音源での相対音感トレーニングが本アプリの核心
+- **参照実装**: `/src/app/test/accuracy-test-v2/page.tsx`
+```typescript
+// 正しい実装例
+const sampler = new Tone.Sampler({
+  urls: { "C4": "C4.mp3" },
+  baseUrl: "https://tonejs.github.io/audio/salamander/",
+  release: 1.5
+}).toDestination();
+```
+
 ---
 
 ## 🎯 使い捨てブランチ運用（スマートロールバック対応）

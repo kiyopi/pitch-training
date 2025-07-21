@@ -38,7 +38,7 @@ const useBaseFrequency = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const synthRef = useRef<Tone.PolySynth | null>(null);
+  const samplerRef = useRef<Tone.Sampler | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初期化（iPhone Safari対応強化）
@@ -49,30 +49,24 @@ const useBaseFrequency = () => {
       // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
       // await Tone.start() はユーザーアクション時に実行
       
-      // PolySynthで豊かな音色を実現（外部ファイル読み込み不要でiPhone Safari対応）
-      const polySynth = new Tone.PolySynth({
-        voice: Tone.Synth,
-        options: {
-          oscillator: {
-            type: "fatsawtooth",  // より豊かな倍音
-            count: 3,             // 3つのオシレーター
-            spread: 30            // デチューン幅
-          },
-          envelope: {
-            attack: 0.005,  // ピアノのような速いアタック
-            decay: 0.1,     // 短めのディケイ
-            sustain: 0.3,   // 適度なサスティン
-            release: 1      // 自然な減衰
-          }
-        }
+      // Salamander Grand Piano音源を使用（最重要仕様）
+      const sampler = new Tone.Sampler({
+        urls: {
+          "C4": "C4.mp3"  // C4音源のみ使用（他の音程は自動ピッチシフト）
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5,     // 自然な減衰
+        volume: -5        // 音量調整
       }).toDestination();
 
-      polySynth.volume.value = -12; // 音量調整（PolySynthは音が大きいため）
-      synthRef.current = polySynth;
+      samplerRef.current = sampler;
 
-      // Synthは即座に使用可能（外部ファイル読み込み不要）
+      // 音源読み込み待機
+      console.log('🎹 ピアノ音源読み込み中...');
+      await Tone.loaded();
+      
       setIsLoaded(true);
-      console.log('✅ 基音システム初期化完了');
+      console.log('✅ 基音システム初期化完了（Salamander Piano）');
       return true;
     } catch (error) {
       console.error('❌ 基音システム初期化失敗:', error);
@@ -93,7 +87,7 @@ const useBaseFrequency = () => {
   // 基音再生（iPhone Safari対応強化）
   const playBaseTone = useCallback(async (duration: number = 2): Promise<void> => {
     try {
-      if (!synthRef.current || !currentBaseTone) {
+      if (!samplerRef.current || !currentBaseTone) {
         throw new Error('基音システムが準備されていません');
       }
 
@@ -112,13 +106,18 @@ const useBaseFrequency = () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      // Synthは即座に使用可能（読み込み待機不要）
-
       setIsPlaying(true);
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
       
-      // iPhone Safari: Synthで基音再生（周波数で指定）
-      synthRef.current.triggerAttackRelease(currentBaseTone.frequency, duration);
+      // Samplerで基音再生（Tone.js形式のノート名で指定）
+      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.7);
+      
+      // 手動でリリース（duration秒後）
+      setTimeout(() => {
+        if (samplerRef.current && currentBaseTone) {
+          samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+        }
+      }, duration * 1000);
       
       timeoutRef.current = setTimeout(() => {
         setIsPlaying(false);
@@ -140,8 +139,8 @@ const useBaseFrequency = () => {
         timeoutRef.current = null;
       }
 
-      if (synthRef.current && currentBaseTone) {
-        synthRef.current.triggerRelease(currentBaseTone.tonejs);
+      if (samplerRef.current && currentBaseTone) {
+        samplerRef.current.triggerRelease(currentBaseTone.tonejs);
       }
 
       setIsPlaying(false);
@@ -155,9 +154,9 @@ const useBaseFrequency = () => {
   const cleanup = useCallback(() => {
     try {
       stopBaseTone();
-      if (synthRef.current) {
-        synthRef.current.dispose();
-        synthRef.current = null;
+      if (samplerRef.current) {
+        samplerRef.current.dispose();
+        samplerRef.current = null;
       }
       setIsLoaded(false);
       setCurrentBaseTone(null);
