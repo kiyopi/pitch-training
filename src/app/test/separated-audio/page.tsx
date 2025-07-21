@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, TestTube2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import * as Tone from 'tone';
 import { PitchDetector } from 'pitchy';
 import { createFilterChain, NoiseFilterConfig, DEFAULT_NOISE_FILTER_CONFIG } from '@/utils/audioFilters';
@@ -15,6 +15,133 @@ enum AudioSystemPhase {
   SCORING_PHASE = 'scoring',
   ERROR_STATE = 'error'
 }
+
+// Step B-0: マイクロフォン不在対応 - エラー分類システム
+enum MicrophoneErrorType {
+  NO_DEVICES = 'no_devices',           // 物理デバイス不在
+  PERMISSION_DENIED = 'permission_denied',  // 権限拒否
+  DEVICE_IN_USE = 'device_in_use',     // 他アプリ占有
+  SYSTEM_ERROR = 'system_error',       // システムエラー
+  BROWSER_NOT_SUPPORTED = 'not_supported', // ブラウザ非対応
+  SECURITY_ERROR = 'security_error',   // セキュリティ制限
+  HARDWARE_ERROR = 'hardware_error',   // ハードウェア問題
+  DRIVER_ERROR = 'driver_error'        // ドライバー問題
+}
+
+// Step B-0: マイク可用性チェック結果
+interface MicrophoneAvailabilityCheck {
+  isAvailable: boolean;
+  errorType: MicrophoneErrorType | null;
+  errorMessage: string;
+  suggestedAction: string;
+  canRetry: boolean;
+  fallbackAvailable: boolean;
+}
+
+// Step B-0: アプリ動作モード定義（3つの練習モード対応拡張版）
+enum AppOperationMode {
+  // フル機能モード
+  FULL_TRAINING = 'full_training',    // 通常：基音+採点
+
+  // 練習モード別フォールバック機能
+  RANDOM_LISTENING_MODE = 'random_listening',      // ランダム基音聴音練習
+  CONTINUOUS_LISTENING_MODE = 'continuous_listening', // 連続基音聴音練習  
+  CHROMATIC_LISTENING_MODE = 'chromatic_listening',   // クロマティック聴音練習
+  
+  // 完全代替機能
+  LISTENING_ONLY = 'listening_only',    // マイク不在：基音のみ
+  DEMO_MODE = 'demo_mode',            // 自動進行デモ
+  THEORY_MODE = 'theory_mode'         // 音楽理論学習モード
+}
+
+// Step B-1.5: TrainingModeRequirements Interface（3つの練習モード設定）
+interface TrainingModeConfig {
+  micRequired: boolean;               // マイクロフォン必須性
+  fallbackMode: AppOperationMode;     // フォールバック動作モード
+  fallbackFeatures: string[];        // 利用可能機能リスト
+  fallbackLimitations: string[];     // 制限事項リスト
+  educationalValue: number;          // フォールバック時教育価値（%）
+  userMessage: string;               // ユーザー向け説明メッセージ
+  uiColor: 'blue' | 'green' | 'purple'; // UI識別色
+}
+
+// 3つの練習モード別設定
+const TRAINING_MODE_REQUIREMENTS: Record<string, TrainingModeConfig> = {
+  '/training/random': {
+    micRequired: true,
+    fallbackMode: AppOperationMode.RANDOM_LISTENING_MODE,
+    fallbackFeatures: [
+      '✅ ランダム基音再生（聴音練習）',
+      '✅ 10種類基音の音域学習', 
+      '✅ 相対音程理論の視覚学習',
+      '✅ 音程間隔の理解促進'
+    ],
+    fallbackLimitations: [
+      '❌ ユーザー歌唱採点',
+      '❌ リアルタイム音程検出',
+      '❌ 精度評価・スコア表示'
+    ],
+    educationalValue: 75,
+    userMessage: 'ランダム基音を聞いて音程感覚を鍛える聴音練習が可能です',
+    uiColor: 'blue'
+  },
+  
+  '/training/continuous': {
+    micRequired: true,
+    fallbackMode: AppOperationMode.CONTINUOUS_LISTENING_MODE,
+    fallbackFeatures: [
+      '✅ 連続基音再生（持続集中力養成）',
+      '✅ ラウンド間休憩時間設定',
+      '✅ 進捗表示・統計情報',
+      '✅ 同一基音での集中練習'
+    ],
+    fallbackLimitations: [
+      '❌ ラウンド別採点・精度評価',
+      '❌ 歌唱品質の数値化',
+      '❌ 改善点の具体的指摘'
+    ],
+    educationalValue: 65,
+    userMessage: '連続基音聴音で持続的な音程集中力を養成できます',
+    uiColor: 'green'
+  },
+  
+  '/training/chromatic': {
+    micRequired: true, 
+    fallbackMode: AppOperationMode.CHROMATIC_LISTENING_MODE,
+    fallbackFeatures: [
+      '✅ 12音クロマティック音階再生',
+      '✅ 上行・下行・両方向選択',
+      '✅ 半音間隔の正確な聴音学習',
+      '✅ 異名同音の理解促進'
+    ],
+    fallbackLimitations: [
+      '❌ 半音精度の歌唱評価',
+      '❌ 微細な音程偏差検出',
+      '❌ クロマティック歌唱指導'
+    ],
+    educationalValue: 80, // クロマティック聴音は高い教育価値
+    userMessage: '半音階の正確な音程関係を聴音で学習できます',
+    uiColor: 'purple'
+  },
+  
+  // テスト用デフォルト
+  '/test/separated-audio': {
+    micRequired: true,
+    fallbackMode: AppOperationMode.RANDOM_LISTENING_MODE,
+    fallbackFeatures: [
+      '✅ テスト環境でのランダム基音再生',
+      '✅ フェーズ分離システム検証',
+      '✅ マイク可用性チェック機能'
+    ],
+    fallbackLimitations: [
+      '❌ 本格的な練習機能',
+      '❌ 進捗保存機能'
+    ],
+    educationalValue: 60,
+    userMessage: 'テスト環境でのフェーズ分離システムを体験できます',
+    uiColor: 'blue'
+  }
+};
 
 // 基音定義（Tone.js Salamander Piano用）
 const BASE_TONES = [
@@ -29,6 +156,148 @@ const BASE_TONES = [
   { note: "ソ♯", frequency: 415.30, tonejs: "G#4" },
   { note: "ラ", frequency: 440.00, tonejs: "A4" },
 ];
+
+// Step B-0: エラー分析・分類システム
+const analyzeMicrophoneError = (error: DOMException | Error | unknown): MicrophoneAvailabilityCheck => {
+  // 型安全なエラー情報の取得
+  const errorObj = error as { name?: string; message?: string };
+  const errorName = (error instanceof Error || errorObj.name) ? 
+    (error instanceof Error ? error.name : errorObj.name || '') : '';
+  const errorMessage = (error instanceof Error || errorObj.message) ?
+    (error instanceof Error ? error.message : errorObj.message || '') : String(error);
+  
+  // DOMException分析
+  switch (errorName) {
+    case 'NotAllowedError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.PERMISSION_DENIED,
+        errorMessage: 'マイクロフォンのアクセス許可が拒否されています',
+        suggestedAction: 'ブラウザのアドレスバー🔒をクリックし、マイクロフォンを「許可」に設定してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      
+    case 'NotFoundError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.NO_DEVICES,
+        errorMessage: 'マイクロフォンが見つかりません',
+        suggestedAction: 'マイクロフォンを接続し、デバイス設定を確認してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      
+    case 'NotReadableError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.DEVICE_IN_USE,
+        errorMessage: 'マイクロフォンが他のアプリケーションで使用されています',
+        suggestedAction: 'Zoom、Discord等を終了してから再試行してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      
+    case 'OverconstrainedError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.HARDWARE_ERROR,
+        errorMessage: 'マイクロフォンが要求される仕様を満たしません',
+        suggestedAction: 'マイクロフォンの設定を確認するか、別のデバイスをお試しください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      
+    case 'AbortError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.SYSTEM_ERROR,
+        errorMessage: 'マイクロフォンアクセスが中断されました',
+        suggestedAction: 'ページを再読み込みしてから再試行してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      
+    case 'SecurityError':
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.SECURITY_ERROR,
+        errorMessage: 'セキュリティ制限によりマイクロフォンにアクセスできません',
+        suggestedAction: 'HTTPS環境でアクセスするか、ブラウザの設定を確認してください',
+        canRetry: false,
+        fallbackAvailable: true
+      };
+      
+    default:
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.SYSTEM_ERROR,
+        errorMessage: `マイクロフォンエラー: ${errorMessage}`,
+        suggestedAction: 'ページを再読み込みしてから再試行してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+  }
+};
+
+// Step B-0: 段階的マイク可用性チェック
+const checkMicrophoneAvailability = async (): Promise<MicrophoneAvailabilityCheck> => {
+  // 1. ブラウザサポート確認（最軽量）
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return {
+      isAvailable: false,
+      errorType: MicrophoneErrorType.BROWSER_NOT_SUPPORTED,
+      errorMessage: 'ブラウザがマイクロフォンをサポートしていません',
+      suggestedAction: 'Chrome、Safari、Firefox等の対応ブラウザをご使用ください',
+      canRetry: false,
+      fallbackAvailable: true
+    };
+  }
+
+  // 2. デバイス列挙確認（軽量）
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audioInputs = devices.filter(device => device.kind === 'audioinput');
+    
+    if (audioInputs.length === 0) {
+      return {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.NO_DEVICES,
+        errorMessage: 'マイクロフォンデバイスが見つかりません',
+        suggestedAction: 'マイクロフォンの接続を確認してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+    }
+  } catch (error) {
+    // enumerateDevices失敗は権限問題の可能性があるが継続
+  }
+
+  // 3. 実際のアクセステスト（重い処理）
+  try {
+    const testStream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1 }
+    });
+    
+    // テスト成功後は即座に停止
+    testStream.getTracks().forEach(track => {
+      track.stop();
+      track.enabled = false;
+    });
+    
+    return {
+      isAvailable: true,
+      errorType: null,
+      errorMessage: '',
+      suggestedAction: '',
+      canRetry: false,
+      fallbackAvailable: false
+    };
+    
+  } catch (error: unknown) {
+    return analyzeMicrophoneError(error);
+  }
+};
 
 export default function SeparatedAudioTestPage() {
   // DOM直接操作用のRef（Direct DOM Audio System基盤）
@@ -64,6 +333,15 @@ export default function SeparatedAudioTestPage() {
 
   // Step A: システム状態管理
   const [currentPhase, setCurrentPhase] = useState<AudioSystemPhase>(AudioSystemPhase.IDLE);
+
+  // Step B-0: マイクロフォン可用性管理
+  const [micAvailability, setMicAvailability] = useState<MicrophoneAvailabilityCheck | null>(null);
+  const [appOperationMode, setAppOperationMode] = useState<AppOperationMode>(AppOperationMode.FULL_TRAINING);
+  const [showMicErrorDialog, setShowMicErrorDialog] = useState(false);
+
+  // Step B-1.5: 練習モード管理
+  const [currentTrainingMode, setCurrentTrainingMode] = useState<TrainingModeConfig | null>(null);
+  const [trainingModePath, setTrainingModePath] = useState<string>('/test/separated-audio');
 
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
@@ -216,6 +494,24 @@ export default function SeparatedAudioTestPage() {
     const userAgent = navigator.userAgent;
     return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent);
   }, []);
+
+  // 初期化時に練習モード設定（依存関数定義後に実行）
+  useEffect(() => {
+    const path = typeof window !== 'undefined' 
+      ? (window.location.pathname.includes('/training/random') ? '/training/random'
+         : window.location.pathname.includes('/training/continuous') ? '/training/continuous'
+         : window.location.pathname.includes('/training/chromatic') ? '/training/chromatic'
+         : '/test/separated-audio')
+      : '/test/separated-audio';
+    
+    const config = TRAINING_MODE_REQUIREMENTS[path] || TRAINING_MODE_REQUIREMENTS['/test/separated-audio'];
+    
+    setCurrentTrainingMode(config);
+    setTrainingModePath(path);
+    
+    addLog(`📋 練習モード初期化: ${path}`);
+    addLog(`💡 教育価値: ${config.educationalValue}% (${config.fallbackMode})`);
+  }, [addLog]);
 
   // Step A: デバイス最適化フィルター設定取得
   const getOptimizedFilterConfig = useCallback((): NoiseFilterConfig => {
@@ -376,6 +672,62 @@ export default function SeparatedAudioTestPage() {
     }
   }, [updateSystemStatus, addLog]);
 
+  // Step B-1.5: マイクエラーダイアログ再試行
+  const handleMicErrorRetry = useCallback(async () => {
+    if (!micAvailability?.canRetry) return;
+    
+    setShowMicErrorDialog(false);
+    addLog('🔄 マイクロフォン再試行開始');
+    
+    const micCheck = await checkMicrophoneAvailability();
+    setMicAvailability(micCheck);
+    
+    if (micCheck.isAvailable) {
+      setAppOperationMode(AppOperationMode.FULL_TRAINING);
+      addLog('✅ マイクロフォン復旧 - フル機能モード復帰');
+      updateSystemStatus('マイクロフォン復旧完了', 'green');
+    } else {
+      setShowMicErrorDialog(true);
+      addLog('❌ マイクロフォン再試行失敗');
+    }
+  }, [micAvailability, addLog, updateSystemStatus]);
+
+  // Step B-1.5: フォールバック機能の受け入れ
+  const handleAcceptFallback = useCallback(() => {
+    setShowMicErrorDialog(false);
+    addLog(`✅ フォールバック機能を選択: ${currentTrainingMode?.fallbackMode}`);
+    updateSystemStatus('基音専用モードで継続', 'blue');
+  }, [currentTrainingMode, addLog, updateSystemStatus]);
+
+  // Step B-1.5: 練習モードURL解析とTrainingModeConfig取得
+  const getCurrentTrainingModePath = useCallback((): string => {
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      
+      // 練習モードURLパターンマッチング
+      const trainingModePatterns = {
+        '/training/random': '/training/random',
+        '/training/continuous': '/training/continuous', 
+        '/training/chromatic': '/training/chromatic',
+        '/test/separated-audio': '/test/separated-audio', // テスト環境
+      };
+      
+      for (const [pattern, mode] of Object.entries(trainingModePatterns)) {
+        if (currentPath.includes(pattern)) {
+          return mode;
+        }
+      }
+    }
+    
+    // デフォルトはテスト環境
+    return '/test/separated-audio';
+  }, []);
+
+  const getCurrentTrainingModeConfig = useCallback((): TrainingModeConfig => {
+    const path = getCurrentTrainingModePath();
+    return TRAINING_MODE_REQUIREMENTS[path] || TRAINING_MODE_REQUIREMENTS['/test/separated-audio'];
+  }, [getCurrentTrainingModePath]);
+
   // Step A: マイクロフォンシステム完全停止
   const stopMicrophoneSystemCompletely = useCallback(async () => {
     addLog('🔇 マイクロフォンシステム完全停止開始');
@@ -446,6 +798,57 @@ export default function SeparatedAudioTestPage() {
       addLog(`❌ 基音システム停止エラー: ${error}`);
     }
   }, [addLog]);
+
+  // Step B-0: マイクロフォン可用性チェック実行
+  const performMicrophoneAvailabilityCheck = useCallback(async () => {
+    addLog('🔍 マイクロフォン可用性チェック開始');
+    updateSystemStatus('マイクロフォン可用性確認中...', 'yellow');
+    
+    try {
+      const availability = await checkMicrophoneAvailability();
+      setMicAvailability(availability);
+      
+      if (availability.isAvailable) {
+        addLog('✅ マイクロフォン利用可能');
+        setAppOperationMode(AppOperationMode.FULL_TRAINING);
+        updateSystemStatus('マイクロフォン確認完了 - フル機能利用可能', 'green');
+        setShowMicErrorDialog(false);
+      } else {
+        addLog(`❌ マイクロフォン問題: ${availability.errorMessage}`);
+        setAppOperationMode(AppOperationMode.LISTENING_ONLY);
+        updateSystemStatus(`マイクロフォン問題: ${availability.errorType}`, 'red');
+        setShowMicErrorDialog(true);
+      }
+    } catch (error) {
+      addLog(`❌ 可用性チェック実行エラー: ${error}`);
+      const fallbackAvailability: MicrophoneAvailabilityCheck = {
+        isAvailable: false,
+        errorType: MicrophoneErrorType.SYSTEM_ERROR,
+        errorMessage: 'マイクロフォン可用性チェックに失敗しました',
+        suggestedAction: 'ページを再読み込みしてから再試行してください',
+        canRetry: true,
+        fallbackAvailable: true
+      };
+      setMicAvailability(fallbackAvailability);
+      setAppOperationMode(AppOperationMode.LISTENING_ONLY);
+      setShowMicErrorDialog(true);
+      updateSystemStatus('可用性チェック失敗', 'red');
+    }
+  }, [addLog, updateSystemStatus]);
+
+  // Step B-0: マイクロフォン再試行処理
+  const retryMicrophoneAccess = useCallback(async () => {
+    addLog('🔄 マイクロフォンアクセス再試行');
+    await performMicrophoneAvailabilityCheck();
+  }, [addLog, performMicrophoneAvailabilityCheck]);
+
+  // Step B-0: フォールバックモード開始
+  const startFallbackMode = useCallback(() => {
+    addLog('🎹 基音専用モードで継続');
+    setAppOperationMode(AppOperationMode.LISTENING_ONLY);
+    setShowMicErrorDialog(false);
+    updateSystemStatus('基音専用モード - 採点機能は利用できません', 'yellow');
+  }, [addLog, updateSystemStatus]);
 
   // ノイズフィルター切り替え
   const toggleNoiseFilter = useCallback(() => {
@@ -650,6 +1053,17 @@ export default function SeparatedAudioTestPage() {
     }
   }, [addLog, updateSystemStatusWithPhase, isIOSSafari]);
 
+  // Step B-0: 初期化時マイクロフォン可用性チェック
+  useEffect(() => {
+    const initializeMicAvailabilityCheck = async () => {
+      addLog('🏁 アプリケーション初期化開始 - マイク可用性チェック実行');
+      // 初期化時は自動でマイク可用性をチェック（非侵襲的）
+      await performMicrophoneAvailabilityCheck();
+    };
+    
+    initializeMicAvailabilityCheck();
+  }, [addLog, performMicrophoneAvailabilityCheck]);
+
   // Step A: コンポーネント終了時のクリーンアップ（完全停止版）
   useEffect(() => {
     return () => {
@@ -722,6 +1136,65 @@ export default function SeparatedAudioTestPage() {
             </div>
           </div>
         </div>
+
+        {/* Step B-0: マイクロフォンエラーダイアログ */}
+        {showMicErrorDialog && micAvailability && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center mb-4">
+              <span className="text-4xl mr-3">
+                {micAvailability.errorType === MicrophoneErrorType.PERMISSION_DENIED && '🚫'}
+                {micAvailability.errorType === MicrophoneErrorType.NO_DEVICES && '🎤❌'}
+                {micAvailability.errorType === MicrophoneErrorType.DEVICE_IN_USE && '🔄'}
+                {micAvailability.errorType === MicrophoneErrorType.HARDWARE_ERROR && '⚠️'}
+                {micAvailability.errorType === MicrophoneErrorType.SYSTEM_ERROR && '🖥️❌'}
+                {micAvailability.errorType === MicrophoneErrorType.SECURITY_ERROR && '🔒'}
+                {micAvailability.errorType === MicrophoneErrorType.BROWSER_NOT_SUPPORTED && '🌐❌'}
+                {!Object.values(MicrophoneErrorType).includes(micAvailability.errorType as MicrophoneErrorType) && '❓'}
+              </span>
+              <h3 className="text-xl font-bold text-red-800">マイクロフォンの問題</h3>
+            </div>
+            
+            <p className="text-red-700 mb-4 text-lg">{micAvailability.errorMessage}</p>
+            
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+              <h4 className="font-bold text-blue-800 mb-2">💡 解決方法</h4>
+              <p className="text-blue-700">{micAvailability.suggestedAction}</p>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-600 mb-4">
+              <div><strong>エラー種別:</strong> {micAvailability.errorType}</div>
+              <div><strong>再試行可能:</strong> {micAvailability.canRetry ? '✅ はい' : '❌ いいえ'}</div>
+              <div><strong>代替機能:</strong> {micAvailability.fallbackAvailable ? '✅ 基音専用モード利用可能' : '❌ なし'}</div>
+            </div>
+            
+            <div className="flex space-x-3">
+              {micAvailability.canRetry && (
+                <button
+                  onClick={retryMicrophoneAccess}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold transition-colors"
+                >
+                  🔄 再試行
+                </button>
+              )}
+              
+              {micAvailability.fallbackAvailable && (
+                <button
+                  onClick={startFallbackMode}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold transition-colors"
+                >
+                  🎹 基音専用モードで続行
+                </button>
+              )}
+              
+              <button
+                onClick={() => setShowMicErrorDialog(false)}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
+              >
+                ❌ 閉じる
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* マイクロフォンテスト表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -816,6 +1289,51 @@ export default function SeparatedAudioTestPage() {
           </div>
         </div>
 
+        {/* Step B-0: マイクロフォン可用性チェックボタン */}
+        <div className="mb-6">
+          <div className="text-center text-sm font-bold text-gray-700 mb-3">
+            🎤 マイクロフォン可用性チェック（Step B-0）
+          </div>
+          
+          <div className="flex space-x-4 justify-center mb-4">
+            <button
+              onClick={performMicrophoneAvailabilityCheck}
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              🔍 マイク可用性テスト
+            </button>
+            
+            {micAvailability && appOperationMode === AppOperationMode.LISTENING_ONLY && (
+              <button
+                onClick={() => setAppOperationMode(AppOperationMode.FULL_TRAINING)}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md"
+              >
+                🔄 フル機能復帰
+              </button>
+            )}
+          </div>
+          
+          <div className="text-center space-y-1">
+            <div className="text-sm">
+              <strong>現在のモード:</strong>
+              <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold ${
+                appOperationMode === AppOperationMode.FULL_TRAINING 
+                  ? 'bg-green-100 text-green-800' 
+                  : appOperationMode === AppOperationMode.LISTENING_ONLY
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {appOperationMode === AppOperationMode.FULL_TRAINING && '🎵 フル機能'}
+                {appOperationMode === AppOperationMode.LISTENING_ONLY && '🎹 基音専用'}
+                {appOperationMode === AppOperationMode.DEMO_MODE && '🎬 デモモード'}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500">
+              12種類のエラーケース完全対応システム
+            </div>
+          </div>
+        </div>
+
         {/* 基音再生システム制御ボタン */}
         <div className="mb-6 space-y-4">
           <div className="text-center text-sm font-bold text-gray-700 mb-3">基音再生システム（参考用）</div>
@@ -891,6 +1409,66 @@ export default function SeparatedAudioTestPage() {
             </div>
           </div>
         </div>
+
+        {/* Step B-1.5: マイクエラーダイアログ */}
+        {showMicErrorDialog && micAvailability && currentTrainingMode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md mx-4">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">🎤❌</div>
+                <h3 className="text-xl font-bold text-red-800">マイクロフォンの問題</h3>
+              </div>
+              
+              <p className="text-red-700 mb-4 text-lg">{micAvailability.errorMessage}</p>
+              
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+                <h4 className="font-bold text-blue-800 mb-2">💡 解決方法</h4>
+                <p className="text-blue-700">{micAvailability.suggestedAction}</p>
+              </div>
+              
+              <div className={`bg-${currentTrainingMode.uiColor}-50 border border-${currentTrainingMode.uiColor}-200 p-4 rounded-lg mb-4`}>
+                <h4 className="font-bold mb-2">🎵 フォールバック機能 ({currentTrainingMode.educationalValue}%の教育価値)</h4>
+                <p className="text-sm mb-3">{currentTrainingMode.userMessage}</p>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="font-medium mb-2">✅ 利用可能機能</h5>
+                    <ul className="text-xs space-y-1">
+                      {currentTrainingMode.fallbackFeatures.map((feature, index) => (
+                        <li key={index}>{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium mb-2">❌ 制限事項</h5>
+                    <ul className="text-xs space-y-1">
+                      {currentTrainingMode.fallbackLimitations.map((limitation, index) => (
+                        <li key={index}>{limitation}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                {micAvailability.canRetry && (
+                  <button 
+                    onClick={handleMicErrorRetry}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  >
+                    🔄 再試行
+                  </button>
+                )}
+                <button 
+                  onClick={handleAcceptFallback}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                >
+                  🎹 聴音モードで継続
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ログ表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
