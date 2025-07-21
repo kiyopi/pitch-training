@@ -140,8 +140,8 @@ const useBaseFrequency = () => {
         timeoutRef.current = null;
       }
 
-      if (synthRef.current) {
-        synthRef.current.triggerRelease();
+      if (synthRef.current && currentBaseTone) {
+        synthRef.current.triggerRelease(currentBaseTone.tonejs);
       }
 
       setIsPlaying(false);
