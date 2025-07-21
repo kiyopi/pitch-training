@@ -1057,13 +1057,13 @@ export default function SeparatedAudioTestPage() {
       };
       
       testDisplayRef.current.innerHTML = `
-        <div class="w-full h-full p-4">
-          <div class="bg-gradient-to-br ${modeColors[mode]} rounded-xl p-6 h-full shadow-lg border">
+        <div class="w-full p-4">
+          <div class="bg-gradient-to-br ${modeColors[mode]} rounded-xl p-6 shadow-lg border">
             <div class="flex items-center justify-center mb-4">
               <span class="text-3xl mr-3">${modeIcons[mode]}</span>
               <div class="text-xl font-bold text-gray-800">${modeNames[mode]}</div>
             </div>
-            <div class="text-center text-gray-700 leading-relaxed whitespace-pre-line">
+            <div class="text-center text-gray-700 leading-relaxed whitespace-pre-line text-sm">
               ${message}
             </div>
             <div class="mt-4 text-center">
@@ -1393,7 +1393,7 @@ export default function SeparatedAudioTestPage() {
         {/* マイクロフォンテスト表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4">🎤 マイクロフォンテスト結果</h3>
-          <div ref={testDisplayRef} className="text-lg h-32 flex items-center justify-center">
+          <div ref={testDisplayRef} className="text-lg min-h-32 flex items-center justify-center">
             <div className="w-full h-full flex items-center justify-center">
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="text-gray-500">マイクロフォンテスト待機中...</div>
