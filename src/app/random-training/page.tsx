@@ -39,8 +39,6 @@ const useBaseFrequency = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const samplerRef = useRef<Tone.Sampler | null>(null);
-  const gainNodeRef = useRef<Tone.Gain | null>(null);
-  const compressorRef = useRef<Tone.Compressor | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初期化（iPhone Safari対応強化）
@@ -51,35 +49,21 @@ const useBaseFrequency = () => {
       // iPhone Safari: AudioContextを最初から起動しない（ユーザーインタラクション時に起動）
       // await Tone.start() はユーザーアクション時に実行
       
-      // iPhone音量増強: GainNode + Compressor による音声増幅システム
-      const gainNode = new Tone.Gain(2.5); // 2.5倍ゲイン増幅
-      const compressor = new Tone.Compressor({
-        threshold: -30,    // 圧縮開始レベル
-        ratio: 6,          // 圧縮比率
-        attack: 0.003,     // アタック時間
-        release: 0.1,      // リリース時間
-        knee: 30           // ニー（圧縮特性）
-      });
-
-      // Salamander Grand Piano音源を使用（最重要仕様）
+      // プロトタイプ準拠のシンプル音量実装（iPhone音量問題解決）
       const sampler = new Tone.Sampler({
         urls: {
-          "C4": "C4.mp3"  // C4音源のみ使用（他の音程は自動ピッチシフト）
+          "C4": "C4.mp3",
+          "D#4": "Ds4.mp3",
+          "F#4": "Fs4.mp3", 
+          "A4": "A4.mp3"
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,     // 自然な減衰
-        volume: 0         // 基本音量（GainNodeで増幅）
-      });
-
-      // 音声チェーン構築: Sampler → GainNode → Compressor → Destination
-      sampler.connect(gainNode);
-      gainNode.connect(compressor);
-      compressor.toDestination();
+        volume: 6         // プロトタイプと同じ音量設定
+      }).toDestination(); // 直接接続（プロトタイプ準拠）
 
       // Refs保存
       samplerRef.current = sampler;
-      gainNodeRef.current = gainNode;
-      compressorRef.current = compressor;
 
       // 音源読み込み待機
       console.log('🎹 ピアノ音源読み込み中...');
@@ -129,8 +113,8 @@ const useBaseFrequency = () => {
       setIsPlaying(true);
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
       
-      // Samplerで基音再生（Tone.js形式のノート名で指定）
-      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 1.0);
+      // Samplerで基音再生（Tone.js形式のノート名で指定）- プロトタイプ準拠
+      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.8);
       
       // 手動でリリース（duration秒後）
       setTimeout(() => {
@@ -175,15 +159,7 @@ const useBaseFrequency = () => {
     try {
       stopBaseTone();
       
-      // 音声チェーンのクリーンアップ
-      if (compressorRef.current) {
-        compressorRef.current.dispose();
-        compressorRef.current = null;
-      }
-      if (gainNodeRef.current) {
-        gainNodeRef.current.dispose();
-        gainNodeRef.current = null;
-      }
+      // シンプルなクリーンアップ（プロトタイプ準拠）
       if (samplerRef.current) {
         samplerRef.current.dispose();
         samplerRef.current = null;
@@ -192,7 +168,7 @@ const useBaseFrequency = () => {
       setIsLoaded(false);
       setCurrentBaseTone(null);
       setError(null);
-      console.log('🧹 基音システム（音声チェーン含む）クリーンアップ完了');
+      console.log('🧹 基音システムクリーンアップ完了');
     } catch (error) {
       console.error('❌ 基音システムクリーンアップエラー:', error);
     }
