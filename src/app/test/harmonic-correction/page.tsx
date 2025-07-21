@@ -419,7 +419,10 @@ export default function HarmonicCorrectionTest() {
 
       // リアルタイム音程検出ループ
       const detectPitch = () => {
-        if (!analyserRef.current || !pitchDetectorRef.current || !isHarmonicCorrectionActive) {
+        if (!analyserRef.current || !pitchDetectorRef.current) {
+          if (isHarmonicCorrectionActive) {
+            animationFrameRef.current = requestAnimationFrame(detectPitch);
+          }
           return;
         }
 
@@ -430,7 +433,8 @@ export default function HarmonicCorrectionTest() {
         // Pitchy音程検出
         const [pitch, clarity] = pitchDetectorRef.current.findPitch(dataArray, 44100);
 
-        if (clarity > 0.15 && pitch > 80 && pitch < 1200) {
+        // 検出結果を表示（低い信頼度でも表示）
+        if (clarity > 0.05 && pitch > 50 && pitch < 2000) {
           // 生検出周波数
           setCurrentFrequency(pitch);
           
@@ -478,9 +482,31 @@ export default function HarmonicCorrectionTest() {
           }
           
           addLog(`🎵 検出: ${pitch.toFixed(1)}Hz → 補正: ${stabilized.toFixed(1)}Hz (スコア: ${(score * 100).toFixed(1)}%)`);
+        } else {
+          // 検出できない場合の表示
+          if (testDisplayRef.current) {
+            testDisplayRef.current.innerHTML = `
+              <div class="space-y-4">
+                <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <h4 class="font-bold text-yellow-800 mb-2">🎤 音程検出中...</h4>
+                  <div class="text-lg text-yellow-600">
+                    検出周波数: ${pitch ? pitch.toFixed(1) : 'なし'} Hz
+                  </div>
+                  <div class="text-sm text-yellow-500">
+                    信頼度: ${clarity ? (clarity * 100).toFixed(1) : '0'}% (閾値: 5%以上)
+                  </div>
+                  <div class="text-xs text-yellow-400 mt-2">
+                    🎵 声を出して歌ってください（ハミングでも可）
+                  </div>
+                </div>
+              </div>
+            `;
+          }
         }
 
-        animationFrameRef.current = requestAnimationFrame(detectPitch);
+        if (isHarmonicCorrectionActive) {
+          animationFrameRef.current = requestAnimationFrame(detectPitch);
+        }
       };
 
       detectPitch();
@@ -565,7 +591,7 @@ export default function HarmonicCorrectionTest() {
         {/* 倍音補正テスト表示エリア */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4">🎤 倍音補正テスト結果</h3>
-          <div ref={testDisplayRef} className="text-lg min-h-32 flex items-center justify-center">
+          <div ref={testDisplayRef} className="min-h-32">
             <div className="w-full h-full flex items-center justify-center">
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="text-gray-500">倍音補正テスト待機中...</div>
