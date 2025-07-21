@@ -7,6 +7,15 @@ import * as Tone from 'tone';
 import { PitchDetector } from 'pitchy';
 import { createFilterChain, NoiseFilterConfig, DEFAULT_NOISE_FILTER_CONFIG } from '@/utils/audioFilters';
 
+// Step A: 基盤システム改修 - AudioSystemPhase enum
+enum AudioSystemPhase {
+  IDLE = 'idle',
+  TRANSITIONING = 'transitioning',
+  BASE_TONE_PHASE = 'base_tone',
+  SCORING_PHASE = 'scoring',
+  ERROR_STATE = 'error'
+}
+
 // 基音定義（Tone.js Salamander Piano用）
 const BASE_TONES = [
   { note: "ド", frequency: 261.63, tonejs: "C4" },
@@ -52,6 +61,9 @@ export default function SeparatedAudioTestPage() {
   } | null>(null);
   const [isFilterEnabled, setIsFilterEnabled] = useState(true);
   const [filterConfig, setFilterConfig] = useState<NoiseFilterConfig>(DEFAULT_NOISE_FILTER_CONFIG);
+
+  // Step A: システム状態管理
+  const [currentPhase, setCurrentPhase] = useState<AudioSystemPhase>(AudioSystemPhase.IDLE);
 
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
@@ -199,6 +211,26 @@ export default function SeparatedAudioTestPage() {
     }, 1000);
   }, [updateSystemStatus, updatePhaseIndicator, updateTestDisplay, addLog]);
 
+  // Step A: iPhone検出関数
+  const isIOSSafari = useCallback((): boolean => {
+    const userAgent = navigator.userAgent;
+    return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent);
+  }, []);
+
+  // Step A: デバイス最適化フィルター設定取得
+  const getOptimizedFilterConfig = useCallback((): NoiseFilterConfig => {
+    if (isIOSSafari()) {
+      addLog('📱 iPhone軽量化フィルター設定適用');
+      return {
+        highpass: { frequency: 80, Q: 0.5, gain: 0 },      // 軽量化
+        lowpass: { frequency: 6000, Q: 0.5, gain: 0 },     // 軽量化  
+        notch: { frequency: 60, Q: 3, gain: -15 }          // 大幅軽量化
+      };
+    }
+    addLog('🖥️ PC/Android標準フィルター設定適用');
+    return DEFAULT_NOISE_FILTER_CONFIG;
+  }, [isIOSSafari, addLog]);
+
   // マイクロフォンシステム初期化
   const initializeMicrophoneSystem = useCallback(async () => {
     try {
@@ -221,9 +253,10 @@ export default function SeparatedAudioTestPage() {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 2048;
 
-      // ノイズリダクションフィルターチェーン作成
-      filterChainRef.current = createFilterChain(audioContextRef.current, filterConfig);
-      addLog(`🔧 ノイズフィルターチェーン作成完了`);
+      // Step A: 最適化されたノイズリダクションフィルターチェーン作成
+      const optimizedConfig = getOptimizedFilterConfig();
+      filterChainRef.current = createFilterChain(audioContextRef.current, optimizedConfig);
+      addLog(`🔧 ノイズフィルターチェーン作成完了（${isIOSSafari() ? 'iPhone最適化' : '標準'}設定）`);
 
       // 音声ストリーム接続（ノイズフィルター適用）
       const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
@@ -232,7 +265,7 @@ export default function SeparatedAudioTestPage() {
         // フィルター適用: source → filterChain → analyser
         const filteredOutput = filterChainRef.current.connectChain(source);
         filteredOutput.connect(analyserRef.current);
-        addLog(`✅ ノイズフィルター適用済み`);
+        addLog(`✅ ノイズフィルター適用済み（${isIOSSafari() ? 'iPhone軽量化' : '標準'}）`);
       } else {
         // フィルターなし: source → analyser
         source.connect(analyserRef.current);
@@ -343,6 +376,77 @@ export default function SeparatedAudioTestPage() {
     }
   }, [updateSystemStatus, addLog]);
 
+  // Step A: マイクロフォンシステム完全停止
+  const stopMicrophoneSystemCompletely = useCallback(async () => {
+    addLog('🔇 マイクロフォンシステム完全停止開始');
+    
+    // 1. 周波数検出ループ停止
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // 2. MediaStream確実停止（iPhone対応）
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false; // iPhone Safari確実停止
+      });
+      streamRef.current = null;
+    }
+    
+    // 3. AudioContext完全停止
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try {
+        await audioContextRef.current.close();
+      } catch (error) {
+        addLog(`⚠️ AudioContext停止エラー: ${error}`);
+      }
+      audioContextRef.current = null;
+    }
+    
+    // 4. 関連リファレンス初期化
+    analyserRef.current = null;
+    pitchDetectorRef.current = null;
+    filterChainRef.current = null;
+    setCurrentFrequency(null);
+    setIsMicInitialized(false);
+    
+    addLog('✅ マイクロフォンシステム完全停止完了');
+  }, [addLog]);
+
+  // Step A: 基音システム完全停止
+  const stopBaseToneSystemCompletely = useCallback(async () => {
+    addLog('🎹 基音システム完全停止開始');
+    
+    try {
+      // 1. Tone.js Sampler停止
+      if (samplerRef.current) {
+        samplerRef.current.dispose();
+        samplerRef.current = null;
+      }
+      
+      // 2. Tone.js Transport停止
+      if (Tone.Transport.state === 'started') {
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+      }
+      
+      // 3. AudioContext確認停止（注意: 他のTone.jsインスタンスに影響する可能性）
+      if (Tone.context.state !== 'closed') {
+        // Tone.jsのコンテキストは慎重に扱う
+        addLog('🎵 Tone.js AudioContext停止スキップ（他への影響回避）');
+      }
+      
+      setCurrentBaseTone(null);
+      setIsInitialized(false);
+      
+      addLog('✅ 基音システム完全停止完了');
+    } catch (error) {
+      addLog(`❌ 基音システム停止エラー: ${error}`);
+    }
+  }, [addLog]);
+
   // ノイズフィルター切り替え
   const toggleNoiseFilter = useCallback(() => {
     const newFilterState = !isFilterEnabled;
@@ -357,43 +461,97 @@ export default function SeparatedAudioTestPage() {
     }
   }, [isFilterEnabled, addLog, updateSystemStatus]);
 
-  // マイクロフォンシステム停止
+  // Step A: システム状態更新（フェーズ対応）
+  const updateSystemStatusWithPhase = useCallback((phase: AudioSystemPhase, message?: string) => {
+    setCurrentPhase(phase);
+    
+    const phaseMessages = {
+      [AudioSystemPhase.IDLE]: 'システム待機中',
+      [AudioSystemPhase.TRANSITIONING]: 'フェーズ移行中...',
+      [AudioSystemPhase.BASE_TONE_PHASE]: '基音再生フェーズ',
+      [AudioSystemPhase.SCORING_PHASE]: '採点処理フェーズ',
+      [AudioSystemPhase.ERROR_STATE]: 'エラー状態'
+    };
+    
+    const phaseColors = {
+      [AudioSystemPhase.IDLE]: 'gray',
+      [AudioSystemPhase.TRANSITIONING]: 'yellow',
+      [AudioSystemPhase.BASE_TONE_PHASE]: 'blue',
+      [AudioSystemPhase.SCORING_PHASE]: 'green',
+      [AudioSystemPhase.ERROR_STATE]: 'red'
+    };
+    
+    const displayMessage = message || phaseMessages[phase];
+    const color = phaseColors[phase];
+    
+    updateSystemStatus(displayMessage, color);
+    addLog(`🎯 フェーズ更新: ${phase} - ${displayMessage}`);
+  }, [updateSystemStatus, addLog]);
+
+  // Step A: エラー状態への移行
+  const transitionToErrorState = useCallback(async (error: string) => {
+    addLog(`❌ エラー発生: ${error}`);
+    updateSystemStatusWithPhase(AudioSystemPhase.ERROR_STATE, `エラー: ${error}`);
+    
+    // 全システム停止
+    try {
+      await stopMicrophoneSystemCompletely();
+      await stopBaseToneSystemCompletely();
+    } catch (cleanupError) {
+      addLog(`⚠️ クリーンアップエラー: ${cleanupError}`);
+    }
+  }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, stopBaseToneSystemCompletely]);
+
+  // Step A: アイドル状態への安全な復帰
+  const resetToIdlePhase = useCallback(async () => {
+    try {
+      addLog('🔄 アイドル状態へ復帰開始');
+      updateSystemStatusWithPhase(AudioSystemPhase.TRANSITIONING, 'アイドル状態へ復帰中...');
+      
+      // 全システム停止
+      await stopMicrophoneSystemCompletely();
+      await stopBaseToneSystemCompletely();
+      
+      // iOS Safari待機
+      if (isIOSSafari()) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      updateSystemStatusWithPhase(AudioSystemPhase.IDLE);
+      addLog('✅ アイドル状態復帰完了');
+      
+    } catch (error) {
+      addLog(`❌ アイドル復帰エラー: ${error}`);
+      updateSystemStatusWithPhase(AudioSystemPhase.ERROR_STATE, 'アイドル復帰失敗');
+    }
+  }, [addLog, updateSystemStatusWithPhase, stopMicrophoneSystemCompletely, stopBaseToneSystemCompletely, isIOSSafari]);
+
+  // 旧マイクロフォンシステム停止（Step A改修により非推奨、完全停止版を使用）
   const stopMicrophoneSystem = useCallback(() => {
-    stopFrequencyDetection();
+    addLog('⚠️ 旧stopMicrophoneSystem呼び出し - stopMicrophoneSystemCompletelyを使用してください');
+    stopMicrophoneSystemCompletely();
+  }, [stopMicrophoneSystemCompletely, addLog]);
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-        track.enabled = false; // iPhone Safari確実停止
-      });
-      streamRef.current = null;
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-
-    analyserRef.current = null;
-    pitchDetectorRef.current = null;
-    filterChainRef.current = null;
-    setIsMicInitialized(false);
-    updateSystemStatus('マイクシステム停止', 'gray');
-    addLog('🔇 マイクロフォンシステム停止');
-  }, [stopFrequencyDetection, updateSystemStatus, addLog]);
-
-  // コンポーネント初期化
+  // Step A: コンポーネント初期化（フェーズ管理対応）
   useEffect(() => {
-    addLog('🚀 分離型音声システム開始');
-    updateSystemStatus('システム初期化中...', 'yellow');
-  }, [addLog, updateSystemStatus]);
+    addLog('🚀 分離型音声システム開始（Step A: 基盤システム改修版）');
+    updateSystemStatusWithPhase(AudioSystemPhase.IDLE, 'システム初期化完了');
+    
+    if (isIOSSafari()) {
+      addLog('📱 iPhone Safari環境を検出 - 最適化設定適用');
+    } else {
+      addLog('🖥️ PC/Android環境を検出 - 標準設定適用');
+    }
+  }, [addLog, updateSystemStatusWithPhase, isIOSSafari]);
 
-  // コンポーネント終了時のクリーンアップ
+  // Step A: コンポーネント終了時のクリーンアップ（完全停止版）
   useEffect(() => {
     return () => {
-      stopMicrophoneSystem();
+      // 完全停止版を使用
+      stopMicrophoneSystemCompletely();
+      stopBaseToneSystemCompletely();
     };
-  }, [stopMicrophoneSystem]);
+  }, [stopMicrophoneSystemCompletely, stopBaseToneSystemCompletely]);
   return (
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50">
       {/* タイムスタンプ表示 */}
@@ -414,8 +572,11 @@ export default function SeparatedAudioTestPage() {
           <p className="text-lg text-gray-600 mb-4">
             Direct DOM Audio System - Phase 1 基盤構築
           </p>
-          <div className="inline-block bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-4 py-2 rounded-full text-sm font-bold">
-            Step 1-5: ノイズリダクション統合（3段階フィルタリング）
+          <div className="inline-block bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 px-4 py-2 rounded-full text-sm font-bold">
+            Step A: 基盤システム改修（フェーズ分離準備）
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            AudioSystemPhase + 完全停止関数 + iPhone最適化
           </div>
         </div>
 
@@ -449,8 +610,8 @@ export default function SeparatedAudioTestPage() {
             </div>
             <div ref={phaseIndicatorRef}>
               <div className="flex items-center space-x-3">
-                <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">⚡</span>
-                <span className="text-orange-600 font-semibold">Step 1-5: ノイズリダクション統合（実装中）</span>
+                <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🔧</span>
+                <span className="text-purple-600 font-semibold">Step A: 基盤システム改修完了</span>
               </div>
             </div>
           </div>
@@ -552,24 +713,43 @@ export default function SeparatedAudioTestPage() {
         {/* 基音再生システム制御ボタン */}
         <div className="mb-6 space-y-4">
           <div className="text-center text-sm font-bold text-gray-700 mb-3">基音再生システム（参考用）</div>
+          
+          {/* iPhone音量問題警告表示 */}
+          {isMicInitialized && isFilterEnabled && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-yellow-600 text-xl">⚠️</span>
+                <div className="text-yellow-800">
+                  <div className="font-bold text-sm">iPhone音量問題検出</div>
+                  <div className="text-xs">ノイズフィルター + マイク動作中は基音音量が低下します</div>
+                  <div className="text-xs mt-1">
+                    <strong>解決策</strong>: マイクシステム停止後に基音再生 または ノイズフィルター無効化
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex space-x-4 justify-center">
             <button
               onClick={initializeBaseToneSystem}
-              disabled={isInitialized}
+              disabled={isInitialized || (isMicInitialized && isFilterEnabled)}
               className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md disabled:opacity-50 disabled:hover:scale-100"
             >
               🎹 基音初期化
             </button>
             <button
               onClick={playBaseTone}
-              disabled={!isInitialized}
+              disabled={!isInitialized || (isMicInitialized && isFilterEnabled)}
               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md disabled:opacity-50 disabled:hover:scale-100"
             >
               🎲 基音再生
             </button>
           </div>
           <div className="text-center text-xs text-gray-500">
-            基音システムは分離確認用 - Step 1-4の主目的はマイクロフォンシステム単体テスト
+            {(isMicInitialized && isFilterEnabled) 
+              ? "⚠️ iPhone音量問題回避のため、ノイズフィルター有効時はマイク停止後に基音再生してください"
+              : "基音システムは分離確認用 - iPhone音量問題の検証に使用"}
           </div>
         </div>
 
@@ -589,7 +769,7 @@ export default function SeparatedAudioTestPage() {
           <div className="text-left space-y-2 text-gray-600">
             <div className="flex items-center space-x-3">
               <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-              <span>完全分離設計: 基音再生時はマイクOFF</span>
+              <span>完全分離設計: 基音再生時はマイクOFF（Step A準備完了）</span>
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
@@ -601,7 +781,7 @@ export default function SeparatedAudioTestPage() {
             </div>
             <div className="flex items-center space-x-3">
               <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-              <span>段階的実装: 問題の早期特定・解決</span>
+              <span>段階的実装: 問題の早期特定・解決（Step A進行中）</span>
             </div>
           </div>
         </div>
