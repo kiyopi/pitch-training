@@ -50,14 +50,14 @@ export default function ChromaticScalePage() {
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,
-        volume: 0 // 最大音量
+        volume: 6 // プロトタイプ準拠の音量設定（iPhone最適化）
       }).toDestination();
       
       // 音源読み込み待機
       await Tone.loaded();
       
       // 選択された音を0.8秒間再生
-      sampler.triggerAttack(note, undefined, 0.6);
+      sampler.triggerAttack(note, undefined, 0.8); // プロトタイプ準拠のvelocity設定
       
       // 0.8秒後に手動でリリース
       setTimeout(() => {

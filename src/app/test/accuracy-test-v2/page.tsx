@@ -324,7 +324,7 @@ export default function AccuracyTestV2Page() {
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,
-        volume: 0 // 最大音量
+        volume: 6 // プロトタイプ準拠の音量設定（iPhone最適化）
       }).toDestination();
       
       // 音源読み込み待機
@@ -333,7 +333,7 @@ export default function AccuracyTestV2Page() {
       
       // ランダム選択された基音を1.7秒間再生（C4から自動ピッチシフト）
       addLog(`♪ 再生中: ${randomNote}`);
-      sampler.triggerAttack(randomNote, undefined, 0.6);
+      sampler.triggerAttack(randomNote, undefined, 0.8); // プロトタイプ準拠のvelocity設定
       
       // 1.7秒後に手動でリリース
       setTimeout(() => {
