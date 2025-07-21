@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, TestTube2 } from 'lucide-react';
 import * as Tone from 'tone';
 import { PitchDetector } from 'pitchy';
+import { createFilterChain, NoiseFilterConfig, DEFAULT_NOISE_FILTER_CONFIG } from '@/utils/audioFilters';
 
 // 基音定義（Tone.js Salamander Piano用）
 const BASE_TONES = [
@@ -40,6 +41,17 @@ export default function SeparatedAudioTestPage() {
   const animationFrameRef = useRef<number | null>(null);
   const [isMicInitialized, setIsMicInitialized] = useState(false);
   const [currentFrequency, setCurrentFrequency] = useState<number | null>(null);
+
+  // ノイズリダクション用のRef・State
+  const filterChainRef = useRef<{
+    highpassFilter: BiquadFilterNode;
+    lowpassFilter: BiquadFilterNode;
+    notchFilter: BiquadFilterNode;
+    gainNode: GainNode;
+    connectChain: (sourceNode: AudioNode) => AudioNode;
+  } | null>(null);
+  const [isFilterEnabled, setIsFilterEnabled] = useState(true);
+  const [filterConfig, setFilterConfig] = useState<NoiseFilterConfig>(DEFAULT_NOISE_FILTER_CONFIG);
 
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
@@ -209,9 +221,23 @@ export default function SeparatedAudioTestPage() {
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 2048;
 
-      // 音声ストリーム接続
+      // ノイズリダクションフィルターチェーン作成
+      filterChainRef.current = createFilterChain(audioContextRef.current, filterConfig);
+      addLog(`🔧 ノイズフィルターチェーン作成完了`);
+
+      // 音声ストリーム接続（ノイズフィルター適用）
       const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
-      source.connect(analyserRef.current);
+      
+      if (isFilterEnabled && filterChainRef.current) {
+        // フィルター適用: source → filterChain → analyser
+        const filteredOutput = filterChainRef.current.connectChain(source);
+        filteredOutput.connect(analyserRef.current);
+        addLog(`✅ ノイズフィルター適用済み`);
+      } else {
+        // フィルターなし: source → analyser
+        source.connect(analyserRef.current);
+        addLog(`⚪ ノイズフィルター無効`);
+      }
 
       // Pitchy音程検出器初期化
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyserRef.current.fftSize);
@@ -317,6 +343,20 @@ export default function SeparatedAudioTestPage() {
     }
   }, [updateSystemStatus, addLog]);
 
+  // ノイズフィルター切り替え
+  const toggleNoiseFilter = useCallback(() => {
+    const newFilterState = !isFilterEnabled;
+    setIsFilterEnabled(newFilterState);
+    
+    if (newFilterState) {
+      addLog('🔧 ノイズフィルター有効化');
+      updateSystemStatus('フィルター有効化 - 再初期化が必要', 'yellow');
+    } else {
+      addLog('⚪ ノイズフィルター無効化');
+      updateSystemStatus('フィルター無効化 - 再初期化が必要', 'yellow');
+    }
+  }, [isFilterEnabled, addLog, updateSystemStatus]);
+
   // マイクロフォンシステム停止
   const stopMicrophoneSystem = useCallback(() => {
     stopFrequencyDetection();
@@ -336,6 +376,7 @@ export default function SeparatedAudioTestPage() {
 
     analyserRef.current = null;
     pitchDetectorRef.current = null;
+    filterChainRef.current = null;
     setIsMicInitialized(false);
     updateSystemStatus('マイクシステム停止', 'gray');
     addLog('🔇 マイクロフォンシステム停止');
@@ -373,8 +414,8 @@ export default function SeparatedAudioTestPage() {
           <p className="text-lg text-gray-600 mb-4">
             Direct DOM Audio System - Phase 1 基盤構築
           </p>
-          <div className="inline-block bg-gradient-to-r from-green-100 to-blue-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold">
-            Step 1-4: マイクロフォンシステム単体（基音なし）
+          <div className="inline-block bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-4 py-2 rounded-full text-sm font-bold">
+            Step 1-5: ノイズリダクション統合（3段階フィルタリング）
           </div>
         </div>
 
@@ -402,10 +443,14 @@ export default function SeparatedAudioTestPage() {
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
               <span className="text-green-600 font-semibold">Step 1-3: 基音再生システム単体完了</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+              <span className="text-green-600 font-semibold">Step 1-4: マイクロフォンシステム単体完了</span>
+            </div>
             <div ref={phaseIndicatorRef}>
               <div className="flex items-center space-x-3">
-                <span className="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold">⚡</span>
-                <span className="text-yellow-600 font-semibold">Step 1-4: マイクロフォンシステム単体（実装中）</span>
+                <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">⚡</span>
+                <span className="text-orange-600 font-semibold">Step 1-5: ノイズリダクション統合（実装中）</span>
               </div>
             </div>
           </div>
@@ -419,6 +464,49 @@ export default function SeparatedAudioTestPage() {
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="text-gray-500">マイクロフォンテスト待機中...</div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ノイズフィルター制御パネル */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">🔧 ノイズリダクション設定</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700 font-semibold">フィルター状態:</span>
+              <div className="flex items-center space-x-3">
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  isFilterEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {isFilterEnabled ? '🟢 有効' : '⚪ 無効'}
+                </span>
+                <button
+                  onClick={toggleNoiseFilter}
+                  disabled={isMicInitialized}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {isFilterEnabled ? 'フィルター無効化' : 'フィルター有効化'}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="font-bold text-blue-700">ハイパス</div>
+                <div className="text-blue-600">{filterConfig.highpass.frequency}Hz</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="font-bold text-green-700">ローパス</div>
+                <div className="text-green-600">{filterConfig.lowpass.frequency}Hz</div>
+              </div>
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <div className="font-bold text-purple-700">ノッチ</div>
+                <div className="text-purple-600">{filterConfig.notch.frequency}Hz</div>
+              </div>
+            </div>
+            <div className="text-center text-xs text-gray-500">
+              {isMicInitialized ? "フィルター設定を変更するには、マイクシステムを停止・再初期化してください" : "フィルター設定を変更後、マイクシステムを初期化してください"}
             </div>
           </div>
         </div>
@@ -447,10 +535,17 @@ export default function SeparatedAudioTestPage() {
             >
               ⏹️ 検出停止
             </button>
+            <button
+              onClick={stopMicrophoneSystem}
+              disabled={!isMicInitialized}
+              className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+            >
+              🔇 システム停止
+            </button>
           </div>
           <div className="text-center text-sm text-gray-600">
             {!isMicInitialized && "まずマイクシステムを初期化してください"}
-            {isMicInitialized && "マイクシステム準備完了 - 周波数検出をテストできます"}
+            {isMicInitialized && `マイクシステム準備完了 - ノイズフィルター${isFilterEnabled ? '有効' : '無効'}`}
           </div>
         </div>
 
