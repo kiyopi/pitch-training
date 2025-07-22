@@ -424,9 +424,11 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 
 ### 2025-07-22 **クリーンホームページ戦略開始**
 - **重要決定**: トップページ完全作り直し + Phase 1技術債務解消
-- **戦略文書作成**: CLEAN_HOMEPAGE_STRATEGY.md 
-- **新ブランチ方針**: clean-homepage-v1-impl-001 での安全な作業
-- **クラッシュ対策**: 多層防御エラーハンドリング実装予定
+- **戦略文書作成**: CLEAN_HOMEPAGE_STRATEGY.md, TECHNICAL_DEBT_ANALYSIS.md
+- **新ブランチ作成**: clean-homepage-v1-impl-001 での安全な作業開始
+- **クラッシュ対策**: HOMEPAGE_REBUILD_DECISION.md作成（経緯記録）
+- **技術債務解消**: Step A2完了 - ESLintエラー80%削減達成
+- **重要な学習**: 統合ユーティリティ使用でビルドエラー多発→ローカル実装成功
 
 ### 2025-07-16 **Phase 2方針転換完了**
 - **重要決定**: 統合システム → ローカル実装への戦略転換成功
@@ -440,11 +442,11 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 - 技術債務蓄積の開始（型不整合、依存関係複雑化）
 
 ### 現在の状況 (2025-07-22)
-- **安定版**: pitch-training-nextjs-v2-impl-001 (Random Training完成)
-- **次期作業ブランチ**: clean-homepage-v1-impl-001 (予定)
-- **対象ファイル**: /src/app/page.tsx (完全作り直し)
-- **次期バージョン**: v3.0-clean-homepage 予定
-- **技術債務状況**: Phase 1統合ファイルの段階的解消予定
+- **安定版**: 1e44e2e (v1.2.0 OutlierPenalty-Enhanced)
+- **作業ブランチ**: clean-homepage-v1-impl-001 (作業中)
+- **対象ファイル**: /src/app/page.tsx (トップページのみ作り直し)
+- **次期作業**: Step B1（新トップページ作成）
+- **技術債務状況**: Phase 1統合ファイルの段階的解消中（Step A2完了）
 
 ---
 
