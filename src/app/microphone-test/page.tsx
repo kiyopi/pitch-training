@@ -263,8 +263,8 @@ function MicrophoneTestContent() {
         if (sample > peak) peak = sample;
       }
       const rms = Math.sqrt(sum / bufferLength);
-      // 音量感度の調整（テスト実装基準）
-      const volume = Math.max(rms * 8, peak * 4);
+      // 音量感度の調整（70-80%まで上がるように強化）
+      const volume = Math.max(rms * 12, peak * 6);
       
       // DOM直接更新
       updateVolumeDisplay(volume);
@@ -363,7 +363,8 @@ function MicrophoneTestContent() {
               マイクロフォンの許可
             </CardTitle>
             <CardDescription className="text-neutral-700">
-              音程検出のためにマイクロフォンへのアクセスを許可してください
+              音程検出のためにマイクロフォンへのアクセスを許可してください。
+              許可後、「ド」を発声してマイクの動作確認を行ってください。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -443,26 +444,27 @@ function MicrophoneTestContent() {
           </CardContent>
         </Card>
         
-        {/* 次のステップ案内 */}
+        {/* レッスンスタートボタン */}
         {micState.micPermission === 'granted' && (
           <Card className="border-neutral-200">
             <CardHeader>
-              <CardTitle className="text-neutral-900">次のステップ</CardTitle>
+              <CardTitle className="text-neutral-900">レッスンを開始</CardTitle>
               <CardDescription className="text-neutral-700">
-                「ド」を発声してマイクの動作確認を行ってください
+                音量バーが反応し、周波数が検出されることを確認してからボタンを押してください
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-neutral-700 mb-4">
-                音量バーが反応し、周波数が検出されることを確認してから、
-                レッスンを開始してください。
-              </p>
-              
-              <Button asChild disabled={!micState.startButtonEnabled} className="disabled:opacity-50">
+            <CardContent className="text-center">
+              <Button asChild disabled={!micState.startButtonEnabled} className="disabled:opacity-50 px-8 py-3 text-lg">
                 <Link href={selectedMode.targetPath}>
-                  レッスンスタート
+                  🎵 {selectedMode.name}を開始
                 </Link>
               </Button>
+              
+              {!micState.startButtonEnabled && (
+                <p className="text-sm text-neutral-600 mt-3">
+                  「ド」を発声してマイクの反応を確認してください
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
