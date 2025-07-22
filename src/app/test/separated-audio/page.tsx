@@ -89,6 +89,29 @@ export default function SeparatedAudioTestPage() {
   const frequencyHistoryRef = useRef<number[]>([]);  // Step 3.1: 履歴バッファ管理
   const stabilityBufferRef = useRef<number[]>([]);
 
+  // デバッグパネル用state
+  const [debugInfo, setDebugInfo] = useState({
+    rawFrequency: 0,
+    correctedFrequency: 0,
+    musicalScore: 0,
+    appliedCorrection: 'なし',
+    frequencyHistory: [] as number[],
+    noteDetection: '未検出'
+  });
+
+  // 周波数→音程名変換関数
+  const frequencyToNote = useCallback((freq: number): string => {
+    if (freq < 80 || freq > 1200) return '範囲外';
+    
+    const A4 = 440;
+    const semitonesFromA4 = Math.round(12 * Math.log2(freq / A4));
+    const noteNames = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    const noteIndex = (semitonesFromA4 + 9) % 12;
+    
+    return `${noteNames[noteIndex]}${octave}`;
+  }, []);
+
   // DOM直接更新関数（音声なし・表示のみ）
   const updateSystemStatus = useCallback((message: string, color: string = 'blue') => {
     if (systemStatusRef.current) {
@@ -235,6 +258,52 @@ export default function SeparatedAudioTestPage() {
     }, 1000);
   }, [updateSystemStatus, updatePhaseIndicator, updateTestDisplay, addLog]);
 
+  // 人間音声テスト機能
+  const playTestVoice = useCallback(async (filename: string) => {
+    try {
+      addLog(`🎤 人間音声テスト開始: ${filename}`);
+      updateSystemStatus('人間音声テスト中...', 'blue');
+      
+      // マイクロフォンが初期化されていることを確認
+      if (!isMicInitialized) {
+        addLog('❌ マイクロフォンシステムが初期化されていません');
+        updateSystemStatus('マイクロフォン初期化が必要', 'red');
+        return;
+      }
+      
+      // Web Audio APIを使用して音声ファイルを再生しながら解析
+      const audioContext = audioContextRef.current;
+      if (!audioContext) {
+        addLog('❌ AudioContextが利用できません');
+        return;
+      }
+      
+      // 音声ファイルを読み込み
+      const response = await fetch(`/audio/test/${filename}`);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // 音声を再生
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      
+      addLog(`✅ 人間音声テスト実行中: ${filename}`);
+      updateSystemStatus(`人間音声解析中: ${filename}`, 'green');
+      
+      // 再生終了後
+      source.onended = () => {
+        addLog(`✅ 人間音声テスト完了: ${filename}`);
+        updateSystemStatus('人間音声テスト完了', 'green');
+      };
+      
+    } catch (error) {
+      addLog(`❌ 人間音声テストエラー: ${error}`);
+      updateSystemStatus('人間音声テスト失敗', 'red');
+    }
+  }, [isMicInitialized, addLog, updateSystemStatus]);
+
   // Step A: iPhone検出関数
   const isIOSSafari = useCallback((): boolean => {
     const userAgent = navigator.userAgent;
@@ -351,7 +420,7 @@ export default function SeparatedAudioTestPage() {
     detectedFreq: number,
     previousFreq: number | null,
     config: HarmonicCorrectionConfig
-  ): number => {
+  ): { frequency: number, confidence: number, correction: string } => {
     // Step 3.2: iPhone最適化 - 配列再利用によるメモリ効率化
     const fundamentalCandidates = [
       detectedFreq,                    // そのまま（基音の可能性）
@@ -364,6 +433,7 @@ export default function SeparatedAudioTestPage() {
     // iPhone最適化: 事前フィルタリングで計算負荷軽減
     let bestFreq = detectedFreq;
     let bestScore = -1;
+    let bestCorrectionType = 'なし';
     
     for (let i = 0; i < fundamentalCandidates.length; i++) {
       const freq = fundamentalCandidates[i];
@@ -389,10 +459,21 @@ export default function SeparatedAudioTestPage() {
       if (totalScore > bestScore) {
         bestScore = totalScore;
         bestFreq = freq;
+        
+        // 補正種別の判定
+        if (i === 0) bestCorrectionType = 'なし';
+        else if (i === 1) bestCorrectionType = '1/2倍音補正';
+        else if (i === 2) bestCorrectionType = '1/3倍音補正';
+        else if (i === 3) bestCorrectionType = '1/4倍音補正';
+        else if (i === 4) bestCorrectionType = '2倍音補正';
       }
     }
       
-    return bestFreq;
+    return { 
+      frequency: bestFreq, 
+      confidence: bestScore, 
+      correction: bestCorrectionType 
+    };
   }, [calculateMusicalScore]);
 
   // リアルタイム周波数検出
@@ -410,7 +491,7 @@ export default function SeparatedAudioTestPage() {
     // Step B-2: 倍音補正システム統合 - 単純フィルターを高度な倍音補正に置換
     if (clarity > 0.15 && frequency > 80 && frequency < 1200) {
       // 1. 動的オクターブ補正（倍音誤検出回避）
-      const correctedFreq = correctHarmonicFrequency(
+      const correctionResult = correctHarmonicFrequency(
         frequency, 
         previousFrequencyRef.current, 
         DEFAULT_HARMONIC_CONFIG
@@ -418,19 +499,29 @@ export default function SeparatedAudioTestPage() {
       
       // 2. 基音安定化（履歴バッファによる異常値除去）
       const stabilizedFreq = stabilizeFrequency(
-        correctedFreq,
+        correctionResult.frequency,
         frequencyHistoryRef.current,
         0.1
       );
       
-      // 3. 前回周波数更新（連続性評価用）
+      // 3. デバッグ情報更新
+      setDebugInfo({
+        rawFrequency: frequency,
+        correctedFrequency: stabilizedFreq,
+        musicalScore: correctionResult.confidence,
+        appliedCorrection: correctionResult.correction,
+        frequencyHistory: frequencyHistoryRef.current.slice(-5),
+        noteDetection: frequencyToNote(stabilizedFreq)
+      });
+      
+      // 4. 前回周波数更新（連続性評価用）
       previousFrequencyRef.current = stabilizedFreq;
       
       return Math.round(stabilizedFreq * 10) / 10;
     }
 
     return null;
-  }, [correctHarmonicFrequency, stabilizeFrequency]);
+  }, [correctHarmonicFrequency, stabilizeFrequency, frequencyToNote]);
 
   // 周波数検出ループ開始
   const startFrequencyDetection = useCallback(() => {
@@ -880,13 +971,40 @@ export default function SeparatedAudioTestPage() {
         </div>
 
         {/* DOM操作テストボタン */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             onClick={handleDomTest}
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md"
           >
             🔬 DOM直接操作テスト
           </button>
+        </div>
+
+        {/* 人間音声テスト機能 */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">🎤 人間音声サンプルテスト</h3>
+          <div className="text-center space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              実際の人間音声で倍音補正システムをテストします
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => playTestVoice('human-c3-a.wav')}
+                className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md"
+              >
+                🎵 C3基音 (130Hz) テスト
+              </button>
+              <button
+                onClick={() => playTestVoice('human-c3-note.wav')}
+                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-bold hover:scale-105 transition-all duration-300 shadow-md"
+              >
+                🎼 C3ノート (130Hz) テスト
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              音声再生中にデバッグパネルで倍音補正動作を確認できます
+            </div>
+          </div>
         </div>
 
         {/* 設計コンセプト */}
@@ -913,10 +1031,47 @@ export default function SeparatedAudioTestPage() {
         </div>
 
         {/* ログ表示エリア */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4">📝 実行ログ</h3>
           <div ref={logRef} className="space-y-1 max-h-32 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
             <div className="text-sm text-gray-500">ログが表示されます...</div>
+          </div>
+        </div>
+
+        {/* デバッグパネル */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">🎵 倍音補正デバッグ情報</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">📊 検出周波数:</span>
+                <span className="font-mono font-bold text-blue-600">{debugInfo.rawFrequency.toFixed(2)}Hz</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">🎯 補正後周波数:</span>
+                <span className="font-mono font-bold text-green-600">{debugInfo.correctedFrequency.toFixed(2)}Hz</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">📈 音楽的スコア:</span>
+                <span className="font-mono font-bold text-purple-600">{debugInfo.musicalScore.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">🔧 適用補正:</span>
+                <span className="font-bold text-orange-600">{debugInfo.appliedCorrection}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">🎼 音程判定:</span>
+                <span className="font-bold text-indigo-600">{debugInfo.noteDetection}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">📋 履歴:</span>
+                <span className="font-mono text-xs text-gray-500">
+                  [{debugInfo.frequencyHistory.map(f => f.toFixed(0)).join(', ')}]
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
