@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ErrorBoundaryProvider } from "@/components/ErrorBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,7 +62,9 @@ export default function RootLayout({
           </header>
           
           <main className="flex-grow container mx-auto px-6 py-12">
-            {children}
+            <ErrorBoundaryProvider showDetails={process.env.NODE_ENV === 'development'}>
+              {children}
+            </ErrorBoundaryProvider>
           </main>
           
           <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 border-t border-gray-700">

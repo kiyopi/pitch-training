@@ -4,9 +4,17 @@ import Link from "next/link";
 import { Music, RotateCcw, Target, Sparkles, Zap, Mic, Piano } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BrowserCompatibilityCheck } from "@/components/BrowserCompatibilityCheck";
 
 export default function Home() {
   return (
+    <BrowserCompatibilityCheck
+      minRequirements={{
+        webAudio: true,
+        mediaDevices: true,
+        localStorage: false
+      }}
+    >
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
       <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
         {/* ヒーローセクション */}
@@ -191,5 +199,6 @@ export default function Home() {
         </div>
       </div>
     </div>
+    </BrowserCompatibilityCheck>
   );
 }
