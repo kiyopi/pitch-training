@@ -46,8 +46,8 @@ export default function Home() {
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
                 <Music className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" />
               </div>
-              <CardTitle className="text-lg sm:text-xl">ランダム基音モード</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
+              <CardTitle className="text-lg sm:text-xl text-neutral-900">ランダム基音モード</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-neutral-700">
                 10種類の基音からランダムに選択してトレーニング
               </CardDescription>
             </CardHeader>
@@ -74,17 +74,17 @@ export default function Home() {
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-100 flex items-center justify-center mb-3 sm:mb-4">
                 <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600" />
               </div>
-              <CardTitle className="text-lg sm:text-xl text-neutral-600">連続チャレンジモード</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-neutral-500">
+              <CardTitle className="text-lg sm:text-xl text-neutral-700">連続チャレンジモード</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-neutral-600">
                 選択した回数だけ連続で実行し、総合評価を確認
               </CardDescription>
             </CardHeader>
             <CardContent className="relative pt-0 sm:pt-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">
-                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium opacity-60">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600 mb-3 sm:mb-4">
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium opacity-70">
                   中級者向け
                 </span>
-                <span className="text-neutral-400">•</span>
+                <span className="text-neutral-500">•</span>
                 <span>準備中</span>
               </div>
               <Button disabled className="w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation">
@@ -100,17 +100,17 @@ export default function Home() {
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-100 flex items-center justify-center mb-3 sm:mb-4">
                 <Target className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
               </div>
-              <CardTitle className="text-lg sm:text-xl text-neutral-600">12音階モード</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-neutral-500">
+              <CardTitle className="text-lg sm:text-xl text-neutral-700">12音階モード</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-neutral-600">
                 クロマチックスケールの上行・下行で完全制覇
               </CardDescription>
             </CardHeader>
             <CardContent className="relative pt-0 sm:pt-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium opacity-60">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600 mb-3 sm:mb-4">
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium opacity-70">
                   上級者向け
                 </span>
-                <span className="text-neutral-400">•</span>
+                <span className="text-neutral-500">•</span>
                 <span>準備中</span>
               </div>
               <Button disabled className="w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation">
