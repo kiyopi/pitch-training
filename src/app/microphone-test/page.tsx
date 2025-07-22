@@ -114,14 +114,14 @@ function MicrophoneTestContent() {
     if (frequencyDisplayRef.current) {
       if (frequency && frequency > 80 && frequency < 2000) {
         frequencyDisplayRef.current.innerHTML = `
-          <div class="text-center">
-            <div class="text-xl sm:text-2xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
+          <div class="h-10 flex items-center justify-center">
+            <div class="text-xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
           </div>
         `;
       } else {
         frequencyDisplayRef.current.innerHTML = `
-          <div class="text-center text-neutral-600">
-            🎵 音声を発声してください
+          <div class="h-10 flex items-center justify-center">
+            <div class="text-lg text-neutral-600">🎵 音声を発声してください</div>
           </div>
         `;
       }
@@ -150,24 +150,27 @@ function MicrophoneTestContent() {
     }
   }, []);
   
-  const updateVolumeDisplay = useCallback((volume: number) => {
-    // 高精度音量計算（テスト実装と同じロジック）
-    const normalizedVolume = Math.min(100, Math.max(0, volume * 100));
+  const updateVolumeDisplay = useCallback((normalizedVolume: number) => {
+    // 0-1の範囲をパーセントに変換
+    const percentage = Math.round(normalizedVolume * 100);
     
-    // 音量バー更新（DOM直接操作）
+    // 音量バー更新（テスト実装と同じstyle方式）
     if (volumeBarRef.current) {
-      const barColor = normalizedVolume > 80 ? 'bg-red-500' :
-                       normalizedVolume > 40 ? 'bg-yellow-500' : 'bg-green-500';
+      volumeBarRef.current.style.width = `${percentage}%`;
       
-      volumeBarRef.current.style.width = `${normalizedVolume}%`;
-      volumeBarRef.current.className = `h-3 rounded-full transition-all duration-100 ${barColor}`;
+      // 色の動的決定（グラデーション使用）
+      const barColor = normalizedVolume > 0.7 
+        ? 'bg-gradient-to-r from-red-500 to-orange-500'
+        : normalizedVolume > 0.3 
+        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+        : 'bg-gradient-to-r from-gray-400 to-gray-500';
+      
+      volumeBarRef.current.className = `h-3 rounded-full transition-all duration-300 ${barColor}`;
     }
     
     // パーセント表示更新
     if (volumePercentRef.current) {
-      volumePercentRef.current.innerHTML = `
-        <span class="text-sm text-neutral-700 font-medium">${Math.round(normalizedVolume)}%</span>
-      `;
+      volumePercentRef.current.textContent = `${percentage}%`;
     }
   }, []);
   
@@ -212,7 +215,7 @@ function MicrophoneTestContent() {
       // 音声分析ノード作成
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.1; // よりリアルタイム
+      analyser.smoothingTimeConstant = 0.8; // 安定化重視（テスト実装と同じ）
       analyserRef.current = analyser;
       
       // マイク入力接続
@@ -251,26 +254,35 @@ function MicrophoneTestContent() {
       if (!analyserRef.current || !pitchDetectorRef.current) return;
       
       const bufferLength = analyserRef.current.fftSize;
-      const dataArray = new Float32Array(bufferLength);
-      analyserRef.current.getFloatTimeDomainData(dataArray);
       
-      // 高精度音量計算（テスト実装と同じ）
+      // 音量計算（テスト実装と同じ方式）
+      const byteTimeDomainData = new Uint8Array(bufferLength);
+      analyserRef.current.getByteTimeDomainData(byteTimeDomainData);
+      
+      // 128中心の8bitデータをRMS計算
       let sum = 0;
-      let peak = 0;
+      let maxAmplitude = 0;
+      
       for (let i = 0; i < bufferLength; i++) {
-        const sample = Math.abs(dataArray[i]);
+        const sample = (byteTimeDomainData[i] - 128) / 128;  // -1 to 1 正規化
         sum += sample * sample;
-        if (sample > peak) peak = sample;
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
       }
+      
       const rms = Math.sqrt(sum / bufferLength);
-      // 音量感度の調整（70-80%まで上がるように強化）
-      const volume = Math.max(rms * 12, peak * 6);
+      // 重要：200倍・100倍のスケーリング（テスト実装準拠）
+      const volume = Math.max(rms * 200, maxAmplitude * 100);
+      const normalizedVolume = Math.min(volume / 100, 1); // 0-1正規化
       
       // DOM直接更新
-      updateVolumeDisplay(volume);
+      updateVolumeDisplay(normalizedVolume);
+      
+      // 周波数検出用のFloat32Array取得
+      const floatDataArray = new Float32Array(bufferLength);
+      analyserRef.current.getFloatTimeDomainData(floatDataArray);
       
       // 周波数検出
-      const [frequency, clarity] = pitchDetectorRef.current.findPitch(dataArray, 44100);
+      const [frequency, clarity] = pitchDetectorRef.current.findPitch(floatDataArray, 44100);
       
       if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
         // DOM直接更新
@@ -279,9 +291,9 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volume > 0.1,
+          volumeDetected: normalizedVolume > 0.01,
           frequencyDetected: true,
-          startButtonEnabled: volume > 0.1
+          startButtonEnabled: normalizedVolume > 0.01
         }));
       } else {
         updateFrequencyDisplay(null);
@@ -289,12 +301,10 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volume > 0.1,
+          volumeDetected: normalizedVolume > 0.01,
           frequencyDetected: false
         }));
       }
-      
-      animationFrameRef.current = requestAnimationFrame(processAudio);
     };
     
     processAudio();
@@ -466,7 +476,7 @@ function MicrophoneTestContent() {
               
               {!micState.startButtonEnabled && (
                 <p className="text-sm text-neutral-600 mt-3">
-                  「ド」を発声してマイクの反応を確認してください
+                  音量バーが反応することを確認してください
                 </p>
               )}
             </CardContent>
