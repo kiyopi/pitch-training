@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "next lint",
     "github-pages": "npm run build && touch out/.nojekyll",
+    "analyze": "ANALYZE=true npm run build",
     "clean": "rm -rf .next && rm -rf out",
     "port-check": "lsof -i :3000",
     "kill-port": "npx kill-port 3000"

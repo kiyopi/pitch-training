@@ -5,8 +5,75 @@ import { Music, RotateCcw, Target, Sparkles, Zap, Mic, Piano } from "lucide-reac
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BrowserCompatibilityCheck } from "@/components/BrowserCompatibilityCheck";
+import { memo } from "react";
 
-export default function Home() {
+// メモ化されたトレーニングカードコンポーネント
+const TrainingCard = memo(function TrainingCard({
+  icon: Icon,
+  title,
+  description,
+  badge,
+  href,
+  disabled = false,
+  gradientFrom,
+  gradientTo,
+  iconBg,
+  iconColor,
+  badgeBg,
+  badgeText,
+  buttonBg,
+  buttonHover
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  badge: string;
+  href: string;
+  disabled?: boolean;
+  gradientFrom: string;
+  gradientTo: string;
+  iconBg: string;
+  iconColor: string;
+  badgeBg: string;
+  badgeText: string;
+  buttonBg: string;
+  buttonHover: string;
+}) {
+  return (
+    <Card className={`relative overflow-hidden group transition-all duration-300 border-neutral-200 ${disabled ? 'opacity-75' : 'hover:shadow-xl'}`}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} ${gradientTo} ${disabled ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`} />
+      <CardHeader className="relative pb-3 sm:pb-6">
+        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${iconBg} flex items-center justify-center mb-3 sm:mb-4 ${disabled ? '' : 'group-hover:scale-110'} transition-transform`}>
+          <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${iconColor}`} />
+        </div>
+        <CardTitle className={`text-lg sm:text-xl ${disabled ? 'text-neutral-700' : 'text-neutral-900'}`}>{title}</CardTitle>
+        <CardDescription className={`text-sm sm:text-base ${disabled ? 'text-neutral-600' : 'text-neutral-700'}`}>
+          {description}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="relative pt-0 sm:pt-6">
+        <div className={`flex items-center gap-2 text-xs sm:text-sm ${disabled ? 'text-neutral-600' : 'text-neutral-600'} mb-3 sm:mb-4`}>
+          <span className={`px-2 py-1 ${badgeBg} ${badgeText} rounded-full text-xs font-medium ${disabled ? 'opacity-70' : ''}`}>
+            {badge}
+          </span>
+          <span className={disabled ? 'text-neutral-500' : 'text-neutral-400'}>•</span>
+          <span>{disabled ? '準備中' : '基本モード'}</span>
+        </div>
+        <Button asChild={!disabled} disabled={disabled} className={`w-full ${disabled ? '' : buttonBg + ' ' + buttonHover} h-11 sm:h-10 text-sm sm:text-base touch-manipulation`}>
+          {disabled ? (
+            <div>準備中</div>
+          ) : (
+            <Link href={href}>
+              トレーニング開始
+            </Link>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+});
+
+function Home() {
   return (
     <BrowserCompatibilityCheck
       minRequirements={{
@@ -39,85 +106,57 @@ export default function Home() {
 
         {/* トレーニングモード選択 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12 sm:mb-16">
-          {/* ランダム基音モード */}
-          <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 border-neutral-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="relative pb-3 sm:pb-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                <Music className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" />
-              </div>
-              <CardTitle className="text-lg sm:text-xl text-neutral-900">ランダム基音モード</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-neutral-700">
-                10種類の基音からランダムに選択してトレーニング
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative pt-0 sm:pt-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600 mb-3 sm:mb-4">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                  初心者向け
-                </span>
-                <span className="text-neutral-400">•</span>
-                <span>基本モード</span>
-              </div>
-              <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 sm:h-10 text-sm sm:text-base touch-manipulation">
-                <Link href="/random-training">
-                  トレーニング開始
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <TrainingCard
+            icon={Music}
+            title="ランダム基音モード"
+            description="10種類の基音からランダムに選択してトレーニング"
+            badge="初心者向け"
+            href="/random-training"
+            gradientFrom="from-emerald-500/10"
+            gradientTo="to-teal-500/10"
+            iconBg="bg-emerald-100"
+            iconColor="text-emerald-600"
+            badgeBg="bg-emerald-100"
+            badgeText="text-emerald-700"
+            buttonBg="bg-emerald-600"
+            buttonHover="hover:bg-emerald-700"
+          />
+          
+          <TrainingCard
+            icon={RotateCcw}
+            title="連続チャレンジモード"
+            description="選択した回数だけ連続で実行し、総合評価を確認"
+            badge="中級者向け"
+            href="/training/continuous"
+            disabled={true}
+            gradientFrom="from-orange-500/10"
+            gradientTo="to-amber-500/10"
+            iconBg="bg-orange-100"
+            iconColor="text-orange-600"
+            badgeBg="bg-orange-100"
+            badgeText="text-orange-700"
+            buttonBg=""
+            buttonHover=""
+          />
 
-          {/* 連続チャレンジモード */}
-          <Card className="relative overflow-hidden group opacity-75 border-neutral-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10" />
-            <CardHeader className="relative pb-3 sm:pb-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-100 flex items-center justify-center mb-3 sm:mb-4">
-                <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600" />
-              </div>
-              <CardTitle className="text-lg sm:text-xl text-neutral-700">連続チャレンジモード</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-neutral-600">
-                選択した回数だけ連続で実行し、総合評価を確認
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative pt-0 sm:pt-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600 mb-3 sm:mb-4">
-                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium opacity-70">
-                  中級者向け
-                </span>
-                <span className="text-neutral-500">•</span>
-                <span>準備中</span>
-              </div>
-              <Button disabled className="w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation">
-                準備中
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* 12音階モード */}
-          <Card className="relative overflow-hidden group opacity-75 border-neutral-200 sm:col-span-2 lg:col-span-1">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
-            <CardHeader className="relative pb-3 sm:pb-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-100 flex items-center justify-center mb-3 sm:mb-4">
-                <Target className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
-              </div>
-              <CardTitle className="text-lg sm:text-xl text-neutral-700">12音階モード</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-neutral-600">
-                クロマチックスケールの上行・下行で完全制覇
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative pt-0 sm:pt-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600 mb-3 sm:mb-4">
-                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium opacity-70">
-                  上級者向け
-                </span>
-                <span className="text-neutral-500">•</span>
-                <span>準備中</span>
-              </div>
-              <Button disabled className="w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation">
-                準備中
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="sm:col-span-2 lg:col-span-1">
+            <TrainingCard
+              icon={Target}
+              title="12音階モード"
+              description="クロマチックスケールの上行・下行で完全制覇"
+              badge="上級者向け"
+              href="/training/chromatic"
+              disabled={true}
+              gradientFrom="from-purple-500/10"
+              gradientTo="to-pink-500/10"
+              iconBg="bg-purple-100"
+              iconColor="text-purple-600"
+              badgeBg="bg-purple-100"
+              badgeText="text-purple-700"
+              buttonBg=""
+              buttonHover=""
+            />
+          </div>
         </div>
 
         {/* 機能説明 */}
@@ -202,3 +241,6 @@ export default function Home() {
     </BrowserCompatibilityCheck>
   );
 }
+
+// メモ化されたHomeコンポーネントをエクスポート
+export default memo(Home);
