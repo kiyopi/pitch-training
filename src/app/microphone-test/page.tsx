@@ -150,27 +150,19 @@ function MicrophoneTestContent() {
     }
   }, []);
   
-  const updateVolumeDisplay = useCallback((normalizedVolume: number) => {
-    // 0-1の範囲をパーセントに変換
-    const percentage = Math.round(normalizedVolume * 100);
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    const clampedVolume = Math.max(0, Math.min(100, volume));
     
-    // 音量バー更新（テスト実装と同じstyle方式）
+    // pitchy-clean準拠：直接style操作
     if (volumeBarRef.current) {
-      volumeBarRef.current.style.width = `${percentage}%`;
-      
-      // 色の動的決定（グラデーション使用）
-      const barColor = normalizedVolume > 0.7 
-        ? 'bg-gradient-to-r from-red-500 to-orange-500'
-        : normalizedVolume > 0.3 
-        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-        : 'bg-gradient-to-r from-gray-400 to-gray-500';
-      
-      volumeBarRef.current.className = `h-3 rounded-full transition-all duration-300 ${barColor}`;
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.backgroundColor = 
+        volume > 80 ? '#ef4444' : volume > 60 ? '#f59e0b' : '#10b981';
     }
     
     // パーセント表示更新
     if (volumePercentRef.current) {
-      volumePercentRef.current.textContent = `${percentage}%`;
+      volumePercentRef.current.textContent = `${clampedVolume.toFixed(1)}%`;
     }
   }, []);
   
@@ -270,12 +262,14 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // 重要：200倍・100倍のスケーリング（テスト実装準拠）
-      const volume = Math.max(rms * 200, maxAmplitude * 100);
-      const normalizedVolume = Math.min(volume / 100, 1); // 0-1正規化
+      // pitchy-clean準拠：音量計算スケーリング
+      const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
+      // pitchy-clean準拠：/12スケーリング
+      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // DOM直接更新
-      updateVolumeDisplay(normalizedVolume);
+      updateVolumeDisplay(volumePercent);
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -291,9 +285,9 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: normalizedVolume > 0.01,
+          volumeDetected: volumePercent > 1,
           frequencyDetected: true,
-          startButtonEnabled: normalizedVolume > 0.01
+          startButtonEnabled: volumePercent > 1
         }));
       } else {
         updateFrequencyDisplay(null);
@@ -301,7 +295,7 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: normalizedVolume > 0.01,
+          volumeDetected: volumePercent > 1,
           frequencyDetected: false
         }));
       }
@@ -429,8 +423,8 @@ function MicrophoneTestContent() {
                     <div className="w-full bg-neutral-200 rounded-full h-3 mb-2">
                       <div 
                         ref={volumeBarRef}
-                        className="h-3 rounded-full transition-all duration-100 bg-green-500"
-                        style={{ width: '0%' }}
+                        className="h-3 rounded-full transition-all duration-100"
+                        style={{ width: '0%', backgroundColor: '#10b981' }}
                       />
                     </div>
                     <div ref={volumePercentRef} className="text-right">
