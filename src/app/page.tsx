@@ -111,7 +111,7 @@ function Home() {
             title="ランダム基音モード"
             description="10種類の基音からランダムに選択してトレーニング"
             badge="初心者向け"
-            href="/random-training"
+            href="/microphone-test?mode=random"
             gradientFrom="from-emerald-500/10"
             gradientTo="to-teal-500/10"
             iconBg="bg-emerald-100"
@@ -127,7 +127,7 @@ function Home() {
             title="連続チャレンジモード"
             description="選択した回数だけ連続で実行し、総合評価を確認"
             badge="中級者向け"
-            href="/training/continuous"
+            href="/microphone-test?mode=continuous"
             disabled={true}
             gradientFrom="from-orange-500/10"
             gradientTo="to-amber-500/10"
@@ -145,7 +145,7 @@ function Home() {
               title="12音階モード"
               description="クロマチックスケールの上行・下行で完全制覇"
               badge="上級者向け"
-              href="/training/chromatic"
+              href="/microphone-test?mode=chromatic"
               disabled={true}
               gradientFrom="from-purple-500/10"
               gradientTo="to-pink-500/10"
