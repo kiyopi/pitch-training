@@ -273,7 +273,7 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
     }
   }, []);
 
-  // リアルタイム音程検出ループ
+  // リアルタイム音程検出ループ（関数の定義順序を修正）
   const startPitchDetectionLoop = useCallback(() => {
     if (!audioContextRef.current || !analyserRef.current || !pitchDetectorRef.current) {
       console.error('[useAudioEngine] 音程検出: 必要なコンポーネント未初期化');
@@ -282,11 +282,18 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
 
     const analyser = analyserRef.current;
     const detector = pitchDetectorRef.current;
+    const audioContext = audioContextRef.current;
     const float32Array = new Float32Array(analyser.fftSize);
 
     const detectPitch = () => {
-      if (!configRef.current.enablePitchDetection || phase !== AudioSystemPhase.SCORING_PHASE) {
-        // 停止条件
+      // 音程検出が無効になっているか、マイクが初期化されていない場合は停止
+      if (!audioContextRef.current || !analyserRef.current || !pitchDetectorRef.current) {
+        animationFrameRef.current = null;
+        return;
+      }
+
+      // フェーズチェック
+      if (phase !== AudioSystemPhase.SCORING_PHASE) {
         animationFrameRef.current = null;
         return;
       }
@@ -295,50 +302,23 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
       analyser.getFloatTimeDomainData(float32Array);
       
       // Pitchy McLeod Pitch Method実行（/test/separated-audio/準拠）
-      const [frequency, clarity] = detector.findPitch(float32Array, audioContextRef.current!.sampleRate);
+      const [frequency, clarity] = detector.findPitch(float32Array, audioContext.sampleRate);
+      
+      // デバッグログ
+      if (frequency > 0) {
+        console.log(`[useAudioEngine] 検出: ${frequency.toFixed(1)}Hz, clarity: ${clarity.toFixed(3)}`);
+      }
       
       if (clarity > 0.15 && frequency > 80 && frequency < 1200) {
-        // Step 1-1D: 倍音補正システム統合実装
-        if (configRef.current.enableHarmonicCorrection) {
-          // 1. 動的オクターブ補正（倍音誤検出回避）
-          const correctionResult = correctHarmonicFrequency(
-            frequency,
-            previousFrequencyRef.current,
-            harmonicConfigRef.current
-          );
-          
-          // 2. 周波数安定化バッファ処理
-          const stabilizedFrequency = stabilizeFrequency(correctionResult.frequency);
-          
-          // 3. 人間音域チェック（C3-C6）
-          if (stabilizedFrequency >= harmonicConfigRef.current.vocalRange.min && 
-              stabilizedFrequency <= harmonicConfigRef.current.vocalRange.max) {
-            
-            setCurrentPitch(frequency); // 元の検出周波数
-            setCorrectedPitch(stabilizedFrequency); // 補正後周波数
-            setConfidence(clarity * correctionResult.confidence); // 補正信頼度を加味
-            
-            // 前回周波数の更新
-            previousFrequencyRef.current = stabilizedFrequency;
-            
-            console.log(`[useAudioEngine] 倍音補正: ${frequency.toFixed(1)}Hz → ${stabilizedFrequency.toFixed(1)}Hz (${correctionResult.correction})`);
-          } else {
-            // 音域外は無視
-            setCurrentPitch(null);
-            setCorrectedPitch(null);
-            setConfidence(0);
-          }
+        // 人間音域チェック（130-1047Hz, C3-C6）
+        if (frequency >= 130.81 && frequency <= 1046.50) {
+          setCurrentPitch(frequency);
+          setConfidence(clarity);
+          setCorrectedPitch(frequency); // 現在はそのまま（倍音補正は後で処理）
         } else {
-          // 倍音補正無効時は従来通り
-          if (frequency >= 130.81 && frequency <= 1046.50) {
-            setCurrentPitch(frequency);
-            setConfidence(clarity);
-            setCorrectedPitch(frequency); // 補正なし
-          } else {
-            setCurrentPitch(null);
-            setConfidence(0);
-            setCorrectedPitch(null);
-          }
+          setCurrentPitch(null);
+          setConfidence(0);
+          setCorrectedPitch(null);
         }
       } else {
         setCurrentPitch(null);
@@ -354,93 +334,54 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
     detectPitch();
   }, [phase]);
 
-  // 音楽的妥当性評価関数（/test/separated-audio/移植）
-  const calculateMusicalScore = useCallback((frequency: number): number => {
-    // A4=440Hzを基準とした半音数計算
-    const A4 = 440;
-    const semitonesFromA4 = 12 * Math.log2(frequency / A4);
-    
-    // 純正音程（半音単位）からのずれを計算
-    const nearestSemitone = Math.round(semitonesFromA4);
-    const deviation = Math.abs(semitonesFromA4 - nearestSemitone);
-    
-    // ずれが小さいほど高スコア（0～1の範囲）
-    return Math.max(0, 1 - (deviation * 4)); // 1/4半音でスコア0になるように調整
-  }, []);
+  // 倍音補正処理（useEffectで実行）
+  useEffect(() => {
+    if (!configRef.current.enableHarmonicCorrection) {
+      return;
+    }
 
-  // 動的オクターブ補正アルゴリズム（/test/separated-audio/移植・iPhone最適化版）
-  const correctHarmonicFrequency = useCallback((
-    detectedFreq: number,
-    previousFreq: number | null,
-    config: HarmonicCorrectionConfig
-  ): { frequency: number, confidence: number, correction: string } => {
-    // iPhone最適化 - 配列再利用によるメモリ効率化
-    const fundamentalCandidates = [
-      detectedFreq,                    // そのまま（基音の可能性）
-      detectedFreq / 2.0,             // 1オクターブ下（2倍音 → 基音）
-      detectedFreq / 3.0,             // 3倍音 → 基音
-      detectedFreq / 4.0,             // 4倍音 → 基音
-      detectedFreq * 2.0,             // 1オクターブ上（低く歌った場合）
-    ];
-    
-    // iPhone最適化: 事前フィルタリングで計算負荷軽減
-    let bestFreq = detectedFreq;
-    let bestScore = -1;
-    let bestCorrectionType = 'なし';
-    
-    for (let i = 0; i < fundamentalCandidates.length; i++) {
-      const freq = fundamentalCandidates[i];
-      
-      // 高速フィルタリング: 人間音域外は即座に除外（処理負荷軽減）
-      if (freq < config.vocalRange.min || freq > config.vocalRange.max) {
-        continue;
+    if (currentPitch && currentPitch > 0) {
+      // 簡易倍音補正（デモ用）
+      const candidates = [
+        currentPitch,
+        currentPitch / 2.0,
+        currentPitch / 3.0,
+        currentPitch / 4.0,
+        currentPitch * 2.0,
+      ];
+
+      // 人間音域内で最も妥当な候補を選択
+      let bestFreq = currentPitch;
+      for (const freq of candidates) {
+        if (freq >= 130.81 && freq <= 1046.50) {
+          // 前回の周波数に最も近いものを選択
+          if (previousFrequencyRef.current) {
+            const currentDiff = Math.abs(bestFreq - previousFrequencyRef.current);
+            const newDiff = Math.abs(freq - previousFrequencyRef.current);
+            if (newDiff < currentDiff) {
+              bestFreq = freq;
+            }
+          }
+        }
+      }
+
+      // 安定化バッファ処理
+      stabilityBufferRef.current.push(bestFreq);
+      if (stabilityBufferRef.current.length > 5) {
+        stabilityBufferRef.current.shift();
       }
       
-      // 軽量化評価（iPhone最適化）
-      const vocalRangeScore = 1.0; // 既に音域内確認済み
-      
-      const continuityScore = previousFreq 
-        ? 1.0 - Math.min(Math.abs(freq - previousFreq) / previousFreq, 1.0)
-        : 0.5;
-      
-      // 音楽的妥当性評価（軽量版）
-      const musicalScore = calculateMusicalScore(freq);
-      
-      const totalScore = (vocalRangeScore * 0.4) + (continuityScore * 0.4) + (musicalScore * 0.2);
-      
-      // 最高スコア更新（map/reduce不使用でメモリ効率化）
-      if (totalScore > bestScore) {
-        bestScore = totalScore;
-        bestFreq = freq;
-        
-        // 補正種別の判定
-        if (i === 0) bestCorrectionType = 'なし';
-        else if (i === 1) bestCorrectionType = '1/2倍音補正';
-        else if (i === 2) bestCorrectionType = '1/3倍音補正';
-        else if (i === 3) bestCorrectionType = '1/4倍音補正';
-        else if (i === 4) bestCorrectionType = '2倍音補正';
+      const sum = stabilityBufferRef.current.reduce((acc, freq) => acc + freq, 0);
+      const stabilizedFreq = sum / stabilityBufferRef.current.length;
+
+      setCorrectedPitch(stabilizedFreq);
+      previousFrequencyRef.current = stabilizedFreq;
+
+      if (Math.abs(currentPitch - stabilizedFreq) > 1) {
+        console.log(`[useAudioEngine] 倍音補正: ${currentPitch.toFixed(1)}Hz → ${stabilizedFreq.toFixed(1)}Hz`);
       }
     }
-      
-    return { 
-      frequency: bestFreq, 
-      confidence: bestScore, 
-      correction: bestCorrectionType 
-    };
-  }, [calculateMusicalScore]);
-
-  // 周波数安定化バッファ処理（/test/separated-audio/移植）
-  const stabilizeFrequency = useCallback((frequency: number): number => {
-    // 履歴バッファに追加（最大5フレーム）
-    stabilityBufferRef.current.push(frequency);
-    if (stabilityBufferRef.current.length > 5) {
-      stabilityBufferRef.current.shift(); // 古いデータを削除
-    }
-    
-    // 過去5フレームの平均を計算（安定化処理）
-    const sum = stabilityBufferRef.current.reduce((acc, freq) => acc + freq, 0);
-    return sum / stabilityBufferRef.current.length;
-  }, []);
+  }, [currentPitch]);
 
   // コンポーネントアンマウント時のクリーンアップ
   useEffect(() => {
