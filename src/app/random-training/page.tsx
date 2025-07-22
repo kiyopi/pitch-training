@@ -8,17 +8,17 @@ import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { PitchDetector } from "pitchy";
 import * as Tone from 'tone';
 
-// Phase 1 統合ユーティリティ活用
-import { 
-  TRAINING_BASE_TONES,
-  evaluateRelativePitchAccuracy,
-  formatAccuracy,
-  getNoteColor
-} from '@/utils';
-import type { BaseTone } from '@/types';
-
 // Phase管理システム
 type TrainingPhase = 'welcome' | 'micTest' | 'training' | 'evaluation' | 'results';
+
+// ローカル型定義（復元）
+interface BaseTone {
+  name: string;
+  note: string;
+  octave: number;
+  frequency: number;
+  tonejs?: string; // optionalに戻す
+}
 
 const BASE_TONES: BaseTone[] = [
   { name: 'Bb3', note: 'シ♭3', octave: 3, frequency: 233.08, tonejs: 'Bb3' },
