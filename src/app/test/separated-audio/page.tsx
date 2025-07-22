@@ -278,8 +278,14 @@ export default function SeparatedAudioTestPage() {
         return;
       }
       
-      // 音声ファイルを読み込み
-      const response = await fetch(`/audio/test/${filename}`);
+      // 音声ファイルを読み込み (GitHub Pages対応パス)
+      const basePath = process.env.NODE_ENV === 'production' ? '/pitch-training' : '';
+      const response = await fetch(`${basePath}/audio/test/${filename}`);
+      
+      if (!response.ok) {
+        throw new Error(`音声ファイル読み込み失敗: ${response.status} ${response.statusText}`);
+      }
+      
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
