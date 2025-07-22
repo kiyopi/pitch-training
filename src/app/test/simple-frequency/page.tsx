@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity, Music, Volume2, Pause } from 'lucide-react';
-import { frequencyToNote, isValidMusicalFrequency, evaluatePitchAccuracy, getNoteColor, TRAINING_BASE_TONES, calculateRelativeInterval, evaluateRelativePitchAccuracy, BaseTone } from '../../../utils/noteUtils';
+import { frequencyToNote, isValidMusicalFrequency, evaluatePitchAccuracy, getNoteColor, TRAINING_BASE_TONES, calculateRelativeInterval, evaluateRelativePitchAccuracy } from '../../../utils/noteUtils';
+import type { BaseTone } from '../../../types';
 import { useTonePlayer } from '../../../hooks/useTonePlayer';
 
 /**

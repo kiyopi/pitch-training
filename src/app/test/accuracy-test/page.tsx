@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, Square, AlertCircle, CheckCircle, Activity, Volume2, BarChart3, Target } from 'lucide-react';
-import { frequencyToNote, isValidMusicalFrequency, TRAINING_BASE_TONES, calculateRelativeInterval, evaluateRelativePitchAccuracy, BaseTone, getNoteColor } from '../../../utils/noteUtils';
+import { frequencyToNote, isValidMusicalFrequency, TRAINING_BASE_TONES, calculateRelativeInterval, evaluateRelativePitchAccuracy, getNoteColor } from '../../../utils/noteUtils';
+import type { BaseTone } from '../../../types';
 import { useSimpleTonePlayer } from '../../../hooks/useSimpleTonePlayer';
 
 /**
@@ -513,7 +514,7 @@ export default function AccuracyTestPage() {
                   className="text-2xl font-bold text-white px-4 py-2 rounded-lg"
                   style={{ backgroundColor: getNoteColor(currentBaseTone.note) }}
                 >
-                  {currentBaseTone.fullNote}
+                  {currentBaseTone.name}
                 </span>
                 <span className="text-gray-600 ml-2">({currentBaseTone.frequency.toFixed(1)}Hz)</span>
               </div>
@@ -628,7 +629,7 @@ export default function AccuracyTestPage() {
                       className="px-3 py-1 rounded text-white font-bold text-sm"
                       style={{ backgroundColor: getNoteColor(result.baseTone.note) }}
                     >
-                      {result.baseTone.fullNote}
+                      {result.baseTone.name}
                     </span>
                     <span className="text-gray-600">→</span>
                     <span className="font-mono text-blue-600">{result.userNote}</span>
