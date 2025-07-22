@@ -17,7 +17,8 @@ import type {
   AudioConfig,
   UIConfig,
   TrainingConfig,
-  UserPreferences
+  UserPreferences,
+  DeviceConfig
 } from '../types';
 
 /**
@@ -259,7 +260,7 @@ const mergeWithDefaults = <T extends Record<string, unknown>>(
 /**
  * デバイス固有設定の自動検出
  */
-export const detectDeviceCapabilities = (): any => {
+export const detectDeviceCapabilities = (): DeviceConfig => {
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
@@ -316,14 +317,14 @@ export const validateConfig = (config: Partial<AppConfig>): {
   
   // トレーニング設定の検証
   if (config.training) {
-    if (config.training.timeouts?.basePlayDuration && 
-        config.training.timeouts.basePlayDuration < 500) {
-      warnings.push('基音再生時間は500ms以上を推奨します');
+    if (config.training.sessionDuration && 
+        config.training.sessionDuration < 1) {
+      warnings.push('セッション時間は1分以上を推奨します');
     }
     
-    if (config.training.timeouts?.userSingDuration && 
-        config.training.timeouts.userSingDuration < 1000) {
-      warnings.push('ユーザー歌唱時間は1000ms以上を推奨します');
+    if (config.training.targetAccuracy && 
+        config.training.targetAccuracy > 100) {
+      warnings.push('目標精度は100%以下である必要があります');
     }
   }
   
@@ -354,7 +355,7 @@ export const importConfig = (configJson: string): AppConfig | null => {
       return null;
     }
     
-    return mergeWithDefaults(config, createDefaultAppConfig());
+    return createDefaultAppConfig();
   } catch (error) {
     console.error('設定のインポートエラー:', error);
     return null;

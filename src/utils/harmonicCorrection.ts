@@ -7,9 +7,7 @@
 
 import { HARMONIC_CORRECTION } from './constants';
 import type { 
-  HarmonicCorrectionResult,
-  HarmonicAnalysis,
-  HarmonicDetectionState
+  HarmonicCorrectionResult
 } from '../types';
 
 /**
@@ -19,7 +17,7 @@ export const performAdvancedHarmonicCorrection = (
   detectedFreq: number,
   targetFreq: number,
   confidence: number,
-  previousState?: HarmonicDetectionState
+  previousState?: any
 ): HarmonicCorrectionResult => {
   const originalFreq = detectedFreq;
   
@@ -173,7 +171,7 @@ const selectBestCorrection = (
     improvement: number;
     score: number;
   }[],
-  previousState?: HarmonicDetectionState
+  previousState?: any
 ) => {
   // スコア順でソート
   candidates.sort((a, b) => b.score - a.score);
@@ -204,7 +202,7 @@ const checkCorrectionStability = (
     type: string;
     improvement: number;
   },
-  previousState?: HarmonicDetectionState
+  previousState?: any
 ): { stabilityScore: number; isStable: boolean } => {
   if (!previousState) {
     return { stabilityScore: 50, isStable: true };
