@@ -79,9 +79,18 @@ export interface DeviceConfig {
 
 // アプリケーション設定（統合）
 export interface AppConfig {
+  audio: AudioConfig;
+  ui: UIConfig;
   training: TrainingConfig;
   system: SystemConfig;
   device: DeviceConfig;
+  debug: {
+    enabled: boolean;
+    logLevel: 'error' | 'warn' | 'info' | 'debug';
+    showPitchData: boolean;
+    showHarmonicCorrection: boolean;
+    showVolumeMeters: boolean;
+  };
   
   // メタ情報
   version: string;
@@ -104,4 +113,100 @@ export interface ConfigManager {
   resetToDefaults: () => Promise<AppConfig>;
   exportConfig: () => string;  // JSON文字列
   importConfig: (jsonString: string) => Promise<AppConfig>;
+}
+
+// 音声設定（追加）
+export interface AudioConfig {
+  processing: {
+    sampleRate: number;
+    bufferSize: number;
+    fftSize: number;
+    smoothingTimeConstant: number;
+  };
+  filters: {
+    enabled: boolean;
+    highPass: { frequency: number; Q: number };
+    lowPass: { frequency: number; Q: number };
+    notch: { frequency: number; Q: number };
+    gain: { value: number };
+  };
+  microphone: {
+    volumeThreshold: number;
+    volumeSmoothing: number;
+    autoGainControl: boolean;
+    noiseSuppression: boolean;
+    echoCancellation: boolean;
+  };
+  pitch: {
+    clarityThreshold: number;
+    minFrequency: number;
+    maxFrequency: number;
+    smoothingFactor: number;
+  };
+  harmonicCorrection: {
+    enabled: boolean;
+    searchRange: number;
+    ratios: number[];
+    confidenceThreshold: number;
+    stabilityFrames: number;
+    correctionThresholdRatio: number;
+  };
+  tone: {
+    salamanderBaseUrl: string;
+    volume: number;
+    release: number;
+    attack: number;
+    decay: number;
+    sustain: number;
+  };
+}
+
+// UI設定（追加）
+export interface UIConfig {
+  theme: string;
+  language: string;
+  animations: {
+    enabled: boolean;
+    duration: number;
+    easing: string;
+  };
+  responsive: {
+    breakpoints: Record<string, number>;
+  };
+  feedback: {
+    hapticEnabled: boolean;
+    soundEnabled: boolean;
+    visualEnabled: boolean;
+  };
+  accessibility: {
+    highContrast: boolean;
+    largeText: boolean;
+    reduceMotion: boolean;
+    screenReaderOptimized: boolean;
+  };
+}
+
+// ユーザー設定（追加）
+export interface UserPreferences {
+  audio: {
+    microphoneSensitivity: string;
+    noiseFilterEnabled: boolean;
+    harmonicCorrectionEnabled: boolean;
+  };
+  ui: {
+    theme: string;
+    language: string;
+    showAdvancedOptions: boolean;
+    animationsEnabled: boolean;
+  };
+  training: {
+    preferredMode: string;
+    difficulty: string;
+    autoPlay: boolean;
+    showHints: boolean;
+  };
+  statistics: {
+    trackProgress: boolean;
+    showDetailedStats: boolean;
+  };
 }

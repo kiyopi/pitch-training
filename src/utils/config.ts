@@ -27,13 +27,30 @@ export const createDefaultAppConfig = (): AppConfig => ({
   audio: createDefaultAudioConfig(),
   ui: createDefaultUIConfig(),
   training: createDefaultTrainingConfig(),
+  system: {
+    isDevelopment: false,
+    enableLogging: true,
+    logLevel: 'info',
+    maxSampleRate: 44100,
+    bufferSize: 2048,
+    updateInterval: 16,
+    animationDuration: 300,
+    debounceTime: 300,
+    longPressTime: 500,
+    requireHttps: true,
+    supportLegacyBrowsers: false,
+    iOSOptimizations: true
+  },
+  device: detectDeviceCapabilities(),
   debug: {
     enabled: false,
     logLevel: 'info',
     showPitchData: false,
     showHarmonicCorrection: false,
     showVolumeMeters: false
-  }
+  },
+  version: '1.0.0',
+  buildDate: new Date().toISOString()
 });
 
 /**
@@ -116,25 +133,29 @@ export const createDefaultUIConfig = (): UIConfig => ({
  */
 export const createDefaultTrainingConfig = (): TrainingConfig => ({
   mode: 'random',
-  difficulty: 'normal',
-  scaleType: 'diatonic',
-  baseToneSelection: 'random',
-  timeouts: {
-    basePlayDuration: 2000,
-    userSingDuration: 5000,
-    resultDisplayDuration: 3000
+  difficulty: 'intermediate',
+  sessionDuration: 30,
+  targetAccuracy: 80,
+  baseTones: [],
+  
+  // 音声設定
+  enableHarmonicCorrection: true,
+  harmonicConfig: {
+    fundamentalSearchRange: 50,
+    harmonicRatios: [0.5, 2.0, 3.0, 4.0],
+    confidenceThreshold: 0.8,
+    stabilityBuffer: [],
+    vocalRange: { min: 130, max: 1047 }
   },
-  feedback: {
-    immediateResults: true,
-    visualFeedback: true,
-    scoringEnabled: true,
-    progressTracking: true
-  },
-  advanced: {
-    harmonicCorrectionEnabled: true,
-    outlierPenaltyEnabled: true,
-    adaptiveDifficultyEnabled: false
-  }
+  
+  // UI設定
+  showRealTimeDisplay: true,
+  showDebugInfo: false,
+  enableRippleEffects: true,
+  
+  // 進捗・統計
+  trackProgress: true,
+  saveHistory: true
 });
 
 /**
@@ -148,8 +169,16 @@ export const loadUserPreferences = (): UserPreferences => {
   try {
     const stored = localStorage.getItem('pitchTraining_userPreferences');
     if (stored) {
-      const parsed = JSON.parse(stored);
-      return mergeWithDefaults(parsed, createDefaultUserPreferences());
+      const parsed = JSON.parse(stored) as Partial<UserPreferences>;
+      const defaults = createDefaultUserPreferences();
+      return {
+        ...defaults,
+        ...parsed,
+        audio: { ...defaults.audio, ...(parsed.audio || {}) },
+        ui: { ...defaults.ui, ...(parsed.ui || {}) },
+        training: { ...defaults.training, ...(parsed.training || {}) },
+        statistics: { ...defaults.statistics, ...(parsed.statistics || {}) }
+      };
     }
   } catch (error) {
     console.warn('ユーザー設定の読み込みに失敗:', error);
@@ -192,7 +221,7 @@ const createDefaultUserPreferences = (): UserPreferences => ({
   },
   training: {
     preferredMode: 'random',
-    difficulty: 'normal',
+    difficulty: 'intermediate',
     autoPlay: true,
     showHints: true
   },
@@ -230,31 +259,29 @@ const mergeWithDefaults = <T extends Record<string, unknown>>(
 /**
  * デバイス固有設定の自動検出
  */
-export const detectDeviceCapabilities = (): {
-  isMobile: boolean;
-  hasTouch: boolean;
-  supportsWebAudio: boolean;
-  supportsMediaDevices: boolean;
-  recommendedBufferSize: number;
-  recommendedSampleRate: number;
-} => {
+export const detectDeviceCapabilities = (): any => {
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+  const isChrome = /Chrome/.test(navigator.userAgent);
   
   const supportsWebAudio = !!(window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
-  const supportsMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-  
-  // デバイスに応じた推奨設定
-  const recommendedBufferSize = isMobile ? 4096 : 2048;
-  const recommendedSampleRate = 44100;
+  const supportsMicrophone = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const supportsAudioWorklet = !!(window.AudioWorklet);
   
   return {
     isMobile,
-    hasTouch,
+    isIOS,
+    isAndroid,
+    isSafari,
+    isChrome,
     supportsWebAudio,
-    supportsMediaDevices,
-    recommendedBufferSize,
-    recommendedSampleRate
+    supportsMicrophone,
+    supportsAudioWorklet,
+    preferLowLatency: isMobile,
+    enableHardwareAcceleration: !isIOS, // iOS では無効化
+    maxConcurrentAudio: isMobile ? 2 : 4
   };
 };
 

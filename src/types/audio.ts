@@ -76,3 +76,32 @@ export interface AudioLevelConfig {
   updateInterval: number;
   volumeThreshold: number;
 }
+
+// 音量解析結果
+export interface VolumeAnalysis {
+  rms: number;
+  peak: number;
+  db: number;
+  isActive: boolean;
+}
+
+// 周波数解析結果
+export interface FrequencyAnalysis {
+  peakFrequency: number;
+  musicalPeakFrequency: number;
+  confidence: number;
+  spectralCentroid: number;
+  spectralRolloff: number;
+}
+
+// 音声処理統合結果
+export interface AudioProcessingResult {
+  volume: VolumeAnalysis;
+  frequency: FrequencyAnalysis;
+  quality: {
+    overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+    score: number;
+    issues: string[];
+  };
+  timestamp: number;
+}
