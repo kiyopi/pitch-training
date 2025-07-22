@@ -142,14 +142,14 @@ const stream = await navigator.mediaDevices.getUserMedia({
 
 ---
 
-### **Step 1-1D: 倍音補正システム統合** ⏸️
+### **Step 1-1D: 倍音補正システム統合** ✅ **完了**
 
 #### **完了基準チェックリスト**
-- [ ] **HarmonicCorrectionConfig移植**: 倍音補正設定統合
-- [ ] **correctHarmonicFrequency実装**: 倍音自動補正関数
-- [ ] **人間音域制限**: C3-C6 (130.81-1046.50Hz) 範囲制限
-- [ ] **安定化バッファ**: 過去5フレーム平均処理
-- [ ] **信頼度計算**: 補正精度・確信度数値化
+- [x] **HarmonicCorrectionConfig移植**: 倍音補正設定統合
+- [x] **correctHarmonicFrequency実装**: 倍音自動補正関数
+- [x] **人間音域制限**: C3-C6 (130.81-1046.50Hz) 範囲制限
+- [x] **安定化バッファ**: 過去5フレーム平均処理
+- [x] **信頼度計算**: 補正精度・確信度数値化
 
 #### **実装必須項目**
 ```typescript
@@ -174,10 +174,11 @@ function correctHarmonicFrequency(
 - [ ] **デバッグ表示**: 補正種別・信頼度可視化
 
 #### **完了証跡記録**
-- **ファイル**: `/src/hooks/useAudioEngine.ts` (倍音補正統合)
-- **コミット**: `[未実装]`
-- **テスト結果**: `[未実行]`
-- **確認日**: `[未完了]`
+- **ファイル**: `/src/hooks/useAudioEngine.ts` (倍音補正統合) ✅
+- **テストページ**: `/src/app/test/audio-engine-test/page.tsx` (倍音補正表示追加) ✅
+- **コミット**: `[次回コミット予定]`
+- **テスト結果**: ✅ TypeScript通過・ビルド成功・倍音補正統合完了
+- **確認日**: 2025-07-22
 
 ---
 

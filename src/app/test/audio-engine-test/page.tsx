@@ -12,7 +12,7 @@ export default function AudioEngineTestPage() {
   const audioEngine = useAudioEngine({
     mode: 'random',
     enablePitchDetection: true,
-    enableHarmonicCorrection: false,
+    enableHarmonicCorrection: true,
     baseNotes: ['C4', 'D4', 'E4', 'F4', 'G4']
   });
   
@@ -58,10 +58,10 @@ export default function AudioEngineTestPage() {
             useAudioEngine テスト
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            Tone.js + Pitchy統合テスト
+            Tone.js + Pitchy + 倍音補正統合テスト
           </p>
-          <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 1-1C 完了テスト
+          <div className="inline-block bg-gradient-to-r from-blue-100 to-orange-100 text-orange-700 px-6 py-3 rounded-full text-lg font-bold">
+            Step 1-1D 完了テスト
           </div>
         </div>
 
@@ -93,18 +93,33 @@ export default function AudioEngineTestPage() {
           
           {/* Pitchy検出情報表示 */}
           <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-            <h4 className="font-bold text-purple-700 mb-2">🎤 Pitchy音程検出 (Step 1-1C)</h4>
+            <h4 className="font-bold text-purple-700 mb-2">🎤 Pitchy + 倍音補正検出 (Step 1-1D)</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-bold text-purple-600">周波数:</span>
+                <span className="font-bold text-purple-600">元周波数:</span>
                 <span className="ml-2">
                   {audioEngine.currentPitch ? `${audioEngine.currentPitch.toFixed(1)} Hz` : 'なし'}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-purple-600">補正後:</span>
+                <span className="ml-2">
+                  {audioEngine.correctedPitch ? `${audioEngine.correctedPitch.toFixed(1)} Hz` : 'なし'}
                 </span>
               </div>
               <div>
                 <span className="font-bold text-purple-600">信頼度:</span>
                 <span className="ml-2">
                   {audioEngine.confidence ? `${(audioEngine.confidence * 100).toFixed(1)}%` : '0%'}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-purple-600">補正効果:</span>
+                <span className="ml-2">
+                  {audioEngine.currentPitch && audioEngine.correctedPitch 
+                    ? `${Math.abs(audioEngine.currentPitch - audioEngine.correctedPitch).toFixed(1)} Hz`
+                    : '0 Hz'
+                  }
                 </span>
               </div>
             </div>
@@ -178,7 +193,7 @@ export default function AudioEngineTestPage() {
               🔇 音程検出停止
             </button>
             <div className="text-sm text-purple-600 bg-purple-100 p-3 rounded-lg">
-              <strong>使い方:</strong> 「音程検出開始」ボタンを押した後、マイクに向かって歌うと周波数と信頼度が表示されます
+              <strong>使い方:</strong> 「音程検出開始」ボタンを押した後、マイクに向かって歌うと倍音補正された正確な周波数が表示されます。元周波数と補正後の差で倍音補正効果を確認できます。
             </div>
           </div>
         </div>
