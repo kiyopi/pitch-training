@@ -305,6 +305,8 @@ function MicrophoneTestContent() {
           frequencyDetected: false
         }));
       }
+      
+      animationFrameRef.current = requestAnimationFrame(processAudio);
     };
     
     processAudio();
@@ -474,11 +476,6 @@ function MicrophoneTestContent() {
                 </Link>
               </Button>
               
-              {!micState.startButtonEnabled && (
-                <p className="text-sm text-neutral-600 mt-3">
-                  音量バーが反応することを確認してください
-                </p>
-              )}
             </CardContent>
           </Card>
         )}
