@@ -182,14 +182,14 @@ function correctHarmonicFrequency(
 
 ---
 
-### **Step 1-2A: TrainingLayout.tsx作成** ⏸️
+### **Step 1-2A: TrainingLayout.tsx作成** ✅ **完了**
 
 #### **完了基準チェックリスト**
-- [ ] **ファイル作成**: `/src/components/TrainingLayout.tsx` 作成
-- [ ] **インターフェース定義**: TrainingLayoutProps完成
-- [ ] **モード別カラー**: green・purple・orange対応
-- [ ] **タイムスタンプ統合**: 既存3モードタイムスタンプ統一
-- [ ] **レスポンシブ対応**: モバイル・デスクトップ最適化
+- [x] **ファイル作成**: `/src/components/TrainingLayout.tsx` 作成
+- [x] **インターフェース定義**: TrainingLayoutProps完成
+- [x] **モード別カラー**: green・purple・orange対応
+- [x] **タイムスタンプ統合**: 既存3モードタイムスタンプ統一
+- [x] **レスポンシブ対応**: モバイル・デスクトップ最適化
 
 #### **実装必須項目**
 ```typescript
@@ -210,10 +210,12 @@ interface TrainingLayoutProps {
 - [ ] **iPhone確認**: Safari環境レスポンシブ正常
 
 #### **完了証跡記録**
-- **ファイル**: `/src/components/TrainingLayout.tsx`
-- **コミット**: `[未実装]`
-- **テスト結果**: `[未実行]`
-- **確認日**: `[未完了]`
+- **ファイル**: `/src/components/TrainingLayout.tsx` ✅
+- **関連ファイル**: `/src/components/TrainingCard.tsx` ✅
+- **テストページ**: `/src/app/test/layout-test/page.tsx` ✅
+- **コミット**: `[次回コミット予定]`
+- **テスト結果**: ✅ TypeScript通過・ビルド成功・コンポーネント動作確認
+- **確認日**: 2025-07-22
 
 ---
 
