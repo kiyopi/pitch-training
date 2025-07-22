@@ -16,15 +16,6 @@ interface MicTestState {
   startButtonEnabled: boolean;
 }
 
-interface FrequencyInfo {
-  hz: number;
-  note: string;
-  noteName: string;
-  octave: string;
-  displayName: string;
-  volume: number;
-}
-
 interface TrainingMode {
   id: 'random' | 'continuous' | 'chromatic';
   name: string;
@@ -95,7 +86,7 @@ function MicrophoneTestContent() {
   const mode = searchParams.get('mode') || 'random';
   const selectedMode = TRAINING_MODES[mode] || TRAINING_MODES.random;
   
-  // 状態管理
+  // React状態管理（制御用のみ）
   const [micState, setMicState] = useState<MicTestState>({
     micPermission: 'pending',
     volumeDetected: false,
@@ -103,23 +94,82 @@ function MicrophoneTestContent() {
     startButtonEnabled: false
   });
   
-  const [frequencyInfo, setFrequencyInfo] = useState<FrequencyInfo>({
-    hz: 0,
-    note: 'C4',
-    noteName: 'ド',
-    octave: '中',
-    displayName: 'ド（中）',
-    volume: 0
-  });
-  
   const [error, setError] = useState<string>('');
   
-  // Refs
+  // DOM References（DDAS - Direct DOM Audio System）
+  const frequencyDisplayRef = useRef<HTMLDivElement>(null);
+  const volumeBarRef = useRef<HTMLDivElement>(null);
+  const volumePercentRef = useRef<HTMLDivElement>(null);
+  const noteDisplayRef = useRef<HTMLDivElement>(null);
+  
+  // Audio処理用Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // DOM直接操作関数（DDAS）
+  const updateFrequencyDisplay = useCallback((frequency: number | null) => {
+    if (frequencyDisplayRef.current) {
+      if (frequency && frequency > 80 && frequency < 2000) {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center">
+            <div class="text-xl sm:text-2xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
+          </div>
+        `;
+      } else {
+        frequencyDisplayRef.current.innerHTML = `
+          <div class="text-center text-neutral-600">
+            🎵 音声を発声してください
+          </div>
+        `;
+      }
+    }
+  }, []);
+  
+  const updateNoteDisplay = useCallback((frequency: number | null) => {
+    if (noteDisplayRef.current) {
+      if (frequency && frequency > 80 && frequency < 2000) {
+        const { note, octave } = frequencyToNote(frequency);
+        const noteKey = `${note}${octave}`;
+        const displayName = NOTE_CONVERSION[noteKey] || `${note}${octave}`;
+        
+        noteDisplayRef.current.innerHTML = `
+          <div class="text-center">
+            <div class="text-lg sm:text-xl font-medium text-purple-800">${displayName}</div>
+          </div>
+        `;
+      } else {
+        noteDisplayRef.current.innerHTML = `
+          <div class="text-center text-neutral-600">
+            音名が表示されます
+          </div>
+        `;
+      }
+    }
+  }, []);
+  
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    // 高精度音量計算（テスト実装と同じロジック）
+    const normalizedVolume = Math.min(100, Math.max(0, volume * 100));
+    
+    // 音量バー更新（DOM直接操作）
+    if (volumeBarRef.current) {
+      const barColor = normalizedVolume > 80 ? 'bg-red-500' :
+                       normalizedVolume > 40 ? 'bg-yellow-500' : 'bg-green-500';
+      
+      volumeBarRef.current.style.width = `${normalizedVolume}%`;
+      volumeBarRef.current.className = `h-3 rounded-full transition-all duration-100 ${barColor}`;
+    }
+    
+    // パーセント表示更新
+    if (volumePercentRef.current) {
+      volumePercentRef.current.innerHTML = `
+        <span class="text-sm text-neutral-700 font-medium">${Math.round(normalizedVolume)}%</span>
+      `;
+    }
+  }, []);
   
   // マイク許可とセットアップ
   const requestMicrophonePermission = useCallback(async () => {
@@ -162,7 +212,7 @@ function MicrophoneTestContent() {
       // 音声分析ノード作成
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.3;
+      analyser.smoothingTimeConstant = 0.1; // よりリアルタイム
       analyserRef.current = analyser;
       
       // マイク入力接続
@@ -195,7 +245,7 @@ function MicrophoneTestContent() {
     }
   }, []);
   
-  // 周波数検出処理
+  // 周波数検出処理（DDAS方式）
   const startFrequencyDetection = useCallback(() => {
     const processAudio = () => {
       if (!analyserRef.current || !pitchDetectorRef.current) return;
@@ -204,41 +254,43 @@ function MicrophoneTestContent() {
       const dataArray = new Float32Array(bufferLength);
       analyserRef.current.getFloatTimeDomainData(dataArray);
       
-      // 音量計算
+      // 高精度音量計算（テスト実装と同じ）
       let sum = 0;
+      let peak = 0;
       for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i] * dataArray[i];
+        const sample = Math.abs(dataArray[i]);
+        sum += sample * sample;
+        if (sample > peak) peak = sample;
       }
       const rms = Math.sqrt(sum / bufferLength);
-      const volume = Math.min(100, Math.max(0, Math.round(rms * 500)));
+      // 音量感度の調整（テスト実装基準）
+      const volume = Math.max(rms * 8, peak * 4);
+      
+      // DOM直接更新
+      updateVolumeDisplay(volume);
       
       // 周波数検出
       const [frequency, clarity] = pitchDetectorRef.current.findPitch(dataArray, 44100);
       
-      if (frequency && clarity > 0.7 && frequency >= 80 && frequency <= 2000) {
-        const { note, octave } = frequencyToNote(frequency);
-        const noteKey = `${note}${octave}`;
-        const displayName = NOTE_CONVERSION[noteKey] || `${note}${octave}`;
-        
-        setFrequencyInfo({
-          hz: frequency,
-          note: noteKey,
-          noteName: note,
-          octave: octave === 3 ? '低' : octave === 4 ? '中' : '高',
-          displayName,
-          volume
-        });
+      if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
+        // DOM直接更新
+        updateFrequencyDisplay(frequency);
+        updateNoteDisplay(frequency);
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volume > 10,
-          frequencyDetected: true 
+          volumeDetected: volume > 0.1,
+          frequencyDetected: true,
+          startButtonEnabled: volume > 0.1
         }));
       } else {
-        setFrequencyInfo(prev => ({ ...prev, volume }));
+        updateFrequencyDisplay(null);
+        updateNoteDisplay(null);
+        
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volume > 10 
+          volumeDetected: volume > 0.1,
+          frequencyDetected: false
         }));
       }
       
@@ -246,7 +298,7 @@ function MicrophoneTestContent() {
     };
     
     processAudio();
-  }, []);
+  }, [updateFrequencyDisplay, updateNoteDisplay, updateVolumeDisplay]);
   
   // クリーンアップ
   const cleanup = useCallback(() => {
@@ -291,13 +343,13 @@ function MicrophoneTestContent() {
         {/* 選択されたモード表示 */}
         <Card className="mb-6 border-neutral-200">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-3 text-lg">
+            <CardTitle className="flex items-center gap-3 text-lg text-neutral-900">
               <div className={`w-10 h-10 rounded-full ${selectedMode.bgColor} flex items-center justify-center`}>
                 <selectedMode.icon className={`w-5 h-5 ${selectedMode.iconColor}`} />
               </div>
               {selectedMode.name}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-neutral-700">
               {selectedMode.description}
             </CardDescription>
           </CardHeader>
@@ -306,11 +358,11 @@ function MicrophoneTestContent() {
         {/* マイクロフォン許可セクション */}
         <Card className="mb-6 border-neutral-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+            <CardTitle className="flex items-center gap-3 text-neutral-900">
               <Mic className="w-6 h-6" />
               マイクロフォンの許可
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-neutral-700">
               音程検出のためにマイクロフォンへのアクセスを許可してください
             </CardDescription>
           </CardHeader>
@@ -321,7 +373,7 @@ function MicrophoneTestContent() {
                   <Mic className="w-4 h-4 mr-2" />
                   マイクロフォンを許可
                 </Button>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-neutral-700">
                   ブラウザでマイクロフォンへのアクセス許可を求められます
                 </p>
               </div>
@@ -334,35 +386,43 @@ function MicrophoneTestContent() {
                   <span className="font-medium">マイクロフォン許可済み</span>
                 </div>
                 
-                {/* リアルタイム周波数表示 */}
-                <div className="bg-neutral-50 rounded-lg p-4 space-y-3">
+                {/* リアルタイム表示（DDAS - DOM直接更新） */}
+                <div className="bg-neutral-50 rounded-lg p-4 space-y-4">
                   <h3 className="font-medium text-neutral-900">リアルタイム検出</h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-neutral-600">周波数</p>
-                      <p className="text-lg font-mono">{frequencyInfo.hz.toFixed(1)} Hz</p>
+                      <p className="text-sm text-neutral-700 font-medium mb-2">周波数</p>
+                      <div ref={frequencyDisplayRef} className="text-lg">
+                        <div className="text-center text-neutral-600">
+                          🎵 音声を発声してください
+                        </div>
+                      </div>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-neutral-600">音名</p>
-                      <p className="text-lg font-medium">{frequencyInfo.displayName}</p>
+                      <p className="text-sm text-neutral-700 font-medium mb-2">音名</p>
+                      <div ref={noteDisplayRef} className="text-lg">
+                        <div className="text-center text-neutral-600">
+                          音名が表示されます
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* 音量バー */}
+                  {/* 音量バー（DDAS - DOM直接更新） */}
                   <div>
-                    <p className="text-sm text-neutral-600 mb-2">音量レベル</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-3">
+                    <p className="text-sm text-neutral-700 font-medium mb-2">音量レベル</p>
+                    <div className="w-full bg-neutral-200 rounded-full h-3 mb-2">
                       <div 
-                        className={`h-3 rounded-full transition-all duration-100 ${
-                          frequencyInfo.volume > 80 ? 'bg-red-500' :
-                          frequencyInfo.volume > 40 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${frequencyInfo.volume}%` }}
+                        ref={volumeBarRef}
+                        className="h-3 rounded-full transition-all duration-100 bg-green-500"
+                        style={{ width: '0%' }}
                       />
                     </div>
-                    <p className="text-sm text-neutral-500 mt-1">{frequencyInfo.volume}%</p>
+                    <div ref={volumePercentRef} className="text-right">
+                      <span className="text-sm text-neutral-700 font-medium">0%</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -374,7 +434,7 @@ function MicrophoneTestContent() {
                   <VolumeX className="w-5 h-5" />
                   <span className="font-medium">マイクロフォンアクセスエラー</span>
                 </div>
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-700">{error}</p>
                 <Button onClick={requestMicrophonePermission} variant="outline">
                   再試行
                 </Button>
@@ -387,18 +447,18 @@ function MicrophoneTestContent() {
         {micState.micPermission === 'granted' && (
           <Card className="border-neutral-200">
             <CardHeader>
-              <CardTitle>次のステップ</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-neutral-900">次のステップ</CardTitle>
+              <CardDescription className="text-neutral-700">
                 「ド」を発声してマイクの動作確認を行ってください
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-neutral-600 mb-4">
+              <p className="text-sm text-neutral-700 mb-4">
                 音量バーが反応し、周波数が検出されることを確認してから、
                 レッスンを開始してください。
               </p>
               
-              <Button asChild disabled={!micState.volumeDetected || !micState.frequencyDetected}>
+              <Button asChild disabled={!micState.startButtonEnabled} className="disabled:opacity-50">
                 <Link href={selectedMode.targetPath}>
                   レッスンスタート
                 </Link>
@@ -417,7 +477,7 @@ export default function MicrophoneTestPage() {
     <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-neutral-600">読み込み中...</p>
+        <p className="text-neutral-700 font-medium">読み込み中...</p>
       </div>
     </div>}>
       <MicrophoneTestContent />
