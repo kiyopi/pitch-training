@@ -9,7 +9,6 @@ export default function Home() {
   const { 
     permissionState, 
     initializationMode, 
-    getPermissionExplanation,
     isPermissionGranted 
   } = usePermissionManager();
   return (

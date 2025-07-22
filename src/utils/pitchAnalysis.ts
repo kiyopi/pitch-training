@@ -6,11 +6,8 @@
  */
 
 import { 
-  HARMONIC_RATIOS,
   DIATONIC_SCALE_SEMITONES,
-  DIATONIC_SCALE_NAMES,
-  SEMITONES_PER_OCTAVE,
-  CENTS_PER_SEMITONE
+  DIATONIC_SCALE_NAMES
 } from './constants';
 import type { 
   HarmonicCorrectionResult 
@@ -37,10 +34,10 @@ export const correctHarmonicMisdetection = (
  * 音程精度評価（相対音感用）- 簡易実装
  */
 export const evaluateRelativePitchAccuracy = (
-  userFreq: number,
-  targetFreq: number,
-  baseFreq: number
-): any => {
+  _userFreq: number,
+  _targetFreq: number,
+  _baseFreq: number
+): { accuracy: string; score: number; color: string; message: string } => {
   return {
     accuracy: 'good',
     score: 80,
@@ -53,10 +50,10 @@ export const evaluateRelativePitchAccuracy = (
  * ドレミ音階解析 - 簡易実装
  */
 export const analyzeDiatonicScale = (
-  userFreq: number,
-  baseFreq: number,
+  _userFreq: number,
+  _baseFreq: number,
   targetIndex: number
-): any => {
+): { detectedIndex: number; scaleName: string; confidence: number } => {
   return {
     detectedIndex: targetIndex,
     scaleName: DIATONIC_SCALE_NAMES[targetIndex] || 'ド',
@@ -72,7 +69,7 @@ export const analyzeRelativePitchTraining = (
   baseFreq: number,
   targetScaleIndex: number,
   harmonicCorrection?: HarmonicCorrectionResult
-): any => {
+): { accuracy: { accuracy: string; score: number; color: string; message: string }; scale: { detectedIndex: number; scaleName: string; confidence: number }; harmonic?: HarmonicCorrectionResult } => {
   return {
     accuracy: evaluateRelativePitchAccuracy(userFreq, baseFreq * Math.pow(2, DIATONIC_SCALE_SEMITONES[targetScaleIndex] / 12), baseFreq),
     scale: analyzeDiatonicScale(userFreq, baseFreq, targetScaleIndex),

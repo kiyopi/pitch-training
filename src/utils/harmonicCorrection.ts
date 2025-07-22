@@ -14,9 +14,9 @@ import type {
  */
 export const performAdvancedHarmonicCorrection = (
   detectedFreq: number,
-  targetFreq: number,
+  _targetFreq: number,
   confidence: number,
-  previousState?: Record<string, unknown>
+  _previousState?: Record<string, unknown>
 ): HarmonicCorrectionResult => {
   return {
     originalFrequency: detectedFreq,

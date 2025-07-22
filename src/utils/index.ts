@@ -27,7 +27,6 @@ export * from './formatting';
 // 統合ユーティリティヘルパー - 最も使用頻度の高い関数を再エクスポート
 export { 
   // 音程解析統合
-  createRelativePitchTrainingResult,
   analyzeDiatonicScale,
   evaluateRelativePitchAccuracy
 } from './pitchAnalysis';
