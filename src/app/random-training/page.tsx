@@ -21,16 +21,16 @@ import type { BaseTone } from '@/types';
 type TrainingPhase = 'welcome' | 'micTest' | 'training' | 'evaluation' | 'results';
 
 const BASE_TONES: BaseTone[] = [
-  { name: 'Bb3', note: 'シ♭3', frequency: 233.08, tonejs: 'Bb3' },
-  { name: 'C4',  note: 'ド4',   frequency: 261.63, tonejs: 'C4' },
-  { name: 'Db4', note: 'レ♭4', frequency: 277.18, tonejs: 'Db4' },
-  { name: 'D4',  note: 'レ4',   frequency: 293.66, tonejs: 'D4' },
-  { name: 'Eb4', note: 'ミ♭4', frequency: 311.13, tonejs: 'Eb4' },
-  { name: 'E4',  note: 'ミ4',   frequency: 329.63, tonejs: 'E4' },
-  { name: 'F4',  note: 'ファ4', frequency: 349.23, tonejs: 'F4' },
-  { name: 'Gb4', note: 'ソ♭4', frequency: 369.99, tonejs: 'Gb4' },
-  { name: 'G4',  note: 'ソ4',   frequency: 392.00, tonejs: 'G4' },
-  { name: 'Ab4', note: 'ラ♭4', frequency: 415.30, tonejs: 'Ab4' }
+  { name: 'Bb3', note: 'シ♭3', octave: 3, frequency: 233.08, tonejs: 'Bb3' },
+  { name: 'C4',  note: 'ド4',   octave: 4, frequency: 261.63, tonejs: 'C4' },
+  { name: 'Db4', note: 'レ♭4', octave: 4, frequency: 277.18, tonejs: 'Db4' },
+  { name: 'D4',  note: 'レ4',   octave: 4, frequency: 293.66, tonejs: 'D4' },
+  { name: 'Eb4', note: 'ミ♭4', octave: 4, frequency: 311.13, tonejs: 'Eb4' },
+  { name: 'E4',  note: 'ミ4',   octave: 4, frequency: 329.63, tonejs: 'E4' },
+  { name: 'F4',  note: 'ファ4', octave: 4, frequency: 349.23, tonejs: 'F4' },
+  { name: 'Gb4', note: 'ソ♭4', octave: 4, frequency: 369.99, tonejs: 'Gb4' },
+  { name: 'G4',  note: 'ソ4',   octave: 4, frequency: 392.00, tonejs: 'G4' },
+  { name: 'Ab4', note: 'ラ♭4', octave: 4, frequency: 415.30, tonejs: 'Ab4' }
 ];
 
 // 基音管理フック
@@ -115,12 +115,14 @@ const useBaseFrequency = () => {
       console.log(`🎹 基音再生開始: ${currentBaseTone.note} (${duration}秒)`);
       
       // Samplerで基音再生（Tone.js形式のノート名で指定）- プロトタイプ準拠
-      samplerRef.current.triggerAttack(currentBaseTone.tonejs, undefined, 0.8);
+      const noteToPlay = currentBaseTone.tonejs || currentBaseTone.name;
+      samplerRef.current.triggerAttack(noteToPlay, undefined, 0.8);
       
       // 手動でリリース（duration秒後）
       setTimeout(() => {
         if (samplerRef.current && currentBaseTone) {
-          samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+          const noteToRelease = currentBaseTone.tonejs || currentBaseTone.name;
+          samplerRef.current.triggerRelease(noteToRelease);
         }
       }, duration * 1000);
       
@@ -145,7 +147,8 @@ const useBaseFrequency = () => {
       }
 
       if (samplerRef.current && currentBaseTone) {
-        samplerRef.current.triggerRelease(currentBaseTone.tonejs);
+        const noteToRelease = currentBaseTone.tonejs || currentBaseTone.name;
+        samplerRef.current.triggerRelease(noteToRelease);
       }
 
       setIsPlaying(false);
