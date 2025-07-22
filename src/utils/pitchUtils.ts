@@ -189,38 +189,7 @@ export const createPitchDetectionResult = (
   };
 };
 
-/**
- * 相対音程計算
- */
-export const calculateRelativeInterval = (
-  currentPitch: number,
-  basePitch: number
-): {
-  semitones: number;
-  cents: number;
-  intervalName: string;
-} => {
-  const currentMidi = frequencyToMidiNote(currentPitch);
-  const baseMidi = frequencyToMidiNote(basePitch);
-  
-  const semitones = Math.round(currentMidi - baseMidi);
-  const cents = calculateCentsDeviation(currentPitch, midiNoteToFrequency(baseMidi + semitones));
-  
-  // 音程名の判定
-  const intervalNames = [
-    'Unison', 'Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th',
-    'Tritone', 'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th'
-  ];
-  
-  const intervalIndex = Math.abs(semitones) % 12;
-  const intervalName = intervalNames[intervalIndex];
-  
-  return {
-    semitones,
-    cents,
-    intervalName,
-  };
-};
+// 相対音程計算は noteUtils.ts に統合済み（重複削除）
 
 /**
  * 音程検出統計の更新

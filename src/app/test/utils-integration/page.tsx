@@ -8,7 +8,6 @@ import {
   // 定数
   NOTE_NAMES,
   A4_FREQUENCY,
-  VOCAL_RANGE,
   DIATONIC_SCALE_NAMES,
   
   // 音名・音程変換
@@ -19,14 +18,12 @@ import {
   
   // 音声処理
   analyzeVolume,
-  createAudioProcessingResult,
   
   // 倍音補正
   correctHarmonicMisdetection,
   
   // バリデーション
   validateFrequency,
-  validatePitchAccuracy,
   validateBrowserSupport,
   
   // フォーマット
@@ -44,7 +41,7 @@ interface TestResult {
   name: string;
   status: 'success' | 'error' | 'warning';
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 export default function UtilsIntegrationTest() {
