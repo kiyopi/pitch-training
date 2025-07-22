@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
+import { PitchDetector } from 'pitchy';
 
 // AudioSystemPhase enum (from /test/separated-audio/)
 export enum AudioSystemPhase {
@@ -71,9 +72,14 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
   const configRef = useRef(mergedConfig);
   const samplerRef = useRef<Tone.Sampler | null>(null);
   const isInitializedRef = useRef(false);
-  // TODO: 次のStepで統合予定
-  // const audioContextRef = useRef<AudioContext | null>(null);
-  // const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
+  
+  // Pitchy統合用のRef
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const [isMicInitialized, setIsMicInitialized] = useState(false);
   
   // 設定更新
   configRef.current = mergedConfig;
@@ -146,12 +152,148 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
     }
   }, []);
 
+  // マイクロフォン・Web Audio API初期化
+  const initializeMicrophone = useCallback(async (): Promise<void> => {
+    try {
+      if (!configRef.current.enablePitchDetection) {
+        console.log('[useAudioEngine] 音程検出無効（設定により）');
+        return;
+      }
+
+      if (isMicInitialized && audioContextRef.current && pitchDetectorRef.current) {
+        console.log('[useAudioEngine] マイクロフォン既に初期化済み');
+        return;
+      }
+
+      console.log('[useAudioEngine] マイクロフォンシステム初期化開始');
+
+      // マイクロフォンアクセス要求（/test/separated-audio/設定準拠）
+      streamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          autoGainControl: false,
+          echoCancellation: false,
+          noiseSuppression: false,
+          sampleRate: 44100,
+          channelCount: 1
+        }
+      });
+
+      // Web Audio API AudioContext作成
+      audioContextRef.current = new AudioContext({ sampleRate: 44100 });
+      
+      // MediaStreamSourceNode作成
+      const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
+      
+      // AnalyserNode作成・設定
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 16384; // /test/separated-audio/準拠
+      analyserRef.current.smoothingTimeConstant = 0.3;
+      
+      // 接続
+      source.connect(analyserRef.current);
+      
+      // PitchDetector初期化（McLeod Pitch Method）
+      pitchDetectorRef.current = PitchDetector.forFloat32Array(analyserRef.current.fftSize);
+      pitchDetectorRef.current.clarityThreshold = 0.15; // /test/separated-audio/準拠
+
+      setIsMicInitialized(true);
+      console.log('[useAudioEngine] マイクロフォンシステム初期化完了');
+
+    } catch (err) {
+      handleError(`マイクロフォン初期化エラー: ${err}`);
+      throw err;
+    }
+  }, [handleError, isMicInitialized]);
+
+  // マイクロフォン・リソース解放
+  const disposeMicrophone = useCallback(() => {
+    try {
+      console.log('[useAudioEngine] マイクロフォンリソース解放');
+      
+      // animationFrame停止
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // MediaStream停止
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // AudioContext閉じる
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      
+      // Ref・State初期化
+      analyserRef.current = null;
+      pitchDetectorRef.current = null;
+      setIsMicInitialized(false);
+      setCurrentPitch(null);
+      setConfidence(0);
+      
+    } catch (err) {
+      console.error('[useAudioEngine] マイクロフォンリソース解放エラー:', err);
+    }
+  }, []);
+
+  // リアルタイム音程検出ループ
+  const startPitchDetectionLoop = useCallback(() => {
+    if (!audioContextRef.current || !analyserRef.current || !pitchDetectorRef.current) {
+      console.error('[useAudioEngine] 音程検出: 必要なコンポーネント未初期化');
+      return;
+    }
+
+    const analyser = analyserRef.current;
+    const detector = pitchDetectorRef.current;
+    const float32Array = new Float32Array(analyser.fftSize);
+
+    const detectPitch = () => {
+      if (!configRef.current.enablePitchDetection || phase !== AudioSystemPhase.SCORING_PHASE) {
+        // 停止条件
+        animationFrameRef.current = null;
+        return;
+      }
+
+      // 周波数データ取得
+      analyser.getFloatTimeDomainData(float32Array);
+      
+      // Pitchy McLeod Pitch Method実行（/test/separated-audio/準拠）
+      const [frequency, clarity] = detector.findPitch(float32Array, audioContextRef.current!.sampleRate);
+      
+      if (clarity > 0.15 && frequency > 80 && frequency < 1200) {
+        // 人間音域チェック（130-1047Hz, C3-C6）
+        if (frequency >= 130.81 && frequency <= 1046.50) {
+          setCurrentPitch(frequency);
+          setConfidence(clarity);
+          
+          // TODO: Step 1-1D で倍音補正統合予定
+          setCorrectedPitch(frequency); // 現在はそのまま
+        }
+      } else {
+        setCurrentPitch(null);
+        setConfidence(0);
+        setCorrectedPitch(null);
+      }
+
+      // 次のフレーム予約（60fps目標）
+      animationFrameRef.current = requestAnimationFrame(detectPitch);
+    };
+
+    // 検出ループ開始
+    detectPitch();
+  }, [phase]);
+
   // コンポーネントアンマウント時のクリーンアップ
   useEffect(() => {
     return () => {
       disposeSampler();
+      disposeMicrophone();
     };
-  }, [disposeSampler]);
+  }, [disposeSampler, disposeMicrophone]);
   
   // 基音再生機能（Tone.js統合実装）
   const playBaseTone = useCallback(async (note: string): Promise<void> => {
@@ -202,7 +344,7 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
     }
   }, [handleError]);
   
-  // 音程検出開始（プレースホルダー実装）
+  // 音程検出開始（Pitchy統合実装）
   const startPitchDetection = useCallback(async (): Promise<void> => {
     try {
       if (!configRef.current.enablePitchDetection) {
@@ -211,34 +353,46 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
       }
       
       clearError();
+      console.log('[useAudioEngine] 音程検出開始');
+      
+      // マイクロフォン初期化
+      await initializeMicrophone();
+      
+      // フェーズ移行・検出開始
       setPhase(AudioSystemPhase.SCORING_PHASE);
+      startPitchDetectionLoop();
       
-      // TODO: Pitchy + Web Audio API統合実装
-      console.log('[useAudioEngine] startPitchDetection (プレースホルダー)');
-      
-      // プレースホルダー: 検出データ模擬
-      setCurrentPitch(440); // A4
-      setCorrectedPitch(440);
-      setConfidence(0.95);
+      console.log('[useAudioEngine] リアルタイム音程検出開始');
       
     } catch (err) {
+      setPhase(AudioSystemPhase.IDLE);
       handleError(`音程検出開始エラー: ${err}`);
     }
-  }, [clearError, handleError]);
+  }, [clearError, handleError, initializeMicrophone, startPitchDetectionLoop]);
   
   // 音程検出停止
   const stopPitchDetection = useCallback(() => {
     try {
-      console.log('[useAudioEngine] stopPitchDetection');
+      console.log('[useAudioEngine] 音程検出停止');
       
-      // TODO: Web Audio API・Pitchy停止実装
+      // animationFrame停止
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // 検出データクリア
       setCurrentPitch(null);
       setCorrectedPitch(null);
       setConfidence(0);
       
+      // フェーズリセット
       if (phase === AudioSystemPhase.SCORING_PHASE) {
         setPhase(AudioSystemPhase.IDLE);
       }
+      
+      // マイクロフォンリソース解放（オプション - 呼び出し側で制御可能）
+      // disposeMicrophone(); // 必要に応じてコメントアウト解除
       
     } catch (err) {
       handleError(`音程検出停止エラー: ${err}`);

@@ -11,7 +11,7 @@ export default function AudioEngineTestPage() {
   // useAudioEngine Hook テスト
   const audioEngine = useAudioEngine({
     mode: 'random',
-    enablePitchDetection: false,
+    enablePitchDetection: true,
     enableHarmonicCorrection: false,
     baseNotes: ['C4', 'D4', 'E4', 'F4', 'G4']
   });
@@ -58,10 +58,10 @@ export default function AudioEngineTestPage() {
             useAudioEngine テスト
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            Tone.js Salamander Piano統合テスト
+            Tone.js + Pitchy統合テスト
           </p>
-          <div className="inline-block bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-6 py-3 rounded-full text-lg font-bold">
-            Step 1-1B テスト
+          <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
+            Step 1-1C 完了テスト
           </div>
         </div>
 
@@ -74,6 +74,7 @@ export default function AudioEngineTestPage() {
               <span className={`ml-2 px-2 py-1 rounded text-sm ${
                 audioEngine.phase === AudioSystemPhase.IDLE ? 'bg-green-100 text-green-700' :
                 audioEngine.phase === AudioSystemPhase.BASE_TONE_PHASE ? 'bg-blue-100 text-blue-700' :
+                audioEngine.phase === AudioSystemPhase.SCORING_PHASE ? 'bg-purple-100 text-purple-700' :
                 audioEngine.phase === AudioSystemPhase.ERROR_STATE ? 'bg-red-100 text-red-700' :
                 'bg-gray-100 text-gray-700'
               }`}>
@@ -87,6 +88,25 @@ export default function AudioEngineTestPage() {
               }`}>
                 {audioEngine.isPlaying ? 'YES' : 'NO'}
               </span>
+            </div>
+          </div>
+          
+          {/* Pitchy検出情報表示 */}
+          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <h4 className="font-bold text-purple-700 mb-2">🎤 Pitchy音程検出 (Step 1-1C)</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-bold text-purple-600">周波数:</span>
+                <span className="ml-2">
+                  {audioEngine.currentPitch ? `${audioEngine.currentPitch.toFixed(1)} Hz` : 'なし'}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-purple-600">信頼度:</span>
+                <span className="ml-2">
+                  {audioEngine.confidence ? `${(audioEngine.confidence * 100).toFixed(1)}%` : '0%'}
+                </span>
+              </div>
             </div>
           </div>
           
@@ -129,6 +149,38 @@ export default function AudioEngineTestPage() {
             <Square className="w-5 h-5 inline mr-2" />
             全停止
           </button>
+        </div>
+
+        {/* マイクロフォンテスト */}
+        <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200">
+          <h3 className="text-xl font-bold text-purple-800 mb-4">🎤 Pitchy音程検出テスト</h3>
+          <div className="space-y-4">
+            <button
+              onClick={audioEngine.startPitchDetection}
+              disabled={audioEngine.phase === AudioSystemPhase.SCORING_PHASE}
+              className={`w-full px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
+                audioEngine.phase === AudioSystemPhase.SCORING_PHASE
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 hover:scale-105 shadow-lg'
+              }`}
+            >
+              {audioEngine.phase === AudioSystemPhase.SCORING_PHASE ? '🎤 検出中...' : '🎤 音程検出開始'}
+            </button>
+            <button
+              onClick={audioEngine.stopPitchDetection}
+              disabled={audioEngine.phase !== AudioSystemPhase.SCORING_PHASE}
+              className={`w-full px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
+                audioEngine.phase !== AudioSystemPhase.SCORING_PHASE
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:scale-105 shadow-lg'
+              }`}
+            >
+              🔇 音程検出停止
+            </button>
+            <div className="text-sm text-purple-600 bg-purple-100 p-3 rounded-lg">
+              <strong>使い方:</strong> 「音程検出開始」ボタンを押した後、マイクに向かって歌うと周波数と信頼度が表示されます
+            </div>
+          </div>
         </div>
 
         {/* テストログ表示 */}
