@@ -97,25 +97,25 @@ export default function AudioEngineTestPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-bold text-purple-600">元周波数:</span>
-                <span className="ml-2">
+                <span className="ml-2 text-gray-800 font-semibold">
                   {audioEngine.currentPitch ? `${audioEngine.currentPitch.toFixed(1)} Hz` : 'なし'}
                 </span>
               </div>
               <div>
                 <span className="font-bold text-purple-600">補正後:</span>
-                <span className="ml-2">
+                <span className="ml-2 text-gray-800 font-semibold">
                   {audioEngine.correctedPitch ? `${audioEngine.correctedPitch.toFixed(1)} Hz` : 'なし'}
                 </span>
               </div>
               <div>
                 <span className="font-bold text-purple-600">信頼度:</span>
-                <span className="ml-2">
+                <span className="ml-2 text-gray-800 font-semibold">
                   {audioEngine.confidence ? `${(audioEngine.confidence * 100).toFixed(1)}%` : '0%'}
                 </span>
               </div>
               <div>
                 <span className="font-bold text-purple-600">補正効果:</span>
-                <span className="ml-2">
+                <span className="ml-2 text-gray-800 font-semibold">
                   {audioEngine.currentPitch && audioEngine.correctedPitch 
                     ? `${Math.abs(audioEngine.currentPitch - audioEngine.correctedPitch).toFixed(1)} Hz`
                     : '0 Hz'
@@ -158,7 +158,10 @@ export default function AudioEngineTestPage() {
         {/* 停止ボタン */}
         <div className="mb-8">
           <button
-            onClick={audioEngine.stopBaseTone}
+            onClick={() => {
+              audioEngine.stopBaseTone();
+              audioEngine.stopPitchDetection();
+            }}
             className="px-8 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 shadow-lg"
           >
             <Square className="w-5 h-5 inline mr-2" />
