@@ -64,7 +64,7 @@ export const validateAudioData = (audioData: Float32Array): ValidationResult => 
  * ブラウザサポートバリデーション（簡易版）
  */
 export const validateBrowserSupport = (): ValidationResult => {
-  if (!window.AudioContext && !(window as Record<string, unknown>).webkitAudioContext) {
+  if (!window.AudioContext && !(window as unknown as Record<string, unknown>).webkitAudioContext) {
     return createValidationResult(false, ['Web Audio API not supported']);
   }
   

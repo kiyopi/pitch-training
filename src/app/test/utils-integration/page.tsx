@@ -192,12 +192,12 @@ export default function UtilsIntegrationTest() {
       let passCount = 0;
       const validationDetails = validationTests.map(test => {
         const validation = validateFrequency(test.freq);
-        const passed = validation.isMusicalRange === test.expected;
+        const passed = validation.isValid === test.expected;
         if (passed) passCount++;
         
         return {
           ...test,
-          result: validation.isMusicalRange,
+          result: validation.isValid,
           passed
         };
       });
