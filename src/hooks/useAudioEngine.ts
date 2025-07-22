@@ -292,11 +292,8 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
         return;
       }
 
-      // フェーズチェック
-      if (phase !== AudioSystemPhase.SCORING_PHASE) {
-        animationFrameRef.current = null;
-        return;
-      }
+      // 現在のフェーズを直接チェック（クロージャの問題を回避）
+      // この部分は削除して、停止は stopPitchDetection で制御
 
       // 周波数データ取得
       analyser.getFloatTimeDomainData(float32Array);
@@ -331,8 +328,9 @@ export function useAudioEngine(config: Partial<AudioEngineConfig> = {}): AudioEn
     };
 
     // 検出ループ開始
+    console.log('[useAudioEngine] 検出ループ開始');
     detectPitch();
-  }, [phase]);
+  }, []);
 
   // 倍音補正処理（useEffectで実行）
   useEffect(() => {
