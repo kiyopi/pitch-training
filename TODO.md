@@ -6,35 +6,27 @@
 
 ---
 
-## 🔄 現在進行中（CLAUDE.md承認プロセス）
+## 🔄 現在進行中（メインページ実装フェーズ）
 
-### **デバッグ機能実装承認待ち:**
-- [x] CLAUDE.md完全確認・実装前承認プロセス遵守 (high) - **完了**
-- [x] WORK_LOG.md現在状況確認 (high) - **完了**  
-- [x] ブランチ仕様書で対象ファイル特定 (high) - **進行中**
-- [x] SIMPLE_PITCH_TRAINING_DESIGN_PRINCIPLES.md確認 (high) - **ファイル不存在確認済み**
-- [x] ERROR_DIALOG_SPECIFICATION.md確認 (high) - **ファイル不存在確認済み**
-- [x] COMPREHENSIVE_REQUIREMENTS_SPECIFICATION.md確認 (high) - **部分確認済み**
-- [ ] 関連技術仕様書照合 (high)
-- [ ] **ユーザー対象ファイル明示確認 (high) - 🚨 現在停止中・承認待ち**
-- [ ] 全関連仕様書リスト表示 (high)
-- [ ] 各仕様書確認ログ出力 (high)
-- [ ] デバッグ機能詳細技術仕様書作成 (high)
-- [ ] 具体的修正案ユーザー提示 (high)
-- [ ] ユーザー実装開始明示承認取得 (high)
+### **📋 ドキュメント作成（完了済み）:**
+- [x] AUDIO_IMPLEMENTATION_COMPLETION_REPORT.md新規作成 (high) - **完了**
+- [x] WORK_LOG.md最終更新・メインページ実装方針記録 (high) - **完了**
+- [x] MAIN_PAGE_IMPLEMENTATION_STRATEGY.md新規作成 (medium) - **完了**
+- [x] TODO.mdステータス更新・次期フェーズタスク追加 (medium) - **進行中**
+- [ ] COMPREHENSIVE_REQUIREMENTS_SPECIFICATION.md部分更新 (low)
 
-### **実装フェーズ（承認後実行）:**
-- [ ] WORK_LOG.md作業開始記録 (high)
-- [ ] 使い捨てブランチ作成（必要時） (medium)
-- [ ] 設計原則適合確認 (high)
-- [ ] GitHub Pages確認フロー (medium)
-- [ ] WORK_LOG.md完了記録 (medium)
+### **🚀 次期メインページ実装（計画段階）:**
+- [ ] `/training/random/` ページ高度化実装 (high)
+- [ ] 倍音補正システム技術移植 (high)
+- [ ] 採点・評価システム実装 (medium)
+- [ ] UI/UX向上・レスポンシブデザイン (medium)
+- [ ] 他トレーニングモードへの展開 (low)
 
 ---
 
 ## ✅ 完了済み実装
 
-### **🎵 倍音補正システム関連（実装完了）:**
+### **🎵 音響実装フェーズ（完全完了）:**
 - [x] iPhone音量問題の根本原因を詳細調査 (high)
 - [x] iPhone音量問題調査結果仕様書作成 (high)
 - [x] ユーザーフローに基づく対策案の検討 (high)
@@ -55,6 +47,15 @@
 - [x] Step 3.1: state管理統合 (medium)
 - [x] Step 3.2: iPhone最適化 (medium)
 - [x] Step 4.1: GitHub Pagesデプロイ・動作確認 (medium)
+
+### **🎤 人間音声統合実装（完全完了）:**
+- [x] GitHub Human Voice Dataset音声サンプル配置 (high)
+- [x] リアルタイムデバッグパネル実装 (high)
+- [x] 人間音声解析テスト機能実装 (high)
+- [x] 倍音補正システム動作確認（200Hz→150Hz補正確認） (high)
+- [x] iPhone Safari実機検証 (high)
+- [x] GitHub Pages配備・動作テスト完了 (medium)
+- [x] ユーザー評価取得（「概ねうまく動いている」「近い値が出ている」） (high)
 
 ### **🔒 ロールバック・復旧関連（完了）:**
 - [x] Step1: ロールバック対象コミット特定 (high)
@@ -87,67 +88,85 @@
 
 ---
 
-## ⏳ 待機中・今後の実装予定
+## ⏳ 次期フェーズ実装予定
 
-### **後続実装予定:**
-- [ ] **Step B-3: 採点処理専用フェーズ実装** (medium) - **待機中**
-- [ ] **Step B-4: 統合テスト・iPhone音量問題確認** (medium) - **待機中**
+### **🚀 メインページ実装フェーズ（次期優先）:**
+- [ ] **Phase 1: `/training/random/` 完全実装** (high)
+  - [ ] 共通ライブラリ抽出（useHarmonicPitchDetection等） (high)
+  - [ ] 倍音補正システム技術移植 (high)
+  - [ ] リアルタイム音程検出統合 (high)
+  - [ ] 精度評価・採点機能実装 (high)
+- [ ] **Phase 2: 評価・採点システム実装** (medium)
+  - [ ] 採点基準設計（±5/15/30セント階層） (medium)
+  - [ ] リアルタイム判定UI (medium)
+  - [ ] 総合スコア・詳細分析表示 (medium)
+- [ ] **Phase 3: 他モードへの展開** (low)
+  - [ ] `/training/continuous/` 実装 (low)
+  - [ ] `/training/chromatic/` 実装 (low)
 
-### **デバッグ機能実装（正しいプロセス）:**
-- [ ] 関連技術仕様書照合完了
-- [ ] デバッグ機能詳細技術仕様書作成
-- [ ] ユーザー実装承認取得
-- [ ] CLAUDE.md準拠の正しい実装実行
+### **🔧 技術統合予定:**
+- [ ] `/test/separated-audio/` → `/training/` 技術移植
+- [ ] 共通フック作成（useHarmonicPitchDetection, useScoreEvaluation）
+- [ ] iPhone最適化設定の全ページ適用
+- [ ] レスポンシブデザイン・アクセシビリティ向上
 
 ---
 
 ## 🎯 現在の状況サマリー
 
-### **停止中の項目:**
-**Step 8: ユーザー対象ファイル明示確認** - **承認待ち**
-
-**提示済み修正対象ファイル:**
-1. `/src/components/debug/HarmonicDebugPanel.tsx` (新規作成)
-2. `/src/app/test/separated-audio/page.tsx` (デバッグUI統合)
-3. `.env.local` (環境変数制御)
-4. `next.config.ts` (ビルド時除外設定)
-
-### **実装済み・稼働中:**
-- ✅ **倍音補正システム**: Step 1.1-4.1 完全実装済み
+### **🎉 音響実装フェーズ完了:**
+- ✅ **倍音補正システム**: 実用レベル完全実装
+- ✅ **人間音声テスト**: 成功（「概ねうまく動いている」）
+- ✅ **デバッグ環境**: リアルタイム可視化完備
+- ✅ **iPhone対応**: Safari完全対応
 - ✅ **GitHub Pages**: https://kiyopi.github.io/pitch-training/test/separated-audio/
-- ✅ **コミット**: `e7ea510` - 倍音補正システム実装完了報告書作成
 
-### **次回セッション継続ポイント:**
-1. ユーザーからデバッグ機能実装承認取得
-2. CLAUDE.md承認プロセス完了（Step 9-18）
-3. Step B-3, B-4の後続実装検討
+### **📋 ドキュメント完了状況:**
+- ✅ **AUDIO_IMPLEMENTATION_COMPLETION_REPORT.md**: 音響実装総括
+- ✅ **WORK_LOG.md**: 開発方針転換記録
+- ✅ **MAIN_PAGE_IMPLEMENTATION_STRATEGY.md**: 次期実装戦略
+- ✅ **USER_VOICE_HARMONIC_CORRECTION_IMPLEMENTATION_REPORT.md**: 倍音補正実装報告
+- 🔄 **TODO.md**: ステータス更新中
+- ⏳ **COMPREHENSIVE_REQUIREMENTS_SPECIFICATION.md**: 部分更新予定
+
+### **🚀 次期セッション継続ポイント:**
+1. **メインページ実装開始**: `/training/random/` 高度化
+2. **技術統合**: `/test/separated-audio/` → `/training/` 移植
+3. **採点システム**: 後続フェーズで実装
+4. **完全性確保**: 残ドキュメント更新完了
 
 ---
 
 ## 🛡️ クラッシュ復旧用重要情報
 
 ### **安定復帰ポイント:**
-- **安定版コミット**: `e7ea510` (倍音補正システム実装完了)
+- **安定版コミット**: `1a6033a` (音響実装完了・ドキュメント整備済み)
 - **ブランチ**: `pitch-training-nextjs-v2-impl-001`
-- **対象ファイル**: `/src/app/test/separated-audio/page.tsx`
+- **主要実装ファイル**: `/src/app/test/separated-audio/page.tsx`
+- **実装ステータス**: 音響フェーズ完了・メインページ実装フェーズ移行済み
 
 ### **緊急時コマンド:**
 ```bash
-# 安全復帰
-git checkout e7ea510
+# 安全復帰（音響実装完了版）
+git checkout 1a6033a
 
 # 現在ブランチ確認  
 git branch --show-current
 
 # 状況確認
-git log --oneline -3
+git log --oneline -5
+
+# 実装状況確認
+ls -la /src/app/test/separated-audio/
+ls -la *.md | grep -E '(AUDIO|MAIN_PAGE|WORK_LOG)'
 ```
 
 ### **クラッシュ発生時の対応:**
 1. このTODO.mdファイルを確認
 2. WORK_LOG.mdで詳細状況確認
-3. 安定版コミット `e7ea510` に復帰
-4. CLAUDE.md実装前承認プロセスを最初から実行
+3. 安定版コミット `1a6033a` に復帰
+4. メインページ実装は新セッションで戦略文書から再開
+5. 音響実装は完了済み・触る必要なし
 
 ---
 
