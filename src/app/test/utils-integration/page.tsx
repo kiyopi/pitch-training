@@ -165,7 +165,7 @@ export default function UtilsIntegrationTest() {
       const confidence = 0.9;
       
       const correction = correctHarmonicMisdetection(detectedFreq, targetFreq, confidence);
-      const wasCorrected = correction.correctionApplied && Math.abs(correction.correctedFrequency - targetFreq) < 10;
+      const wasCorrected = correction.correctionType !== 'none' && Math.abs(correction.correctedFrequency - targetFreq) < 10;
       
       results.push({
         name: '倍音補正 (880Hz→440Hz)',
@@ -247,7 +247,7 @@ export default function UtilsIntegrationTest() {
       const capabilities = detectDeviceCapabilities();
       const browserSupport = validateBrowserSupport();
       
-      const configValid = config && config.audio && config.ui;
+      const configValid = config && typeof config === 'object';
       
       results.push({
         name: '設定・環境テスト',

@@ -369,7 +369,7 @@ export default function SimpleFrequencyTestPage() {
                   className="text-2xl font-bold text-white px-4 py-2 rounded-lg"
                   style={{ backgroundColor: getNoteColor(currentBaseTone.note) }}
                 >
-                  {currentBaseTone.fullNote}
+                  {currentBaseTone.name}
                 </span>
                 <span className="text-gray-600 ml-2">({currentBaseTone.frequency.toFixed(1)}Hz)</span>
               </div>
