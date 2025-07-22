@@ -106,8 +106,21 @@ export default function SeparatedAudioTestPage() {
     const A4 = 440;
     const semitonesFromA4 = Math.round(12 * Math.log2(freq / A4));
     const noteNames = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
-    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
-    const noteIndex = (semitonesFromA4 + 9) % 12;
+    
+    // オクターブとnoteIndex計算を修正
+    const semitoneOffset = semitonesFromA4 + 9; // A4を基準とした半音数
+    const octave = Math.floor(semitoneOffset / 12) + 4;
+    let noteIndex = semitoneOffset % 12;
+    
+    // 負数の場合の処理
+    if (noteIndex < 0) {
+      noteIndex += 12;
+    }
+    
+    // 配列範囲チェック
+    if (noteIndex < 0 || noteIndex >= noteNames.length) {
+      return `ERROR(${freq.toFixed(1)}Hz)`;
+    }
     
     return `${noteNames[noteIndex]}${octave}`;
   }, []);
