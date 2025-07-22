@@ -41,8 +41,7 @@ export {
 
 export {
   // 倍音補正統合
-  performAdvancedHarmonicCorrection,
-  updateHarmonicDetectionState
+  performAdvancedHarmonicCorrection
 } from './harmonicCorrection';
 
 export {

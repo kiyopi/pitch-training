@@ -422,23 +422,29 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 
 ### 📋 作業記録
 
-### 2025-07-16
-- **重大ミス発生**: 修正対象ファイル間違い（full-scale-training.html）
-- 作業ログシステム導入（WORK_LOG.md, ERROR_LOG.md, DECISION_LOG.md）
-- CLAUDE.md徹底確認プロセス強化
-- 作業ステータス更新ルール明文化
+### 2025-07-22 **クリーンホームページ戦略開始**
+- **重要決定**: トップページ完全作り直し + Phase 1技術債務解消
+- **戦略文書作成**: CLEAN_HOMEPAGE_STRATEGY.md 
+- **新ブランチ方針**: clean-homepage-v1-impl-001 での安全な作業
+- **クラッシュ対策**: 多層防御エラーハンドリング実装予定
 
-### 2025-07-15
+### 2025-07-16 **Phase 2方針転換完了**
+- **重要決定**: 統合システム → ローカル実装への戦略転換成功
+- Random Training ページのローカル実装完全成功
+- Phase 1技術債務の発見と隔離戦略確立
+- ビルドエラー解消、TypeScript型安全性確保
+
+### 2025-07-15 **Phase 1統合システム構築期**
 - 使い捨てブランチ運用システム確立
-- スマートロールバック対応（強制プッシュ不要）
-- GitHub Pages確認フロー最適化
-- タイムスタンプデバッグ機能追加
+- useAudioEngine, TrainingLayout等の高度統合実装
+- 技術債務蓄積の開始（型不整合、依存関係複雑化）
 
-### 現在の状況
-- **安定版**: 1e44e2e (v1.2.0 OutlierPenalty-Enhanced)
-- **作業ブランチ**: simple-pitch-impl-001
-- **対象ファイル**: simple-pitch-training.html + simple-pitch-training.js
-- **次期バージョン**: v2.0.0-simple-clean 予定
+### 現在の状況 (2025-07-22)
+- **安定版**: pitch-training-nextjs-v2-impl-001 (Random Training完成)
+- **次期作業ブランチ**: clean-homepage-v1-impl-001 (予定)
+- **対象ファイル**: /src/app/page.tsx (完全作り直し)
+- **次期バージョン**: v3.0-clean-homepage 予定
+- **技術債務状況**: Phase 1統合ファイルの段階的解消予定
 
 ---
 
