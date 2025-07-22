@@ -28,7 +28,9 @@ export * from './formatting';
 export { 
   // 音程解析統合
   analyzeDiatonicScale,
-  evaluateRelativePitchAccuracy
+  evaluateRelativePitchAccuracy,
+  analyzeRelativePitchTraining,
+  correctHarmonicMisdetection
 } from './pitchAnalysis';
 
 export {
