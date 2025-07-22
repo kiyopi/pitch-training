@@ -454,7 +454,11 @@ function MicrophoneTestContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Button asChild disabled={!micState.startButtonEnabled} className="disabled:opacity-50 px-8 py-3 text-lg">
+              <Button 
+                asChild 
+                disabled={!micState.startButtonEnabled} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-neutral-300 disabled:text-neutral-500 px-8 py-3 text-lg font-bold border-2 disabled:border-neutral-200"
+              >
                 <Link href={selectedMode.targetPath}>
                   🎵 {selectedMode.name}を開始
                 </Link>
