@@ -1066,30 +1066,32 @@ function MicrophoneTestContent() {
                   width: '100%',
                   backgroundColor: '#2563eb',
                   color: 'white',
-                  border: '2px solid #2563eb',
+                  border: 'none',
                   borderRadius: '8px',
-                  padding: '12px 32px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '500',
                   textAlign: 'center',
-                  transition: 'background-color 0.2s ease-in-out'
+                  transition: 'background-color 0.2s ease-in-out',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }}>
-                  🎵 {selectedMode.name}を開始
+                  {selectedMode.name}を開始
                 </Link>
               ) : (
                 <div style={{
                   width: '100%',
                   backgroundColor: '#d1d5db',
                   color: '#6b7280',
-                  border: '2px solid #e5e7eb',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  padding: '12px 32px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '500',
                   textAlign: 'center',
-                  cursor: 'not-allowed'
+                  cursor: 'not-allowed',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }}>
-                  🎵 {selectedMode.name}を開始
+                  {selectedMode.name}を開始
                 </div>
               )}
             </div>
