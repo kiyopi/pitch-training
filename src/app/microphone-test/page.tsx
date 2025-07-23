@@ -225,7 +225,7 @@ function MicrophoneTestContent() {
       if (frequency && frequency > 80 && frequency < 2000) {
         frequencyDisplayRef.current.innerHTML = `
           <div class="h-10 flex items-center justify-center">
-            <div class="text-xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
+            <div class="text-xl sm:text-2xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
           </div>
         `;
       } else {
@@ -489,17 +489,9 @@ function MicrophoneTestContent() {
           const iOSOffset = 40; // 40%のベースオフセット
           const iOSMultiplier = 2.0; // 発声時の増幅倍率
           volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
-          // iPhoneデバッグ（発声時）
-          if (Math.random() < 0.02) { // デバッグ頻度増加
-            console.log(`📱 iPhone発声強化: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
-          }
         } else {
           // 無音時: 通常計算（オフセットなし）
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
-          // iPhoneデバッグ（無音時）
-          if (Math.random() < 0.02) { // 2%の確率でログ出力
-            console.log(`📱 iPhone無音通常: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
-          }
         }
       } else {
         // PC: 無音時のみノイズフロア削減を追加
