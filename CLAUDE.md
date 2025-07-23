@@ -66,6 +66,64 @@ const sampler = new Tone.Sampler({
 }).toDestination();
 ```
 
+### 🚨 **Next.js開発重要注意事項: iPhoneレンダリング問題**
+
+#### **問題の概要**
+**Next.js + iPhone WebKit環境でのCSSとJavaScriptスタイル競合問題**
+- **症状**: 動的スタイル変更が正しく反映されない
+- **影響**: 音量バー、プログレスバー等の動的UI要素
+- **プラットフォーム**: iPhone Safariでのみ発生（PC Chromiumは正常）
+
+#### **禁止パターン**
+```typescript
+// ❌ 絶対禁止: CSSとJavaScriptの混在
+<div 
+  ref={elementRef}
+  className="h-3 rounded-full"  // CSSクラス
+  style={{ width: '0%' }}      // 初期スタイル
+/>
+
+// JavaScriptで動的変更
+elementRef.current.style.width = `${value}%`;  // 競合発生
+```
+
+#### **正しい実装パターン**
+```typescript
+// ✅ 推奨: 完全JavaScript制御
+<div 
+  ref={elementRef}
+  className="transition-all duration-100"  // アニメーションのみ
+  // style属性は一切設定しない
+/>
+
+// 初期化時に全スタイルをJavaScriptで設定
+if (elementRef.current) {
+  elementRef.current.style.width = '0%';
+  elementRef.current.style.backgroundColor = '#10b981';
+  elementRef.current.style.height = '12px';
+  elementRef.current.style.borderRadius = '9999px';
+}
+
+// 動的更新も同じ方式で統一
+elementRef.current.style.width = `${value}%`;
+```
+
+#### **必須ルール**
+1. **統一制御**: CSS `className` と JavaScript `style` を混在させない
+2. **完全初期化**: コンポーネントマウント時に全スタイル設定
+3. **WebKit対応**: 初期`style`属性をHTMLで設定しない
+4. **一貫性**: 全ての動的スタイル変更を同じ方式で実装
+
+#### **対象コンポーネント**
+- 音量バー、プログレスバー
+- 動的幅変更が必要な要素
+- リアルタイム更新UI要素
+
+#### **デバッグ方法**
+- iPhone Safariでの実機テスト必須
+- Chrome DevToolsのiPhoneエミュレーターでは再現されない
+- コンソールでのスタイル値確認: `console.log(elementRef.current.style.width)`
+
 ---
 
 ## 🎯 使い捨てブランチ運用（スマートロールバック対応）

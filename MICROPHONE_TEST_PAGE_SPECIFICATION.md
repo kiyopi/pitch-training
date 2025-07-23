@@ -226,4 +226,66 @@ const [micState, setMicState] = useState<MicTestState>({
 
 ---
 
+## 🚨 **重要: Next.js + iPhoneレンダリング問題と対策**
+
+### **問題の詳細**
+**症状**: iPhoneのWebKitエンジンで音量バーが正常に表示されない
+- 音量計算は正常（周波数検出も正常）
+- 音量バー表示のみ2%程度の極小幅で表示
+- PC（Chromium）では正常動作
+
+### **根本原因**
+```typescript
+// ❌ 問題のあるコード: CSSとJavaScriptの競合
+<div 
+  ref={volumeBarRef}
+  className="h-3 rounded-full transition-all duration-100"
+  style={{ width: '0%', backgroundColor: '#10b981' }}  // 初期style設定
+/>
+
+// JavaScript側でwidthを動的変更
+volumeBarRef.current.style.width = `${volume}%`;  // 競合発生
+```
+
+**競合メカニズム**:
+1. React初期レンダリング時に`style`オブジェクトが設定
+2. JavaScript動的変更が一部のプロパティのみ上書き
+3. WebKitエンジンで古いスタイル値が残存
+4. width変更が正しく反映されない
+
+### **解決策**
+```typescript
+// ✅ 正しいコード: 完全JavaScript制御
+<div 
+  ref={volumeBarRef}
+  className="h-3 rounded-full transition-all duration-100"  // style属性削除
+/>
+
+// 初期化時に全スタイルを設定
+if (volumeBarRef.current) {
+  volumeBarRef.current.style.width = '0%';
+  volumeBarRef.current.style.backgroundColor = '#10b981';
+  volumeBarRef.current.style.height = '12px';
+  volumeBarRef.current.style.borderRadius = '9999px';
+  volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+}
+
+// 動的更新も同じstyle方式で統一
+volumeBarRef.current.style.width = `${volume}%`;
+volumeBarRef.current.style.backgroundColor = '#10b981';
+```
+
+### **対策原則**
+1. **統一制御**: CSS `className` と JavaScript `style` を混在させない
+2. **完全初期化**: マイク許可後に全スタイル属性を明示的に設定
+3. **WebKit対応**: 初期`style`属性を設定しない
+4. **一貫性**: 全ての動的スタイル変更を同じ方式で実装
+
+### **適用箇所**
+- `/src/app/microphone-test/page.tsx:475-477` (HTML要素)
+- `/src/app/microphone-test/page.tsx:162-176` (updateVolumeDisplay関数)
+- `/src/app/microphone-test/page.tsx:278-284` (初期化処理)
+
+---
+
 **この仕様書は相対音感トレーニングアプリv3.0.0の核心機能であるマイクテストページの完全な実装ガイドです。**
