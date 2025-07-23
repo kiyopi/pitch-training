@@ -218,6 +218,18 @@ function MicrophoneTestContent() {
     };
   }, []); // cleanup関数は後で定義されるため依存配列から削除
   
+  // 音量バー初期化（CLAUDE.md準拠: iPhone WebKit対応）
+  useEffect(() => {
+    // コンポーネントマウント時に確実に初期化
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+  }, []);
+  
   // DOM直接操作関数（DDAS）
   const updateFrequencyDisplay = useCallback((frequency: number | null) => {
     if (frequencyDisplayRef.current) {
@@ -943,13 +955,7 @@ function MicrophoneTestContent() {
                     }}>
                       <div 
                         ref={volumeBarRef}
-                        style={{
-                          height: '12px',
-                          borderRadius: '9999px',
-                          transition: 'all 0.1s ease-out',
-                          width: '0%',
-                          backgroundColor: '#10b981'
-                        }}
+                        // CLAUDE.md準拠: 初期style属性は設定せず、JavaScript制御のみ
                       />
                     </div>
                     <div ref={volumePercentRef} style={{ textAlign: 'right' }}>
