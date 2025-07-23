@@ -71,17 +71,17 @@ export default function RandomTrainingPage() {
         {/* メインエリア */}
         <div style={{
           backgroundColor: 'white',
-          border: '1px solid #d1fae5',
+          border: '1px solid #e5e7eb',
           borderRadius: '12px',
           padding: '32px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
           marginBottom: '48px'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{
-              fontSize: '32px',
+              fontSize: '24px',
               fontWeight: 'bold',
-              color: '#047857',
+              color: '#1a1a1a',
               margin: '0 0 8px 0'
             }}>トレーニング開始</h2>
             <p style={{
@@ -95,16 +95,16 @@ export default function RandomTrainingPage() {
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{
-              background: 'linear-gradient(to right, #ecfdf5, #f0fdf4)',
-              border: '1px solid #d1fae5',
-              borderRadius: '12px',
+              backgroundColor: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
               padding: '24px',
               marginBottom: '32px'
             }}>
               <p style={{
-                color: '#047857',
-                fontWeight: '500',
-                fontSize: '18px',
+                color: '#6b7280',
+                fontWeight: '400',
+                fontSize: '16px',
                 margin: 0
               }}>
                 🎵 準備ができたらスタートボタンを押してください
@@ -112,23 +112,23 @@ export default function RandomTrainingPage() {
             </div>
             
             <button style={{
-              background: 'linear-gradient(to right, #10b981, #059669)',
+              backgroundColor: '#059669',
               color: 'white',
               border: 'none',
-              borderRadius: '24px',
-              padding: '24px 48px',
-              fontSize: '20px',
-              fontWeight: 'bold',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: '500',
               cursor: 'pointer',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.3s ease-in-out',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              transition: 'background-color 0.2s ease-in-out',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
+              gap: '8px',
               margin: '0 auto'
             }}>
-              <span>🎲</span>
+              <span style={{ fontSize: '16px' }}>→</span>
               <span>トレーニング開始</span>
             </button>
           </div>
@@ -140,12 +140,12 @@ export default function RandomTrainingPage() {
           border: '1px solid #e5e7eb',
           borderRadius: '12px',
           padding: '32px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
           marginBottom: '48px'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <h3 style={{
-              fontSize: '32px',
+              fontSize: '24px',
               fontWeight: 'bold',
               color: '#1a1a1a',
               margin: '0 0 8px 0'
@@ -185,7 +185,7 @@ export default function RandomTrainingPage() {
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(to bottom right, #10b981, #059669)',
+                  backgroundColor: '#059669',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
