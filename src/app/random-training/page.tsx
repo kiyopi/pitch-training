@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Music } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// shadcn/ui コンポーネントをインラインスタイルで実装するため削除
 
 // 型定義
 type TrainingPhase = 'ready' | 'playing' | 'listening' | 'completed';
@@ -20,88 +19,223 @@ export default function RandomTrainingPage() {
   const [results, setResults] = useState<ScaleResult[]>([]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '1152px',
+        margin: '0 auto',
+        padding: '24px 16px'
+      }}>
         {/* ヘッダー */}
-        <header className="flex items-center justify-between py-6 border-b">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+        <header style={{ borderBottom: '1px solid #e5e7eb', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '24px' }}>
+            <Link href="/" style={{
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              color: '#1a1a1a',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'background-color 0.2s ease-in-out'
+            }}>
+              <ArrowLeft style={{ width: '16px', height: '16px' }} />
               戻る
             </Link>
-          </Button>
-          <div className="flex items-center space-x-2">
-            <Music className="h-6 w-6 text-emerald-600" />
-            <h1 className="text-xl font-semibold">ランダム基音トレーニング</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                fontSize: '24px',
+                color: '#059669'
+              }}>🎵</div>
+              <h1 style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: 0
+              }}>ランダム基音トレーニング</h1>
+            </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
+            </div>
           </div>
-          <div className="w-20" /> {/* Spacer for center alignment */}
         </header>
 
         {/* メインエリア */}
-        <Card className="mb-12 border-emerald-200 shadow-xl">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl text-emerald-700">トレーニング開始</CardTitle>
-            <CardDescription className="text-base">
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #d1fae5',
+          borderRadius: '12px',
+          padding: '32px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          marginBottom: '48px'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <h2 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#047857',
+              margin: '0 0 8px 0'
+            }}>トレーニング開始</h2>
+            <p style={{
+              fontSize: '16px',
+              color: '#6b7280',
+              lineHeight: '1.5',
+              margin: 0
+            }}>
               基音を聞いて、ドレミファソラシドを正確に発声してください
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center space-y-8">
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-6">
-                <p className="text-emerald-700 font-medium text-lg">
-                  🎵 準備ができたらスタートボタンを押してください
-                </p>
-              </div>
-              
-              <Button 
-                size="lg" 
-                className="group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-12 py-6 text-xl font-bold rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
-              >
-                <div className="flex items-center space-x-3">
-                  <span>🎲</span>
-                  <span>トレーニング開始</span>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              </Button>
+            </p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              background: 'linear-gradient(to right, #ecfdf5, #f0fdf4)',
+              border: '1px solid #d1fae5',
+              borderRadius: '12px',
+              padding: '24px',
+              marginBottom: '32px'
+            }}>
+              <p style={{
+                color: '#047857',
+                fontWeight: '500',
+                fontSize: '18px',
+                margin: 0
+              }}>
+                🎵 準備ができたらスタートボタンを押してください
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            
+            <button style={{
+              background: 'linear-gradient(to right, #10b981, #059669)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '24px',
+              padding: '24px 48px',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.3s ease-in-out',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              margin: '0 auto'
+            }}>
+              <span>🎲</span>
+              <span>トレーニング開始</span>
+            </button>
+          </div>
+        </div>
 
         {/* 使い方説明 */}
-        <Card className="mb-12 border-neutral-200 shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-neutral-800">使い方</CardTitle>
-            <CardDescription>
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          padding: '32px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          marginBottom: '48px'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <h3 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#1a1a1a',
+              margin: '0 0 8px 0'
+            }}>使い方</h3>
+            <p style={{
+              fontSize: '16px',
+              color: '#6b7280',
+              lineHeight: '1.5',
+              margin: 0
+            }}>
               3つのステップで相対音感を効果的にトレーニング
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { step: 1, title: "基音を聞く", desc: "ランダムに選択された基音を確認", icon: "🎵" },
-                { step: 2, title: "発声する", desc: "ドレミファソラシドを順番に歌う", icon: "🎤" },
-                { step: 3, title: "結果確認", desc: "音程の正確性をチェック", icon: "✅" }
-              ].map((item) => (
-                <div key={item.step} className="text-center space-y-4 p-4 rounded-xl bg-gradient-to-b from-neutral-50 to-neutral-100 hover:shadow-md transition-all duration-300">
-                  <div className="text-4xl mb-2">{item.icon}</div>
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto text-xl font-bold text-white shadow-lg">
-                    {item.step}
-                  </div>
-                  <h4 className="font-bold text-base text-neutral-800">{item.title}</h4>
-                  <p className="text-sm text-neutral-600 leading-relaxed">{item.desc}</p>
+            </p>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '24px'
+          }}>
+            {[
+              { step: 1, title: "基音を聞く", desc: "ランダムに選択された基音を確認", icon: "🎵" },
+              { step: 2, title: "発声する", desc: "ドレミファソラシドを順番に歌う", icon: "🎤" },
+              { step: 3, title: "結果確認", desc: "音程の正確性をチェック", icon: "✅" }
+            ].map((item) => (
+              <div key={item.step} style={{
+                textAlign: 'center',
+                padding: '16px',
+                borderRadius: '12px',
+                background: 'linear-gradient(to bottom, #f9fafb, #f3f4f6)',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease-in-out'
+              }}>
+                <div style={{
+                  fontSize: '48px',
+                  marginBottom: '8px'
+                }}>{item.icon}</div>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(to bottom right, #10b981, #059669)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  color: 'white',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}>
+                  {item.step}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#1a1a1a',
+                  margin: '0 0 8px 0'
+                }}>{item.title}</h4>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  lineHeight: '1.5',
+                  margin: 0
+                }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* フッター */}
-        <footer className="border-t pt-6 mt-12">
-          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-            <div className="text-sm text-muted-foreground">
+        <footer style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
               © 2024 相対音感トレーニング. All rights reserved.
             </div>
-            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
               <span>Version 3.0</span>
               <span>•</span>
               <span>Powered by Next.js</span>
