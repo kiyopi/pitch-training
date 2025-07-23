@@ -21,6 +21,11 @@ export default function RandomTrainingPage() {
   // マイクストリーム管理
   const micStreamRef = useRef<MediaStream | null>(null);
   
+  // 音程検出用（React非依存）
+  const animationFrameRef = useRef<number | null>(null);
+  const dataArrayRef = useRef<Float32Array | null>(null);
+  const bufferLength = useRef<number>(0);
+  
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
   const baseNoteNames = {
@@ -68,6 +73,13 @@ export default function RandomTrainingPage() {
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       
+      // Pitchy初期化
+      if (!pitchDetectorRef.current) {
+        bufferLength.current = analyserRef.current.frequencyBinCount;
+        dataArrayRef.current = new Float32Array(bufferLength.current);
+        pitchDetectorRef.current = PitchDetector.forFloat32Array(bufferLength.current);
+      }
+      
       addLog('🎤 マイク初期化完了');
       return true;
     } catch (error) {
@@ -75,6 +87,28 @@ export default function RandomTrainingPage() {
       addLog(`❌ マイク初期化エラー: ${errorMessage}`);
       return false;
     }
+  };
+  
+  // 基本音程検出ループ（React非依存の直接操作）
+  const detectPitch = () => {
+    if (!analyserRef.current || !dataArrayRef.current || !pitchDetectorRef.current) {
+      return;
+    }
+    
+    // 音声データ取得
+    analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
+    
+    // Pitchyで周波数検出
+    const [frequency, clarity] = pitchDetectorRef.current.findPitch(dataArrayRef.current, audioContextRef.current!.sampleRate);
+    
+    // 有効な周波数が検出された場合のみ処理
+    if (frequency > 0 && clarity > 0.9) {
+      // TODO: 周波数表示の更新（Step 1-6で実装）
+      console.log(`Frequency: ${frequency.toFixed(1)} Hz, Clarity: ${clarity.toFixed(2)}`);
+    }
+    
+    // 次フレームの予約
+    animationFrameRef.current = requestAnimationFrame(detectPitch);
   };
 
   const handleStart = async () => {
