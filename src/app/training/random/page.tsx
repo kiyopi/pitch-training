@@ -210,7 +210,7 @@ export default function RandomTrainingPage() {
   return (
     <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
       {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
+      <div className="fixed top-6 right-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
         📱 {new Date().toLocaleTimeString('ja-JP')}
       </div>
 
@@ -221,7 +221,7 @@ export default function RandomTrainingPage() {
           <div className="inline-block mb-6">
             <span className="text-8xl">🎲</span>
           </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4">
             ランダム基音モード
           </h1>
           <p className="text-xl text-gray-600 mb-6">
@@ -252,7 +252,7 @@ export default function RandomTrainingPage() {
             className={`group relative overflow-hidden px-12 py-6 rounded-3xl text-2xl font-bold text-white transition-all duration-300 shadow-lg ${
               isPlaying 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-2xl'
+                : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 hover:shadow-2xl'
             }`}
           >
             <div className="flex items-center space-x-3">
