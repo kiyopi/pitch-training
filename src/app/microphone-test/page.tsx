@@ -165,13 +165,14 @@ function MicrophoneTestContent() {
     // pitchy-clean準拠：直接style操作
     if (volumeBarRef.current) {
       volumeBarRef.current.style.width = `${clampedVolume}%`;
+      // 色の判定を正しい順序に修正
       volumeBarRef.current.style.backgroundColor = 
-        volume > 80 ? '#ef4444' : volume > 60 ? '#f59e0b' : '#10b981';
+        clampedVolume > 80 ? '#ef4444' : clampedVolume > 40 ? '#f59e0b' : '#10b981';
     }
     
-    // パーセント表示更新
+    // パーセント表示更新（innerHTMLで全体を更新）
     if (volumePercentRef.current) {
-      volumePercentRef.current.textContent = `${clampedVolume.toFixed(1)}%`;
+      volumePercentRef.current.innerHTML = `<span class="text-sm text-neutral-700 font-medium">${clampedVolume.toFixed(1)}%</span>`;
     }
   }, []);
   
@@ -236,7 +237,7 @@ function MicrophoneTestContent() {
       notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
       
       const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(1.2, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // iPhone対応のためゲインを上げる
       
       // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
@@ -302,8 +303,8 @@ function MicrophoneTestContent() {
       const rms = Math.sqrt(sum / bufferLength);
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // pitchy-clean準拠：/12スケーリング
-      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      // 音量スケーリング調整：iPhone対応のため除数を減らす
+      const volumePercent = Math.min(Math.max(calculatedVolume / 8 * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
