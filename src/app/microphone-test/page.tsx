@@ -701,14 +701,14 @@ function MicrophoneTestContent() {
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       <div style={{
-        maxWidth: '896px',
+        maxWidth: '1200px',
         margin: '0 auto',
-        padding: '24px 16px'
+        padding: '0 16px'
       }}>
         
         {/* ヘッダー */}
-        <header style={{ borderBottom: '1px solid #e5e7eb', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '24px' }}>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <Link href="/" style={{
                 textDecoration: 'none',
@@ -741,8 +741,10 @@ function MicrophoneTestContent() {
             </div>
           </div>
         </header>
-        
-        {/* 選択されたモード表示 */}
+
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 0' }}>
+          {/* 選択されたモード表示 */}
         <div style={{
           backgroundColor: 'white',
           border: '1px solid #e5e7eb',
@@ -1093,6 +1095,7 @@ function MicrophoneTestContent() {
             </div>
           </div>
         )}
+        </main>
         
       </div>
     </div>

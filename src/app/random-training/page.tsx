@@ -26,38 +26,34 @@ export default function RandomTrainingPage() {
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       <div style={{
-        maxWidth: '1152px',
+        maxWidth: '1200px',
         margin: '0 auto',
-        padding: '24px 16px'
+        padding: '0 16px'
       }}>
         {/* ヘッダー */}
-        <header style={{ borderBottom: '1px solid #e5e7eb', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '24px' }}>
-            <Link href="/" style={{
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              backgroundColor: 'white',
-              color: '#1a1a1a',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'background-color 0.2s ease-in-out'
-            }}>
-              <ArrowLeft style={{ width: '16px', height: '16px' }} />
-              戻る
-            </Link>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                fontSize: '24px',
-                color: '#059669'
-              }}>🎵</div>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/" style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#1a1a1a',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease-in-out'
+              }}>
+                <ArrowLeft style={{ width: '16px', height: '16px' }} />
+                戻る
+              </Link>
               <h1 style={{
-                fontSize: '20px',
-                fontWeight: '600',
+                fontSize: '24px',
+                fontWeight: 'bold',
                 color: '#1a1a1a',
                 margin: 0
               }}>ランダム基音トレーニング</h1>
@@ -68,7 +64,9 @@ export default function RandomTrainingPage() {
           </div>
         </header>
 
-        {/* メインエリア */}
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 0' }}>
+          {/* メインエリア */}
         <div style={{
           backgroundColor: 'white',
           border: '1px solid #e5e7eb',
@@ -242,6 +240,7 @@ export default function RandomTrainingPage() {
             </div>
           </div>
         </footer>
+        </main>
       </div>
     </div>
   );
