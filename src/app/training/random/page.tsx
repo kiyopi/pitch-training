@@ -18,6 +18,9 @@ export default function RandomTrainingPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   
+  // マイクストリーム管理
+  const micStreamRef = useRef<MediaStream | null>(null);
+  
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
   const baseNoteNames = {
@@ -28,6 +31,50 @@ export default function RandomTrainingPage() {
   const addLog = (message: string) => {
     console.log(message);
     setDebugLog(prev => [...prev.slice(-4), message]);
+  };
+
+  // マイクストリーム取得関数
+  const initializeMicrophone = async () => {
+    try {
+      // AudioContext初期化
+      if (!audioContextRef.current) {
+        const AudioCtx = (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).AudioContext || 
+                        (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        audioContextRef.current = new AudioCtx({
+          sampleRate: 44100
+        });
+      }
+      
+      // AnalyserNode作成
+      if (!analyserRef.current) {
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 2048;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+      }
+      
+      // マイクアクセス許可取得
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 44100
+        }
+      });
+      
+      micStreamRef.current = stream;
+      
+      // MediaStreamSource作成とAnalyserNode接続
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
+      addLog('🎤 マイク初期化完了');
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addLog(`❌ マイク初期化エラー: ${errorMessage}`);
+      return false;
+    }
   };
 
   const handleStart = async () => {
