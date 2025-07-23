@@ -314,13 +314,25 @@ function MicrophoneTestContent() {
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // ハイブリッド感度システム：iPhone専用ブーストファクター
+      // iPhone専用音量オフセット方式（発声検出連動）
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const baseScale = 12; // pitchy-clean基準値
-      const iOSBoost = 4.0; // iPhone専用ブーストファクター（30% → 80-90%）
+      const baseVolume = calculatedVolume / 12 * 100;
       
-      const effectiveScale = isIOS ? baseScale / iOSBoost : baseScale;
-      const volumePercent = Math.min(Math.max(calculatedVolume / effectiveScale * 100, 0), 100);
+      let volumePercent;
+      if (isIOS) {
+        // iPhone: 発声時のみオフセット適用
+        if (calculatedVolume > 3) { // 発声検出閾値
+          const iOSOffset = 40; // 40%のベースオフセット（発声時のみ）
+          const iOSMultiplier = 2.0; // 発声時の増幅倍率
+          volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
+        } else {
+          // 無音時: 通常計算（オフセットなし）
+          volumePercent = Math.min(Math.max(baseVolume, 0), 100);
+        }
+      } else {
+        // PC: 従来通り
+        volumePercent = Math.min(Math.max(baseVolume, 0), 100);
+      }
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
