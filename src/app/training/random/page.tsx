@@ -208,149 +208,365 @@ export default function RandomTrainingPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="text-center">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 16px'
+      }}>
         {/* ヘッダー */}
-        <div className="mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🎲</span>
-          </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4">
-            ランダム基音モード
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            10種類の基音からランダムに選択してドレミファソラシドを発声
-          </p>
-          <div className="inline-block bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 px-6 py-3 rounded-full text-lg font-bold">
-            初心者向け
-          </div>
-          
-          {/* 現在の基音表示 */}
-          {currentBaseNote && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-              <p className="text-lg font-bold text-blue-800">
-                🎵 現在の基音: <span className="text-2xl">{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
-              </p>
-              <p className="text-sm text-blue-600 mt-1">
-                この音を基準にドレミファソラシドを歌ってください
-              </p>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/" style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#1a1a1a',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease-in-out'
+              }}>
+                <ArrowLeft style={{ width: '16px', height: '16px' }} />
+                戻る
+              </Link>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: 0
+              }}>ランダム基音トレーニング</h1>
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
+            </div>
+          </div>
+        </header>
 
-        {/* スタートボタン */}
-        <div className="mb-12">
-          <button
-            onClick={handleStart}
-            disabled={isPlaying}
-            className={`group relative overflow-hidden px-12 py-6 rounded-3xl text-2xl font-bold text-white transition-all duration-300 shadow-lg ${
-              isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Play className="w-8 h-8" />
-              <span>{isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}</span>
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 0' }}>
+          {/* メインエリア */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎲</div>
+              <h2 style={{
+                fontSize: '32px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 16px 0'
+              }}>ランダム基音モード</h2>
+              <p style={{
+                fontSize: '18px',
+                color: '#6b7280',
+                lineHeight: '1.6',
+                margin: '0 0 16px 0'
+              }}>
+                10種類の基音からランダムに選択してドレミファソラシドを発声
+              </p>
+              <div style={{
+                display: 'inline-block',
+                backgroundColor: '#d1fae5',
+                color: '#059669',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                初心者向け
+              </div>
             </div>
-            
-            {/* ホバーエフェクト（再生中は無効） */}
-            {!isPlaying && (
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+          
+            {/* 現在の基音表示 */}
+            {currentBaseNote && (
+              <div style={{
+                marginTop: '24px',
+                padding: '16px',
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '12px'
+              }}>
+                <p style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#1e40af',
+                  margin: '0 0 4px 0'
+                }}>
+                  🎵 現在の基音: <span style={{ fontSize: '24px' }}>{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#2563eb',
+                  margin: 0
+                }}>
+                  この音を基準にドレミファソラシドを歌ってください
+                </p>
+              </div>
             )}
-          </button>
-        </div>
-
-        {/* 説明 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">使い方</h3>
-          <div className="text-left space-y-3 text-gray-600">
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <span>ボタンを押してランダムな基音を聞く（10種類からランダム選択）</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>表示された基音を覚えて、ドレミファソラシドを正確に発声</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>繰り返し練習して様々な基音に対応できる相対音感を鍛える</span>
-            </div>
           </div>
-          
-          {/* 基音一覧 */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <h4 className="font-bold text-gray-700 mb-3">🎵 基音候補（10種類）</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-              {Object.entries(baseNoteNames).map(([note, name]) => (
-                <div key={note} className="flex justify-between">
-                  <span className="font-mono">{note}</span>
-                  <span>{name}</span>
+
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <button
+              onClick={handleStart}
+              disabled={isPlaying}
+              style={{
+                backgroundColor: isPlaying ? '#9ca3af' : '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '16px 32px',
+                fontSize: '18px',
+                fontWeight: '500',
+                cursor: isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                margin: '0 auto'
+              }}
+            >
+              <Play style={{ width: '20px', height: '20px' }} />
+              <span>{isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}</span>
+            </button>
+          </div>
+
+          {/* 使い方説明 */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h3 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 8px 0'
+              }}>使い方</h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#6b7280',
+                lineHeight: '1.5',
+                margin: 0
+              }}>
+                3つのステップで相対音感を効果的にトレーニング
+              </p>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '24px'
+            }}>
+              {[
+                { step: 1, title: "基音を聞く", desc: "ランダムに選択された基音を確認" },
+                { step: 2, title: "発声する", desc: "ドレミファソラシドを順番に歌う" },
+                { step: 3, title: "繰り返し練習", desc: "様々な基音で相対音感を鍛える" }
+              ].map((item) => (
+                <div key={item.step} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px auto',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#1a1a1a'
+                  }}>
+                    {item.step}
+                  </div>
+                  <h4 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>{item.title}</h4>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>{item.desc}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* テスト用: 音程検出ボタン */}
-        <div className="mb-8 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
-          <h4 className="font-bold text-yellow-800 mb-3">🧪 Step 1-4 動作確認用</h4>
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={startPitchDetection}
-              disabled={isDetecting}
-              className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                isDetecting 
-                  ? 'bg-gray-400 text-white cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              🎤 音程検出開始
-            </button>
-            <button
-              onClick={stopPitchDetection}
-              disabled={!isDetecting}
-              className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                !isDetecting 
-                  ? 'bg-gray-400 text-white cursor-not-allowed' 
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-            >
-              ⏹️ 検出停止
-            </button>
-          </div>
-          <p className="text-sm text-yellow-700 mt-3">
-            ※ ブラウザのコンソールで周波数とクラリティを確認できます（F12キー）
-          </p>
-        </div>
-
-        {/* デバッグログ表示 */}
-        {debugLog.length > 0 && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-xl">
-            <h4 className="font-bold text-gray-800 mb-2">📝 デバッグログ:</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              {debugLog.map((log, index) => (
-                <div key={index} className="font-mono">{log}</div>
-              ))}
+            
+            {/* 基音一覧 */}
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#374151',
+                margin: '0 0 12px 0'
+              }}>🎵 基音候補（10種類）</h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '8px',
+                fontSize: '14px',
+                color: '#6b7280'
+              }}>
+                {Object.entries(baseNoteNames).map(([note, name]) => (
+                  <div key={note} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontFamily: 'monospace' }}>{note}</span>
+                    <span>{name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* 戻るボタン */}
-        <Link 
-          href="/"
-          className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>トップページに戻る</span>
-        </Link>
+          {/* テスト用: 音程検出ボタン */}
+          <div style={{
+            marginBottom: '32px',
+            padding: '16px',
+            backgroundColor: '#fefce8',
+            border: '2px solid #fde047',
+            borderRadius: '12px'
+          }}>
+            <h4 style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#92400e',
+              margin: '0 0 12px 0'
+            }}>🧪 Step 1-4 動作確認用</h4>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '16px',
+              marginBottom: '12px'
+            }}>
+              <button
+                onClick={startPitchDetection}
+                disabled={isDetecting}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: isDetecting ? 'not-allowed' : 'pointer',
+                  backgroundColor: isDetecting ? '#9ca3af' : '#2563eb',
+                  color: 'white',
+                  transition: 'background-color 0.2s ease-in-out'
+                }}
+              >
+                🎤 音程検出開始
+              </button>
+              <button
+                onClick={stopPitchDetection}
+                disabled={!isDetecting}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: !isDetecting ? 'not-allowed' : 'pointer',
+                  backgroundColor: !isDetecting ? '#9ca3af' : '#dc2626',
+                  color: 'white',
+                  transition: 'background-color 0.2s ease-in-out'
+                }}
+              >
+                ⏹️ 検出停止
+              </button>
+            </div>
+            <p style={{
+              fontSize: '12px',
+              color: '#92400e',
+              margin: 0,
+              textAlign: 'center'
+            }}>
+              ※ ブラウザのコンソールで周波数とクラリティを確認できます（F12キー）
+            </p>
+          </div>
+
+          {/* デバッグログ表示 */}
+          {debugLog.length > 0 && (
+            <div style={{
+              marginBottom: '32px',
+              padding: '16px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                margin: '0 0 8px 0'
+              }}>📝 デバッグログ:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {debugLog.map((log, index) => (
+                  <div key={index} style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontFamily: 'monospace'
+                  }}>{log}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+
+        {/* フッター */}
+        <footer style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
