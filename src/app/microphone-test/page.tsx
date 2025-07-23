@@ -313,10 +313,8 @@ function MicrophoneTestContent() {
       const rms = Math.sqrt(sum / bufferLength);
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // 音量スケーリング調整：プラットフォーム別感度調整
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const scaleFactor = isIOS ? 2.5 : 4; // iPhoneは高感度、PCは低感度
-      const volumePercent = Math.min(Math.max(calculatedVolume / scaleFactor * 100, 0), 100);
+      // pitchy-clean準拠：正常な音量計算（/12 固定）
+      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
