@@ -56,15 +56,27 @@ const TRAINING_MODES: Record<string, TrainingMode> = {
   }
 };
 
-// 音名変換テーブル
+// 🎵 Step D2c: 音名・オクターブ表示機能 - 完全日本語音名変換テーブル
 const NOTE_CONVERSION: Record<string, string> = {
-  'C3': 'ド（低）', 'C4': 'ド（中）', 'C5': 'ド（高）',
-  'D3': 'レ（低）', 'D4': 'レ（中）', 'D5': 'レ（高）',
-  'E3': 'ミ（低）', 'E4': 'ミ（中）', 'E5': 'ミ（高）',
-  'F3': 'ファ（低）', 'F4': 'ファ（中）', 'F5': 'ファ（高）',
-  'G3': 'ソ（低）', 'G4': 'ソ（中）', 'G5': 'ソ（高）',
-  'A3': 'ラ（低）', 'A4': 'ラ（中）', 'A5': 'ラ（高）',
-  'B3': 'シ（低）', 'B4': 'シ（中）', 'B5': 'シ（高）',
+  // 基本7音階 (3オクターブ対応)
+  'C3': 'ド（低）', 'C4': 'ド（中）', 'C5': 'ド（高）', 'C6': 'ド（最高）',
+  'D3': 'レ（低）', 'D4': 'レ（中）', 'D5': 'レ（高）', 'D6': 'レ（最高）',
+  'E3': 'ミ（低）', 'E4': 'ミ（中）', 'E5': 'ミ（高）', 'E6': 'ミ（最高）',
+  'F3': 'ファ（低）', 'F4': 'ファ（中）', 'F5': 'ファ（高）', 'F6': 'ファ（最高）',
+  'G3': 'ソ（低）', 'G4': 'ソ（中）', 'G5': 'ソ（高）', 'G6': 'ソ（最高）',
+  'A3': 'ラ（低）', 'A4': 'ラ（中）', 'A5': 'ラ（高）', 'A6': 'ラ（最高）',
+  'B3': 'シ（低）', 'B4': 'シ（中）', 'B5': 'シ（高）', 'B6': 'シ（最高）',
+  
+  // 半音階対応（#系）
+  'C#3': 'ド#（低）', 'C#4': 'ド#（中）', 'C#5': 'ド#（高）',
+  'D#3': 'レ#（低）', 'D#4': 'レ#（中）', 'D#5': 'レ#（高）',
+  'F#3': 'ファ#（低）', 'F#4': 'ファ#（中）', 'F#5': 'ファ#（高）',
+  'G#3': 'ソ#（低）', 'G#4': 'ソ#（中）', 'G#5': 'ソ#（高）',
+  'A#3': 'ラ#（低）', 'A#4': 'ラ#（中）', 'A#5': 'ラ#（高）',
+  
+  // 低音域拡張（C2）
+  'C2': 'ド（極低）', 'D2': 'レ（極低）', 'E2': 'ミ（極低）', 
+  'F2': 'ファ（極低）', 'G2': 'ソ（極低）', 'A2': 'ラ（極低）', 'B2': 'シ（極低）',
 };
 
 // 周波数から音名を計算
@@ -102,12 +114,26 @@ function MicrophoneTestContent() {
   const volumePercentRef = useRef<HTMLDivElement>(null);
   const noteDisplayRef = useRef<HTMLDivElement>(null);
   
-  // Audio処理用Refs
+  // Audio処理用Refs + Webインスペクター用グローバル公開
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // 🔍 Webインスペクター用デバッグオブジェクト
+  const debugStateRef = useRef({
+    audioContextState: 'closed',
+    micStreamActive: false,
+    analyserConnected: false,
+    pitchDetectorReady: false,
+    lastFrequency: 0,
+    lastVolume: 0,
+    lastClarity: 0,
+    eventListenersActive: false,
+    cleanupCallCount: 0,
+    architectureLayer: 'audio-manual-management'
+  });
   
   // ノイズリダクションフィルター用Refs
   const highPassFilterRef = useRef<BiquadFilterNode | null>(null);
@@ -117,6 +143,81 @@ function MicrophoneTestContent() {
   
   // 音量スムージング用
   const previousVolumeRef = useRef<number>(0);
+
+  // 🔍 Webインスペクター用グローバル公開関数
+  useEffect(() => {
+    // グローバルオブジェクトに音響デバッグ情報を公開
+    (window as typeof window & { __PITCH_TRAINING_DEBUG__: Record<string, unknown> }).__PITCH_TRAINING_DEBUG__ = {
+      // 音響システム状態
+      getAudioState: () => ({
+        audioContext: audioContextRef.current?.state || 'null',
+        micStream: micStreamRef.current?.active || false,
+        analyser: !!analyserRef.current,
+        pitchDetector: !!pitchDetectorRef.current,
+        animationFrame: !!animationFrameRef.current,
+        debugState: debugStateRef.current
+      }),
+      
+      // リアルタイム音響データ + Step D2c: 音名情報追加
+      getCurrentAudioData: () => {
+        const freq = debugStateRef.current.lastFrequency;
+        let noteInfo = null;
+        
+        if (freq > 80 && freq < 2000) {
+          const { note, octave } = frequencyToNote(freq);
+          const noteKey = `${note}${octave}`;
+          const displayName = NOTE_CONVERSION[noteKey] || `${note}${octave}`;
+          
+          noteInfo = {
+            note,
+            octave,
+            noteKey,
+            displayName,
+            isSharp: note.includes('#')
+          };
+        }
+        
+        return {
+          frequency: freq,
+          volume: debugStateRef.current.lastVolume,
+          clarity: debugStateRef.current.lastClarity,
+          noteInfo,
+          timestamp: new Date().toISOString()
+        };
+      },
+      
+      // 手動クリーンアップ実行
+      forceCleanup: () => {
+        console.log('🔍 デバッグ: 手動クリーンアップ実行');
+        cleanup();
+      },
+      
+      // アーキテクチャ情報
+      getArchitecture: () => ({
+        design: 'UI-React + Audio-Manual',
+        layer: 'Separated Architecture',
+        audioManagement: 'Manual Event Driven',
+        uiManagement: 'React State Driven',
+        version: 'v3.0.0-audio-architecture'
+      }),
+      
+      // イベントリスナー状態
+      getEventListeners: () => ({
+        setup: eventListenersSetupRef.current,
+        cleanupFunction: !!cleanupEventListenersRef.current
+      })
+    };
+    
+    console.log('🔍 Webインスペクター用デバッグオブジェクト公開: window.__PITCH_TRAINING_DEBUG__');
+    
+    // クリーンアップ時にグローバルオブジェクト削除
+    return () => {
+      const windowWithDebug = window as typeof window & { __PITCH_TRAINING_DEBUG__?: Record<string, unknown> };
+      if (windowWithDebug.__PITCH_TRAINING_DEBUG__) {
+        delete windowWithDebug.__PITCH_TRAINING_DEBUG__;
+      }
+    };
+  }, []); // cleanup関数は後で定義されるため依存配列から削除
   
   // DOM直接操作関数（DDAS）
   const updateFrequencyDisplay = useCallback((frequency: number | null) => {
@@ -137,6 +238,9 @@ function MicrophoneTestContent() {
     }
   }, []);
   
+  // 🎵 Step D2c: 音名・オクターブ表示機能 - 拡張音名表示（DOM直接操作） + チカチカ対策
+  const lastNoteDisplayRef = useRef<string | null>(null); // 前回表示内容の記録
+  
   const updateNoteDisplay = useCallback((frequency: number | null) => {
     if (noteDisplayRef.current) {
       if (frequency && frequency > 80 && frequency < 2000) {
@@ -144,17 +248,58 @@ function MicrophoneTestContent() {
         const noteKey = `${note}${octave}`;
         const displayName = NOTE_CONVERSION[noteKey] || `${note}${octave}`;
         
+        // 🔧 チカチカ対策: 同じ音名の場合は更新しない
+        if (lastNoteDisplayRef.current === noteKey) {
+          return; // 同じ音名なら早期リターン
+        }
+        
+        // オクターブレベル判定（視覚的色分け）
+        const getOctaveColor = (octave: number): string => {
+          if (octave <= 2) return 'text-blue-800';      // 極低音域
+          if (octave === 3) return 'text-green-800';    // 低音域
+          if (octave === 4) return 'text-purple-800';   // 中音域
+          if (octave === 5) return 'text-orange-800';   // 高音域
+          return 'text-red-800';                        // 最高音域
+        };
+        
+        // 音名種別判定（基本音・半音の視覚的区別）
+        const isSharpNote = note.includes('#');
+        const noteTypeIcon = isSharpNote ? '♯' : '♪';
+        const noteTypeClass = isSharpNote ? 'bg-yellow-100 border-yellow-300' : 'bg-blue-100 border-blue-300';
+        
+        // 🔍 デバッグ状態更新: 詳細音名情報
+        debugStateRef.current.lastFrequency = frequency;
+        
+        // 前回表示内容を更新
+        lastNoteDisplayRef.current = noteKey;
+        
         noteDisplayRef.current.innerHTML = `
-          <div class="text-center">
-            <div class="text-lg sm:text-xl font-medium text-purple-800">${displayName}</div>
+          <div class="text-center space-y-2">
+            <div class="flex items-center justify-center space-x-3">
+              <div class="text-2xl">${noteTypeIcon}</div>
+              <div class="text-xl sm:text-2xl font-bold ${getOctaveColor(octave)}">${displayName}</div>
+            </div>
+            <div class="flex justify-center space-x-2">
+              <div class="px-3 py-1 rounded-full text-xs font-medium ${noteTypeClass} border">
+                ${frequency.toFixed(1)} Hz
+              </div>
+              <div class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 border-gray-300 border">
+                ${note}${octave}
+              </div>
+            </div>
           </div>
         `;
       } else {
-        noteDisplayRef.current.innerHTML = `
-          <div class="text-center text-neutral-600">
-            音名が表示されます
-          </div>
-        `;
+        // 無音状態の場合は前回表示をクリア
+        if (lastNoteDisplayRef.current !== null) {
+          lastNoteDisplayRef.current = null;
+          noteDisplayRef.current.innerHTML = `
+            <div class="text-center text-neutral-600 space-y-2">
+              <div class="text-lg">🎵 音声を発声してください</div>
+              <div class="text-sm text-neutral-500">音名・オクターブが表示されます</div>
+            </div>
+          `;
+        }
       }
     }
   }, []);
@@ -206,7 +351,7 @@ function MicrophoneTestContent() {
       
       micStreamRef.current = stream;
       
-      // AudioContext セットアップ
+      // AudioContext セットアップ + デバッグ状態更新
       const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioContext = new AudioContextClass();
       audioContextRef.current = audioContext;
@@ -214,6 +359,10 @@ function MicrophoneTestContent() {
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
+      
+      // 🔍 デバッグ状態更新
+      debugStateRef.current.audioContextState = audioContext.state;
+      debugStateRef.current.micStreamActive = true;
       
       // 音声分析ノード作成
       const analyser = audioContext.createAnalyser();
@@ -254,8 +403,12 @@ function MicrophoneTestContent() {
       notchFilterRef.current = notchFilter;
       gainNodeRef.current = gainNode;
       
-      // Pitchy セットアップ
+      // Pitchy セットアップ + デバッグ状態更新
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
+      
+      // 🔍 デバッグ状態更新
+      debugStateRef.current.analyserConnected = true;
+      debugStateRef.current.pitchDetectorReady = true;
       
       console.log('✅ マイク許可成功: 状態をgrantedに変更');
       setMicState(prev => ({ ...prev, micPermission: 'granted' }));
@@ -268,6 +421,9 @@ function MicrophoneTestContent() {
         volumeBarRef.current.style.borderRadius = '9999px';
         volumeBarRef.current.style.transition = 'all 0.1s ease-out';
       }
+      
+      // useEffectの代わりに手動でイベントリスナー設定
+      setupEventListenersManually();
       
       console.log('🎤 リアルタイム音声処理開始');
       // リアルタイム処理開始
@@ -328,21 +484,21 @@ function MicrophoneTestContent() {
       
       let volumePercent;
       if (isIOS) {
-        // iPhone: 動作していた成功パターンを完全復元
+        // iPhone専用音量オフセット方式（発声検出連動）- 成功実装復元
         if (calculatedVolume > 3) { // 発声検出閾値
-          const iOSOffset = 40; // 40%のベースオフセット（発声時のみ）
+          const iOSOffset = 40; // 40%のベースオフセット
           const iOSMultiplier = 2.0; // 発声時の増幅倍率
           volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
           // iPhoneデバッグ（発声時）
-          if (Math.random() < 0.01) { // 1%の確率でログ出力
-            console.log(`📱 iPhone発声: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
+          if (Math.random() < 0.02) { // デバッグ頻度増加
+            console.log(`📱 iPhone発声強化: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
           }
         } else {
           // 無音時: 通常計算（オフセットなし）
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
           // iPhoneデバッグ（無音時）
           if (Math.random() < 0.02) { // 2%の確率でログ出力
-            console.log(`📱 iPhone無音: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
+            console.log(`📱 iPhone無音通常: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
           }
         }
       } else {
@@ -355,15 +511,18 @@ function MicrophoneTestContent() {
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
         }
       }
-      const normalizedVolume = volumePercent / 100; // 0-1正規化
+      // const normalizedVolume = volumePercent / 100; // 0-1正規化（未使用のため削除）
       
       // 音量スムージング（より安定した表示）
       const smoothingFactor = 0.2;
       const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
       previousVolumeRef.current = smoothedVolume;
       
-      // DOM直接更新
+      // DOM直接更新 + デバッグ状態更新
       updateVolumeDisplay(smoothedVolume);
+      
+      // 🔍 デバッグ状態更新: 音量
+      debugStateRef.current.lastVolume = smoothedVolume;
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -371,6 +530,10 @@ function MicrophoneTestContent() {
       
       // 周波数検出
       const [frequency, clarity] = pitchDetectorRef.current.findPitch(floatDataArray, 44100);
+      
+      // 🔍 デバッグ状態更新: 周波数・明瞭度
+      debugStateRef.current.lastFrequency = frequency || 0;
+      debugStateRef.current.lastClarity = clarity || 0;
       
       if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
         // DOM直接更新
@@ -400,8 +563,11 @@ function MicrophoneTestContent() {
     processAudio();
   }, [updateFrequencyDisplay, updateNoteDisplay, updateVolumeDisplay]);
   
-  // 強化クリーンアップ（マイクOFFタイミング検証対応）
+  // 強化クリーンアップ（マイクOFFタイミング検証対応） + デバッグ状態更新
   const cleanup = useCallback(() => {
+    // 🔍 デバッグ状態更新: クリーンアップ実行回数
+    debugStateRef.current.cleanupCallCount += 1;
+    
     console.log('🗿 マイクリソースクリーンアップ開始');
     
     // 1. アニメーションフレーム停止
@@ -449,43 +615,103 @@ function MicrophoneTestContent() {
       frequencyDisplayRef.current.innerHTML = '<div class="text-center text-neutral-600">🎵 音声を発声してください</div>';
     }
     if (noteDisplayRef.current) {
-      noteDisplayRef.current.innerHTML = '<div class="text-center text-neutral-600">音名が表示されます</div>';
+      noteDisplayRef.current.innerHTML = `
+        <div class="text-center text-neutral-600 space-y-2">
+          <div class="text-lg">🎵 音声を発声してください</div>
+          <div class="text-sm text-neutral-500">音名・オクターブが表示されます</div>
+        </div>
+      `;
     }
+    
+    // 🔍 デバッグ状態リセット + チカチカ対策リセット
+    debugStateRef.current.audioContextState = 'closed';
+    debugStateRef.current.micStreamActive = false;
+    debugStateRef.current.analyserConnected = false;
+    debugStateRef.current.pitchDetectorReady = false;
+    debugStateRef.current.lastFrequency = 0;
+    debugStateRef.current.lastVolume = 0;
+    debugStateRef.current.lastClarity = 0;
+    
+    // 音名表示のチカチカ対策もリセット
+    lastNoteDisplayRef.current = null;
     
     console.log('✅ マイクリソースクリーンアップ完了');
   }, []);
   
-  // コンポーネントクリーンアップ + 追加マイクOFFタイミング対応
-  useEffect(() => {
-    // ページ離脱時のクリーンアップ
+  // イベントリスナー管理用のRef
+  const eventListenersSetupRef = useRef<boolean>(false);
+  const cleanupEventListenersRef = useRef<(() => void) | null>(null);
+
+  // 🎵 音響特化手動管理システム: React依存を排除して音声処理の安定性確保
+  const setupEventListenersManually = useCallback(() => {
+    if (eventListenersSetupRef.current) return; // 重複設定防止
+    
+    console.log('🎵 音響特化イベントリスナー設定開始');
+    
+    // ページ離脱時の緊急音声リソース解放
     const handleBeforeUnload = () => {
-      console.log('📱 ページ離脱時: マイクリソースを即座解放');
-      cleanup();
+      console.log('🚨 緊急音声リソース解放: ページ離脱検出');
+      cleanup(); // AudioContext・MediaStream即座停止
     };
     
-    // タブ非アクティブ時のマイク一時停止（デバッグ用に無効化）
+    // タブ非アクティブ時の音声処理一時停止（音響アプリ専用）
     const handleVisibilityChange = () => {
-      console.log(`📱 Visibility変更: hidden=${document.hidden}, micPermission=${micState.micPermission}`);
-      // 一時的に無効化して問題を特定
-      // if (document.hidden && micState.micPermission === 'granted') {
-      //   console.log('📱 タブ非アクティブ: マイクリソースを一時停止');
-      //   cleanup();
-      //   setMicState(prev => ({ ...prev, micPermission: 'pending' }));
-      // }
+      console.log(`🎵 音響処理制御: タブ=${document.hidden ? '非アクティブ' : 'アクティブ'}`);
+      
+      // 音響処理中のタブ切り替えでノイズ・遅延回避
+      if (document.hidden) {
+        // React state に依存せず、直接音声リソース状態をチェック
+        if (audioContextRef.current && audioContextRef.current.state === 'running') {
+          console.log('🎵 タブ非アクティブ: 音声処理を安全停止');
+          cleanup(); // React state更新前に音声リソース解放
+          setMicState(prev => ({ ...prev, micPermission: 'pending' })); // UI更新は後
+        }
+      }
     };
     
-    // イベントリスナー登録
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // 音響処理用イベントリスナー登録（通常のWebアプリより優先度高）
+    window.addEventListener('beforeunload', handleBeforeUnload, { passive: false });
+    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
     
-    // コンポーネントアンマウント時のクリーンアップ
-    return () => {
-      console.log('📱 コンポーネントアンマウント: マイクリソースを完全解放');
+    // 音響特化クリーンアップ関数（AudioContext優先）
+    cleanupEventListenersRef.current = () => {
+      console.log('🎵 音響リソース完全解放開始');
+      
+      // 1. 音声処理を最優先で停止
+      cleanup();
+      
+      // 2. イベントリスナー削除
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      cleanup();
+      
+      // 3. 管理状態リセット
+      eventListenersSetupRef.current = false;
+      cleanupEventListenersRef.current = null;
+      
+      console.log('🎵 音響リソース完全解放完了');
     };
-  }, [cleanup]); // ⁉️ 修正: micState.micPermissionを依存配列から除去
+    
+    eventListenersSetupRef.current = true;
+    
+    // 🔍 デバッグ状態更新: イベントリスナー設定完了
+    debugStateRef.current.eventListenersActive = true;
+    
+    console.log('🎵 音響特化イベントリスナー設定完了');
+  }, [cleanup]); // micState依存を削除: 音声処理の安定性優先
+
+  // 手動クリーンアップ関数（useEffectの代替） + デバッグ状態更新
+  const manualComponentCleanup = useCallback(() => {
+    console.log('📱 手動コンポーネントクリーンアップ開始');
+    
+    if (cleanupEventListenersRef.current) {
+      cleanupEventListenersRef.current();
+    }
+    
+    // 🔍 デバッグ状態更新: イベントリスナー無効化
+    debugStateRef.current.eventListenersActive = false;
+    
+    console.log('📱 手動コンポーネントクリーンアップ完了');
+  }, []);
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
@@ -566,10 +792,11 @@ function MicrophoneTestContent() {
                     </div>
                     
                     <div>
-                      <p className="text-sm text-neutral-700 font-medium mb-2">音名</p>
-                      <div ref={noteDisplayRef} className="text-lg">
-                        <div className="text-center text-neutral-600">
-                          音名が表示されます
+                      <p className="text-sm text-neutral-700 font-medium mb-2">🎵 音名・オクターブ</p>
+                      <div ref={noteDisplayRef} className="text-lg min-h-[80px] flex items-center justify-center">
+                        <div className="text-center text-neutral-600 space-y-2">
+                          <div className="text-lg">🎵 音声を発声してください</div>
+                          <div className="text-sm text-neutral-500">音名・オクターブが表示されます</div>
                         </div>
                       </div>
                     </div>
@@ -603,6 +830,7 @@ function MicrophoneTestContent() {
                   <Button 
                     onClick={() => {
                       console.log('🔄 エラー状態からの再試行: クリーンアップ後再試行');
+                      manualComponentCleanup(); // useEffectの代わりに手動クリーンアップ
                       cleanup(); // エラー状態からの再試行時にクリーンアップ
                       requestMicrophonePermission();
                     }} 
@@ -613,6 +841,7 @@ function MicrophoneTestContent() {
                   <Button 
                     onClick={() => {
                       console.log('📱 手動マイクOFF: ユーザー操作で即座停止');
+                      manualComponentCleanup(); // useEffectの代わりに手動クリーンアップ
                       cleanup();
                       setMicState(prev => ({ ...prev, micPermission: 'pending' }));
                       setError('');

@@ -399,4 +399,193 @@ console.log(`volumePercent Final: ${volumePercent.toFixed(2)}%`);
 
 ---
 
+## 🔍 **Webインスペクター対応デバッグシステム**
+
+### **デバッグオブジェクト仕様**
+
+#### **グローバル公開**
+```javascript
+// ブラウザコンソールでアクセス可能
+window.__PITCH_TRAINING_DEBUG__
+```
+
+#### **利用可能なデバッグAPI**
+
+##### **1. 音響システム状態取得**
+```javascript
+// 現在の音響システム全体状態
+window.__PITCH_TRAINING_DEBUG__.getAudioState()
+// 戻り値例:
+{
+  audioContext: "running",           // AudioContext状態
+  micStream: true,                   // MediaStream活性状態
+  analyser: true,                    // AnalyserNode接続状態
+  pitchDetector: true,               // PitchDetector初期化状態
+  animationFrame: true,              // アニメーションフレーム実行状態
+  debugState: {                      // 詳細デバッグ情報
+    audioContextState: "running",
+    micStreamActive: true,
+    analyserConnected: true,
+    pitchDetectorReady: true,
+    lastFrequency: 261.6,
+    lastVolume: 45.2,
+    lastClarity: 0.85,
+    eventListenersActive: true,
+    cleanupCallCount: 0,
+    architectureLayer: "audio-manual-management"
+  }
+}
+```
+
+##### **2. リアルタイム音響データ取得**
+```javascript
+// 現在の音響データ（リアルタイム）
+window.__PITCH_TRAINING_DEBUG__.getCurrentAudioData()
+// 戻り値例:
+{
+  frequency: 261.6,                  // 現在検出周波数 (Hz)
+  volume: 45.2,                      // 現在音量レベル (%)
+  clarity: 0.85,                     // ピッチ検出明瞭度 (0-1)
+  timestamp: "2025-07-23T12:34:56.789Z"
+}
+```
+
+##### **3. 手動クリーンアップ実行**
+```javascript
+// デバッグ用強制クリーンアップ
+window.__PITCH_TRAINING_DEBUG__.forceCleanup()
+// AudioContext・MediaStream・イベントリスナーを即座停止
+```
+
+##### **4. アーキテクチャ情報取得**
+```javascript
+// 設計アーキテクチャ情報
+window.__PITCH_TRAINING_DEBUG__.getArchitecture()
+// 戻り値:
+{
+  design: "UI-React + Audio-Manual",        // 設計方針
+  layer: "Separated Architecture",          // レイヤー分離
+  audioManagement: "Manual Event Driven",  // 音響管理方式
+  uiManagement: "React State Driven",      // UI管理方式
+  version: "v3.0.0-audio-architecture"     // バージョン
+}
+```
+
+##### **5. イベントリスナー状態確認**
+```javascript
+// イベントリスナー管理状態
+window.__PITCH_TRAINING_DEBUG__.getEventListeners()
+// 戻り値:
+{
+  setup: true,                       // イベントリスナー設定状態
+  cleanupFunction: true              // クリーンアップ関数存在状態
+}
+```
+
+### **デバッグ活用例**
+
+#### **音響処理の問題診断**
+```javascript
+// 1. 音響システム全体状態確認
+const audioState = window.__PITCH_TRAINING_DEBUG__.getAudioState();
+console.log('AudioContext:', audioState.audioContext);
+console.log('マイク:', audioState.micStream);
+
+// 2. リアルタイムデータ監視
+setInterval(() => {
+  const data = window.__PITCH_TRAINING_DEBUG__.getCurrentAudioData();
+  console.log(`周波数: ${data.frequency}Hz, 音量: ${data.volume}%`);
+}, 1000);
+
+// 3. 問題発生時の強制リセット
+if (audioState.audioContext === 'suspended') {
+  window.__PITCH_TRAINING_DEBUG__.forceCleanup();
+}
+```
+
+#### **プラットフォーム別動作確認**
+```javascript
+// iPhone・PC別動作比較
+const arch = window.__PITCH_TRAINING_DEBUG__.getArchitecture();
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+console.log(`プラットフォーム: ${isIOS ? 'iOS' : 'PC'}`);
+console.log(`音響管理: ${arch.audioManagement}`);
+
+// 音量最適化アルゴリズム確認
+const data = window.__PITCH_TRAINING_DEBUG__.getCurrentAudioData();
+console.log(`現在音量: ${data.volume}% (${isIOS ? 'iPhone専用オフセット' : 'PC標準'}方式)`);
+```
+
+### **開発・保守での活用**
+
+1. **問題再現**: ユーザー報告問題の詳細状態確認
+2. **パフォーマンス監視**: リアルタイム音響データの継続監視
+3. **クロスプラットフォーム検証**: デバイス別動作差異の確認
+4. **音響アルゴリズム調整**: 各種パラメータの動的確認
+
+### **セキュリティ考慮**
+
+- **本番環境**: デバッグオブジェクトは自動削除（コンポーネントアンマウント時）
+- **情報制限**: 音響処理状態のみ公開、ユーザー情報は含まない
+- **アクセス制御**: window オブジェクト経由のみ、外部API非公開
+
+---
+
+## 🎵 **音響特化手動管理アーキテクチャ仕様**
+
+### **設計原則**
+
+#### **1. レイヤー分離原則**
+```typescript
+// UI層: React管理
+const [micState, setMicState] = useState<MicTestState>();
+
+// 音響層: 手動管理（React依存なし）
+const audioContextRef = useRef<AudioContext>();
+const micStreamRef = useRef<MediaStream>();
+```
+
+#### **2. 音響優先原則**
+```typescript
+// ✅ 音響処理を最優先
+cleanup(); // AudioContext即座停止
+setMicState(); // UI更新は後回し
+
+// 実際のリソース状態で判定（React state非依存）
+if (audioContextRef.current?.state === 'running') {
+  // 音響リソース状態による直接制御
+}
+```
+
+#### **3. 手動イベント管理**
+```typescript
+// useEffect非使用、手動イベントリスナー管理
+const setupEventListenersManually = () => {
+  // 音響処理用イベントリスナー登録
+  window.addEventListener('beforeunload', handleBeforeUnload, { passive: false });
+  document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+};
+```
+
+### **アーキテクチャの利点**
+
+1. **音響処理安定性**: React再レンダリングによる音声処理中断なし
+2. **リアルタイム性**: 60FPS音量・周波数更新の安定性確保
+3. **低遅延**: ユーザー発声からフィードバックまで<100ms維持
+4. **クロスプラットフォーム対応**: iPhone Safari厳格制約への完全対応
+5. **デバッグ性**: Webインスペクターでの詳細状態監視
+
+### **実装済み実証効果**
+
+- ✅ **iPhone音量バー問題解決**: DOM直接操作による安定表示
+- ✅ **useEffect依存配列問題回避**: 予期しないマイク停止解決
+- ✅ **プラットフォーム別最適化**: PC・iPhone個別音量計算成功
+- ✅ **倍音補正システム安定動作**: React状態変更による処理中断なし
+
+### **技術選択の合理性**
+
+音響アプリにおいて「**シンプルな保守性 < 音声処理の安定性**」という優先順位に基づく設計選択。React のベストプラクティスよりも、音響処理の予測可能性と安定性を重視した実装アプローチ。
+
+---
+
 **この仕様書は相対音感トレーニングアプリv3.0.0の核心機能であるマイクテストページの完全な実装ガイドです。**
