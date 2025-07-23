@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
 import * as Tone from "tone";
+import { PitchDetector } from 'pitchy';
 
 export default function RandomTrainingPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
+  
+  // Pitchy統合基盤
+  const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
   
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
