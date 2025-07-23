@@ -527,6 +527,11 @@ function MicrophoneTestContent() {
       // ノイズ閾値適用（スムージング後）- VOLUME_PROCESSING_REVIEW.md準拠
       const volumePercent = smoothedRawVolume > volumeConfig.noiseThreshold ? smoothedRawVolume : 0;
       
+      // 🔍 デバッグ: 無音時50%問題調査用ログ
+      if (Math.random() < 0.01) { // 1%の確率でログ出力（スパム防止）
+        console.log(`🔍 Volume Debug - raw:${rawVolumePercent.toFixed(1)}, smoothed:${smoothedRawVolume.toFixed(1)}, threshold:${volumeConfig.noiseThreshold}, final:${volumePercent.toFixed(1)}, iOS:${isIOS}`);
+      }
+      
       // DOM直接更新 + デバッグ状態更新
       updateVolumeDisplay(volumePercent);
       
