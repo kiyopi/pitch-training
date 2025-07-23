@@ -274,18 +274,10 @@ function MicrophoneTestContent() {
         lastNoteDisplayRef.current = noteKey;
         
         noteDisplayRef.current.innerHTML = `
-          <div class="text-center space-y-2">
+          <div class="text-center">
             <div class="flex items-center justify-center space-x-3">
               <div class="text-2xl">${noteTypeIcon}</div>
               <div class="text-xl sm:text-2xl font-bold ${getOctaveColor(octave)}">${displayName}</div>
-            </div>
-            <div class="flex justify-center space-x-2">
-              <div class="px-3 py-1 rounded-full text-xs font-medium ${noteTypeClass} border">
-                ${frequency.toFixed(1)} Hz
-              </div>
-              <div class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 border-gray-300 border">
-                ${note}${octave}
-              </div>
             </div>
           </div>
         `;
