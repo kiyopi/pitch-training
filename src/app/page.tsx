@@ -15,16 +15,23 @@ export default function HomePage() {
         localStorage: false
       }}
     >
-      <div className="min-h-screen bg-background">
+      <div 
+        className="min-h-screen"
+        style={{ 
+          backgroundColor: 'white',
+          color: '#1a1a1a',
+          minHeight: '100vh'
+        }}
+      >
         {/* Header */}
-        <header className="border-b">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Music className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">相対音感トレーニング</h1>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Music style={{ width: '32px', height: '32px', color: '#1a1a1a' }} />
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a', margin: 0 }}>相対音感トレーニング</h1>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
                 Version 3.0
               </div>
             </div>
@@ -177,13 +184,20 @@ export default function HomePage() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t mt-12">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <div className="text-sm text-muted-foreground">
+        <footer style={{ borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '24px 0',
+              gap: '16px'
+            }}>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
                 © 2024 相対音感トレーニング. All rights reserved.
               </div>
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
                 <span>Version 3.0</span>
                 <span>•</span>
                 <span>Powered by Next.js</span>
