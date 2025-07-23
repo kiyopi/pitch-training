@@ -506,17 +506,15 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // 🚨 iPhone AudioContext競合対策強化版: 音量処理最適化
+      // 🚨 iPhone AudioContext競合対策: 音量処理最適化（過剰増幅修正版）
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const volumeConfig = {
-        divisor: isIOS ? 1.5 : 4.0,           // iPhone: さらに小さい除数（競合対策）
-        noiseThreshold: isIOS ? 5 : 15,       // iPhone: さらに低閾値（感度向上）
-        gainMultiplier: isIOS ? 1.8 : 1.0     // iPhone: 音量ブースト
+        divisor: isIOS ? 2.0 : 4.0,           // iPhone: 小さい除数、PC: 大きい除数（正常値復元）
+        noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値（正常値復元）
       };
       
-      // 🚨 iPhone AudioContext競合対策: 音量計算強化
-      const baseVolume = Math.max(rms * 200, maxAmplitude * 100);
-      const calculatedVolume = baseVolume * volumeConfig.gainMultiplier;
+      // 🚨 デグレード修正: gainMultiplier除去で正常な音量計算に復元
+      const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
       // 音量計算（仕様書推奨実装）- スムージング後にノイズ閾値適用
       const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
