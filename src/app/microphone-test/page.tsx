@@ -313,8 +313,14 @@ function MicrophoneTestContent() {
       const rms = Math.sqrt(sum / bufferLength);
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // pitchy-clean準拠：正常な音量計算（/12 固定）
-      const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
+      
+      // ハイブリッド感度システム：iPhone専用ブーストファクター
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const baseScale = 12; // pitchy-clean基準値
+      const iOSBoost = 4.0; // iPhone専用ブーストファクター（30% → 80-90%）
+      
+      const effectiveScale = isIOS ? baseScale / iOSBoost : baseScale;
+      const volumePercent = Math.min(Math.max(calculatedVolume / effectiveScale * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
