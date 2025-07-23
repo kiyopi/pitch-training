@@ -314,13 +314,13 @@ function MicrophoneTestContent() {
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // プラットフォーム別音量計算（iPhone成功パターン維持 + PC無音時改善）
+      // iPhone専用音量オフセット方式（発声検出連動）+ PC無音時ノイズフロア改善
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const baseVolume = calculatedVolume / 12 * 100;
       
       let volumePercent;
       if (isIOS) {
-        // iPhone: 成功パターンを完全維持
+        // iPhone: 動作していた成功パターンを完全復元
         if (calculatedVolume > 3) { // 発声検出閾値
           const iOSOffset = 40; // 40%のベースオフセット（発声時のみ）
           const iOSMultiplier = 2.0; // 発声時の増幅倍率
@@ -330,13 +330,12 @@ function MicrophoneTestContent() {
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
         }
       } else {
-        // PC: 無音時ノイズフロア補正追加
+        // PC: 無音時のみノイズフロア削減を追加
         if (calculatedVolume <= 3) {
-          // 無音時: ノイズフロア削減（18% → 3%程度）
-          const noiseFloor = 2.5; // ノイズフロア基準値
-          volumePercent = Math.min(Math.max(baseVolume - noiseFloor, 0), 100);
+          // 無音時: ノイズフロア削減（18%→3%程度）
+          volumePercent = Math.min(Math.max(baseVolume * 0.2, 0), 100);
         } else {
-          // 発声時: 通常計算
+          // 発声時: 従来通り
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
         }
       }
