@@ -384,35 +384,90 @@ function MicrophoneTestContent() {
     processAudio();
   }, [updateFrequencyDisplay, updateNoteDisplay, updateVolumeDisplay]);
   
-  // クリーンアップ
+  // 強化クリーンアップ（マイクOFFタイミング検証対応）
   const cleanup = useCallback(() => {
+    console.log('🗿 マイクリソースクリーンアップ開始');
+    
+    // 1. アニメーションフレーム停止
     if (animationFrameRef.current) {
+      console.log('⚙️ アニメーションフレーム停止');
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
     
+    // 2. MediaStream停止（最重要）
     if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach(track => track.stop());
+      console.log('🎤 MediaStreamトラック停止');
+      micStreamRef.current.getTracks().forEach((track, index) => {
+        console.log(`  - トラック${index}: ${track.kind} (${track.label}) 停止`);
+        track.stop();
+      });
       micStreamRef.current = null;
     }
     
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
+    // 3. AudioContext閉鎖
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      console.log('🔊 AudioContext閉鎖');
+      audioContextRef.current.close().catch(err => {
+        console.warn('⚠️ AudioContext閉鎖エラー:', err);
+      });
       audioContextRef.current = null;
     }
     
-    // フィルターRefs初期化
+    // 4. フィルターRefs初期化
+    console.log('🔧 フィルターRefs初期化');
     highPassFilterRef.current = null;
     lowPassFilterRef.current = null;
     notchFilterRef.current = null;
     gainNodeRef.current = null;
     previousVolumeRef.current = 0;
+    
+    // 5. UIリセット
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+    }
+    if (volumePercentRef.current) {
+      volumePercentRef.current.innerHTML = '<span class="text-sm text-neutral-700 font-medium">0%</span>';
+    }
+    if (frequencyDisplayRef.current) {
+      frequencyDisplayRef.current.innerHTML = '<div class="text-center text-neutral-600">🎵 音声を発声してください</div>';
+    }
+    if (noteDisplayRef.current) {
+      noteDisplayRef.current.innerHTML = '<div class="text-center text-neutral-600">音名が表示されます</div>';
+    }
+    
+    console.log('✅ マイクリソースクリーンアップ完了');
   }, []);
   
-  // コンポーネントクリーンアップ
+  // コンポーネントクリーンアップ + 追加マイクOFFタイミング対応
   useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+    // ページ離脱時のクリーンアップ
+    const handleBeforeUnload = () => {
+      console.log('📱 ページ離脱時: マイクリソースを即座解放');
+      cleanup();
+    };
+    
+    // タブ非アクティブ時のマイク一時停止
+    const handleVisibilityChange = () => {
+      if (document.hidden && micState.micPermission === 'granted') {
+        console.log('📱 タブ非アクティブ: マイクリソースを一時停止');
+        cleanup();
+        setMicState(prev => ({ ...prev, micPermission: 'pending' }));
+      }
+    };
+    
+    // イベントリスナー登録
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // コンポーネントアンマウント時のクリーンアップ
+    return () => {
+      console.log('📱 コンポーネントアンマウント: マイクリソースを完全解放');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cleanup();
+    };
+  }, [cleanup, micState.micPermission]);
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
@@ -526,9 +581,29 @@ function MicrophoneTestContent() {
                   <span className="font-medium">マイクロフォンアクセスエラー</span>
                 </div>
                 <p className="text-sm text-red-700">{error}</p>
-                <Button onClick={requestMicrophonePermission} variant="outline">
-                  再試行
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => {
+                      console.log('🔄 エラー状態からの再試行: クリーンアップ後再試行');
+                      cleanup(); // エラー状態からの再試行時にクリーンアップ
+                      requestMicrophonePermission();
+                    }} 
+                    variant="outline"
+                  >
+                    再試行
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      console.log('📱 手動マイクOFF: ユーザー操作で即座停止');
+                      cleanup();
+                      setMicState(prev => ({ ...prev, micPermission: 'pending' }));
+                      setError('');
+                    }}
+                    variant="secondary"
+                  >
+                    マイクOFF
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
