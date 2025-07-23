@@ -224,13 +224,13 @@ function MicrophoneTestContent() {
     if (frequencyDisplayRef.current) {
       if (frequency && frequency > 80 && frequency < 2000) {
         frequencyDisplayRef.current.innerHTML = `
-          <div class="h-10 flex items-center justify-center">
+          <div class="flex items-center justify-center">
             <div class="text-xl sm:text-2xl font-bold text-blue-800">${frequency.toFixed(1)} Hz</div>
           </div>
         `;
       } else {
         frequencyDisplayRef.current.innerHTML = `
-          <div class="h-10 flex items-center justify-center">
+          <div class="flex items-center justify-center">
             <div class="text-xl sm:text-2xl text-neutral-600">🎵 音声を発声してください</div>
           </div>
         `;
@@ -766,7 +766,7 @@ function MicrophoneTestContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-neutral-700 font-medium mb-2">周波数</p>
-                      <div ref={frequencyDisplayRef} className="text-lg">
+                      <div ref={frequencyDisplayRef} className="h-16 flex items-center justify-center">
                         <div className="text-center text-neutral-600">
                           🎵 音声を発声してください
                         </div>
@@ -775,7 +775,7 @@ function MicrophoneTestContent() {
                     
                     <div>
                       <p className="text-sm text-neutral-700 font-medium mb-2">🎵 音名・オクターブ</p>
-                      <div ref={noteDisplayRef} className="text-lg min-h-[80px] flex items-center justify-center">
+                      <div ref={noteDisplayRef} className="h-16 flex items-center justify-center">
                         <div className="text-center text-neutral-600">
                           <div className="text-xl sm:text-2xl">🎵 音声を発声してください</div>
                         </div>
