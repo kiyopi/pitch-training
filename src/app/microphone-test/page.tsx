@@ -527,9 +527,20 @@ function MicrophoneTestContent() {
       // ノイズ閾値適用（スムージング後）- VOLUME_PROCESSING_REVIEW.md準拠
       const volumePercent = smoothedRawVolume > volumeConfig.noiseThreshold ? smoothedRawVolume : 0;
       
-      // 🔍 デバッグ: 無音時50%問題調査用ログ
+      // 🔍 デバッグ: 無音時50%問題調査用ログ（iPhone画面表示）
       if (Math.random() < 0.01) { // 1%の確率でログ出力（スパム防止）
         console.log(`🔍 Volume Debug - raw:${rawVolumePercent.toFixed(1)}, smoothed:${smoothedRawVolume.toFixed(1)}, threshold:${volumeConfig.noiseThreshold}, final:${volumePercent.toFixed(1)}, iOS:${isIOS}`);
+      }
+      
+      // 🔍 iPhone実機用: デバッグ情報を画面に表示
+      const debugInfoRef = document.getElementById('volume-debug-info');
+      if (debugInfoRef && Math.random() < 0.1) { // 10%の確率で画面更新
+        debugInfoRef.innerHTML = `
+          <div style="font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; margin-top: 8px;">
+            🔍 Debug: raw=${rawVolumePercent.toFixed(1)}%, smooth=${smoothedRawVolume.toFixed(1)}%, 
+            thresh=${volumeConfig.noiseThreshold}, final=${volumePercent.toFixed(1)}%, iOS=${isIOS}
+          </div>
+        `;
       }
       
       // DOM直接更新 + デバッグ状態更新
@@ -986,6 +997,8 @@ function MicrophoneTestContent() {
                         fontWeight: '500'
                       }}>0%</span>
                     </div>
+                    {/* 🔍 iPhone実機用デバッグ情報表示エリア */}
+                    <div id="volume-debug-info" style={{ marginTop: '8px' }}></div>
                   </div>
                 </div>
               </div>
