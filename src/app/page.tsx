@@ -18,9 +18,10 @@ export default function HomePage() {
       <div 
         className="min-h-screen"
         style={{ 
-          backgroundColor: 'white',
+          backgroundColor: '#ffffff',
           color: '#1a1a1a',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
         }}
       >
         {/* Header */}
@@ -32,7 +33,7 @@ export default function HomePage() {
                 <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a', margin: 0 }}>相対音感トレーニング</h1>
               </div>
               <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                Version 3.0
+                Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
               </div>
             </div>
           </div>
