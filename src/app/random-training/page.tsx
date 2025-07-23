@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Music } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -20,27 +20,26 @@ export default function RandomTrainingPage() {
   const [results, setResults] = useState<ScaleResult[]>([]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
         {/* ヘッダー */}
-        <div className="text-center mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🎲</span>
+        <div className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4">
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 blur-xl bg-gradient-to-r from-emerald-400 to-green-400 opacity-30"></div>
+              <Music className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-600 relative" />
+            </div>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-neutral-900 px-2">
             ランダム基音トレーニング
           </h1>
-          <p className="text-lg text-neutral-600 max-w-2xl mx-auto leading-relaxed mb-6">
+          <p className="text-base sm:text-lg lg:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed px-4">
             10種類の基音からランダムに選択してドレミファソラシドを発声
+            <br className="hidden sm:block" />
+            <span className="block sm:inline text-xs sm:text-sm text-neutral-500 mt-1 sm:mt-0">
+              初心者向け • 基本モード
+            </span>
           </p>
-          <div className="inline-block bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 px-6 py-3 rounded-full text-lg font-bold">
-            初心者向け • 基本モード
-          </div>
         </div>
 
         {/* メインエリア */}
@@ -102,22 +101,17 @@ export default function RandomTrainingPage() {
         </Card>
 
         {/* フッター */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8">
+        <div className="text-center mt-8 sm:mt-12 text-xs sm:text-sm text-neutral-500">
           <Link 
             href="/"
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg border border-neutral-200"
+            className="inline-flex items-center space-x-2 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-all duration-300 mb-4"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">トップページに戻る</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span>トップページに戻る</span>
           </Link>
-          
-          <div className="text-center">
-            <div className="text-sm font-bold text-emerald-600">
-              Version 3.0 - Random Training Mode
-            </div>
-            <div className="text-xs text-neutral-500">
-              Powered by Pitchy × Salamander Grand Piano
-            </div>
+          <div>
+            <p>Version 3.0 - Random Training Mode</p>
+            <p className="text-xs mt-1">Next.js + TypeScript + Tone.js + Pitchy</p>
           </div>
         </div>
       </div>
