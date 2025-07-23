@@ -1,79 +1,12 @@
 'use client';
 
 import Link from "next/link";
-import { Music, RotateCcw, Target, Sparkles, Zap, Mic, Piano } from "lucide-react";
+import { Music, ArrowRight, Mic, Piano, Zap, Target } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BrowserCompatibilityCheck } from "@/components/BrowserCompatibilityCheck";
-import { memo } from "react";
 
-// メモ化されたトレーニングカードコンポーネント
-const TrainingCard = memo(function TrainingCard({
-  icon: Icon,
-  title,
-  description,
-  badge,
-  href,
-  disabled = false,
-  gradientFrom,
-  gradientTo,
-  iconBg,
-  iconColor,
-  badgeBg,
-  badgeText,
-  buttonBg,
-  buttonHover
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  badge: string;
-  href: string;
-  disabled?: boolean;
-  gradientFrom: string;
-  gradientTo: string;
-  iconBg: string;
-  iconColor: string;
-  badgeBg: string;
-  badgeText: string;
-  buttonBg: string;
-  buttonHover: string;
-}) {
-  return (
-    <Card className={`relative overflow-hidden group transition-all duration-300 border-neutral-200 ${disabled ? 'opacity-75' : 'hover:shadow-xl'}`}>
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} ${gradientTo} ${disabled ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`} />
-      <CardHeader className="relative pb-3 sm:pb-6">
-        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${iconBg} flex items-center justify-center mb-3 sm:mb-4 ${disabled ? '' : 'group-hover:scale-110'} transition-transform`}>
-          <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${iconColor}`} />
-        </div>
-        <CardTitle className={`text-lg sm:text-xl ${disabled ? 'text-neutral-700' : 'text-neutral-900'}`}>{title}</CardTitle>
-        <CardDescription className={`text-sm sm:text-base ${disabled ? 'text-neutral-600' : 'text-neutral-700'}`}>
-          {description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="relative pt-0 sm:pt-6">
-        <div className={`flex items-center gap-2 text-xs sm:text-sm ${disabled ? 'text-neutral-600' : 'text-neutral-600'} mb-3 sm:mb-4`}>
-          <span className={`px-2 py-1 ${badgeBg} ${badgeText} rounded-full text-xs font-medium ${disabled ? 'opacity-70' : ''}`}>
-            {badge}
-          </span>
-          <span className={disabled ? 'text-neutral-500' : 'text-neutral-400'}>•</span>
-          <span>{disabled ? '準備中' : '基本モード'}</span>
-        </div>
-        <Button asChild={!disabled} disabled={disabled} className={`w-full ${disabled ? '' : buttonBg + ' ' + buttonHover} h-11 sm:h-10 text-sm sm:text-base touch-manipulation`}>
-          {disabled ? (
-            <div>準備中</div>
-          ) : (
-            <Link href={href}>
-              トレーニング開始
-            </Link>
-          )}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-});
-
-function Home() {
+export default function HomePage() {
   return (
     <BrowserCompatibilityCheck
       minRequirements={{
@@ -82,165 +15,183 @@ function Home() {
         localStorage: false
       }}
     >
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
-        {/* ヒーローセクション */}
-        <div className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4">
-          <div className="flex justify-center mb-3 sm:mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 blur-xl bg-gradient-to-r from-purple-400 to-pink-400 opacity-30"></div>
-              <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 text-purple-600 relative" />
-            </div>
-          </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-neutral-900 px-2">
-            相対音感トレーニング
-          </h1>
-          <p className="text-base sm:text-lg lg:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed px-4">
-            音程の相対的な関係を聞き分ける能力を効果的に鍛える
-            <br className="hidden sm:block" />
-            <span className="block sm:inline text-xs sm:text-sm text-neutral-500 mt-1 sm:mt-0">
-              Powered by Pitchy (McLeod Pitch Method) × Salamander Grand Piano
-            </span>
-          </p>
-        </div>
-
-        {/* トレーニングモード選択 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12 sm:mb-16">
-          <TrainingCard
-            icon={Music}
-            title="ランダム基音モード"
-            description="10種類の基音からランダムに選択してトレーニング"
-            badge="初心者向け"
-            href="/microphone-test?mode=random"
-            gradientFrom="from-emerald-500/10"
-            gradientTo="to-teal-500/10"
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
-            badgeBg="bg-emerald-100"
-            badgeText="text-emerald-700"
-            buttonBg="bg-emerald-600"
-            buttonHover="hover:bg-emerald-700"
-          />
-          
-          <TrainingCard
-            icon={RotateCcw}
-            title="連続チャレンジモード"
-            description="選択した回数だけ連続で実行し、総合評価を確認"
-            badge="中級者向け"
-            href="/microphone-test?mode=continuous"
-            disabled={true}
-            gradientFrom="from-orange-500/10"
-            gradientTo="to-amber-500/10"
-            iconBg="bg-orange-100"
-            iconColor="text-orange-600"
-            badgeBg="bg-orange-100"
-            badgeText="text-orange-700"
-            buttonBg=""
-            buttonHover=""
-          />
-
-          <div className="sm:col-span-2 lg:col-span-1">
-            <TrainingCard
-              icon={Target}
-              title="12音階モード"
-              description="クロマチックスケールの上行・下行で完全制覇"
-              badge="上級者向け"
-              href="/microphone-test?mode=chromatic"
-              disabled={true}
-              gradientFrom="from-purple-500/10"
-              gradientTo="to-pink-500/10"
-              iconBg="bg-purple-100"
-              iconColor="text-purple-600"
-              badgeBg="bg-purple-100"
-              badgeText="text-purple-700"
-              buttonBg=""
-              buttonHover=""
-            />
-          </div>
-        </div>
-
-        {/* 機能説明 */}
-        <Card className="mb-6 sm:mb-8 border-neutral-200">
-          <CardHeader className="text-center pb-4 sm:pb-6">
-            <CardTitle className="text-xl sm:text-2xl">アプリの特徴</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 sm:pt-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <div className="text-center space-y-2 sm:space-y-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
-                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base text-neutral-800">高精度音程検出</h3>
-                <p className="text-xs sm:text-sm text-neutral-600">
-                  Pitchy (McLeod Method) による±5セントの精度
-                </p>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Music className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold text-foreground">相対音感トレーニング</h1>
               </div>
-              <div className="text-center space-y-2 sm:space-y-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto">
-                  <Piano className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base text-neutral-800">本格ピアノ音源</h3>
-                <p className="text-xs sm:text-sm text-neutral-600">
-                  Salamander Grand Piano の高品質サンプル
-                </p>
-              </div>
-              <div className="text-center space-y-2 sm:space-y-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
-                  <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base text-neutral-800">倍音補正システム</h3>
-                <p className="text-xs sm:text-sm text-neutral-600">
-                  人間音声の倍音を自動補正し95%以上の精度
-                </p>
-              </div>
-              <div className="text-center space-y-2 sm:space-y-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base text-neutral-800">モバイル対応</h3>
-                <p className="text-xs sm:text-sm text-neutral-600">
-                  iPhone Safari 完全対応のレスポンシブUI
-                </p>
+              <div className="text-sm text-muted-foreground">
+                Version 3.0
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </header>
 
-        {/* 使い方 */}
-        <Card className="border-neutral-200">
-          <CardHeader className="text-center pb-3 sm:pb-6">
-            <CardTitle className="text-xl sm:text-2xl">使い方</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 sm:pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { step: 1, title: "モード選択", desc: "レベルに応じてトレーニングモードを選択" },
-                { step: 2, title: "マイク許可", desc: "ブラウザでマイクアクセスを許可" },
-                { step: 3, title: "基音を聞く", desc: "高品質ピアノ音源で基音を確認" },
-                { step: 4, title: "発声・判定", desc: "ドレミファソラシドを発声して判定" }
-              ].map((item) => (
-                <div key={item.step} className="text-center space-y-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center mx-auto text-sm sm:text-lg font-bold text-neutral-700">
-                    {item.step}
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-12">
+          {/* Hero Section */}
+          <div className="text-center mb-12 space-y-4">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              音程の相対的な関係を効果的に鍛える
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              高精度音程検出とピアノ音源による本格的な相対音感トレーニング
+            </p>
+          </div>
+
+          {/* Training Modes */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+            {/* Random Mode */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                  <Music className="w-6 h-6 text-emerald-600" />
+                </div>
+                <CardTitle>ランダム基音モード</CardTitle>
+                <CardDescription>
+                  10種類の基音からランダムに選択してトレーニング
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/microphone-test?mode=random">
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    トレーニング開始
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Continuous Mode */}
+            <Card className="opacity-75">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-orange-600" />
+                </div>
+                <CardTitle>連続チャレンジモード</CardTitle>
+                <CardDescription>
+                  選択した回数だけ連続で実行し、総合評価を確認
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled className="w-full">
+                  準備中
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Chromatic Mode */}
+            <Card className="opacity-75">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+                  <Piano className="w-6 h-6 text-purple-600" />
+                </div>
+                <CardTitle>12音階モード</CardTitle>
+                <CardDescription>
+                  クロマチックスケールの上行・下行で完全制覇
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled className="w-full">
+                  準備中
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Features */}
+          <Card className="mb-12">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">アプリの特徴</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                    <Zap className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h4 className="font-semibold text-xs sm:text-sm text-neutral-800">{item.title}</h4>
-                  <p className="text-xs text-neutral-600">{item.desc}</p>
+                  <h3 className="font-semibold text-sm">高精度音程検出</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Pitchy (McLeod Method) による±5セントの精度
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto">
+                    <Piano className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-sm">本格ピアノ音源</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Salamander Grand Piano の高品質サンプル
+                  </p>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+                    <Mic className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <h3 className="font-semibold text-sm">倍音補正システム</h3>
+                  <p className="text-xs text-muted-foreground">
+                    人間音声の倍音を自動補正し95%以上の精度
+                  </p>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                    <Target className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-sm">モバイル対応</h3>
+                  <p className="text-xs text-muted-foreground">
+                    iPhone Safari 完全対応のレスポンシブUI
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* フッター */}
-        <div className="text-center mt-8 sm:mt-12 text-xs sm:text-sm text-neutral-500">
-          <p>Version 3.0 - Clean Architecture</p>
-          <p className="text-xs mt-1">Next.js + TypeScript + Tone.js + Pitchy</p>
-        </div>
+          {/* How to Use */}
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">使い方</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[
+                  { step: 1, title: "モード選択", desc: "レベルに応じてトレーニングモードを選択" },
+                  { step: 2, title: "マイク許可", desc: "ブラウザでマイクアクセスを許可" },
+                  { step: 3, title: "基音を聞く", desc: "高品質ピアノ音源で基音を確認" },
+                  { step: 4, title: "発声・判定", desc: "ドレミファソラシドを発声して判定" }
+                ].map((item) => (
+                  <div key={item.step} className="text-center space-y-2">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-lg font-bold text-primary">
+                      {item.step}
+                    </div>
+                    <h4 className="font-semibold text-sm">{item.title}</h4>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t mt-12">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <div className="text-sm text-muted-foreground">
+                © 2024 相対音感トレーニング. All rights reserved.
+              </div>
+              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                <span>Version 3.0</span>
+                <span>•</span>
+                <span>Powered by Next.js</span>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
-    </div>
     </BrowserCompatibilityCheck>
   );
 }
-
-// メモ化されたHomeコンポーネントをエクスポート
-export default memo(Home);
