@@ -257,6 +257,7 @@ function MicrophoneTestContent() {
       // Pitchy セットアップ
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
       
+      console.log('✅ マイク許可成功: 状態をgrantedに変更');
       setMicState(prev => ({ ...prev, micPermission: 'granted' }));
       
       // 音量バー初期化（iPhoneレンダリング問題対応）
@@ -268,8 +269,15 @@ function MicrophoneTestContent() {
         volumeBarRef.current.style.transition = 'all 0.1s ease-out';
       }
       
+      console.log('🎤 リアルタイム音声処理開始');
       // リアルタイム処理開始
       startFrequencyDetection();
+      
+      console.log('📊 マイクセットアップ完了 - 状態:', {
+        stream: !!micStreamRef.current,
+        audioContext: !!audioContextRef.current,
+        analyser: !!analyserRef.current
+      });
       
     } catch (error: unknown) {
       console.error('Microphone setup error:', error);
@@ -447,13 +455,15 @@ function MicrophoneTestContent() {
       cleanup();
     };
     
-    // タブ非アクティブ時のマイク一時停止
+    // タブ非アクティブ時のマイク一時停止（デバッグ用に無効化）
     const handleVisibilityChange = () => {
-      if (document.hidden && micState.micPermission === 'granted') {
-        console.log('📱 タブ非アクティブ: マイクリソースを一時停止');
-        cleanup();
-        setMicState(prev => ({ ...prev, micPermission: 'pending' }));
-      }
+      console.log(`📱 Visibility変更: hidden=${document.hidden}, micPermission=${micState.micPermission}`);
+      // 一時的に無効化して問題を特定
+      // if (document.hidden && micState.micPermission === 'granted') {
+      //   console.log('📱 タブ非アクティブ: マイクリソースを一時停止');
+      //   cleanup();
+      //   setMicState(prev => ({ ...prev, micPermission: 'pending' }));
+      // }
     };
     
     // イベントリスナー登録
