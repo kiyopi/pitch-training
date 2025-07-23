@@ -221,11 +221,11 @@ function MicrophoneTestContent() {
       analyser.smoothingTimeConstant = 0.8; // 安定化重視（テスト実装と同じ）
       analyserRef.current = analyser;
       
-      // ノイズリダクションフィルター作成
+      // ノイズリダクションフィルター作成（無音時ノイズ抑制強化）
       const highPassFilter = audioContext.createBiquadFilter();
       highPassFilter.type = 'highpass';
-      highPassFilter.frequency.setValueAtTime(40, audioContext.currentTime);
-      highPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime); // より高い周波数でカット
+      highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
       
       const lowPassFilter = audioContext.createBiquadFilter();
       lowPassFilter.type = 'lowpass';
@@ -238,7 +238,7 @@ function MicrophoneTestContent() {
       notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
       
       const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(2.0, audioContext.currentTime); // iPhone対応のためゲインをさらに上げる
+      gainNode.gain.setValueAtTime(1.0, audioContext.currentTime); // 無音時ノイズを抑制するためゲインを調整
       
       // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
@@ -313,8 +313,8 @@ function MicrophoneTestContent() {
       const rms = Math.sqrt(sum / bufferLength);
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // 音量スケーリング調整：iPhone対応のため大幅に感度を上げる
-      const volumePercent = Math.min(Math.max(calculatedVolume / 2 * 100, 0), 100);
+      // 音量スケーリング調整：無音時1-5%、発声時適切な範囲
+      const volumePercent = Math.min(Math.max(calculatedVolume / 6 * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
