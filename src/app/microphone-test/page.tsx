@@ -333,9 +333,17 @@ function MicrophoneTestContent() {
           const iOSOffset = 40; // 40%のベースオフセット（発声時のみ）
           const iOSMultiplier = 2.0; // 発声時の増幅倍率
           volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
+          // iPhoneデバッグ（発声時）
+          if (Math.random() < 0.01) { // 1%の確率でログ出力
+            console.log(`📱 iPhone発声: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
+          }
         } else {
           // 無音時: 通常計算（オフセットなし）
           volumePercent = Math.min(Math.max(baseVolume, 0), 100);
+          // iPhoneデバッグ（無音時）
+          if (Math.random() < 0.02) { // 2%の確率でログ出力
+            console.log(`📱 iPhone無音: calc=${calculatedVolume.toFixed(2)}, base=${baseVolume.toFixed(2)}, final=${volumePercent.toFixed(2)}%`);
+          }
         }
       } else {
         // PC: 無音時のみノイズフロア削減を追加
