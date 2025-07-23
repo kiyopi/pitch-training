@@ -371,34 +371,64 @@ function MicrophoneTestContent() {
       analyser.smoothingTimeConstant = 0.8; // 安定化重視（テスト実装と同じ）
       analyserRef.current = analyser;
       
-      // ノイズリダクションフィルター作成（無音時ノイズ抑制強化）
-      const highPassFilter = audioContext.createBiquadFilter();
-      highPassFilter.type = 'highpass';
-      highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime); // より高い周波数でカット
-      highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
-      
-      const lowPassFilter = audioContext.createBiquadFilter();
-      lowPassFilter.type = 'lowpass';
-      lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
-      lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      const notchFilter = audioContext.createBiquadFilter();
-      notchFilter.type = 'notch';
-      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
-      notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
-      
-      const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(1.0, audioContext.currentTime); // 無音時ノイズを抑制するためゲインを調整
-      
-      // MediaStreamSource作成・接続
+      // 🚨 iPhone AudioContext競合対策: プラットフォーム適応型フィルター
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const source = audioContext.createMediaStreamSource(stream);
-      source.connect(highPassFilter);
-      highPassFilter.connect(lowPassFilter);
-      lowPassFilter.connect(notchFilter);
-      notchFilter.connect(gainNode);
-      gainNode.connect(analyser);
       
-      // Refs保存
+      // フィルター変数を共通スコープで宣言
+      let highPassFilter: BiquadFilterNode;
+      let lowPassFilter: BiquadFilterNode | null = null;
+      let notchFilter: BiquadFilterNode | null = null;
+      let gainNode: GainNode;
+      
+      if (isIOS) {
+        // iPhone: 軽量化フィルター（AudioContext競合回避）
+        highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(60, audioContext.currentTime); // 軽量設定
+        highPassFilter.Q.setValueAtTime(0.5, audioContext.currentTime); // 軽量Q値
+        
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // iPhone音量補強
+        
+        // 軽量接続: source → highpass → gain → analyser
+        source.connect(highPassFilter);
+        highPassFilter.connect(gainNode);
+        gainNode.connect(analyser);
+        
+        console.log('🍎 iPhone軽量化フィルター適用: AudioContext競合回避');
+        
+      } else {
+        // PC: 標準3段階フィルター（従来通り）
+        highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
+        highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
+        
+        lowPassFilter = audioContext.createBiquadFilter();
+        lowPassFilter.type = 'lowpass';
+        lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
+        lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+        
+        notchFilter = audioContext.createBiquadFilter();
+        notchFilter.type = 'notch';
+        notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+        notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
+        
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+        
+        // PC標準接続: source → 3段階フィルター → analyser
+        source.connect(highPassFilter);
+        lowPassFilter && highPassFilter.connect(lowPassFilter);
+        notchFilter && lowPassFilter && lowPassFilter.connect(notchFilter);
+        (notchFilter || lowPassFilter || highPassFilter).connect(gainNode);
+        gainNode.connect(analyser);
+        
+        console.log('💻 PC標準3段階フィルター適用');
+      }
+      
+      // 🔧 フィルターRefs保存（プラットフォーム適応型）
       highPassFilterRef.current = highPassFilter;
       lowPassFilterRef.current = lowPassFilter;
       notchFilterRef.current = notchFilter;
@@ -476,15 +506,17 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // 仕様書準拠：音量計算スケーリング
-      const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      
-      // VOLUME_LEVEL_INVESTIGATION.md準拠：プラットフォーム適応型音量処理
+      // 🚨 iPhone AudioContext競合対策強化版: 音量処理最適化
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const volumeConfig = {
-        divisor: isIOS ? 2.0 : 4.0,           // iPhone: 小さい除数、PC: 大きい除数
-        noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値
+        divisor: isIOS ? 1.5 : 4.0,           // iPhone: さらに小さい除数（競合対策）
+        noiseThreshold: isIOS ? 5 : 15,       // iPhone: さらに低閾値（感度向上）
+        gainMultiplier: isIOS ? 1.8 : 1.0     // iPhone: 音量ブースト
       };
+      
+      // 🚨 iPhone AudioContext競合対策: 音量計算強化
+      const baseVolume = Math.max(rms * 200, maxAmplitude * 100);
+      const calculatedVolume = baseVolume * volumeConfig.gainMultiplier;
       
       // 音量計算（仕様書推奨実装）- スムージング後にノイズ閾値適用
       const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
