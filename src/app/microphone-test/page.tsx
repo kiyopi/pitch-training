@@ -477,7 +477,7 @@ function MicrophoneTestContent() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanup();
     };
-  }, [cleanup, micState.micPermission]);
+  }, [cleanup]); // ⁉️ 修正: micState.micPermissionを依存配列から除去
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
