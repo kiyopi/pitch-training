@@ -476,34 +476,19 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // pitchy-clean準拠：音量計算スケーリング
+      // 仕様書準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // iPhone専用音量オフセット方式（発声検出連動）+ PC無音時ノイズフロア改善
+      // VOLUME_LEVEL_INVESTIGATION.md準拠：プラットフォーム適応型音量処理
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const baseVolume = calculatedVolume / 12 * 100;
+      const volumeConfig = {
+        divisor: isIOS ? 2.0 : 4.0,           // iPhone: 小さい除数、PC: 大きい除数
+        noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値
+      };
       
-      let volumePercent;
-      if (isIOS) {
-        // iPhone専用音量オフセット方式（発声検出連動）- 成功実装復元
-        if (calculatedVolume > 3) { // 発声検出閾値
-          const iOSOffset = 40; // 40%のベースオフセット
-          const iOSMultiplier = 2.0; // 発声時の増幅倍率
-          volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
-        } else {
-          // 無音時: 通常計算（オフセットなし）
-          volumePercent = Math.min(Math.max(baseVolume, 0), 100);
-        }
-      } else {
-        // PC: 無音時のみノイズフロア削減を追加
-        if (calculatedVolume <= 3) {
-          // 無音時: ノイズフロア削減（18%→3%程度）
-          volumePercent = Math.min(Math.max(baseVolume * 0.2, 0), 100);
-        } else {
-          // 発声時: 従来通り
-          volumePercent = Math.min(Math.max(baseVolume, 0), 100);
-        }
-      }
+      // 音量計算（仕様書推奨実装）
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
+      const volumePercent = rawVolumePercent > volumeConfig.noiseThreshold ? rawVolumePercent : 0;
       // const normalizedVolume = volumePercent / 100; // 0-1正規化（未使用のため削除）
       
       // 音量スムージング（より安定した表示）
