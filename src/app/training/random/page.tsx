@@ -10,6 +10,7 @@ export default function RandomTrainingPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
+  const [isDetecting, setIsDetecting] = useState(false);
   
   // Pitchy統合基盤
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
@@ -109,6 +110,48 @@ export default function RandomTrainingPage() {
     
     // 次フレームの予約
     animationFrameRef.current = requestAnimationFrame(detectPitch);
+  };
+  
+  // テスト用: 音程検出開始
+  const startPitchDetection = async () => {
+    if (isDetecting) return;
+    
+    addLog('🎤 音程検出を開始します...');
+    
+    // マイク初期化
+    const success = await initializeMicrophone();
+    if (!success) {
+      addLog('❌ マイク初期化に失敗しました');
+      return;
+    }
+    
+    setIsDetecting(true);
+    addLog('✅ 音程検出開始！コンソールを確認してください');
+    
+    // 検出ループ開始
+    detectPitch();
+  };
+  
+  // テスト用: 音程検出停止
+  const stopPitchDetection = () => {
+    if (!isDetecting) return;
+    
+    // アニメーションフレーム停止
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // マイクストリーム停止
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      micStreamRef.current = null;
+    }
+    
+    setIsDetecting(false);
+    addLog('⏹️ 音程検出を停止しました');
   };
 
   const handleStart = async () => {
@@ -254,6 +297,38 @@ export default function RandomTrainingPage() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* テスト用: 音程検出ボタン */}
+        <div className="mb-8 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
+          <h4 className="font-bold text-yellow-800 mb-3">🧪 Step 1-4 動作確認用</h4>
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={startPitchDetection}
+              disabled={isDetecting}
+              className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                isDetecting 
+                  ? 'bg-gray-400 text-white cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              🎤 音程検出開始
+            </button>
+            <button
+              onClick={stopPitchDetection}
+              disabled={!isDetecting}
+              className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                !isDetecting 
+                  ? 'bg-gray-400 text-white cursor-not-allowed' 
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+              }`}
+            >
+              ⏹️ 検出停止
+            </button>
+          </div>
+          <p className="text-sm text-yellow-700 mt-3">
+            ※ ブラウザのコンソールで周波数とクラリティを確認できます（F12キー）
+          </p>
         </div>
 
         {/* デバッグログ表示 */}
