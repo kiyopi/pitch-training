@@ -486,21 +486,22 @@ function MicrophoneTestContent() {
         noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値
       };
       
-      // 音量計算（仕様書推奨実装）
+      // 音量計算（仕様書推奨実装）- スムージング後にノイズ閾値適用
       const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
-      const volumePercent = rawVolumePercent > volumeConfig.noiseThreshold ? rawVolumePercent : 0;
-      // const normalizedVolume = volumePercent / 100; // 0-1正規化（未使用のため削除）
       
-      // 音量スムージング（より安定した表示）
+      // 音量スムージング（ノイズ閾値適用前）
       const smoothingFactor = 0.2;
-      const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
-      previousVolumeRef.current = smoothedVolume;
+      const smoothedRawVolume = previousVolumeRef.current + smoothingFactor * (rawVolumePercent - previousVolumeRef.current);
+      previousVolumeRef.current = smoothedRawVolume;
+      
+      // ノイズ閾値適用（スムージング後）- VOLUME_PROCESSING_REVIEW.md準拠
+      const volumePercent = smoothedRawVolume > volumeConfig.noiseThreshold ? smoothedRawVolume : 0;
       
       // DOM直接更新 + デバッグ状態更新
-      updateVolumeDisplay(smoothedVolume);
+      updateVolumeDisplay(volumePercent);
       
       // 🔍 デバッグ状態更新: 音量
-      debugStateRef.current.lastVolume = smoothedVolume;
+      debugStateRef.current.lastVolume = volumePercent;
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -520,9 +521,9 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: smoothedVolume > 1,
+          volumeDetected: volumePercent > 1,
           frequencyDetected: true,
-          startButtonEnabled: smoothedVolume > 1
+          startButtonEnabled: volumePercent > 1
         }));
       } else {
         updateFrequencyDisplay(null);
@@ -530,7 +531,7 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: smoothedVolume > 1,
+          volumeDetected: volumePercent > 1,
           frequencyDetected: false
         }));
       }
