@@ -231,7 +231,7 @@ function MicrophoneTestContent() {
       } else {
         frequencyDisplayRef.current.innerHTML = `
           <div class="h-10 flex items-center justify-center">
-            <div class="text-lg text-neutral-600">🎵 音声を発声してください</div>
+            <div class="text-xl sm:text-2xl text-neutral-600">🎵 音声を発声してください</div>
           </div>
         `;
       }
@@ -296,7 +296,6 @@ function MicrophoneTestContent() {
           noteDisplayRef.current.innerHTML = `
             <div class="text-center text-neutral-600 space-y-2">
               <div class="text-lg">🎵 音声を発声してください</div>
-              <div class="text-sm text-neutral-500">音名・オクターブが表示されます</div>
             </div>
           `;
         }
@@ -610,7 +609,6 @@ function MicrophoneTestContent() {
       noteDisplayRef.current.innerHTML = `
         <div class="text-center text-neutral-600 space-y-2">
           <div class="text-lg">🎵 音声を発声してください</div>
-          <div class="text-sm text-neutral-500">音名・オクターブが表示されます</div>
         </div>
       `;
     }
@@ -786,9 +784,8 @@ function MicrophoneTestContent() {
                     <div>
                       <p className="text-sm text-neutral-700 font-medium mb-2">🎵 音名・オクターブ</p>
                       <div ref={noteDisplayRef} className="text-lg min-h-[80px] flex items-center justify-center">
-                        <div className="text-center text-neutral-600 space-y-2">
-                          <div className="text-lg">🎵 音声を発声してください</div>
-                          <div className="text-sm text-neutral-500">音名・オクターブが表示されます</div>
+                        <div className="text-center text-neutral-600">
+                          <div className="text-xl sm:text-2xl">🎵 音声を発声してください</div>
                         </div>
                       </div>
                     </div>
