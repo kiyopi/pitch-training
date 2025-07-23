@@ -287,7 +287,7 @@ function MicrophoneTestContent() {
           lastNoteDisplayRef.current = null;
           noteDisplayRef.current.innerHTML = `
             <div class="text-center text-neutral-600 space-y-2">
-              <div class="text-xl sm:text-2xl">🎵 音声を発声してください</div>
+              <div class="text-lg">🎵 音声を発声してください</div>
             </div>
           `;
         }
