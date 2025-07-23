@@ -109,6 +109,15 @@ function MicrophoneTestContent() {
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   
+  // ノイズリダクションフィルター用Refs
+  const highPassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const lowPassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const notchFilterRef = useRef<BiquadFilterNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  
+  // 音量スムージング用
+  const previousVolumeRef = useRef<number>(0);
+  
   // DOM直接操作関数（DDAS）
   const updateFrequencyDisplay = useCallback((frequency: number | null) => {
     if (frequencyDisplayRef.current) {
@@ -210,9 +219,38 @@ function MicrophoneTestContent() {
       analyser.smoothingTimeConstant = 0.8; // 安定化重視（テスト実装と同じ）
       analyserRef.current = analyser;
       
-      // マイク入力接続
+      // ノイズリダクションフィルター作成
+      const highPassFilter = audioContext.createBiquadFilter();
+      highPassFilter.type = 'highpass';
+      highPassFilter.frequency.setValueAtTime(40, audioContext.currentTime);
+      highPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      const lowPassFilter = audioContext.createBiquadFilter();
+      lowPassFilter.type = 'lowpass';
+      lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
+      lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      const notchFilter = audioContext.createBiquadFilter();
+      notchFilter.type = 'notch';
+      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+      notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
+      
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(1.2, audioContext.currentTime);
+      
+      // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
+      source.connect(highPassFilter);
+      highPassFilter.connect(lowPassFilter);
+      lowPassFilter.connect(notchFilter);
+      notchFilter.connect(gainNode);
+      gainNode.connect(analyser);
+      
+      // Refs保存
+      highPassFilterRef.current = highPassFilter;
+      lowPassFilterRef.current = lowPassFilter;
+      notchFilterRef.current = notchFilter;
+      gainNodeRef.current = gainNode;
       
       // Pitchy セットアップ
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
@@ -268,8 +306,13 @@ function MicrophoneTestContent() {
       const volumePercent = Math.min(Math.max(calculatedVolume / 12 * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
+      // 音量スムージング（より安定した表示）
+      const smoothingFactor = 0.2;
+      const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
+      previousVolumeRef.current = smoothedVolume;
+      
       // DOM直接更新
-      updateVolumeDisplay(volumePercent);
+      updateVolumeDisplay(smoothedVolume);
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -285,9 +328,9 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volumePercent > 1,
+          volumeDetected: smoothedVolume > 1,
           frequencyDetected: true,
-          startButtonEnabled: volumePercent > 1
+          startButtonEnabled: smoothedVolume > 1
         }));
       } else {
         updateFrequencyDisplay(null);
@@ -295,7 +338,7 @@ function MicrophoneTestContent() {
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volumePercent > 1,
+          volumeDetected: smoothedVolume > 1,
           frequencyDetected: false
         }));
       }
@@ -322,6 +365,13 @@ function MicrophoneTestContent() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    
+    // フィルターRefs初期化
+    highPassFilterRef.current = null;
+    lowPassFilterRef.current = null;
+    notchFilterRef.current = null;
+    gainNodeRef.current = null;
+    previousVolumeRef.current = 0;
   }, []);
   
   // コンポーネントクリーンアップ
