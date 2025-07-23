@@ -6,7 +6,19 @@ import { ArrowLeft, Music } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// 型定義
+type TrainingPhase = 'ready' | 'playing' | 'listening' | 'completed';
+type ScaleResult = { 
+  scale: string; 
+  correct: boolean; 
+  frequency: number;
+};
+
 export default function RandomTrainingPage() {
+  // 状態管理
+  const [phase, setPhase] = useState<TrainingPhase>('ready');
+  const [results, setResults] = useState<ScaleResult[]>([]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
