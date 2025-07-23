@@ -82,7 +82,7 @@ function Home() {
         localStorage: false
       }}
     >
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
         {/* ヒーローセクション */}
         <div className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4">
