@@ -162,12 +162,13 @@ function MicrophoneTestContent() {
   const updateVolumeDisplay = useCallback((volume: number) => {
     const clampedVolume = Math.max(0, Math.min(100, volume));
     
-    // pitchy-clean準拠：直接style操作
+    // iPhoneレンダリング問題対応：完全にstyle属性で制御
     if (volumeBarRef.current) {
       volumeBarRef.current.style.width = `${clampedVolume}%`;
-      // 色の判定を正しい順序に修正
-      volumeBarRef.current.style.backgroundColor = 
-        clampedVolume > 80 ? '#ef4444' : clampedVolume > 40 ? '#f59e0b' : '#10b981';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
     }
     
     // パーセント表示更新（innerHTMLで全体を更新）
@@ -237,7 +238,7 @@ function MicrophoneTestContent() {
       notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
       
       const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // iPhone対応のためゲインを上げる
+      gainNode.gain.setValueAtTime(2.0, audioContext.currentTime); // iPhone対応のためゲインをさらに上げる
       
       // MediaStreamSource作成・接続
       const source = audioContext.createMediaStreamSource(stream);
@@ -257,6 +258,15 @@ function MicrophoneTestContent() {
       pitchDetectorRef.current = PitchDetector.forFloat32Array(analyser.fftSize);
       
       setMicState(prev => ({ ...prev, micPermission: 'granted' }));
+      
+      // 音量バー初期化（iPhoneレンダリング問題対応）
+      if (volumeBarRef.current) {
+        volumeBarRef.current.style.width = '0%';
+        volumeBarRef.current.style.backgroundColor = '#10b981';
+        volumeBarRef.current.style.height = '12px';
+        volumeBarRef.current.style.borderRadius = '9999px';
+        volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+      }
       
       // リアルタイム処理開始
       startFrequencyDetection();
@@ -303,8 +313,8 @@ function MicrophoneTestContent() {
       const rms = Math.sqrt(sum / bufferLength);
       // pitchy-clean準拠：音量計算スケーリング
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
-      // 音量スケーリング調整：iPhone対応のため除数を減らす
-      const volumePercent = Math.min(Math.max(calculatedVolume / 8 * 100, 0), 100);
+      // 音量スケーリング調整：iPhone対応のため大幅に感度を上げる
+      const volumePercent = Math.min(Math.max(calculatedVolume / 2 * 100, 0), 100);
       const normalizedVolume = volumePercent / 100; // 0-1正規化
       
       // 音量スムージング（より安定した表示）
@@ -475,7 +485,6 @@ function MicrophoneTestContent() {
                       <div 
                         ref={volumeBarRef}
                         className="h-3 rounded-full transition-all duration-100"
-                        style={{ width: '0%', backgroundColor: '#10b981' }}
                       />
                     </div>
                     <div ref={volumePercentRef} className="text-right">
