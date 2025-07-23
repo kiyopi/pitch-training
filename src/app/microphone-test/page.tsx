@@ -1062,8 +1062,9 @@ function MicrophoneTestContent() {
               {micState.startButtonEnabled ? (
                 <Link href={selectedMode.targetPath} style={{
                   textDecoration: 'none',
-                  display: 'inline-block',
-                  width: '100%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: '#2563eb',
                   color: 'white',
                   border: 'none',
@@ -1071,7 +1072,6 @@ function MicrophoneTestContent() {
                   padding: '12px 24px',
                   fontSize: '14px',
                   fontWeight: '500',
-                  textAlign: 'center',
                   transition: 'background-color 0.2s ease-in-out',
                   boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }}>
@@ -1079,7 +1079,9 @@ function MicrophoneTestContent() {
                 </Link>
               ) : (
                 <div style={{
-                  width: '100%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: '#d1d5db',
                   color: '#6b7280',
                   border: '1px solid #e5e7eb',
@@ -1087,7 +1089,6 @@ function MicrophoneTestContent() {
                   padding: '12px 24px',
                   fontSize: '14px',
                   fontWeight: '500',
-                  textAlign: 'center',
                   cursor: 'not-allowed',
                   boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }}>
