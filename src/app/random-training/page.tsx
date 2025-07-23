@@ -23,24 +23,19 @@ export default function RandomTrainingPage() {
     <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
         {/* ヘッダー */}
-        <div className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4">
-          <div className="flex justify-center mb-3 sm:mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 blur-xl bg-gradient-to-r from-emerald-400 to-green-400 opacity-30"></div>
-              <Music className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-600 relative" />
-            </div>
+        <header className="flex items-center justify-between py-6 border-b">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              戻る
+            </Link>
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Music className="h-6 w-6 text-emerald-600" />
+            <h1 className="text-xl font-semibold">ランダム基音トレーニング</h1>
           </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-neutral-900 px-2">
-            ランダム基音トレーニング
-          </h1>
-          <p className="text-base sm:text-lg lg:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed px-4">
-            10種類の基音からランダムに選択してドレミファソラシドを発声
-            <br className="hidden sm:block" />
-            <span className="block sm:inline text-xs sm:text-sm text-neutral-500 mt-1 sm:mt-0">
-              初心者向け • 基本モード
-            </span>
-          </p>
-        </div>
+          <div className="w-20" /> {/* Spacer for center alignment */}
+        </header>
 
         {/* メインエリア */}
         <Card className="mb-12 border-emerald-200 shadow-xl">
@@ -101,19 +96,18 @@ export default function RandomTrainingPage() {
         </Card>
 
         {/* フッター */}
-        <div className="text-center mt-8 sm:mt-12 text-xs sm:text-sm text-neutral-500">
-          <Link 
-            href="/"
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-all duration-300 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>トップページに戻る</span>
-          </Link>
-          <div>
-            <p>Version 3.0 - Random Training Mode</p>
-            <p className="text-xs mt-1">Next.js + TypeScript + Tone.js + Pitchy</p>
+        <footer className="border-t pt-6 mt-12">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+            <div className="text-sm text-muted-foreground">
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
+            </div>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );
