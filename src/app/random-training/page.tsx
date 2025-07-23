@@ -159,52 +159,40 @@ export default function RandomTrainingPage() {
           </div>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '24px'
           }}>
             {[
-              { step: 1, title: "基音を聞く", desc: "ランダムに選択された基音を確認", icon: "🎵" },
-              { step: 2, title: "発声する", desc: "ドレミファソラシドを順番に歌う", icon: "🎤" },
-              { step: 3, title: "結果確認", desc: "音程の正確性をチェック", icon: "✅" }
+              { step: 1, title: "基音を聞く", desc: "ランダムに選択された基音を確認" },
+              { step: 2, title: "発声する", desc: "ドレミファソラシドを順番に歌う" },
+              { step: 3, title: "結果確認", desc: "音程の正確性をチェック" }
             ].map((item) => (
-              <div key={item.step} style={{
-                textAlign: 'center',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'linear-gradient(to bottom, #f9fafb, #f3f4f6)',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease-in-out'
-              }}>
+              <div key={item.step} style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: '48px',
-                  marginBottom: '8px'
-                }}>{item.icon}</div>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
+                  width: '40px',
+                  height: '40px',
                   borderRadius: '50%',
-                  backgroundColor: '#059669',
+                  backgroundColor: '#f3f4f6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 16px auto',
-                  fontSize: '20px',
+                  margin: '0 auto 12px auto',
+                  fontSize: '18px',
                   fontWeight: 'bold',
-                  color: 'white',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  color: '#1a1a1a'
                 }}>
                   {item.step}
                 </div>
                 <h4 style={{
                   fontSize: '16px',
-                  fontWeight: 'bold',
+                  fontWeight: '600',
                   color: '#1a1a1a',
                   margin: '0 0 8px 0'
                 }}>{item.title}</h4>
                 <p style={{
-                  fontSize: '14px',
+                  fontSize: '12px',
                   color: '#6b7280',
-                  lineHeight: '1.5',
+                  lineHeight: '1.4',
                   margin: 0
                 }}>{item.desc}</p>
               </div>

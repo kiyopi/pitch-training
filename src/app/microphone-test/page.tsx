@@ -1095,6 +1095,27 @@ function MicrophoneTestContent() {
             </div>
           </div>
         )}
+        
+        {/* フッター */}
+        <footer style={{ borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px 0',
+            gap: '16px'
+          }}>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
+            </div>
+          </div>
+        </footer>
         </main>
         
       </div>
