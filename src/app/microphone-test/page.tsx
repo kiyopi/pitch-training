@@ -328,6 +328,21 @@ function MicrophoneTestContent() {
     }
   }, []);
   
+  // 初期音量表示設定（0%確実表示）
+  useEffect(() => {
+    // コンポーネント初期化時に確実に0%表示
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+    if (volumePercentRef.current) {
+      volumePercentRef.current.innerHTML = '<span class="text-sm text-neutral-700 font-medium">0.0%</span>';
+    }
+  }, []);
+  
   // マイク許可とセットアップ
   const requestMicrophonePermission = useCallback(async () => {
     try {
@@ -514,7 +529,7 @@ function MicrophoneTestContent() {
       // 📝 MICROPHONE_PLATFORM_SPECIFICATIONS.md準拠: プラットフォーム特性対応
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const microphoneSpec = {
-        divisor: isIOS ? 4.0 : 5.0,           // PC音量レベル調整: 3.0→5.0で100%到達を防止
+        divisor: isIOS ? 4.0 : 8.0,           // PC音量レベル調整: 5.0→8.0で100%到達防止強化
         gainCompensation: isIOS ? 1.5 : 1.0,  // iPhone低域カット補正
         noiseThreshold: isIOS ? 12 : 8,       // 確実な0%表示: iPhone 12, PC 8
         smoothingFactor: 0.2
