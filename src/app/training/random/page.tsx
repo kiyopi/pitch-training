@@ -7,9 +7,7 @@ import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import { AudioDOMController } from '@/utils/audioDOMHelpers';
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+// shadcn/ui components removed - using inline styles for better compatibility
 
 export default function RandomTrainingPage() {
   // React状態管理（UIレイアウト制御）
@@ -1166,41 +1164,66 @@ export default function RandomTrainingPage() {
               
               {/* 8音階表示 - Toggle Group */}
               <div style={{ marginBottom: '20px' }}>
-                <div className="flex justify-center">
-                  <ToggleGroup 
-                    type="single" 
-                    value={scaleNotes[currentScaleIndex]}
-                    className="grid grid-cols-4 gap-3 sm:grid-cols-8"
-                    disabled
-                  >
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: window.innerWidth < 640 ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)',
+                    gap: '12px'
+                  }}>
                     {scaleNotes.map((note, index) => (
-                      <ToggleGroupItem
+                      <div
                         key={note}
-                        value={note}
-                        variant={index === currentScaleIndex ? "default" : "outline"}
-                        className={`w-14 h-14 text-lg font-bold ${
-                          index === currentScaleIndex 
-                            ? 'bg-blue-500 text-white shadow-lg scale-110' 
-                            : index < currentScaleIndex 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-50 text-gray-400'
-                        }`}
                         style={{
+                          width: '56px',
+                          height: '56px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          borderRadius: '8px',
+                          border: '2px solid',
+                          borderColor: index === currentScaleIndex ? '#3b82f6' : 
+                                      index < currentScaleIndex ? '#10b981' : '#d1d5db',
+                          backgroundColor: index === currentScaleIndex ? '#3b82f6' : 
+                                          index < currentScaleIndex ? '#10b981' : '#f9fafb',
+                          color: index === currentScaleIndex ? 'white' : 
+                                index < currentScaleIndex ? 'white' : '#9ca3af',
+                          transform: index === currentScaleIndex ? 'scale(1.1)' : 'scale(1)',
+                          boxShadow: index === currentScaleIndex ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
                           transition: 'all 0.3s ease-in-out'
                         }}
                       >
                         {note}
-                      </ToggleGroupItem>
+                      </div>
                     ))}
-                  </ToggleGroup>
+                  </div>
                 </div>
               </div>
 
               {/* 進捗表示 - Progress */}
               <div style={{ marginBottom: '20px' }}>
-                <div className="space-y-2">
-                  <Progress value={scaleProgress} className="w-full h-3" />
-                  <div className="text-center text-sm text-muted-foreground">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{
+                    width: '100%',
+                    height: '12px',
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '6px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${scaleProgress}%`,
+                      height: '100%',
+                      backgroundColor: '#3b82f6',
+                      borderRadius: '6px',
+                      transition: 'width 0.5s ease-in-out'
+                    }} />
+                  </div>
+                  <div style={{
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    color: '#64748b'
+                  }}>
                     {currentScaleIndex + 1} / 8 音階完了
                   </div>
                 </div>
@@ -1236,23 +1259,46 @@ export default function RandomTrainingPage() {
                     </div>
                     
                     {/* 状態表示 - Badge */}
-                    <div className="flex justify-center gap-2">
-                      <Badge 
-                        variant={scaleStatus === 'waiting' ? 'secondary' : 'outline'}
-                      >
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        border: '1px solid',
+                        borderColor: scaleStatus === 'waiting' ? '#94a3b8' : '#e2e8f0',
+                        backgroundColor: scaleStatus === 'waiting' ? '#f1f5f9' : '#ffffff',
+                        color: scaleStatus === 'waiting' ? '#334155' : '#94a3b8'
+                      }}>
                         待機中
-                      </Badge>
-                      <Badge 
-                        variant={scaleStatus === 'singing' ? 'default' : 'outline'}
-                      >
+                      </span>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        border: '1px solid',
+                        borderColor: scaleStatus === 'singing' ? '#3b82f6' : '#e2e8f0',
+                        backgroundColor: scaleStatus === 'singing' ? '#1e40af' : '#ffffff',
+                        color: scaleStatus === 'singing' ? 'white' : '#94a3b8'
+                      }}>
                         🎵 歌唱中
-                      </Badge>
-                      <Badge 
-                        variant={scaleStatus === 'correct' ? 'default' : 'outline'}
-                        className={scaleStatus === 'correct' ? 'bg-green-500' : ''}
-                      >
+                      </span>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        border: '1px solid',
+                        borderColor: scaleStatus === 'correct' ? '#10b981' : '#e2e8f0',
+                        backgroundColor: scaleStatus === 'correct' ? '#059669' : '#ffffff',
+                        color: scaleStatus === 'correct' ? 'white' : '#94a3b8'
+                      }}>
                         ✅ 正解
-                      </Badge>
+                      </span>
                     </div>
                   </div>
                 )}
