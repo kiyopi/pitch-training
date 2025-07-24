@@ -144,9 +144,7 @@ function MicrophoneTestContent() {
   const previousVolumeRef = useRef<number>(0);
   
   // 🎯 チラチラ防止: 安定性バッファ
-  const stabilityBufferRef = useRef<number[]>([]);
-  const lastDisplayedVolumeRef = useRef<number>(0);
-  const stableStateCounterRef = useRef<number>(0);
+  // 安定化処理削除: シンプル実装に変更
 
   // 🔍 Webインスペクター用グローバル公開関数
   useEffect(() => {
@@ -575,84 +573,36 @@ function MicrophoneTestContent() {
       debugStateRef.current.lastFrequency = frequency || 0;
       debugStateRef.current.lastClarity = clarity || 0;
       
-      // 🎯 チラチラ防止: 安定性バッファによる表示制御
-      const calculateStableVolume = (rawVolume: number, hasFrequency: boolean): number => {
-        const bufferSize = 5; // 5フレーム（約83ms）のバッファ
-        
-        // バッファに追加
-        stabilityBufferRef.current.push(rawVolume);
-        if (stabilityBufferRef.current.length > bufferSize) {
-          stabilityBufferRef.current.shift();
-        }
-        
-        // ヒステリシス閾値
-        const currentDisplay = lastDisplayedVolumeRef.current;
-        const hysteresisUp = microphoneSpec.noiseThreshold + 5;    // 上昇は厳しく
-        const hysteresisDown = microphoneSpec.noiseThreshold - 2;  // 下降は緩く
-        
-        if (hasFrequency) {
-          // 周波数検知時: 通常処理
-          const finalVolume = rawVolume > microphoneSpec.noiseThreshold ? rawVolume : 0;
-          stableStateCounterRef.current = 0; // カウンターリセット
-          return finalVolume;
-        } else {
-          // 無音時: 安定性チェック
-          const avgBuffer = stabilityBufferRef.current.reduce((a, b) => a + b, 0) / stabilityBufferRef.current.length;
-          
-          if (currentDisplay > 0 && avgBuffer < hysteresisDown) {
-            // 下降: 連続して閾値下回りで0%に
-            stableStateCounterRef.current++;
-            if (stableStateCounterRef.current >= 3) { // 3フレーム連続
-              return 0;
-            }
-            return currentDisplay; // 保持
-          } else if (currentDisplay === 0 && avgBuffer > hysteresisUp) {
-            // 上昇: 厳しい条件で表示開始
-            stableStateCounterRef.current = 0;
-            return avgBuffer;
-          } else {
-            // 安定状態: 現在の表示を維持
-            if (currentDisplay === 0) stableStateCounterRef.current++;
-            return currentDisplay;
-          }
-        }
-      };
-      
-      // 📝 仕様書準拠: 周波数検知連動型音量表示（チラチラ防止強化）
+      // 📝 仕様書準拠: 周波数検知連動型音量表示（シンプル実装）
       if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
-        // 発声検知時: 安定化処理付き音量表示
-        const rawVolume = smoothedVolume > microphoneSpec.noiseThreshold ? smoothedVolume : 0;
-        const stableVolume = calculateStableVolume(rawVolume, true);
-        lastDisplayedVolumeRef.current = stableVolume;
+        // 発声検知時: 補正音量表示
+        const finalVolume = smoothedVolume > microphoneSpec.noiseThreshold ? smoothedVolume : 0;
         
-        updateVolumeDisplay(stableVolume);
+        updateVolumeDisplay(finalVolume);
         updateFrequencyDisplay(frequency);
         updateNoteDisplay(frequency);
         
         // 🔍 デバッグ状態更新
-        debugStateRef.current.lastVolume = stableVolume;
+        debugStateRef.current.lastVolume = finalVolume;
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: stableVolume > 1,
+          volumeDetected: finalVolume > 1,
           frequencyDetected: true,
-          startButtonEnabled: stableVolume > 1
+          startButtonEnabled: finalVolume > 1
         }));
       } else {
-        // 📝 無音時: チラチラ防止強化処理
-        const stableVolume = calculateStableVolume(smoothedVolume, false);
-        lastDisplayedVolumeRef.current = stableVolume;
-        
-        updateVolumeDisplay(stableVolume);
+        // 無音時: 強制的に0%表示（仕様書準拠）
+        updateVolumeDisplay(0);
         updateFrequencyDisplay(null);
         updateNoteDisplay(null);
         
         // 🔍 デバッグ状態更新
-        debugStateRef.current.lastVolume = stableVolume;
+        debugStateRef.current.lastVolume = 0;
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: stableVolume > 1,
+          volumeDetected: false,
           frequencyDetected: false
         }));
       }
@@ -705,9 +655,7 @@ function MicrophoneTestContent() {
     previousVolumeRef.current = 0;
     
     // 🎯 チラチラ防止: バッファリセット
-    stabilityBufferRef.current = [];
-    lastDisplayedVolumeRef.current = 0;
-    stableStateCounterRef.current = 0;
+    // 安定化処理削除: シンプル実装に変更
     
     // 5. UIリセット
     if (volumeBarRef.current) {
