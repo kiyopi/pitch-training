@@ -54,7 +54,7 @@ export default function RandomTrainingPage() {
   const [isGuideActive, setIsGuideActive] = useState(false);
   const [scaleResults, setScaleResults] = useState<Array<{note: string, correct: boolean, cents: number}>>([]);
   const [showResults, setShowResults] = useState(false);
-  const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
+  const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'].map(note => String(note));
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
   const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
@@ -908,18 +908,27 @@ export default function RandomTrainingPage() {
                         fontWeight: 'bold',
                         borderRadius: '8px',
                         border: '2px solid',
-                        borderColor: (isGuideActive && index === currentScaleIndex) ? '#3b82f6' : 
-                                    (isGuideActive && index < currentScaleIndex) ? '#ffffff' : '#d1d5db',
-                        backgroundColor: (isGuideActive && index === currentScaleIndex) ? '#3b82f6' : 
-                                        (isGuideActive && index < currentScaleIndex) ? '#ffffff' : '#f9fafb',
-                        color: (isGuideActive && index === currentScaleIndex) ? 'white' : 
-                              (isGuideActive && index < currentScaleIndex) ? '#9ca3af' : '#6b7280',
+                        borderColor: (() => {
+                          if (isGuideActive && index === currentScaleIndex) return '#3b82f6';
+                          if (isGuideActive && index < currentScaleIndex) return '#ffffff';
+                          return '#d1d5db';
+                        })(),
+                        backgroundColor: (() => {
+                          if (isGuideActive && index === currentScaleIndex) return '#3b82f6';
+                          if (isGuideActive && index < currentScaleIndex) return '#ffffff';
+                          return '#f9fafb';
+                        })(),
+                        color: (() => {
+                          if (isGuideActive && index === currentScaleIndex) return 'white';
+                          if (isGuideActive && index < currentScaleIndex) return '#9ca3af';
+                          return '#6b7280';
+                        })(),
                         transform: (isGuideActive && index === currentScaleIndex) ? 'scale(1.2)' : 'scale(1)',
                         boxShadow: (isGuideActive && index === currentScaleIndex) ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
                         transition: 'all 0.3s ease-in-out'
                       }}
                     >
-                      {note}
+                      {String(note || '')}
                     </div>
                   ))}
                 </div>
@@ -964,7 +973,7 @@ export default function RandomTrainingPage() {
                           color: result.correct ? '#059669' : '#dc2626',
                           marginBottom: '4px'
                         }}>
-                          {result.note}
+                          {String(result.note || '')}
                         </div>
                         <div style={{
                           fontSize: '12px',
