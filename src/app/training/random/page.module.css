@@ -14,7 +14,7 @@
 /* === ページヘッダー === */
 .pageHeader {
   border-bottom: 1px solid #e5e7eb;
-  padding: 24px 20px;
+  padding: 24px 0;
 }
 
 .headerContent {
@@ -47,13 +47,13 @@
 /* === ページメイン === */
 .pageMain {
   flex: 1;
-  padding: 32px 20px;
+  padding: 32px 0;
 }
 
 /* === ページフッター === */
 .pageFooter {
   border-top: 1px solid #e5e7eb;
-  padding: 24px 20px 24px 20px;
+  padding: 24px 0;
   margin-top: 48px;
 }
 
@@ -285,9 +285,9 @@
 /* === マイク許可要求セクション === */
 .micPermissionSection {
   text-align: left;
-  padding: 40px 20px;
+  padding: 40px 0;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .micPermissionTitle {
@@ -352,15 +352,15 @@
 /* === レスポンシブ対応 === */
 @media (max-width: 768px) {
   .pageHeader {
-    padding: 20px 16px;
+    padding: 20px 0;
   }
   
   .pageMain {
-    padding: 28px 16px;
+    padding: 28px 0;
   }
   
   .pageFooter {
-    padding: 20px 16px;
+    padding: 20px 0;
   }
   
   .headerContent {
@@ -391,7 +391,7 @@
   }
   
   .micPermissionSection {
-    padding: 32px 16px;
+    padding: 32px 0;
   }
   
   .micPermissionButton {
@@ -404,15 +404,15 @@
 
 @media (max-width: 480px) {
   .pageHeader {
-    padding: 16px 12px;
+    padding: 16px 0;
   }
   
   .pageMain {
-    padding: 24px 12px;
+    padding: 24px 0;
   }
   
   .pageFooter {
-    padding: 16px 12px;
+    padding: 16px 0;
   }
   
   .headerContent {
@@ -453,7 +453,7 @@
   }
   
   .micPermissionSection {
-    padding: 24px 12px;
+    padding: 24px 0;
   }
   
   .micPermissionButton {
