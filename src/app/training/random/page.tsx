@@ -52,6 +52,71 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
+  // DOM直接操作: 周波数表示更新（音響特化アーキテクチャ）
+  const updateFrequencyDisplay = useCallback((frequency: number, clarity: number, noteName?: string) => {
+    if (!frequencyDisplayRef.current) return;
+    
+    // iPhone Safari WebKit対応: innerHTML全体更新
+    if (frequency > 0 && clarity > 0.1) {
+      const displayContent = noteName 
+        ? `<div style="text-align: center; color: #1f2937; font-weight: 600;">
+             <div style="font-size: 18px; margin-bottom: 4px;">${noteName}</div>
+             <div style="font-size: 14px; color: #6b7280;">${frequency.toFixed(1)} Hz</div>
+             <div style="font-size: 12px; color: #9ca3af;">Clarity: ${clarity.toFixed(3)}</div>
+           </div>`
+        : `<div style="text-align: center; color: #1f2937; font-weight: 600;">
+             <div style="font-size: 16px; margin-bottom: 2px;">${frequency.toFixed(1)} Hz</div>
+             <div style="font-size: 12px; color: #9ca3af;">Clarity: ${clarity.toFixed(3)}</div>
+           </div>`;
+      
+      frequencyDisplayRef.current.innerHTML = displayContent;
+    } else {
+      // 無音状態表示
+      frequencyDisplayRef.current.innerHTML = `
+        <div style="text-align: center; color: #6b7280; font-size: 14px;">
+          🎵 音声を発声してください
+        </div>
+      `;
+    }
+  }, []);
+
+  // DOM直接操作: 音量表示更新（iPhone Safari WebKit対応）
+  const updateVolumeDisplay = useCallback((volume: number) => {
+    const clampedVolume = Math.max(0, Math.min(100, volume));
+    
+    // iPhone レンダリング問題対応: 完全にstyle属性で制御
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = `${clampedVolume}%`;
+      volumeBarRef.current.style.backgroundColor = '#10b981'; // emerald-500
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+  }, []);
+
+  // DOM初期化システム（iPhone Safari WebKit制約対応）
+  useEffect(() => {
+    // 周波数表示の初期化
+    if (frequencyDisplayRef.current) {
+      frequencyDisplayRef.current.innerHTML = `
+        <div style="text-align: center; color: #6b7280; font-size: 14px;">
+          🎤 音程検出準備完了
+        </div>
+      `;
+    }
+    
+    // 音量バーの初期化（0%確実表示）
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+    
+    addLog('🖥️ DOM直接操作基盤初期化完了');
+  }, []);
+
   // マイクロフォン初期化システム（マイクテストページから移植）
   const initializeMicrophone = async () => {
     try {
@@ -623,7 +688,7 @@ export default function RandomTrainingPage() {
               fontWeight: 'bold',
               color: '#92400e',
               margin: '0 0 12px 0'
-            }}>🧪 Step 1-4 動作確認用</h4>
+            }}>🧪 Step 1-5 動作確認用</h4>
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -665,13 +730,81 @@ export default function RandomTrainingPage() {
                 ⏹️ 検出停止
               </button>
             </div>
+            
+            {/* Step A5: DOM直接操作対象要素 */}
+            <div style={{
+              backgroundColor: 'white',
+              padding: '16px',
+              borderRadius: '8px',
+              marginTop: '16px',
+              border: '1px solid #e5e7eb'
+            }}>
+              <h5 style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#374151',
+                margin: '0 0 12px 0'
+              }}>🎵 リアルタイム音響情報</h5>
+              
+              {/* 周波数表示（DOM直接操作対象） */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '12px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '6px'
+              }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginBottom: '4px'
+                }}>検出周波数・音名・クラリティ:</div>
+                <div 
+                  ref={frequencyDisplayRef}
+                  style={{
+                    fontSize: '14px',
+                    fontFamily: 'monospace',
+                    color: '#1f2937',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  待機中...
+                </div>
+              </div>
+              
+              {/* 音量バー（DOM直接操作対象） */}
+              <div style={{
+                marginBottom: '8px'
+              }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginBottom: '4px'
+                }}>音量レベル:</div>
+                <div style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#e5e7eb',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <div 
+                    ref={volumeBarRef}
+                    className="transition-all duration-100"
+                  >
+                    {/* iPhone Safari WebKit対応: style属性なし */}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <p style={{
               fontSize: '12px',
               color: '#92400e',
-              margin: 0,
+              margin: '8px 0 0 0',
               textAlign: 'center'
             }}>
-              ※ ブラウザのコンソールで周波数とクラリティを確認できます（F12キー）
+              ※ 上記の情報はDOM直接操作で更新されます（React非依存）
             </p>
           </div>
 
