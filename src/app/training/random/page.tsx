@@ -870,123 +870,122 @@ export default function RandomTrainingPage() {
               <span>{isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}</span>
             </button>
 
-            {/* 8音階ガイド - ToggleGroup */}
-            {currentBaseNote && (
+            {/* 8音階ガイド - ToggleGroup（常時表示） */}
+            <div style={{
+              marginTop: '32px',
+              padding: '24px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb'
+            }}>
               <div style={{
-                marginTop: '32px',
-                padding: '24px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb'
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                marginBottom: '16px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  color: '#1f2937',
-                  marginBottom: '16px',
-                  textAlign: 'center'
+                🎵 ドレミファソラシド ガイド
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(56px, 1fr))',
+                  gap: '12px',
+                  maxWidth: '600px'
                 }}>
-                  🎵 ドレミファソラシド ガイド
+                  {scaleNotes.map((note, index) => (
+                    <div
+                      key={note}
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: (isGuideActive && index === currentScaleIndex) ? '20px' : '18px',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        border: '2px solid',
+                        borderColor: (isGuideActive && index === currentScaleIndex) ? '#3b82f6' : 
+                                    (isGuideActive && index < currentScaleIndex) ? '#ffffff' : '#d1d5db',
+                        backgroundColor: (isGuideActive && index === currentScaleIndex) ? '#3b82f6' : 
+                                        (isGuideActive && index < currentScaleIndex) ? '#ffffff' : '#f9fafb',
+                        color: (isGuideActive && index === currentScaleIndex) ? 'white' : 
+                              (isGuideActive && index < currentScaleIndex) ? '#9ca3af' : '#6b7280',
+                        transform: (isGuideActive && index === currentScaleIndex) ? 'scale(1.2)' : 'scale(1)',
+                        boxShadow: (isGuideActive && index === currentScaleIndex) ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                        transition: 'all 0.3s ease-in-out'
+                      }}
+                    >
+                      {note}
+                    </div>
+                  ))}
                 </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: window.innerWidth < 640 ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)',
-                    gap: '12px'
+              </div>
+              
+              {/* オクターブ完了後の結果表示 */}
+              {showResults && scaleResults.length > 0 && (
+                <div style={{
+                  marginTop: '24px',
+                  padding: '20px',
+                  backgroundColor: '#f0f9ff',
+                  borderRadius: '12px',
+                  border: '2px solid #3b82f6'
+                }}>
+                  <div style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#1e40af',
+                    marginBottom: '16px',
+                    textAlign: 'center'
                   }}>
-                    {scaleNotes.map((note, index) => (
-                      <div
-                        key={note}
-                        style={{
-                          width: '56px',
-                          height: '56px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: index === currentScaleIndex ? '20px' : '18px',
+                    🎉 オクターブ完了！結果
+                  </div>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                    gap: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    {scaleResults.map((result, index) => (
+                      <div key={index} style={{
+                        textAlign: 'center',
+                        padding: '8px',
+                        backgroundColor: 'white',
+                        borderRadius: '6px',
+                        border: '1px solid #bfdbfe'
+                      }}>
+                        <div style={{
+                          fontSize: '14px',
                           fontWeight: 'bold',
-                          borderRadius: '8px',
-                          border: '2px solid',
-                          borderColor: index === currentScaleIndex ? '#3b82f6' : 
-                                      index < currentScaleIndex ? '#ffffff' : '#d1d5db',
-                          backgroundColor: index === currentScaleIndex ? '#3b82f6' : 
-                                          index < currentScaleIndex ? '#ffffff' : '#f9fafb',
-                          color: index === currentScaleIndex ? 'white' : 
-                                index < currentScaleIndex ? '#9ca3af' : '#9ca3af',
-                          transform: index === currentScaleIndex ? 'scale(1.2)' : 'scale(1)',
-                          boxShadow: index === currentScaleIndex ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
-                          transition: 'all 0.3s ease-in-out'
-                        }}
-                      >
-                        {note}
+                          color: result.correct ? '#059669' : '#dc2626',
+                          marginBottom: '4px'
+                        }}>
+                          {result.note}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#6b7280'
+                        }}>
+                          {result.cents}セント
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-                
-                {/* オクターブ完了後の結果表示 */}
-                {showResults && scaleResults.length > 0 && (
+                  
                   <div style={{
-                    marginTop: '24px',
-                    padding: '20px',
-                    backgroundColor: '#f0f9ff',
-                    borderRadius: '12px',
-                    border: '2px solid #3b82f6'
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    color: '#1e40af'
                   }}>
-                    <div style={{
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      color: '#1e40af',
-                      marginBottom: '16px',
-                      textAlign: 'center'
-                    }}>
-                      🎉 オクターブ完了！結果
-                    </div>
-                    
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                      gap: '8px',
-                      marginBottom: '16px'
-                    }}>
-                      {scaleResults.map((result, index) => (
-                        <div key={index} style={{
-                          textAlign: 'center',
-                          padding: '8px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px',
-                          border: '1px solid #bfdbfe'
-                        }}>
-                          <div style={{
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            color: result.correct ? '#059669' : '#dc2626',
-                            marginBottom: '4px'
-                          }}>
-                            {result.note}
-                          </div>
-                          <div style={{
-                            fontSize: '12px',
-                            color: '#6b7280'
-                          }}>
-                            {result.cents}セント
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div style={{
-                      textAlign: 'center',
-                      fontSize: '14px',
-                      color: '#1e40af'
-                    }}>
-                      平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
-                    </div>
+                    平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 使い方説明 */}
