@@ -926,7 +926,7 @@ export default function RandomTrainingPage() {
               </div>
               
               {/* オクターブ完了後の結果表示 */}
-              {showResults && scaleResults.length > 0 && (
+              {showResults && Array.isArray(scaleResults) && scaleResults.length > 0 && (
                 <div style={{
                   marginTop: '24px',
                   padding: '20px',
@@ -970,7 +970,7 @@ export default function RandomTrainingPage() {
                           fontSize: '12px',
                           color: '#6b7280'
                         }}>
-                          {result.cents}セント
+                          {Math.round(result.cents || 0)}セント
                         </div>
                       </div>
                     ))}
@@ -981,7 +981,7 @@ export default function RandomTrainingPage() {
                     fontSize: '14px',
                     color: '#1e40af'
                   }}>
-                    平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
+                    平均誤差: {scaleResults.length > 0 ? Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length) : 0}セント
                   </div>
                 </div>
               )}
