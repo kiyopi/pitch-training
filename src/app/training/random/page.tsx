@@ -67,7 +67,7 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
-  // 相対音程計算システム（Step B-1）
+  // Step B-2: ドレミファソラシド判定システム（8音階正誤判定）
   const calculateRelativePitch = useCallback((detectedFreq: number, baseFreq: number) => {
     // セミトーン差計算（12平均律）
     const semitones = Math.round(12 * Math.log2(detectedFreq / baseFreq));
@@ -80,7 +80,9 @@ export default function RandomTrainingPage() {
     const scaleMapping = [0, 2, 4, 5, 7, 9, 11]; // C, D, E, F, G, A, B
     
     let noteName = '不明';
+    let accuracyLevel = 'unknown'; // Step B-2: 精度レベル詳細化
     let isCorrect = false;
+    let isClose = false;
     
     // 8音階内での最近接音程を検索
     let minDistance = 12;
@@ -94,11 +96,26 @@ export default function RandomTrainingPage() {
       }
     }
     
-    // 許容誤差内（±50セント = ±0.5セミトーン）での判定
-    const tolerance = 0.5;
-    if (minDistance <= tolerance && closestIndex !== -1) {
+    // Step B-2: 段階的正誤判定システム
+    if (closestIndex !== -1) {
       noteName = scaleNames[closestIndex];
-      isCorrect = minDistance <= 0.3; // より厳密な正解判定（±30セント）
+      
+      if (minDistance <= 0.3) {
+        // ±30セント以内: 正解
+        isCorrect = true;
+        accuracyLevel = 'correct';
+      } else if (minDistance <= 0.5) {
+        // ±31-50セント: 近接
+        isClose = true;
+        accuracyLevel = 'close';
+      } else if (minDistance <= 1.0) {
+        // ±51-100セント: 要練習
+        accuracyLevel = 'needs_practice';
+      } else {
+        // ±100セント超: 不正確
+        accuracyLevel = 'inaccurate';
+        noteName = '不明';
+      }
     }
     
     return {
@@ -106,39 +123,74 @@ export default function RandomTrainingPage() {
       scaleDegree,
       noteName,
       isCorrect,
-      distance: minDistance
+      isClose,
+      accuracyLevel,
+      distance: minDistance,
+      centsError: Math.round(minDistance * 100) // セント単位の誤差
     };
   }, []);
 
-  // 相対音程表示更新
+  // Step B-2: 拡張された相対音程表示更新
   const updateRelativePitchDisplay = useCallback((relativePitch: {
     semitones: number;
     scaleDegree: number;
     noteName: string;
     isCorrect: boolean;
+    isClose: boolean;
+    accuracyLevel: string;
     distance: number;
+    centsError: number;
   } | null) => {
     if (!relativePitchDisplayRef.current) return;
     
     if (relativePitch) {
-      const { semitones, noteName, isCorrect, distance } = relativePitch;
-      const statusColor = isCorrect ? '#10b981' : distance <= 0.5 ? '#f59e0b' : '#ef4444';
-      const statusText = isCorrect ? '正解！' : distance <= 0.5 ? '近い' : '要練習';
+      const { semitones, noteName, accuracyLevel, distance, centsError } = relativePitch;
+      
+      // Step B-2: 詳細化された色分けとメッセージ
+      let statusColor = '#6b7280';
+      let statusText = '分析中';
+      let statusIcon = '🎵';
+      
+      switch (accuracyLevel) {
+        case 'correct':
+          statusColor = '#10b981'; // 緑色
+          statusText = '正解！';
+          statusIcon = '✅';
+          break;
+        case 'close':
+          statusColor = '#f59e0b'; // オレンジ色
+          statusText = '近い';
+          statusIcon = '🟡';
+          break;
+        case 'needs_practice':
+          statusColor = '#ef4444'; // 赤色
+          statusText = '要練習';
+          statusIcon = '❌';
+          break;
+        case 'inaccurate':
+          statusColor = '#9ca3af'; // グレー色
+          statusText = '不正確';
+          statusIcon = '❓';
+          break;
+      }
       
       relativePitchDisplayRef.current.innerHTML = `
         <div style="text-align: center; padding: 8px;">
           <div style="font-size: 18px; font-weight: bold; color: ${statusColor}; margin-bottom: 4px;">
-            ${noteName} (${semitones >= 0 ? '+' : ''}${semitones})
+            ${statusIcon} ${noteName} (${semitones >= 0 ? '+' : ''}${semitones})
           </div>
-          <div style="font-size: 12px; color: ${statusColor};">
-            ${statusText} (誤差: ${distance.toFixed(1)}セミトーン)
+          <div style="font-size: 12px; color: ${statusColor}; margin-bottom: 2px;">
+            ${statusText} (誤差: ${centsError}セント)
+          </div>
+          <div style="font-size: 10px; color: #9ca3af;">
+            精度: ${distance.toFixed(2)}セミトーン
           </div>
         </div>
       `;
     } else {
       relativePitchDisplayRef.current.innerHTML = `
         <div style="text-align: center; color: #6b7280; padding: 8px;">
-          <div style="font-size: 14px;">音程分析待機中...</div>
+          <div style="font-size: 14px;">🎵 音程分析待機中...</div>
         </div>
       `;
     }
@@ -428,9 +480,19 @@ export default function RandomTrainingPage() {
         setRelativePitchInfo(relativePitch);
         updateRelativePitchDisplay(relativePitch);
         
-        // 相対音程ログ（1秒に1回）
+        // Step B-2: 拡張された相対音程ログ（1秒に1回）
         if (Date.now() % 1000 < 17) {
-          addLog(`🎵 相対音程: ${relativePitch.noteName} (${relativePitch.semitones >= 0 ? '+' : ''}${relativePitch.semitones}) ${relativePitch.isCorrect ? '✅正解' : '❌'}`);
+          const { noteName, semitones, accuracyLevel, centsError } = relativePitch;
+          let statusEmoji = '🎵';
+          
+          switch (accuracyLevel) {
+            case 'correct': statusEmoji = '✅'; break;
+            case 'close': statusEmoji = '🟡'; break;
+            case 'needs_practice': statusEmoji = '❌'; break;
+            case 'inaccurate': statusEmoji = '❓'; break;
+          }
+          
+          addLog(`🎵 相対音程: ${noteName} (${semitones >= 0 ? '+' : ''}${semitones}) ${statusEmoji} 誤差: ${centsError}セント`);
         }
       }
       
