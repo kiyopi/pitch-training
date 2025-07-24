@@ -8,6 +8,7 @@ import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import { AudioDOMController } from '@/utils/audioDOMHelpers';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import styles from './page.module.css';
 
 export default function RandomTrainingPage() {
   // React状態管理（UIレイアウト制御）
@@ -141,7 +142,7 @@ export default function RandomTrainingPage() {
     if (!scaleGuideContainerRef.current) return;
     
     try {
-      const scaleItems = scaleGuideContainerRef.current.querySelectorAll('.scale-note-item');
+      const scaleItems = scaleGuideContainerRef.current.querySelectorAll(`.${styles.scaleNoteItem}`);
       
       scaleItems.forEach((item, index) => {
         const htmlItem = item as HTMLElement;
@@ -827,17 +828,7 @@ export default function RandomTrainingPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#ffffff',
-      color: '#1a1a1a',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '0 16px'
-      }}>
+    <div className={styles.mainContainer}>
         {/* Header - トップページ統一デザイン */}
         <header style={{ borderBottom: '1px solid #e5e7eb' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
@@ -947,53 +938,20 @@ export default function RandomTrainingPage() {
             </button>
 
             {/* 8音階ガイド - ToggleGroup（常時表示） */}
-            <div style={{
-              marginTop: '32px',
-              padding: '24px',
-              backgroundColor: '#f9fafb',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#1f2937',
-                marginBottom: '16px',
-                textAlign: 'center'
-              }}>
+            <div className={styles.scaleGuideSection}>
+              <div className={styles.scaleGuideTitle}>
                 🎵 ドレミファソラシド ガイド
               </div>
               
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div className={styles.scaleGuideContainer}>
                 <div 
                   ref={scaleGuideContainerRef}
-                  style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(56px, 1fr))',
-                    gap: '12px',
-                    maxWidth: '600px'
-                  }}
+                  className={styles.scaleGuideGrid}
                 >
                   {scaleNotes.map((note, index) => (
                     <div
                       key={note}
-                      className="scale-note-item"
-                      style={{
-                        width: '56px',
-                        height: '56px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        border: '2px solid #d1d5db',
-                        backgroundColor: '#f9fafb',
-                        color: '#6b7280',
-                        transform: 'scale(1)',
-                        boxShadow: 'none',
-                        transition: 'all 0.3s ease-in-out'
-                      }}
+                      className={styles.scaleNoteItem}
                     >
                       {note}
                     </div>
@@ -1376,7 +1334,6 @@ export default function RandomTrainingPage() {
             </div>
           </div>
         </footer>
-      </div>
     </div>
   );
 }
