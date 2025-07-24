@@ -132,10 +132,9 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
   min-height: calc(100vh - 200px); /* Header + Footer分を除く */
 }
 
-.mainContent {
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
+.pageMain {
+  flex: 1;
+  padding: 32px 20px;
 }
 ```
 
@@ -171,7 +170,7 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 ```css
 .pageFooter {
   border-top: 1px solid #e5e7eb;
-  padding: 24px 0;
+  padding: 24px 20px;
   margin-top: 48px;
 }
 
@@ -182,7 +181,6 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
   gap: 16px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 20px;
 }
 
 .copyright {
@@ -211,35 +209,53 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 
 ### **PC表示**
 ```css
-/* デフォルト（PC表示） */
-.pageContainer {
+/* デフォルト（PC表示） - フルスクリーン対応 */
+.mainContainer {
   width: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
+  background-color: #ffffff;
   display: flex;
   flex-direction: column;
+}
+
+/* 各セクションで個別パディング設定 */
+.pageHeader {
+  padding: 24px 20px;
+}
+
+.pageMain {
+  flex: 1;
+  padding: 32px 20px;
+}
+
+.pageFooter {
+  padding: 24px 20px;
 }
 ```
 
 ### **タブレット表示**
 ```css
 @media (max-width: 768px) {
+  .pageHeader {
+    padding: 20px 16px;
+  }
+  
+  .pageMain {
+    padding: 28px 16px;
+  }
+  
+  .pageFooter {
+    padding: 20px 16px;
+  }
+  
   .headerContent {
-    padding: 0 16px;
     gap: 16px;
   }
   
   .pageTitle {
     font-size: 18px;
-  }
-  
-  .mainContent {
-    padding: 0 16px;
-  }
-  
-  .footerContent {
-    padding: 0 16px;
   }
 }
 ```
@@ -247,25 +263,24 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 ### **モバイル表示**
 ```css
 @media (max-width: 480px) {
+  .pageHeader {
+    padding: 16px 12px;
+  }
+  
+  .pageMain {
+    padding: 24px 12px;
+  }
+  
+  .pageFooter {
+    padding: 16px 12px;
+  }
+  
   .headerContent {
-    padding: 0 12px;
     gap: 12px;
   }
   
   .pageTitle {
     font-size: 16px;
-  }
-  
-  .pageMain {
-    padding: 24px 0;
-  }
-  
-  .mainContent {
-    padding: 0 12px;
-  }
-  
-  .footerContent {
-    padding: 0 12px;
   }
   
   .version {
@@ -315,9 +330,9 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 - [ ] レスポンシブ対応
 
 ### **Body実装**
-- [ ] 最大幅800px制限
-- [ ] 中央寄せ配置
-- [ ] 適切なパディング設定
+- [ ] フルスクリーン幅活用
+- [ ] 個別パディング設定
+- [ ] Flexレイアウト対応
 - [ ] 最小高さ確保
 - [ ] レスポンシブ対応
 
@@ -326,11 +341,13 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 - [ ] バージョン情報表示
 - [ ] 中央寄せ配置
 - [ ] 境界線設定
+- [ ] 個別パディング設定
 - [ ] レスポンシブ対応
 
 ### **全体実装**
 - [ ] CSS Modules使用
 - [ ] 適切なセマンティックHTML
+- [ ] フルスクリーンレイアウト対応
 - [ ] アクセシビリティ配慮
 - [ ] iPhone Safari対応
 - [ ] パフォーマンス最適化
@@ -358,9 +375,15 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 
 ### **Header禁止事項**
 - ❌ `justifyContent: 'center'` の使用
-- ❌ `textAlign: 'center'` の使用
+- ❌ `textAlign: 'center'` の使用  
 - ❌ 3カラムレイアウト（左-中央-右）
 - ❌ 右側への余計な要素配置
+
+### **レイアウト禁止事項**
+- ❌ メインコンテナでの `padding` 設定
+- ❌ 固定幅制限（max-width: 800px等）
+- ❌ 左右マージンの設定
+- ❌ エッジトゥエッジ表示の阻害
 
 ### **全体禁止事項**
 - ❌ インラインスタイルの多用
@@ -370,4 +393,18 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 
 ---
 
-**この仕様書に基づき、全ページで統一されたレイアウトを実装します。**
+**この仕様書に基づき、フルスクリーン対応の統一レイアウトを全ページで実装します。**
+
+## 🔄 更新履歴
+
+### **v2.0 - フルスクリーン対応 (2025-01-24)**
+- メインコンテナからpaddingを完全除去
+- セクション別パディング設定に変更
+- 左右マージン完全除去によるエッジトゥエッジ表示
+- レスポンシブ対応の段階的パディング調整
+- 「横幅が狭い」問題の根本解決
+
+### **v1.0 - 初期版 (2025-01-24)**
+- Header/Body/Footer基本構造定義
+- 左寄せレイアウト標準化
+- 固定幅800px制限での設計
