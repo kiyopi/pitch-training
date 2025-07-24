@@ -140,12 +140,20 @@ export default function RandomTrainingPage() {
         addLog('💻 PC標準3段階フィルター適用');
       }
       
-      // Pitchy初期化
+      // Pitchy McLeod Pitch Method 初期化（PITCHY_SPECS準拠）
       if (!pitchDetectorRef.current) {
-        bufferLength.current = analyser.frequencyBinCount;
-        dataArrayRef.current = new Float32Array(bufferLength.current);
-        pitchDetectorRef.current = PitchDetector.forFloat32Array(bufferLength.current);
-        addLog('🎵 Pitchy音程検出器初期化完了');
+        // FFTサイズに合わせたFloat32Array用のDetectorを作成
+        const fftSize = analyser.fftSize; // 2048
+        bufferLength.current = analyser.frequencyBinCount; // fftSize/2 = 1024
+        dataArrayRef.current = new Float32Array(fftSize); // 時間域データ用
+        
+        // PITCHY_SPECS: forFloat32Array(fftSize) で初期化
+        pitchDetectorRef.current = PitchDetector.forFloat32Array(fftSize);
+        
+        addLog(`🎵 Pitchy McLeod Pitch Method 初期化完了`);
+        addLog(`📊 FFTサイズ: ${fftSize}, バッファ長: ${bufferLength.current}`);
+        addLog(`🎯 検出範囲: 80-1200Hz, 最低clarity: 0.1`);
+        addLog(`🔧 動的オクターブ補正: C4-C5範囲対応`);
       }
       
       addLog('🎤 マイクロフォン初期化システム完了');
@@ -158,25 +166,73 @@ export default function RandomTrainingPage() {
     }
   };
   
-  // 基本音程検出ループ（React非依存の直接操作）
+  // PITCHY_SPECS準拠の音程検出システム（React非依存の直接操作）
   const detectPitch = () => {
-    if (!analyserRef.current || !dataArrayRef.current || !pitchDetectorRef.current) {
+    if (!analyserRef.current || !dataArrayRef.current || !pitchDetectorRef.current || !audioContextRef.current) {
       return;
     }
     
-    // 音声データ取得
+    // 時間域データ取得（Pitchyは時間域データが必要）
     analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
     
-    // Pitchyで周波数検出
-    const [frequency, clarity] = pitchDetectorRef.current.findPitch(dataArrayRef.current, audioContextRef.current!.sampleRate);
+    // Pitchy McLeod Pitch Method による基音検出
+    const [rawPitch, clarity] = pitchDetectorRef.current.findPitch(
+      dataArrayRef.current, 
+      audioContextRef.current.sampleRate
+    );
     
-    // 有効な周波数が検出された場合のみ処理
-    if (frequency > 0 && clarity > 0.9) {
-      // TODO: 周波数表示の更新（Step 1-6で実装）
-      console.log(`Frequency: ${frequency.toFixed(1)} Hz, Clarity: ${clarity.toFixed(2)}`);
+    // PITCHY_SPECS準拠: 検出条件チェック
+    if (rawPitch > 0 && clarity > 0.1 && rawPitch >= 80 && rawPitch <= 1200) {
+      
+      // 動的オクターブ補正システム（PITCHY_SPECS準拠）
+      let correctedPitch = rawPitch;
+      
+      // 現在の目標周波数範囲（ドレミファソラシド: C4-C5）
+      const minTargetFreq = 261.63; // C4 (PITCHY_SPECS準拠)
+      const maxTargetFreq = 523.25; // C5 (PITCHY_SPECS準拠)
+      
+      // 補正しきい値：最高目標周波数の55%（PITCHY_SPECS準拠）
+      const correctionThreshold = maxTargetFreq * 0.55; // ≈ 287.8 Hz
+      
+      // 補正後の範囲：最低目標の80%〜最高目標の120%
+      const correctedMin = minTargetFreq * 0.8;  // ≈ 209.3 Hz
+      const correctedMax = maxTargetFreq * 1.2;  // ≈ 627.9 Hz
+      
+      // 倍音誤検出の自動回避システム
+      if (rawPitch < correctionThreshold && 
+          rawPitch * 2 >= correctedMin && 
+          rawPitch * 2 <= correctedMax) {
+        correctedPitch = rawPitch * 2; // オクターブ補正
+        
+        // デバッグログ（60FPSで1秒に1回）
+        if (Date.now() % 1000 < 17) { // 約60FPSで1秒に1回
+          addLog(`🔧 動的オクターブ補正: ${rawPitch.toFixed(1)}Hz → ${correctedPitch.toFixed(1)}Hz`);
+        }
+      }
+      
+      // 高精度検出ログ（clarity > 0.9での精度表示）
+      if (clarity > 0.9) {
+        // リアルタイム検出ログ（1秒に1回）
+        if (Date.now() % 1000 < 17) { // 約60FPSで1秒に1回
+          addLog(`🔍 高精度検出: ${correctedPitch.toFixed(1)}Hz (clarity=${clarity.toFixed(3)})`);
+        }
+        
+        // TODO: Step B2で周波数表示DOM更新を実装
+        console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
+      }
+      
+    } else if (rawPitch > 0) {
+      // 検出範囲外または低clarity の場合（デバッグ用）
+      if (Date.now() % 2000 < 17) { // 2秒に1回
+        if (rawPitch < 80 || rawPitch > 1200) {
+          addLog(`⚠️ 検出範囲外: ${rawPitch.toFixed(1)}Hz (範囲: 80-1200Hz)`);
+        } else if (clarity <= 0.1) {
+          addLog(`⚠️ 低精度検出: clarity=${clarity.toFixed(3)} (最低: 0.1)`);
+        }
+      }
     }
     
-    // 次フレームの予約
+    // 次フレームの予約（60FPS継続）
     animationFrameRef.current = requestAnimationFrame(detectPitch);
   };
   
