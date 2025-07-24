@@ -52,6 +52,31 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
+  // 周波数から音名を取得する関数（Step A6で追加）
+  const getNoteNameFromFrequency = (frequency: number): string => {
+    const noteFrequencies = [
+      { note: 'ド4', freq: 261.63 }, { note: 'ド#4', freq: 277.18 }, { note: 'レ4', freq: 293.66 },
+      { note: 'レ#4', freq: 311.13 }, { note: 'ミ4', freq: 329.63 }, { note: 'ファ4', freq: 349.23 },
+      { note: 'ファ#4', freq: 369.99 }, { note: 'ソ4', freq: 392.00 }, { note: 'ソ#4', freq: 415.30 },
+      { note: 'ラ4', freq: 440.00 }, { note: 'ラ#4', freq: 466.16 }, { note: 'シ4', freq: 493.88 },
+      { note: 'ド5', freq: 523.25 }, { note: 'ド#5', freq: 554.37 }, { note: 'レ5', freq: 587.33 },
+      { note: 'レ#5', freq: 622.25 }, { note: 'ミ5', freq: 659.25 }
+    ];
+    
+    let closestNote = noteFrequencies[0];
+    let minDiff = Math.abs(frequency - closestNote.freq);
+    
+    for (const note of noteFrequencies) {
+      const diff = Math.abs(frequency - note.freq);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestNote = note;
+      }
+    }
+    
+    return closestNote.note;
+  };
+
   // DOM直接操作: 周波数表示更新（音響特化アーキテクチャ）
   const updateFrequencyDisplay = useCallback((frequency: number, clarity: number, noteName?: string) => {
     if (!frequencyDisplayRef.current) return;
@@ -71,10 +96,10 @@ export default function RandomTrainingPage() {
       
       frequencyDisplayRef.current.innerHTML = displayContent;
     } else {
-      // 無音状態表示
+      // Step A6: 無音状態・低精度時の表示
       frequencyDisplayRef.current.innerHTML = `
         <div style="text-align: center; color: #6b7280; font-size: 14px;">
-          🎵 音声を発声してください
+          待機中...
         </div>
       `;
     }
@@ -248,6 +273,17 @@ export default function RandomTrainingPage() {
     // 時間域データ取得（Pitchyは時間域データが必要）
     analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
     
+    // Step A6: 音量計算（マイクテストページ準拠）
+    let sum = 0;
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
+      sum += dataArrayRef.current[i] * dataArrayRef.current[i];
+    }
+    const rmsVolume = Math.sqrt(sum / dataArrayRef.current.length);
+    const scaledVolume = Math.min(100, rmsVolume * 300); // 300は経験的調整値
+    
+    // 音量バー更新（リアルタイム）
+    updateVolumeDisplay(scaledVolume);
+    
     // Pitchy McLeod Pitch Method による基音検出
     const [rawPitch, clarity] = pitchDetectorRef.current.findPitch(
       dataArrayRef.current, 
@@ -290,7 +326,9 @@ export default function RandomTrainingPage() {
           addLog(`🔍 高精度検出: ${correctedPitch.toFixed(1)}Hz (clarity=${clarity.toFixed(3)})`);
         }
         
-        // TODO: Step B2で周波数表示DOM更新を実装
+        // Step A6: DOM直接操作でのリアルタイム周波数表示更新
+        const noteName = getNoteNameFromFrequency(correctedPitch);
+        updateFrequencyDisplay(correctedPitch, clarity, noteName);
         console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
       }
       
@@ -303,6 +341,11 @@ export default function RandomTrainingPage() {
           addLog(`⚠️ 低精度検出: clarity=${clarity.toFixed(3)} (最低: 0.1)`);
         }
       }
+      // Step A6: 低精度時の周波数表示クリア
+      updateFrequencyDisplay(0, 0, undefined);
+    } else {
+      // Step A6: 音程未検出時の周波数表示クリア
+      updateFrequencyDisplay(0, 0, undefined);
     }
     
     // 次フレームの予約（60FPS継続）
