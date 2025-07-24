@@ -506,11 +506,11 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // 🚨 iPhone AudioContext競合対策: 音量処理最適化（過剰増幅修正版）
+      // 🚨 iPhone無音時56%問題修正: divisor大幅調整
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const volumeConfig = {
-        divisor: isIOS ? 2.0 : 4.0,           // iPhone: 小さい除数、PC: 大きい除数（正常値復元）
-        noiseThreshold: isIOS ? 8 : 15        // iPhone: 低閾値、PC: 高閾値（正常値復元）
+        divisor: isIOS ? 6.0 : 4.0,           // iPhone: 6.0で無音時適正化、PC: 4.0維持
+        noiseThreshold: isIOS ? 8 : 15        // iPhone: 8維持、PC: 15維持
       };
       
       // 🚨 デグレード修正: gainMultiplier除去で正常な音量計算に復元
