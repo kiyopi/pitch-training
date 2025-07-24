@@ -49,10 +49,11 @@ export default function RandomTrainingPage() {
     centsError: number;
   } | null>(null);
 
-  // shadcn/ui テスト用状態管理
+  // 8音階ガイドシステム状態管理
   const [currentScaleIndex, setCurrentScaleIndex] = useState(0);
-  const [scaleProgress, setScaleProgress] = useState(0);
+  const [scaleProgress, setScaleProgress] = useState(12.5);
   const [scaleStatus, setScaleStatus] = useState<'waiting' | 'singing' | 'correct' | 'incorrect'>('waiting');
+  const [isGuideActive, setIsGuideActive] = useState(false);
   const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
@@ -80,25 +81,49 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
-  // shadcn/ui テスト用関数
-  const handleScaleNext = () => {
-    if (currentScaleIndex < scaleNotes.length - 1) {
-      const nextIndex = currentScaleIndex + 1;
-      setCurrentScaleIndex(nextIndex);
-      setScaleProgress((nextIndex + 1) / scaleNotes.length * 100);
-      setScaleStatus('singing');
-      addLog(`🎵 shadcn/ui テスト: ${scaleNotes[nextIndex]} に進行`);
-    } else {
-      addLog('🎉 shadcn/ui テスト: 8音階完了！');
+  // 8音階自動進行システム
+  const checkScaleProgression = useCallback((detectedNote: string) => {
+    if (!isGuideActive) return;
+    
+    const expectedNote = scaleNotes[currentScaleIndex];
+    
+    if (detectedNote === expectedNote) {
+      // 正解時の処理
       setScaleStatus('correct');
+      addLog(`✅ ${expectedNote} 正解！`);
+      
+      // 次の音階に自動進行
+      setTimeout(() => {
+        if (currentScaleIndex < scaleNotes.length - 1) {
+          const nextIndex = currentScaleIndex + 1;
+          setCurrentScaleIndex(nextIndex);
+          setScaleProgress((nextIndex + 1) / scaleNotes.length * 100);
+          setScaleStatus('singing');
+          addLog(`🎵 次の音階: ${scaleNotes[nextIndex]}`);
+        } else {
+          // 8音階完了
+          setScaleStatus('correct');
+          setIsGuideActive(false);
+          addLog('🎉 8音階完了！おめでとうございます！');
+        }
+      }, 1000);
     }
+  }, [currentScaleIndex, isGuideActive, scaleNotes, addLog, setCurrentScaleIndex, setScaleProgress, setScaleStatus, setIsGuideActive]);
+
+  const startGuideSystem = () => {
+    setCurrentScaleIndex(0);
+    setScaleProgress(12.5);
+    setScaleStatus('singing');
+    setIsGuideActive(true);
+    addLog('🎵 8音階ガイド開始: ドから歌ってください');
   };
 
-  const handleScaleReset = () => {
+  const resetGuideSystem = () => {
     setCurrentScaleIndex(0);
-    setScaleProgress(12.5); // 1/8
+    setScaleProgress(12.5);
     setScaleStatus('waiting');
-    addLog('🔄 shadcn/ui テスト: リセット');
+    setIsGuideActive(false);
+    addLog('🔄 ガイドシステムリセット');
   };
 
   // Step B-2: ドレミファソラシド判定システム（8音階正誤判定）
@@ -317,9 +342,6 @@ export default function RandomTrainingPage() {
       audioProcessorRef.current = new UnifiedAudioProcessor();
       addLog('🔧 統一音響処理モジュール初期化完了');
     }
-
-    // shadcn/ui テスト初期化
-    setScaleProgress(12.5); // 1/8から開始
     
     addLog('🖥️ DOM直接操作基盤初期化完了');
   }, []);
@@ -523,6 +545,11 @@ export default function RandomTrainingPage() {
         setRelativePitchInfo(relativePitch);
         updateRelativePitchDisplay(relativePitch);
         
+        // 8音階ガイドシステム連動
+        if (relativePitch.accuracyLevel === 'correct') {
+          checkScaleProgression(relativePitch.noteName);
+        }
+        
         // Step B-2: 拡張された相対音程ログ（1秒に1回）
         if (Date.now() % 1000 < 17) {
           const { noteName, semitones, accuracyLevel, centsError } = relativePitch;
@@ -689,6 +716,8 @@ export default function RandomTrainingPage() {
             try {
               await startPitchDetection();
               addLog('✅ 自動音程検出開始成功');
+              // 8音階ガイドシステム開始
+              startGuideSystem();
             } catch (error) {
               addLog('❌ 自動音程検出開始失敗');
               console.error('音程検出開始エラー:', error);
@@ -1117,163 +1146,139 @@ export default function RandomTrainingPage() {
             </p>
           </div>
 
-          {/* shadcn/ui テストセクション */}
-          <div style={{
-            marginBottom: '32px',
-            padding: '24px',
-            backgroundColor: '#fefce8',
-            border: '2px solid #fde047',
-            borderRadius: '12px'
-          }}>
-            <h4 style={{
-              fontSize: '18px',
-              fontWeight: 'bold',
-              color: '#92400e',
-              margin: '0 0 16px 0',
+          {/* 8音階ガイドシステム */}
+          {currentBaseNote && (
+            <div style={{
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '24px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+              marginBottom: '32px',
               textAlign: 'center'
-            }}>🧪 shadcn/ui コンポーネントテスト</h4>
-            
-            {/* Pattern 1: Toggle Group */}
-            <div style={{ marginBottom: '24px' }}>
-              <h5 style={{
-                fontSize: '14px',
+            }}>
+              <h3 style={{
+                fontSize: '20px',
                 fontWeight: 'bold',
-                color: '#374151',
-                margin: '0 0 8px 0'
-              }}>Pattern 1: Toggle Group（8音階選択）</h5>
-              <div className="flex justify-center">
-                <ToggleGroup 
-                  type="single" 
-                  value={scaleNotes[currentScaleIndex]}
-                  className="grid grid-cols-4 gap-2 sm:grid-cols-8"
-                >
-                  {scaleNotes.map((note, index) => (
-                    <ToggleGroupItem
-                      key={note}
-                      value={note}
-                      variant={index === currentScaleIndex ? "default" : "outline"}
-                      className={`w-12 h-12 ${index === currentScaleIndex ? 'bg-blue-500 text-white' : ''}`}
-                    >
-                      {note}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
-            </div>
-
-            {/* Pattern 2: Progress Bar */}
-            <div style={{ marginBottom: '24px' }}>
-              <h5 style={{
-                fontSize: '14px',
-                fontWeight: 'bold',
-                color: '#374151',
-                margin: '0 0 8px 0'
-              }}>Pattern 2: Progress（進捗表示）</h5>
-              <div className="space-y-2">
-                <Progress value={scaleProgress} className="w-full" />
-                <div className="text-center text-sm text-muted-foreground">
-                  {currentScaleIndex + 1} / 8 音階
+                color: '#1a1a1a',
+                margin: '0 0 20px 0'
+              }}>🎵 ドレミファソラシド ガイド</h3>
+              
+              {/* 8音階表示 - Toggle Group */}
+              <div style={{ marginBottom: '20px' }}>
+                <div className="flex justify-center">
+                  <ToggleGroup 
+                    type="single" 
+                    value={scaleNotes[currentScaleIndex]}
+                    className="grid grid-cols-4 gap-3 sm:grid-cols-8"
+                    disabled
+                  >
+                    {scaleNotes.map((note, index) => (
+                      <ToggleGroupItem
+                        key={note}
+                        value={note}
+                        variant={index === currentScaleIndex ? "default" : "outline"}
+                        className={`w-14 h-14 text-lg font-bold ${
+                          index === currentScaleIndex 
+                            ? 'bg-blue-500 text-white shadow-lg scale-110' 
+                            : index < currentScaleIndex 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-50 text-gray-400'
+                        }`}
+                        style={{
+                          transition: 'all 0.3s ease-in-out'
+                        }}
+                      >
+                        {note}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
                 </div>
               </div>
-            </div>
 
-            {/* Pattern 3: Badge Status */}
-            <div style={{ marginBottom: '24px' }}>
-              <h5 style={{
-                fontSize: '14px',
-                fontWeight: 'bold',
-                color: '#374151',
-                margin: '0 0 8px 0'
-              }}>Pattern 3: Badge（状態表示）</h5>
-              <div className="flex justify-center gap-2">
-                <Badge 
-                  variant={scaleStatus === 'waiting' ? 'secondary' : 'outline'}
-                >
-                  待機中
-                </Badge>
-                <Badge 
-                  variant={scaleStatus === 'singing' ? 'default' : 'outline'}
-                >
-                  🎵 歌唱中
-                </Badge>
-                <Badge 
-                  variant={scaleStatus === 'correct' ? 'default' : 'outline'}
-                  className={scaleStatus === 'correct' ? 'bg-green-500' : ''}
-                >
-                  ✅ 正解
-                </Badge>
-                <Badge 
-                  variant={scaleStatus === 'incorrect' ? 'destructive' : 'outline'}
-                >
-                  ❌ 不正解
-                </Badge>
+              {/* 進捗表示 - Progress */}
+              <div style={{ marginBottom: '20px' }}>
+                <div className="space-y-2">
+                  <Progress value={scaleProgress} className="w-full h-3" />
+                  <div className="text-center text-sm text-muted-foreground">
+                    {currentScaleIndex + 1} / 8 音階完了
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* 現在の音階表示 */}
-            <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: '#1f2937',
-                marginBottom: '8px'
-              }}>
-                現在: {scaleNotes[currentScaleIndex]}
+              {/* 現在の状態表示 */}
+              <div style={{ marginBottom: '20px' }}>
+                {!isGuideActive ? (
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '8px',
+                    color: '#6b7280'
+                  }}>
+                    基音再生後、自動的にガイドが開始されます
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{
+                      fontSize: '32px',
+                      fontWeight: 'bold',
+                      color: '#1f2937',
+                      marginBottom: '8px'
+                    }}>
+                      {scaleNotes[currentScaleIndex]}
+                    </div>
+                    <div style={{
+                      fontSize: '16px',
+                      color: '#6b7280',
+                      marginBottom: '12px'
+                    }}>
+                      この音階を歌ってください
+                    </div>
+                    
+                    {/* 状態表示 - Badge */}
+                    <div className="flex justify-center gap-2">
+                      <Badge 
+                        variant={scaleStatus === 'waiting' ? 'secondary' : 'outline'}
+                      >
+                        待機中
+                      </Badge>
+                      <Badge 
+                        variant={scaleStatus === 'singing' ? 'default' : 'outline'}
+                      >
+                        🎵 歌唱中
+                      </Badge>
+                      <Badge 
+                        variant={scaleStatus === 'correct' ? 'default' : 'outline'}
+                        className={scaleStatus === 'correct' ? 'bg-green-500' : ''}
+                      >
+                        ✅ 正解
+                      </Badge>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* テスト制御ボタン */}
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={handleScaleNext}
-                disabled={currentScaleIndex >= scaleNotes.length - 1}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: currentScaleIndex >= scaleNotes.length - 1 ? 'not-allowed' : 'pointer',
-                  backgroundColor: currentScaleIndex >= scaleNotes.length - 1 ? '#9ca3af' : '#2563eb',
-                  color: 'white',
-                  transition: 'background-color 0.2s ease-in-out'
-                }}
-              >
-                次へ
-              </button>
-              <button
-                onClick={handleScaleReset}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: 'pointer',
-                  backgroundColor: '#059669',
-                  color: 'white',
-                  transition: 'background-color 0.2s ease-in-out'
-                }}
-              >
-                リセット
-              </button>
+              {/* リセットボタン */}
+              {isGuideActive && (
+                <button
+                  onClick={resetGuideSystem}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    transition: 'background-color 0.2s ease-in-out'
+                  }}
+                >
+                  🔄 ガイドリセット
+                </button>
+              )}
             </div>
-
-            {/* 説明 */}
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              fontSize: '12px',
-              color: '#6b7280'
-            }}>
-              <p style={{ margin: 0 }}>
-                <strong>テスト内容:</strong> 「次へ」ボタンでToggle Group、Progress、Badgeの動作を確認できます。
-                PC（横8列）とiPhone（4x2グリッド）での表示も確認してください。
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* デバッグログ表示 */}
           {debugLog.length > 0 && (
