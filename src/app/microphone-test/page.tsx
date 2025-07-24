@@ -506,48 +506,43 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // 🚨 iPhone無音時56%問題修正: divisor大幅調整
+      // 📝 MICROPHONE_PLATFORM_SPECIFICATIONS.md準拠: プラットフォーム特性対応
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const volumeConfig = {
-        divisor: isIOS ? 6.0 : 4.0,           // iPhone: 6.0で無音時適正化、PC: 4.0維持
-        noiseThreshold: isIOS ? 8 : 15        // iPhone: 8維持、PC: 15維持
+      const microphoneSpec = {
+        divisor: isIOS ? 4.0 : 3.0,           // 仕様書推奨: iPhone 4.0, PC 3.0
+        gainCompensation: isIOS ? 1.5 : 1.0,  // iPhone低域カット補正
+        noiseThreshold: isIOS ? 12 : 8,       // 確実な0%表示: iPhone 12, PC 8
+        smoothingFactor: 0.2
       };
       
-      // 🚨 デグレード修正: gainMultiplier除去で正常な音量計算に復元
+      // 📝 仕様書準拠: 基本音量計算
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // 音量計算（仕様書推奨実装）- スムージング後にノイズ閾値適用
-      const rawVolumePercent = Math.min(Math.max(calculatedVolume / volumeConfig.divisor * 100, 0), 100);
+      // 📝 プラットフォーム適応音量計算
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / microphoneSpec.divisor * 100, 0), 100);
       
-      // 音量スムージング（ノイズ閾値適用前）
-      const smoothingFactor = 0.2;
-      const smoothedRawVolume = previousVolumeRef.current + smoothingFactor * (rawVolumePercent - previousVolumeRef.current);
-      previousVolumeRef.current = smoothedRawVolume;
+      // 📝 iPhone特性補正: 250Hzローカット対応
+      const compensatedVolume = rawVolumePercent * microphoneSpec.gainCompensation;
       
-      // ノイズ閾値適用（スムージング後）- VOLUME_PROCESSING_REVIEW.md準拠
-      const volumePercent = smoothedRawVolume > volumeConfig.noiseThreshold ? smoothedRawVolume : 0;
+      // 📝 音量スムージング
+      const smoothedVolume = previousVolumeRef.current + microphoneSpec.smoothingFactor * (compensatedVolume - previousVolumeRef.current);
+      previousVolumeRef.current = smoothedVolume;
       
-      // 🔍 デバッグ: 無音時50%問題調査用ログ（iPhone画面表示）
-      if (Math.random() < 0.01) { // 1%の確率でログ出力（スパム防止）
-        console.log(`🔍 Volume Debug - raw:${rawVolumePercent.toFixed(1)}, smoothed:${smoothedRawVolume.toFixed(1)}, threshold:${volumeConfig.noiseThreshold}, final:${volumePercent.toFixed(1)}, iOS:${isIOS}`);
+      // 🔍 仕様書準拠デバッグ情報
+      if (Math.random() < 0.01) {
+        console.log(`📝 Spec Debug - raw:${rawVolumePercent.toFixed(1)}, comp:${compensatedVolume.toFixed(1)}, smooth:${smoothedVolume.toFixed(1)}, thresh:${microphoneSpec.noiseThreshold}, iOS:${isIOS}`);
       }
       
-      // 🔍 iPhone実機用: デバッグ情報を画面に表示
+      // 🔍 iPhone実機用デバッグ表示
       const debugInfoRef = document.getElementById('volume-debug-info');
-      if (debugInfoRef && Math.random() < 0.1) { // 10%の確率で画面更新
+      if (debugInfoRef && Math.random() < 0.1) {
         debugInfoRef.innerHTML = `
           <div style="font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; margin-top: 8px;">
-            🔍 Debug: raw=${rawVolumePercent.toFixed(1)}%, smooth=${smoothedRawVolume.toFixed(1)}%, 
-            thresh=${volumeConfig.noiseThreshold}, final=${volumePercent.toFixed(1)}%, iOS=${isIOS}
+            📝 Spec: raw=${rawVolumePercent.toFixed(1)}%, comp=${compensatedVolume.toFixed(1)}%, 
+            smooth=${smoothedVolume.toFixed(1)}%, thresh=${microphoneSpec.noiseThreshold}, iOS=${isIOS}
           </div>
         `;
       }
-      
-      // DOM直接更新 + デバッグ状態更新
-      updateVolumeDisplay(volumePercent);
-      
-      // 🔍 デバッグ状態更新: 音量
-      debugStateRef.current.lastVolume = volumePercent;
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -560,24 +555,35 @@ function MicrophoneTestContent() {
       debugStateRef.current.lastFrequency = frequency || 0;
       debugStateRef.current.lastClarity = clarity || 0;
       
+      // 📝 仕様書準拠: 周波数検知連動型音量表示
       if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
-        // DOM直接更新
+        // 発声検知時: 音量表示 + 周波数表示
+        const finalVolume = smoothedVolume > microphoneSpec.noiseThreshold ? smoothedVolume : 0;
+        updateVolumeDisplay(finalVolume);
         updateFrequencyDisplay(frequency);
         updateNoteDisplay(frequency);
         
-        setMicState(prev => ({ 
-          ...prev, 
-          volumeDetected: volumePercent > 1,
-          frequencyDetected: true,
-          startButtonEnabled: volumePercent > 1
-        }));
-      } else {
-        updateFrequencyDisplay(null);
-        updateNoteDisplay(null);
+        // 🔍 デバッグ状態更新
+        debugStateRef.current.lastVolume = finalVolume;
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: volumePercent > 1,
+          volumeDetected: finalVolume > 1,
+          frequencyDetected: true,
+          startButtonEnabled: finalVolume > 1
+        }));
+      } else {
+        // 📝 無音時: 強制的に0%表示（仕様書準拠）
+        updateVolumeDisplay(0);
+        updateFrequencyDisplay(null);
+        updateNoteDisplay(null);
+        
+        // 🔍 デバッグ状態更新
+        debugStateRef.current.lastVolume = 0;
+        
+        setMicState(prev => ({ 
+          ...prev, 
+          volumeDetected: false,
           frequencyDetected: false
         }));
       }
