@@ -7,7 +7,7 @@ import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import { AudioDOMController } from '@/utils/audioDOMHelpers';
-// shadcn/ui components removed - using inline styles for better compatibility
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function RandomTrainingPage() {
   // React状態管理（UIレイアウト制御）
@@ -52,6 +52,8 @@ export default function RandomTrainingPage() {
   const [scaleProgress, setScaleProgress] = useState(12.5);
   const [scaleStatus, setScaleStatus] = useState<'waiting' | 'singing' | 'correct' | 'incorrect'>('waiting');
   const [isGuideActive, setIsGuideActive] = useState(false);
+  const [scaleResults, setScaleResults] = useState<Array<{note: string, correct: boolean, cents: number}>>([]);
+  const [showResults, setShowResults] = useState(false);
   const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
@@ -79,14 +81,20 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
-  // 8音階自動進行システム
-  const checkScaleProgression = useCallback((detectedNote: string) => {
+  // 8音階自動進行システム - 結果収集版
+  const checkScaleProgression = useCallback((detectedNote: string, centsError: number = 0) => {
     if (!isGuideActive) return;
     
     const expectedNote = scaleNotes[currentScaleIndex];
     
     if (detectedNote === expectedNote) {
-      // 正解時の処理
+      // 結果データを収集（表示せずに保存）
+      setScaleResults(prev => [...prev, { 
+        note: expectedNote, 
+        correct: true, 
+        cents: Math.abs(centsError) 
+      }]);
+      
       setScaleStatus('correct');
       addLog(`✅ ${expectedNote} 正解！`);
       
@@ -99,20 +107,23 @@ export default function RandomTrainingPage() {
           setScaleStatus('singing');
           addLog(`🎵 次の音階: ${scaleNotes[nextIndex]}`);
         } else {
-          // 8音階完了
+          // 8音階完了 - 結果表示準備
           setScaleStatus('correct');
           setIsGuideActive(false);
-          addLog('🎉 8音階完了！おめでとうございます！');
+          setShowResults(true);
+          addLog('🎉 8音階完了！結果を確認してください');
         }
       }, 1000);
     }
-  }, [currentScaleIndex, isGuideActive, scaleNotes, addLog, setCurrentScaleIndex, setScaleProgress, setScaleStatus, setIsGuideActive]);
+  }, [currentScaleIndex, isGuideActive, scaleNotes, addLog, setCurrentScaleIndex, setScaleProgress, setScaleStatus, setIsGuideActive, setScaleResults, setShowResults]);
 
   const startGuideSystem = () => {
     setCurrentScaleIndex(0);
     setScaleProgress(12.5);
     setScaleStatus('singing');
     setIsGuideActive(true);
+    setScaleResults([]); // 結果データリセット
+    setShowResults(false); // 結果表示リセット
     addLog('🎵 8音階ガイド開始: ドから歌ってください');
   };
 
@@ -545,7 +556,7 @@ export default function RandomTrainingPage() {
         
         // 8音階ガイドシステム連動
         if (relativePitch.accuracyLevel === 'correct') {
-          checkScaleProgression(relativePitch.noteName);
+          checkScaleProgression(relativePitch.noteName, relativePitch.centsError);
         }
         
         // Step B-2: 拡張された相対音程ログ（1秒に1回）
@@ -833,35 +844,6 @@ export default function RandomTrainingPage() {
             marginBottom: '32px',
             textAlign: 'center'
           }}>
-            {/* 現在の基音表示 */}
-            {currentBaseNote && (
-              <div style={{
-                padding: '24px',
-                backgroundColor: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                borderRadius: '12px',
-                marginBottom: '24px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <Music style={{ width: '24px', height: '24px', color: '#1e40af' }} />
-                  <span style={{
-                    fontSize: '20px',
-                    fontWeight: 'bold',
-                    color: '#1e40af'
-                  }}>
-                    現在の基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
-                  </span>
-                </div>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#2563eb',
-                  margin: 0
-                }}>
-                  この音を基準にドレミファソラシドを歌ってください
-                </p>
-              </div>
-            )}
-
             {/* ランダム基音再生ボタン */}
             <button
               onClick={handleStart}
@@ -887,6 +869,124 @@ export default function RandomTrainingPage() {
               <Play style={{ width: '20px', height: '20px' }} />
               <span>{isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}</span>
             </button>
+
+            {/* 8音階ガイド - ToggleGroup */}
+            {currentBaseNote && (
+              <div style={{
+                marginTop: '32px',
+                padding: '24px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '16px',
+                  textAlign: 'center'
+                }}>
+                  🎵 ドレミファソラシド ガイド
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: window.innerWidth < 640 ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)',
+                    gap: '12px'
+                  }}>
+                    {scaleNotes.map((note, index) => (
+                      <div
+                        key={note}
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: index === currentScaleIndex ? '20px' : '18px',
+                          fontWeight: 'bold',
+                          borderRadius: '8px',
+                          border: '2px solid',
+                          borderColor: index === currentScaleIndex ? '#3b82f6' : 
+                                      index < currentScaleIndex ? '#ffffff' : '#d1d5db',
+                          backgroundColor: index === currentScaleIndex ? '#3b82f6' : 
+                                          index < currentScaleIndex ? '#ffffff' : '#f9fafb',
+                          color: index === currentScaleIndex ? 'white' : 
+                                index < currentScaleIndex ? '#9ca3af' : '#9ca3af',
+                          transform: index === currentScaleIndex ? 'scale(1.2)' : 'scale(1)',
+                          boxShadow: index === currentScaleIndex ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                          transition: 'all 0.3s ease-in-out'
+                        }}
+                      >
+                        {note}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* オクターブ完了後の結果表示 */}
+                {showResults && scaleResults.length > 0 && (
+                  <div style={{
+                    marginTop: '24px',
+                    padding: '20px',
+                    backgroundColor: '#f0f9ff',
+                    borderRadius: '12px',
+                    border: '2px solid #3b82f6'
+                  }}>
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      color: '#1e40af',
+                      marginBottom: '16px',
+                      textAlign: 'center'
+                    }}>
+                      🎉 オクターブ完了！結果
+                    </div>
+                    
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                      gap: '8px',
+                      marginBottom: '16px'
+                    }}>
+                      {scaleResults.map((result, index) => (
+                        <div key={index} style={{
+                          textAlign: 'center',
+                          padding: '8px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px',
+                          border: '1px solid #bfdbfe'
+                        }}>
+                          <div style={{
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: result.correct ? '#059669' : '#dc2626',
+                            marginBottom: '4px'
+                          }}>
+                            {result.note}
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: '#6b7280'
+                          }}>
+                            {result.cents}セント
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div style={{
+                      textAlign: 'center',
+                      fontSize: '14px',
+                      color: '#1e40af'
+                    }}>
+                      平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 使い方説明 */}
@@ -1144,187 +1244,6 @@ export default function RandomTrainingPage() {
             </p>
           </div>
 
-          {/* 8音階ガイドシステム */}
-          {currentBaseNote && (
-            <div style={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '24px',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              marginBottom: '32px',
-              textAlign: 'center'
-            }}>
-              <h3 style={{
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: '#1a1a1a',
-                margin: '0 0 20px 0'
-              }}>🎵 ドレミファソラシド ガイド</h3>
-              
-              {/* 8音階表示 - Toggle Group */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: window.innerWidth < 640 ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)',
-                    gap: '12px'
-                  }}>
-                    {scaleNotes.map((note, index) => (
-                      <div
-                        key={note}
-                        style={{
-                          width: '56px',
-                          height: '56px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '18px',
-                          fontWeight: 'bold',
-                          borderRadius: '8px',
-                          border: '2px solid',
-                          borderColor: index === currentScaleIndex ? '#3b82f6' : 
-                                      index < currentScaleIndex ? '#10b981' : '#d1d5db',
-                          backgroundColor: index === currentScaleIndex ? '#3b82f6' : 
-                                          index < currentScaleIndex ? '#10b981' : '#f9fafb',
-                          color: index === currentScaleIndex ? 'white' : 
-                                index < currentScaleIndex ? 'white' : '#9ca3af',
-                          transform: index === currentScaleIndex ? 'scale(1.1)' : 'scale(1)',
-                          boxShadow: index === currentScaleIndex ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
-                          transition: 'all 0.3s ease-in-out'
-                        }}
-                      >
-                        {note}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* 進捗表示 - Progress */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{
-                    width: '100%',
-                    height: '12px',
-                    backgroundColor: '#f1f5f9',
-                    borderRadius: '6px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${scaleProgress}%`,
-                      height: '100%',
-                      backgroundColor: '#3b82f6',
-                      borderRadius: '6px',
-                      transition: 'width 0.5s ease-in-out'
-                    }} />
-                  </div>
-                  <div style={{
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    color: '#64748b'
-                  }}>
-                    {currentScaleIndex + 1} / 8 音階完了
-                  </div>
-                </div>
-              </div>
-
-              {/* 現在の状態表示 */}
-              <div style={{ marginBottom: '20px' }}>
-                {!isGuideActive ? (
-                  <div style={{
-                    padding: '16px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '8px',
-                    color: '#6b7280'
-                  }}>
-                    基音再生後、自動的にガイドが開始されます
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{
-                      fontSize: '32px',
-                      fontWeight: 'bold',
-                      color: '#1f2937',
-                      marginBottom: '8px'
-                    }}>
-                      {scaleNotes[currentScaleIndex]}
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b7280',
-                      marginBottom: '12px'
-                    }}>
-                      この音階を歌ってください
-                    </div>
-                    
-                    {/* 状態表示 - Badge */}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '6px 12px',
-                        borderRadius: '16px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        border: '1px solid',
-                        borderColor: scaleStatus === 'waiting' ? '#94a3b8' : '#e2e8f0',
-                        backgroundColor: scaleStatus === 'waiting' ? '#f1f5f9' : '#ffffff',
-                        color: scaleStatus === 'waiting' ? '#334155' : '#94a3b8'
-                      }}>
-                        待機中
-                      </span>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '6px 12px',
-                        borderRadius: '16px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        border: '1px solid',
-                        borderColor: scaleStatus === 'singing' ? '#3b82f6' : '#e2e8f0',
-                        backgroundColor: scaleStatus === 'singing' ? '#1e40af' : '#ffffff',
-                        color: scaleStatus === 'singing' ? 'white' : '#94a3b8'
-                      }}>
-                        🎵 歌唱中
-                      </span>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '6px 12px',
-                        borderRadius: '16px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        border: '1px solid',
-                        borderColor: scaleStatus === 'correct' ? '#10b981' : '#e2e8f0',
-                        backgroundColor: scaleStatus === 'correct' ? '#059669' : '#ffffff',
-                        color: scaleStatus === 'correct' ? 'white' : '#94a3b8'
-                      }}>
-                        ✅ 正解
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* リセットボタン */}
-              {isGuideActive && (
-                <button
-                  onClick={resetGuideSystem}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    border: 'none',
-                    cursor: 'pointer',
-                    backgroundColor: '#6b7280',
-                    color: 'white',
-                    transition: 'background-color 0.2s ease-in-out'
-                  }}
-                >
-                  🔄 ガイドリセット
-                </button>
-              )}
-            </div>
-          )}
 
           {/* デバッグログ表示 */}
           {debugLog.length > 0 && (
