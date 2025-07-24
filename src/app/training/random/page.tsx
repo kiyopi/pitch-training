@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Play, Mic, VolumeX, Volume2 } from "lucide-react";
+import { ArrowLeft, Play, Mic, VolumeX, Volume2, Music } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 
@@ -224,7 +224,7 @@ export default function RandomTrainingPage() {
         margin: '0 auto',
         padding: '0 16px'
       }}>
-        {/* ヘッダー */}
+        {/* Header - トップページ統一デザイン */}
         <header style={{ borderBottom: '1px solid #e5e7eb' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -245,12 +245,15 @@ export default function RandomTrainingPage() {
                 <ArrowLeft style={{ width: '16px', height: '16px' }} />
                 戻る
               </Link>
-              <h1 style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: '#1a1a1a',
-                margin: 0
-              }}>ランダム基音トレーニング</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Music style={{ width: '24px', height: '24px', color: '#059669' }} />
+                <h1 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#1a1a1a',
+                  margin: 0
+                }}>ランダム基音トレーニング</h1>
+              </div>
             </div>
             <div style={{ fontSize: '14px', color: '#6b7280' }}>
               Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
@@ -260,62 +263,68 @@ export default function RandomTrainingPage() {
 
         {/* メインコンテンツ */}
         <main style={{ padding: '32px 0' }}>
-          {/* メインエリア */}
+          {/* Hero Section - トップページ統一スタイル */}
+          <div style={{ textAlign: 'center', marginBottom: '48px', paddingTop: '24px' }}>
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              borderRadius: '50%', 
+              backgroundColor: '#d1fae5', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              margin: '0 auto 24px auto'
+            }}>
+              <Music style={{ width: '40px', height: '40px', color: '#059669' }} />
+            </div>
+            <h2 style={{ fontSize: '36px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '16px', margin: '0 0 16px 0' }}>
+              ランダム基音モード
+            </h2>
+            <p style={{ fontSize: '18px', color: '#6b7280', maxWidth: '600px', margin: '0 auto 16px auto', lineHeight: '1.6' }}>
+              10種類の基音からランダムに選択してドレミファソラシドを発声
+            </p>
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: '#d1fae5',
+              color: '#059669',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              初心者向け
+            </div>
+          </div>
+
+          {/* Main Card */}
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #e5e7eb',
             borderRadius: '12px',
             padding: '32px',
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            marginBottom: '48px',
+            marginBottom: '32px',
             textAlign: 'center'
           }}>
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎲</div>
-              <h2 style={{
-                fontSize: '32px',
-                fontWeight: 'bold',
-                color: '#1a1a1a',
-                margin: '0 0 16px 0'
-              }}>ランダム基音モード</h2>
-              <p style={{
-                fontSize: '18px',
-                color: '#6b7280',
-                lineHeight: '1.6',
-                margin: '0 0 16px 0'
-              }}>
-                10種類の基音からランダムに選択してドレミファソラシドを発声
-              </p>
-              <div style={{
-                display: 'inline-block',
-                backgroundColor: '#d1fae5',
-                color: '#059669',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
-                初心者向け
-              </div>
-            </div>
-          
             {/* 現在の基音表示 */}
             {currentBaseNote && (
               <div style={{
-                marginTop: '24px',
-                padding: '16px',
+                padding: '24px',
                 backgroundColor: '#eff6ff',
                 border: '1px solid #bfdbfe',
-                borderRadius: '12px'
+                borderRadius: '12px',
+                marginBottom: '24px'
               }}>
-                <p style={{
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  color: '#1e40af',
-                  margin: '0 0 4px 0'
-                }}>
-                  🎵 現在の基音: <span style={{ fontSize: '24px' }}>{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <Music style={{ width: '24px', height: '24px', color: '#1e40af' }} />
+                  <span style={{
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    color: '#1e40af'
+                  }}>
+                    現在の基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
+                  </span>
+                </div>
                 <p style={{
                   fontSize: '14px',
                   color: '#2563eb',
@@ -325,9 +334,8 @@ export default function RandomTrainingPage() {
                 </p>
               </div>
             )}
-          </div>
 
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            {/* ランダム基音再生ボタン */}
             <button
               onClick={handleStart}
               disabled={isPlaying}
