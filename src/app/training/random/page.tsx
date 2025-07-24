@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Play, Mic, VolumeX, Volume2, Music } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
+import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
+import { AudioDOMController } from '@/utils/audioDOMHelpers';
 
 export default function RandomTrainingPage() {
   // React状態管理（UIレイアウト制御）
@@ -25,8 +27,11 @@ export default function RandomTrainingPage() {
   
   // 音程検出用（React非依存の直接操作）
   const animationFrameRef = useRef<number | null>(null);
-  const dataArrayRef = useRef<Float32Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
   const bufferLength = useRef<number>(0);
+  
+  // 統一音響処理モジュール
+  const audioProcessorRef = useRef<UnifiedAudioProcessor | null>(null);
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
   const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
@@ -103,17 +108,10 @@ export default function RandomTrainingPage() {
     }
   }, []);
 
-  // DOM直接操作: 音量表示更新（iPhone Safari WebKit対応）
+  // DOM直接操作: 音量表示更新（統一モジュール使用）
   const updateVolumeDisplay = useCallback((volume: number) => {
-    const clampedVolume = Math.max(0, Math.min(100, volume));
-    
-    // iPhone レンダリング問題対応: 完全にstyle属性で制御
     if (volumeBarRef.current) {
-      volumeBarRef.current.style.width = `${clampedVolume}%`;
-      volumeBarRef.current.style.backgroundColor = '#10b981'; // emerald-500
-      volumeBarRef.current.style.height = '12px';
-      volumeBarRef.current.style.borderRadius = '9999px';
-      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+      AudioDOMController.updateVolumeDisplay(volumeBarRef.current, volume);
     }
   }, []);
 
@@ -130,13 +128,15 @@ export default function RandomTrainingPage() {
       `;
     }
     
-    // 音量バーの初期化（0%確実表示）
+    // 音量バーの初期化（統一モジュール使用）
     if (volumeBarRef.current) {
-      volumeBarRef.current.style.width = '0%';
-      volumeBarRef.current.style.backgroundColor = '#10b981';
-      volumeBarRef.current.style.height = '12px';
-      volumeBarRef.current.style.borderRadius = '9999px';
-      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+      AudioDOMController.initializeVolumeBar(volumeBarRef.current);
+    }
+    
+    // 統一音響処理モジュール初期化
+    if (!audioProcessorRef.current) {
+      audioProcessorRef.current = new UnifiedAudioProcessor();
+      addLog('🔧 統一音響処理モジュール初期化完了');
     }
     
     addLog('🖥️ DOM直接操作基盤初期化完了');
@@ -240,10 +240,10 @@ export default function RandomTrainingPage() {
       
       // Pitchy McLeod Pitch Method 初期化（PITCHY_SPECS準拠）
       if (!pitchDetectorRef.current) {
-        // FFTサイズに合わせたFloat32Array用のDetectorを作成
+        // FFTサイズに合わせたUint8Array用のDetectorを作成（統一仕様）
         const fftSize = analyser.fftSize; // 2048
         bufferLength.current = analyser.frequencyBinCount; // fftSize/2 = 1024
-        dataArrayRef.current = new Float32Array(fftSize); // 時間域データ用
+        dataArrayRef.current = new Uint8Array(bufferLength.current); // バイト時間域データ用
         
         // PITCHY_SPECS: forFloat32Array(fftSize) で初期化
         pitchDetectorRef.current = PitchDetector.forFloat32Array(fftSize);
@@ -270,43 +270,31 @@ export default function RandomTrainingPage() {
       return;
     }
     
-    // 時間域データ取得（Pitchyは時間域データが必要）
-    analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
+    // バイト時間域データ取得（統一仕様）
+    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
     
-    // Step A6: 音量計算（マイクテストページ準拠の実装）
-    let sum = 0;
+    // 統一音響処理モジュールによる音量計算
+    const volumeResult = audioProcessorRef.current!.calculateVolume(dataArrayRef.current);
+    const finalVolume = audioProcessorRef.current!.getFinalDisplayVolume(volumeResult.finalVolume);
+    
+    // Float32Array変換（Pitchy用）
+    const floatArray = new Float32Array(dataArrayRef.current.length);
     for (let i = 0; i < dataArrayRef.current.length; i++) {
-      sum += dataArrayRef.current[i] * dataArrayRef.current[i];
+      floatArray[i] = (dataArrayRef.current[i] - 128) / 128; // -1 to 1 正規化
     }
-    const rmsVolume = Math.sqrt(sum / dataArrayRef.current.length);
     
-    // iPhone/PC対応の音量スケーリング（マイクテストページ準拠）
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const microphoneSpec = {
-      divisor: isIOS ? 4.0 : 6.0,
-      gainCompensation: isIOS ? 1.5 : 1.0,
-      noiseThreshold: isIOS ? 12 : 15,
-      smoothingFactor: 0.2
-    };
-    
-    const calculatedVolume = rmsVolume * 1000; // RMS値を1000倍してスケール調整
-    const rawVolumePercent = Math.min(Math.max(calculatedVolume / microphoneSpec.divisor * 100, 0), 100);
-    const compensatedVolume = rawVolumePercent * microphoneSpec.gainCompensation;
-    
-    // Step A6修正: 無音時の音量バー0%確実表示（ノイズ閾値処理）
-    const finalVolume = compensatedVolume > microphoneSpec.noiseThreshold ? 
-      Math.min(100, compensatedVolume) : 0;
-    
-    // Pitchy McLeod Pitch Method による基音検出
+    // Pitchy McLeod Pitch Method による基音検出（Float32Array使用）
     const [rawPitch, clarity] = pitchDetectorRef.current.findPitch(
-      dataArrayRef.current, 
+      floatArray, 
       audioContextRef.current.sampleRate
     );
     
     // PITCHY_SPECS準拠: 検出条件チェック
     if (rawPitch > 0 && clarity > 0.6 && rawPitch >= 80 && rawPitch <= 1200) {
-      // Step A6修正: 周波数検出時のみ音量バー表示（仕様書準拠）
-      updateVolumeDisplay(finalVolume);
+      // 統一仕様: 周波数検出時のみ音量バー表示
+      if (audioProcessorRef.current!.shouldDisplayVolume(rawPitch, clarity)) {
+        updateVolumeDisplay(finalVolume);
+      }
       
       // 動的オクターブ補正システム（PITCHY_SPECS準拠）
       let correctedPitch = rawPitch;
@@ -346,7 +334,7 @@ export default function RandomTrainingPage() {
       console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
       
     } else {
-      // Step A6修正: 音程未検出時は音量バーも0%（仕様書準拠）
+      // 統一仕様: 音程未検出時は音量バーも0%
       updateVolumeDisplay(0);
       updateFrequencyDisplay(0, 0, undefined);
       
