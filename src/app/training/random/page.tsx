@@ -1,31 +1,36 @@
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, Mic, VolumeX, Volume2 } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 
 export default function RandomTrainingPage() {
+  // React状態管理（UIレイアウト制御）
   const [isPlaying, setIsPlaying] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
   const [isDetecting, setIsDetecting] = useState(false);
   
-  // Pitchy統合基盤
+  // Pitchy統合基盤（音響処理の核心）
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
   
-  // AudioContext・AnalyserNode基盤
+  // AudioContext・AnalyserNode基盤（Web Audio API）
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   
-  // マイクストリーム管理
+  // マイクストリーム管理（MediaStream制御）
   const micStreamRef = useRef<MediaStream | null>(null);
   
-  // 音程検出用（React非依存）
+  // 音程検出用（React非依存の直接操作）
   const animationFrameRef = useRef<number | null>(null);
   const dataArrayRef = useRef<Float32Array | null>(null);
   const bufferLength = useRef<number>(0);
+  
+  // DOM直接操作用ref（音響特化アーキテクチャ）
+  const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
+  const volumeBarRef = useRef<HTMLDivElement | null>(null);
   
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
