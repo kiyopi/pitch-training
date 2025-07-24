@@ -33,9 +33,19 @@ export default function RandomTrainingPage() {
   // 統一音響処理モジュール
   const audioProcessorRef = useRef<UnifiedAudioProcessor | null>(null);
   
+  // 相対音程計算状態管理
+  const [currentBaseFrequency, setCurrentBaseFrequency] = useState<number | null>(null);
+  const [relativePitchInfo, setRelativePitchInfo] = useState<{
+    semitones: number;
+    scaleDegree: number;
+    noteName: string;
+    isCorrect: boolean;
+  } | null>(null);
+  
   // DOM直接操作用ref（音響特化アーキテクチャ）
   const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
   const volumeBarRef = useRef<HTMLDivElement | null>(null);
+  const relativePitchDisplayRef = useRef<HTMLDivElement | null>(null);
   
   // 10種類の基音候補（PITCHY_SPECS準拠 + ランダムトレーニング最適化）
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
@@ -56,6 +66,83 @@ export default function RandomTrainingPage() {
     console.log(message);
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
+
+  // 相対音程計算システム（Step B-1）
+  const calculateRelativePitch = useCallback((detectedFreq: number, baseFreq: number) => {
+    // セミトーン差計算（12平均律）
+    const semitones = Math.round(12 * Math.log2(detectedFreq / baseFreq));
+    
+    // オクターブ内の音程番号（0-11）
+    const scaleDegree = ((semitones % 12) + 12) % 12;
+    
+    // ドレミファソラシド判定（8音階システム）
+    const scaleNames = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ'];
+    const scaleMapping = [0, 2, 4, 5, 7, 9, 11]; // C, D, E, F, G, A, B
+    
+    let noteName = '不明';
+    let isCorrect = false;
+    
+    // 8音階内での最近接音程を検索
+    let minDistance = 12;
+    let closestIndex = -1;
+    
+    for (let i = 0; i < scaleMapping.length; i++) {
+      const distance = Math.abs(scaleDegree - scaleMapping[i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+    
+    // 許容誤差内（±50セント = ±0.5セミトーン）での判定
+    const tolerance = 0.5;
+    if (minDistance <= tolerance && closestIndex !== -1) {
+      noteName = scaleNames[closestIndex];
+      isCorrect = minDistance <= 0.3; // より厳密な正解判定（±30セント）
+    }
+    
+    return {
+      semitones,
+      scaleDegree,
+      noteName,
+      isCorrect,
+      distance: minDistance
+    };
+  }, []);
+
+  // 相対音程表示更新
+  const updateRelativePitchDisplay = useCallback((relativePitch: {
+    semitones: number;
+    scaleDegree: number;
+    noteName: string;
+    isCorrect: boolean;
+    distance: number;
+  } | null) => {
+    if (!relativePitchDisplayRef.current) return;
+    
+    if (relativePitch) {
+      const { semitones, noteName, isCorrect, distance } = relativePitch;
+      const statusColor = isCorrect ? '#10b981' : distance <= 0.5 ? '#f59e0b' : '#ef4444';
+      const statusText = isCorrect ? '正解！' : distance <= 0.5 ? '近い' : '要練習';
+      
+      relativePitchDisplayRef.current.innerHTML = `
+        <div style="text-align: center; padding: 8px;">
+          <div style="font-size: 18px; font-weight: bold; color: ${statusColor}; margin-bottom: 4px;">
+            ${noteName} (${semitones >= 0 ? '+' : ''}${semitones})
+          </div>
+          <div style="font-size: 12px; color: ${statusColor};">
+            ${statusText} (誤差: ${distance.toFixed(1)}セミトーン)
+          </div>
+        </div>
+      `;
+    } else {
+      relativePitchDisplayRef.current.innerHTML = `
+        <div style="text-align: center; color: #6b7280; padding: 8px;">
+          <div style="font-size: 14px;">音程分析待機中...</div>
+        </div>
+      `;
+    }
+  }, []);
 
   // 周波数から音名を取得する関数（Step A6で追加）
   const getNoteNameFromFrequency = (frequency: number): string => {
@@ -131,6 +218,11 @@ export default function RandomTrainingPage() {
     // 音量バーの初期化（統一モジュール使用）
     if (volumeBarRef.current) {
       AudioDOMController.initializeVolumeBar(volumeBarRef.current);
+    }
+    
+    // 相対音程表示の初期化
+    if (relativePitchDisplayRef.current) {
+      updateRelativePitchDisplay(null);
     }
     
     // 統一音響処理モジュール初期化
@@ -330,6 +422,18 @@ export default function RandomTrainingPage() {
       const noteName = getNoteNameFromFrequency(correctedPitch);
       updateFrequencyDisplay(correctedPitch, clarity, noteName);
       
+      // Step B-1: 相対音程計算実行
+      if (currentBaseFrequency && correctedPitch > 0) {
+        const relativePitch = calculateRelativePitch(correctedPitch, currentBaseFrequency);
+        setRelativePitchInfo(relativePitch);
+        updateRelativePitchDisplay(relativePitch);
+        
+        // 相対音程ログ（1秒に1回）
+        if (Date.now() % 1000 < 17) {
+          addLog(`🎵 相対音程: ${relativePitch.noteName} (${relativePitch.semitones >= 0 ? '+' : ''}${relativePitch.semitones}) ${relativePitch.isCorrect ? '✅正解' : '❌'}`);
+        }
+      }
+      
       // リアルタイム検出ログ（1秒に1回）
       if (Date.now() % 1000 < 17) { // 約60FPSで1秒に1回
         addLog(`🔍 検出: ${correctedPitch.toFixed(1)}Hz - ${noteName} (clarity=${clarity.toFixed(3)})`);
@@ -341,6 +445,10 @@ export default function RandomTrainingPage() {
       // 統一仕様: 音程未検出時は音量バーも0%
       updateVolumeDisplay(0);
       updateFrequencyDisplay(0, 0, undefined);
+      
+      // Step B-1: 音程未検出時は相対音程もリセット
+      setRelativePitchInfo(null);
+      updateRelativePitchDisplay(null);
       
       // デバッグログ（低頻度）
       if (rawPitch > 0 && Date.now() % 2000 < 17) { // 2秒に1回
@@ -413,6 +521,10 @@ export default function RandomTrainingPage() {
     
     setCurrentBaseNote(randomNote);
     setIsPlaying(true);
+    
+    // Step B-1: 基音周波数を設定（相対音程計算用）
+    const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
+    setCurrentBaseFrequency(noteFrequency);
     
     try {
       const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
@@ -820,7 +932,7 @@ export default function RandomTrainingPage() {
               
               {/* 音量バー（DOM直接操作対象） */}
               <div style={{
-                marginBottom: '8px'
+                marginBottom: '16px'
               }}>
                 <div style={{
                   fontSize: '12px',
@@ -841,6 +953,31 @@ export default function RandomTrainingPage() {
                   >
                     {/* iPhone Safari WebKit対応: style属性なし */}
                   </div>
+                </div>
+              </div>
+              
+              {/* Step B-1: 相対音程表示（DOM直接操作対象） */}
+              <div style={{
+                marginBottom: '8px',
+                padding: '12px',
+                backgroundColor: '#f0f9ff',
+                borderRadius: '6px',
+                border: '1px solid #bae6fd'
+              }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#0369a1',
+                  marginBottom: '4px',
+                  fontWeight: 'bold'
+                }}>🎵 相対音程分析:</div>
+                <div 
+                  ref={relativePitchDisplayRef}
+                  style={{
+                    fontSize: '14px',
+                    fontFamily: 'monospace'
+                  }}
+                >
+                  分析待機中...
                 </div>
               </div>
             </div>
