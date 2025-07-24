@@ -2,13 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🚨 最高優先度：user agent stylesheet完全上書き */
-* {
-  box-sizing: border-box;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
+/* 🚨 安全なbody marginリセット */
 html, body {
   margin: 0 !important;
   padding: 0 !important;
