@@ -81,25 +81,23 @@ export default function RandomTrainingPage() {
   const updateFrequencyDisplay = useCallback((frequency: number, clarity: number, noteName?: string) => {
     if (!frequencyDisplayRef.current) return;
     
-    // iPhone Safari WebKit対応: innerHTML全体更新
-    if (frequency > 0 && clarity > 0.1) {
-      const displayContent = noteName 
-        ? `<div style="text-align: center; color: #1f2937; font-weight: 600;">
-             <div style="font-size: 18px; margin-bottom: 4px;">${noteName}</div>
-             <div style="font-size: 14px; color: #6b7280;">${frequency.toFixed(1)} Hz</div>
-             <div style="font-size: 12px; color: #9ca3af;">Clarity: ${clarity.toFixed(3)}</div>
-           </div>`
-        : `<div style="text-align: center; color: #1f2937; font-weight: 600;">
-             <div style="font-size: 16px; margin-bottom: 2px;">${frequency.toFixed(1)} Hz</div>
-             <div style="font-size: 12px; color: #9ca3af;">Clarity: ${clarity.toFixed(3)}</div>
-           </div>`;
-      
+    // Step A6修正: 高さ固定レイアウト（3行固定で表示変化を防止）
+    if (frequency > 0 && clarity > 0.1 && noteName) {
+      const displayContent = `
+        <div style="text-align: center; color: #1f2937; font-weight: 600; height: 60px; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 18px; margin-bottom: 4px;">${noteName}</div>
+          <div style="font-size: 14px; color: #6b7280;">${frequency.toFixed(1)} Hz</div>
+          <div style="font-size: 12px; color: #9ca3af;">Clarity: ${clarity.toFixed(3)}</div>
+        </div>
+      `;
       frequencyDisplayRef.current.innerHTML = displayContent;
     } else {
-      // Step A6: 無音状態・低精度時の表示
+      // Step A6修正: 待機中表示も同じ高さで固定
       frequencyDisplayRef.current.innerHTML = `
-        <div style="text-align: center; color: #6b7280; font-size: 14px;">
-          待機中...
+        <div style="text-align: center; color: #6b7280; height: 60px; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 14px;">待機中...</div>
+          <div style="font-size: 12px; opacity: 0;">　</div>
+          <div style="font-size: 10px; opacity: 0;">　</div>
         </div>
       `;
     }
@@ -121,11 +119,13 @@ export default function RandomTrainingPage() {
 
   // DOM初期化システム（iPhone Safari WebKit制約対応）
   useEffect(() => {
-    // 周波数表示の初期化
+    // Step A6修正: 周波数表示の初期化（高さ固定）
     if (frequencyDisplayRef.current) {
       frequencyDisplayRef.current.innerHTML = `
-        <div style="text-align: center; color: #6b7280; font-size: 14px;">
-          🎤 音程検出準備完了
+        <div style="text-align: center; color: #6b7280; height: 60px; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 14px;">🎤 音程検出準備完了</div>
+          <div style="font-size: 12px; opacity: 0;">　</div>
+          <div style="font-size: 10px; opacity: 0;">　</div>
         </div>
       `;
     }
@@ -292,7 +292,10 @@ export default function RandomTrainingPage() {
     const calculatedVolume = rmsVolume * 1000; // RMS値を1000倍してスケール調整
     const rawVolumePercent = Math.min(Math.max(calculatedVolume / microphoneSpec.divisor * 100, 0), 100);
     const compensatedVolume = rawVolumePercent * microphoneSpec.gainCompensation;
-    const finalVolume = Math.min(100, compensatedVolume);
+    
+    // Step A6修正: 無音時の音量バー0%確実表示（ノイズ閾値処理）
+    const finalVolume = compensatedVolume > microphoneSpec.noiseThreshold ? 
+      Math.min(100, compensatedVolume) : 0;
     
     // Pitchy McLeod Pitch Method による基音検出
     const [rawPitch, clarity] = pitchDetectorRef.current.findPitch(
@@ -300,11 +303,10 @@ export default function RandomTrainingPage() {
       audioContextRef.current.sampleRate
     );
     
-    // Step A6修正: 音量バーは常に更新（マイクテストページ準拠）
-    updateVolumeDisplay(finalVolume);
-    
     // PITCHY_SPECS準拠: 検出条件チェック
     if (rawPitch > 0 && clarity > 0.6 && rawPitch >= 80 && rawPitch <= 1200) {
+      // Step A6修正: 周波数検出時のみ音量バー表示（仕様書準拠）
+      updateVolumeDisplay(finalVolume);
       
       // 動的オクターブ補正システム（PITCHY_SPECS準拠）
       let correctedPitch = rawPitch;
@@ -344,7 +346,8 @@ export default function RandomTrainingPage() {
       console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
       
     } else {
-      // Step A6修正: 音程未検出・低精度時の周波数表示クリア
+      // Step A6修正: 音程未検出時は音量バーも0%（仕様書準拠）
+      updateVolumeDisplay(0);
       updateFrequencyDisplay(0, 0, undefined);
       
       // デバッグログ（低頻度）
