@@ -2,7 +2,7 @@
 
 /* === メインコンテナ === */
 .mainContainer {
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
@@ -140,9 +140,10 @@
 
 .scaleGuideGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  grid-template-columns: repeat(8, 1fr);
   gap: 12px;
-  max-width: 600px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .scaleNoteItem {
@@ -284,10 +285,9 @@
 /* === マイク許可要求セクション === */
 .micPermissionSection {
   text-align: left;
-  padding: 40px 20px;
-  max-width: 100%;
-  margin: 0 auto;
+  padding: 40px 0;
   width: 100%;
+  margin: 0 auto;
 }
 
 .micPermissionTitle {
@@ -311,9 +311,8 @@
   flex-direction: column;
   gap: 12px;
   align-items: center;
-  max-width: 500px;
-  margin: 0 auto;
   width: 100%;
+  margin: 0 auto;
 }
 
 .micPermissionButton {
@@ -322,9 +321,9 @@
   font-weight: 600;
   text-decoration: none;
   transition: all 0.3s ease;
-  min-width: 280px;
-  width: 100%;
-  max-width: 400px;
+  width: 80%;
+  max-width: 500px;
+  min-width: 250px;
   text-align: center;
   font-size: 16px;
 }
@@ -365,8 +364,8 @@
   }
   
   .scaleGuideGrid {
-    grid-template-columns: repeat(4, 1fr);
-    max-width: none;
+    grid-template-columns: repeat(4, 2fr);
+    gap: 8px;
   }
   
   .scaleNoteItem {
@@ -388,7 +387,8 @@
   }
   
   .micPermissionButton {
-    min-width: 250px;
+    width: 85%;
+    min-width: 200px;
     padding: 14px 24px;
     font-size: 15px;
   }
@@ -437,11 +437,12 @@
   }
   
   .micPermissionSection {
-    padding: 24px 12px;
+    padding: 24px 8px;
   }
   
   .micPermissionButton {
-    min-width: 200px;
+    width: 90%;
+    min-width: 180px;
     padding: 12px 20px;
     font-size: 14px;
   }

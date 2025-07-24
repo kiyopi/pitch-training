@@ -133,10 +133,9 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 }
 
 .mainContent {
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 20px;
-  width: 100%;
 }
 ```
 
@@ -181,7 +180,7 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -214,7 +213,7 @@ Next.jsアプリケーション全体で使用する統一ページテンプレ�
 ```css
 /* デフォルト（PC表示） */
 .pageContainer {
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 20px;
   min-height: 100vh;
