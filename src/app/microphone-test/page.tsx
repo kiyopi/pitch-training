@@ -31,7 +31,7 @@ const TRAINING_MODES: Record<string, TrainingMode> = {
     name: 'ランダム基音モード',
     description: '10種類の基音からランダムに選択してトレーニング',
     icon: Music,
-    targetPath: '/random-training',
+    targetPath: '/training/random',
     bgColor: 'bg-emerald-100',
     iconColor: 'text-emerald-600'
   },
