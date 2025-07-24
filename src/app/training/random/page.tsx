@@ -273,16 +273,26 @@ export default function RandomTrainingPage() {
     // 時間域データ取得（Pitchyは時間域データが必要）
     analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
     
-    // Step A6: 音量計算（マイクテストページ準拠）
+    // Step A6: 音量計算（マイクテストページ準拠の実装）
     let sum = 0;
     for (let i = 0; i < dataArrayRef.current.length; i++) {
       sum += dataArrayRef.current[i] * dataArrayRef.current[i];
     }
     const rmsVolume = Math.sqrt(sum / dataArrayRef.current.length);
-    const scaledVolume = Math.min(100, rmsVolume * 300); // 300は経験的調整値
     
-    // 音量バー更新（リアルタイム）
-    updateVolumeDisplay(scaledVolume);
+    // iPhone/PC対応の音量スケーリング（マイクテストページ準拠）
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const microphoneSpec = {
+      divisor: isIOS ? 4.0 : 6.0,
+      gainCompensation: isIOS ? 1.5 : 1.0,
+      noiseThreshold: isIOS ? 12 : 15,
+      smoothingFactor: 0.2
+    };
+    
+    const calculatedVolume = rmsVolume * 1000; // RMS値を1000倍してスケール調整
+    const rawVolumePercent = Math.min(Math.max(calculatedVolume / microphoneSpec.divisor * 100, 0), 100);
+    const compensatedVolume = rawVolumePercent * microphoneSpec.gainCompensation;
+    const finalVolume = Math.min(100, compensatedVolume);
     
     // Pitchy McLeod Pitch Method による基音検出
     const [rawPitch, clarity] = pitchDetectorRef.current.findPitch(
@@ -290,8 +300,11 @@ export default function RandomTrainingPage() {
       audioContextRef.current.sampleRate
     );
     
+    // Step A6修正: 音量バーは常に更新（マイクテストページ準拠）
+    updateVolumeDisplay(finalVolume);
+    
     // PITCHY_SPECS準拠: 検出条件チェック
-    if (rawPitch > 0 && clarity > 0.1 && rawPitch >= 80 && rawPitch <= 1200) {
+    if (rawPitch > 0 && clarity > 0.6 && rawPitch >= 80 && rawPitch <= 1200) {
       
       // 動的オクターブ補正システム（PITCHY_SPECS準拠）
       let correctedPitch = rawPitch;
@@ -319,33 +332,29 @@ export default function RandomTrainingPage() {
         }
       }
       
-      // 高精度検出ログ（clarity > 0.9での精度表示）
-      if (clarity > 0.9) {
-        // リアルタイム検出ログ（1秒に1回）
-        if (Date.now() % 1000 < 17) { // 約60FPSで1秒に1回
-          addLog(`🔍 高精度検出: ${correctedPitch.toFixed(1)}Hz (clarity=${clarity.toFixed(3)})`);
-        }
-        
-        // Step A6: DOM直接操作でのリアルタイム周波数表示更新
-        const noteName = getNoteNameFromFrequency(correctedPitch);
-        updateFrequencyDisplay(correctedPitch, clarity, noteName);
-        console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
+      // Step A6修正: 高精度検出時のDOM更新（clarity > 0.6で更新）
+      const noteName = getNoteNameFromFrequency(correctedPitch);
+      updateFrequencyDisplay(correctedPitch, clarity, noteName);
+      
+      // リアルタイム検出ログ（1秒に1回）
+      if (Date.now() % 1000 < 17) { // 約60FPSで1秒に1回
+        addLog(`🔍 検出: ${correctedPitch.toFixed(1)}Hz - ${noteName} (clarity=${clarity.toFixed(3)})`);
       }
       
-    } else if (rawPitch > 0) {
-      // 検出範囲外または低clarity の場合（デバッグ用）
-      if (Date.now() % 2000 < 17) { // 2秒に1回
+      console.log(`Pitchy: ${correctedPitch.toFixed(1)} Hz, Clarity: ${clarity.toFixed(3)}`);
+      
+    } else {
+      // Step A6修正: 音程未検出・低精度時の周波数表示クリア
+      updateFrequencyDisplay(0, 0, undefined);
+      
+      // デバッグログ（低頻度）
+      if (rawPitch > 0 && Date.now() % 2000 < 17) { // 2秒に1回
         if (rawPitch < 80 || rawPitch > 1200) {
-          addLog(`⚠️ 検出範囲外: ${rawPitch.toFixed(1)}Hz (範囲: 80-1200Hz)`);
-        } else if (clarity <= 0.1) {
-          addLog(`⚠️ 低精度検出: clarity=${clarity.toFixed(3)} (最低: 0.1)`);
+          addLog(`⚠️ 検出範囲外: ${rawPitch.toFixed(1)}Hz`);
+        } else if (clarity <= 0.6) {
+          addLog(`⚠️ 低精度: clarity=${clarity.toFixed(3)}`);
         }
       }
-      // Step A6: 低精度時の周波数表示クリア
-      updateFrequencyDisplay(0, 0, undefined);
-    } else {
-      // Step A6: 音程未検出時の周波数表示クリア
-      updateFrequencyDisplay(0, 0, undefined);
     }
     
     // 次フレームの予約（60FPS継続）
