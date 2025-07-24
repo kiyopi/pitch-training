@@ -498,10 +498,33 @@
   - /src/app/test/unified-audio/page.tsx 実装
   - マイクテストページの完全再現確認
 
+### **Phase 2完了作業 (2025-07-24)**
+#### **Step 2-1: 音響処理コアモジュール完了**
+- ✅ `/src/utils/audioProcessing.ts` 実装完了
+  - UnifiedAudioProcessor クラス（マイクテストページ準拠）
+  - getByteTimeDomainData() + 手動正規化対応
+  - Math.max(rms * 200, maxAmplitude * 100) 音量計算
+  - プラットフォーム別パラメータ（iOS: divisor 4.0, PC: 6.0）
+  - 0.2係数スムージング処理
+
+#### **Step 2-2: DOM操作ヘルパーモジュール完了**
+- ✅ `/src/utils/audioDOMHelpers.ts` 実装完了
+  - AudioDOMController クラス（iPhone WebKit対応）
+  - JavaScript完全制御によるDOM更新
+  - 安全なエラーハンドリング機能
+  - 固定高さ表示・レイアウトシフト防止
+
+#### **Step 2-3: プラットフォーム検出モジュール完了**
+- ✅ `/src/utils/platformDetection.ts` 実装完了
+  - PlatformDetector クラス（詳細検出）
+  - iOS/PC別設定管理
+  - API対応状況チェック
+  - 最適化設定提供
+
 ### **次回継続事項**
-1. **音響処理統一モジュール Phase 2**: 共通モジュール実装
-   - audioProcessing.ts 作成
-   - DOM操作ヘルパー実装
+1. **音響処理統一モジュール Phase 3**: 既存ページ移行
+   - Step 3-1: マイクテストページ統一モジュール適用
+   - Step 3-2: ランダム基音ページ統一モジュール適用
    
 2. **ランダム基音ページ Phase B準備**: 
    - 音響処理統一後に音程検出・スコアリング実装
@@ -510,4 +533,7 @@
 ### **成果物**
 - ✅ /src/app/training/random/page.tsx - Phase A完了
 - ✅ /src/app/test/unified-audio/page.tsx - 統一音響テスト実装
+- ✅ /src/utils/audioProcessing.ts - 統一音響処理コア完了
+- ✅ /src/utils/audioDOMHelpers.ts - DOM操作ヘルパー完了
+- ✅ /src/utils/platformDetection.ts - プラットフォーム検出完了
 - 📝 音響処理差異分析完了（デグレード防止策策定）

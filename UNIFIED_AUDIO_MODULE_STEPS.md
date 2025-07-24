@@ -36,38 +36,24 @@
 
 ---
 
-## 🛠️ Phase 2: 共通モジュール作成 🔄**予定**
+## 🛠️ Phase 2: 共通モジュール作成 ✅**完了**
 
-### **Step 2-1: 音響処理コアモジュール**
+### **Step 2-1: 音響処理コアモジュール** ✅**完了**
+- ✅ `/src/utils/audioProcessing.ts` 実装完了
+- ✅ UnifiedAudioProcessor クラス作成
+- ✅ マイクテストページ準拠の音量計算実装
+- ✅ プラットフォーム別パラメータ対応
+- ✅ スムージング処理統合
+- ✅ 周波数検出連動機能
+
+**主要機能:**
 ```typescript
-// /src/utils/audioProcessing.ts
-export interface AudioProcessingConfig {
-  platform: {
-    ios: { divisor: number; gainCompensation: number; noiseThreshold: number };
-    pc: { divisor: number; gainCompensation: number; noiseThreshold: number };
-  };
-  frequency: { min: number; max: number; clarityThreshold: number };
-  smoothing: { factor: number };
-}
-
 export class UnifiedAudioProcessor {
-  private config: AudioProcessingConfig;
-  private previousVolume: number = 0;
-  
-  constructor(config?: Partial<AudioProcessingConfig>) {
-    this.config = this.mergeWithDefaults(config);
-  }
-  
   // マイクテストページ準拠の音量計算
-  calculateVolume(data: Uint8Array): {
-    rms: number;
-    maxAmplitude: number;
-    calculatedVolume: number;
-    finalVolume: number;
-  }
+  calculateVolume(data: Uint8Array): VolumeResult
   
   // プラットフォーム別補正
-  applyPlatformCorrection(volume: number, isIOS: boolean): number
+  applyPlatformCorrection(volume: number): { rawVolumePercent: number; compensatedVolume: number }
   
   // スムージング処理
   applySmoothingFilter(current: number): number
@@ -77,68 +63,45 @@ export class UnifiedAudioProcessor {
 }
 ```
 
-### **Step 2-2: DOM操作ヘルパーモジュール**
+### **Step 2-2: DOM操作ヘルパーモジュール** ✅**完了**
+- ✅ `/src/utils/audioDOMHelpers.ts` 実装完了
+- ✅ AudioDOMController クラス作成
+- ✅ iPhone Safari WebKit対応DOM操作
+- ✅ エラーハンドリング機能
+- ✅ 安全な更新機能
+
+**主要機能:**
 ```typescript
-// /src/utils/audioDOMHelpers.ts
 export class AudioDOMController {
-  static updateVolumeDisplay(element: HTMLElement, volume: number): void {
-    const clampedVolume = Math.max(0, Math.min(100, volume));
-    element.style.width = `${clampedVolume}%`;
-    element.style.backgroundColor = '#10b981';
-    element.style.height = '100%';
-    element.style.borderRadius = '9999px';
-    element.style.transition = 'width 0.1s ease-out';
-  }
+  // iPhone対応音量バー更新
+  static updateVolumeDisplay(element: HTMLElement, volume: number): void
   
-  static updateFrequencyDisplay(element: HTMLElement, frequency: number | null): void {
-    if (frequency) {
-      element.textContent = `${frequency.toFixed(1)} Hz`;
-    } else {
-      element.textContent = '-- Hz';
-    }
-  }
+  // 周波数表示更新
+  static updateFrequencyDisplay(element: HTMLElement, frequency: number | null): void
   
-  static updateNoteDisplay(element: HTMLElement, noteName: string | null): void {
-    element.textContent = noteName || '--';
-  }
+  // 複合音響情報更新
+  static updateAudioDisplay(elements, audioInfo): void
 }
 ```
 
-### **Step 2-3: プラットフォーム検出・設定モジュール**
-```typescript
-// /src/utils/platformDetection.ts
-export interface PlatformConfig {
-  isIOS: boolean;
-  microphoneSpec: {
-    divisor: number;
-    gainCompensation: number;
-    noiseThreshold: number;
-    smoothingFactor: number;
-  };
-  filterConfig: {
-    useThreeStageFilter: boolean;
-    highPassFreq: number;
-    lowPassFreq: number;
-    notchFreq: number;
-  };
-}
+### **Step 2-3: プラットフォーム検出・設定モジュール** ✅**完了**
+- ✅ `/src/utils/platformDetection.ts` 実装完了
+- ✅ PlatformDetector クラス作成
+- ✅ 詳細プラットフォーム検出
+- ✅ API対応状況チェック
+- ✅ 最適化設定提供
 
+**主要機能:**
+```typescript
 export function detectPlatformConfig(): PlatformConfig {
+  // iOS/PC自動検出 + 設定適用
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   
   return {
-    isIOS,
     microphoneSpec: {
       divisor: isIOS ? 4.0 : 6.0,
       gainCompensation: isIOS ? 1.5 : 1.0,
-      noiseThreshold: isIOS ? 12 : 15,
-      smoothingFactor: 0.2
-    },
-    filterConfig: {
-      useThreeStageFilter: !isIOS,
-      highPassFreq: isIOS ? 60 : 80,
-      lowPassFreq: 4000,
-      notchFreq: 60
+      noiseThreshold: isIOS ? 12 : 15
     }
   };
 }

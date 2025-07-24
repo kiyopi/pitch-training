@@ -7,6 +7,9 @@ import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import { AudioDOMController } from '@/utils/audioDOMHelpers';
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function RandomTrainingPage() {
   // React状態管理（UIレイアウト制御）
@@ -45,6 +48,12 @@ export default function RandomTrainingPage() {
     distance: number;
     centsError: number;
   } | null>(null);
+
+  // shadcn/ui テスト用状態管理
+  const [currentScaleIndex, setCurrentScaleIndex] = useState(0);
+  const [scaleProgress, setScaleProgress] = useState(0);
+  const [scaleStatus, setScaleStatus] = useState<'waiting' | 'singing' | 'correct' | 'incorrect'>('waiting');
+  const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
   const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
@@ -69,6 +78,27 @@ export default function RandomTrainingPage() {
   const addLog = (message: string) => {
     console.log(message);
     setDebugLog(prev => [...prev.slice(-4), message]);
+  };
+
+  // shadcn/ui テスト用関数
+  const handleScaleNext = () => {
+    if (currentScaleIndex < scaleNotes.length - 1) {
+      const nextIndex = currentScaleIndex + 1;
+      setCurrentScaleIndex(nextIndex);
+      setScaleProgress((nextIndex + 1) / scaleNotes.length * 100);
+      setScaleStatus('singing');
+      addLog(`🎵 shadcn/ui テスト: ${scaleNotes[nextIndex]} に進行`);
+    } else {
+      addLog('🎉 shadcn/ui テスト: 8音階完了！');
+      setScaleStatus('correct');
+    }
+  };
+
+  const handleScaleReset = () => {
+    setCurrentScaleIndex(0);
+    setScaleProgress(12.5); // 1/8
+    setScaleStatus('waiting');
+    addLog('🔄 shadcn/ui テスト: リセット');
   };
 
   // Step B-2: ドレミファソラシド判定システム（8音階正誤判定）
@@ -287,6 +317,9 @@ export default function RandomTrainingPage() {
       audioProcessorRef.current = new UnifiedAudioProcessor();
       addLog('🔧 統一音響処理モジュール初期化完了');
     }
+
+    // shadcn/ui テスト初期化
+    setScaleProgress(12.5); // 1/8から開始
     
     addLog('🖥️ DOM直接操作基盤初期化完了');
   }, []);
@@ -1082,6 +1115,164 @@ export default function RandomTrainingPage() {
             }}>
               ※ 上記の情報はDOM直接操作で更新されます（React非依存）
             </p>
+          </div>
+
+          {/* shadcn/ui テストセクション */}
+          <div style={{
+            marginBottom: '32px',
+            padding: '24px',
+            backgroundColor: '#fefce8',
+            border: '2px solid #fde047',
+            borderRadius: '12px'
+          }}>
+            <h4 style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#92400e',
+              margin: '0 0 16px 0',
+              textAlign: 'center'
+            }}>🧪 shadcn/ui コンポーネントテスト</h4>
+            
+            {/* Pattern 1: Toggle Group */}
+            <div style={{ marginBottom: '24px' }}>
+              <h5 style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#374151',
+                margin: '0 0 8px 0'
+              }}>Pattern 1: Toggle Group（8音階選択）</h5>
+              <div className="flex justify-center">
+                <ToggleGroup 
+                  type="single" 
+                  value={scaleNotes[currentScaleIndex]}
+                  className="grid grid-cols-4 gap-2 sm:grid-cols-8"
+                >
+                  {scaleNotes.map((note, index) => (
+                    <ToggleGroupItem
+                      key={note}
+                      value={note}
+                      variant={index === currentScaleIndex ? "default" : "outline"}
+                      className={`w-12 h-12 ${index === currentScaleIndex ? 'bg-blue-500 text-white' : ''}`}
+                    >
+                      {note}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+            </div>
+
+            {/* Pattern 2: Progress Bar */}
+            <div style={{ marginBottom: '24px' }}>
+              <h5 style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#374151',
+                margin: '0 0 8px 0'
+              }}>Pattern 2: Progress（進捗表示）</h5>
+              <div className="space-y-2">
+                <Progress value={scaleProgress} className="w-full" />
+                <div className="text-center text-sm text-muted-foreground">
+                  {currentScaleIndex + 1} / 8 音階
+                </div>
+              </div>
+            </div>
+
+            {/* Pattern 3: Badge Status */}
+            <div style={{ marginBottom: '24px' }}>
+              <h5 style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#374151',
+                margin: '0 0 8px 0'
+              }}>Pattern 3: Badge（状態表示）</h5>
+              <div className="flex justify-center gap-2">
+                <Badge 
+                  variant={scaleStatus === 'waiting' ? 'secondary' : 'outline'}
+                >
+                  待機中
+                </Badge>
+                <Badge 
+                  variant={scaleStatus === 'singing' ? 'default' : 'outline'}
+                >
+                  🎵 歌唱中
+                </Badge>
+                <Badge 
+                  variant={scaleStatus === 'correct' ? 'default' : 'outline'}
+                  className={scaleStatus === 'correct' ? 'bg-green-500' : ''}
+                >
+                  ✅ 正解
+                </Badge>
+                <Badge 
+                  variant={scaleStatus === 'incorrect' ? 'destructive' : 'outline'}
+                >
+                  ❌ 不正解
+                </Badge>
+              </div>
+            </div>
+
+            {/* 現在の音階表示 */}
+            <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+              <div style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                marginBottom: '8px'
+              }}>
+                現在: {scaleNotes[currentScaleIndex]}
+              </div>
+            </div>
+
+            {/* テスト制御ボタン */}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleScaleNext}
+                disabled={currentScaleIndex >= scaleNotes.length - 1}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: currentScaleIndex >= scaleNotes.length - 1 ? 'not-allowed' : 'pointer',
+                  backgroundColor: currentScaleIndex >= scaleNotes.length - 1 ? '#9ca3af' : '#2563eb',
+                  color: 'white',
+                  transition: 'background-color 0.2s ease-in-out'
+                }}
+              >
+                次へ
+              </button>
+              <button
+                onClick={handleScaleReset}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: '#059669',
+                  color: 'white',
+                  transition: 'background-color 0.2s ease-in-out'
+                }}
+              >
+                リセット
+              </button>
+            </div>
+
+            {/* 説明 */}
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#6b7280'
+            }}>
+              <p style={{ margin: 0 }}>
+                <strong>テスト内容:</strong> 「次へ」ボタンでToggle Group、Progress、Badgeの動作を確認できます。
+                PC（横8列）とiPhone（4x2グリッド）での表示も確認してください。
+              </p>
+            </div>
           </div>
 
           {/* デバッグログ表示 */}
