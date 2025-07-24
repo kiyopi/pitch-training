@@ -40,6 +40,10 @@ export default function RandomTrainingPage() {
     scaleDegree: number;
     noteName: string;
     isCorrect: boolean;
+    isClose: boolean;
+    accuracyLevel: string;
+    distance: number;
+    centsError: number;
   } | null>(null);
   
   // DOM直接操作用ref（音響特化アーキテクチャ）
@@ -275,6 +279,7 @@ export default function RandomTrainingPage() {
     // 相対音程表示の初期化
     if (relativePitchDisplayRef.current) {
       updateRelativePitchDisplay(null);
+      addLog('🎵 相対音程表示エリア初期化完了');
     }
     
     // 統一音響処理モジュール初期化
@@ -495,8 +500,8 @@ export default function RandomTrainingPage() {
           addLog(`🎵 相対音程: ${noteName} (${semitones >= 0 ? '+' : ''}${semitones}) ${statusEmoji} 誤差: ${centsError}セント`);
         }
       } else {
-        // デバッグ: 相対音程計算が実行されない理由をログ出力（10秒に1回）
-        if (Date.now() % 10000 < 17) {
+        // デバッグ: 相対音程計算が実行されない理由をログ出力（5秒に1回）
+        if (Date.now() % 5000 < 17) {
           addLog(`🔍 相対音程計算スキップ: 基音=${currentBaseFrequency ? `${currentBaseFrequency.toFixed(1)}Hz` : 'null'}, 検出=${correctedPitch.toFixed(1)}Hz`);
         }
       }
@@ -592,6 +597,7 @@ export default function RandomTrainingPage() {
     // Step B-1: 基音周波数を設定（相対音程計算用）
     const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
     setCurrentBaseFrequency(noteFrequency);
+    addLog(`🎯 基音周波数設定: ${noteFrequency.toFixed(1)}Hz (${randomNote})`);
     
     try {
       const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
@@ -640,7 +646,13 @@ export default function RandomTrainingPage() {
           // Step B-2: 基音再生完了後に自動的に音程検出開始
           setTimeout(async () => {
             addLog('🎤 基音再生完了 → 音程検出を自動開始');
-            await startPitchDetection();
+            try {
+              await startPitchDetection();
+              addLog('✅ 自動音程検出開始成功');
+            } catch (error) {
+              addLog('❌ 自動音程検出開始失敗');
+              console.error('音程検出開始エラー:', error);
+            }
           }, 300); // 0.3秒待機してから音程検出開始
           
         } catch (releaseError) {
