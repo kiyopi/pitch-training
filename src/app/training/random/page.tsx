@@ -33,8 +33,8 @@ export default function RandomTrainingPage() {
   // 統一音響処理モジュール
   const audioProcessorRef = useRef<UnifiedAudioProcessor | null>(null);
   
-  // 相対音程計算状態管理
-  const [currentBaseFrequency, setCurrentBaseFrequency] = useState<number | null>(null);
+  // 相対音程計算状態管理（ref使用で状態保持）
+  const currentBaseFrequencyRef = useRef<number | null>(null);
   const [relativePitchInfo, setRelativePitchInfo] = useState<{
     semitones: number;
     scaleDegree: number;
@@ -480,13 +480,13 @@ export default function RandomTrainingPage() {
       updateFrequencyDisplay(correctedPitch, clarity, noteName);
       
       // Step B-1: 相対音程計算実行
-      if (currentBaseFrequency && correctedPitch > 0) {
+      if (currentBaseFrequencyRef.current && correctedPitch > 0) {
         // デバッグ: 相対音程計算の実行確認（1秒に1回）
         if (Date.now() % 1000 < 17) {
-          addLog(`🎯 相対音程計算実行: 基音=${currentBaseFrequency.toFixed(1)}Hz, 検出=${correctedPitch.toFixed(1)}Hz`);
+          addLog(`🎯 相対音程計算実行: 基音=${currentBaseFrequencyRef.current.toFixed(1)}Hz, 検出=${correctedPitch.toFixed(1)}Hz`);
         }
         
-        const relativePitch = calculateRelativePitch(correctedPitch, currentBaseFrequency);
+        const relativePitch = calculateRelativePitch(correctedPitch, currentBaseFrequencyRef.current);
         setRelativePitchInfo(relativePitch);
         updateRelativePitchDisplay(relativePitch);
         
@@ -507,7 +507,7 @@ export default function RandomTrainingPage() {
       } else {
         // デバッグ: 相対音程計算が実行されない理由をログ出力（1秒に1回）
         if (Date.now() % 1000 < 17) {
-          const baseFreqStatus = currentBaseFrequency ? `${currentBaseFrequency.toFixed(1)}Hz` : 'null';
+          const baseFreqStatus = currentBaseFrequencyRef.current ? `${currentBaseFrequencyRef.current.toFixed(1)}Hz` : 'null';
           const pitchStatus = correctedPitch > 0 ? `${correctedPitch.toFixed(1)}Hz` : `${correctedPitch.toFixed(1)}Hz (≤0)`;
           addLog(`🔍 相対音程計算スキップ: 基音=${baseFreqStatus}, 検出=${pitchStatus}`);
         }
@@ -603,7 +603,7 @@ export default function RandomTrainingPage() {
     
     // Step B-1: 基音周波数を設定（相対音程計算用）
     const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
-    setCurrentBaseFrequency(noteFrequency);
+    currentBaseFrequencyRef.current = noteFrequency;
     addLog(`🎯 基音周波数設定: ${noteFrequency.toFixed(1)}Hz (${randomNote})`);
     
     try {
