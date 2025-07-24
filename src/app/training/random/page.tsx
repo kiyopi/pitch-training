@@ -79,10 +79,14 @@ export default function RandomTrainingPage() {
     'A4': 440.00, 'B4': 493.88, 'C5': 523.25, 'D5': 587.33, 'E5': 659.25
   };
   
-  const addLog = (message: string) => {
+  const addLog = useCallback((message: string) => {
     console.log(message);
-    setDebugLog(prev => [...prev.slice(-4), message]);
-  };
+    try {
+      setDebugLog(prev => [...prev.slice(-4), message]);
+    } catch (error) {
+      console.error('addLog エラー:', error);
+    }
+  }, []);
 
   // 8音階自動進行システム - 結果収集版
   const checkScaleProgression = useCallback((detectedNote: string, centsError: number = 0) => {
@@ -92,11 +96,15 @@ export default function RandomTrainingPage() {
     
     if (detectedNote === expectedNote) {
       // 結果データを収集（表示せずに保存）
-      setScaleResults(prev => [...prev, { 
-        note: expectedNote, 
-        correct: true, 
-        cents: Math.abs(centsError) 
-      }]);
+      try {
+        setScaleResults(prev => [...prev, { 
+          note: expectedNote, 
+          correct: true, 
+          cents: Math.abs(centsError) 
+        }]);
+      } catch (error) {
+        console.error('setScaleResults エラー:', error);
+      }
       
       setScaleStatus('correct');
       addLog(`✅ ${expectedNote} 正解！`);
@@ -126,16 +134,17 @@ export default function RandomTrainingPage() {
         }
       }, 1000);
     }
-  }, [currentScaleIndex, isGuideActive, scaleNotes, addLog, setCurrentScaleIndex, setScaleProgress, setScaleStatus, setIsGuideActive, setScaleResults, setShowResults]);
+  }, [currentScaleIndex, isGuideActive, addLog]);
 
   // DOM直接操作: 8音階ガイドアニメーション制御
   const updateScaleGuideDisplay = useCallback((activeIndex: number, completedIndexes: number[], isActive: boolean) => {
     if (!scaleGuideContainerRef.current) return;
     
-    const scaleItems = scaleGuideContainerRef.current.querySelectorAll('.scale-note-item');
-    
-    scaleItems.forEach((item, index) => {
-      const htmlItem = item as HTMLElement;
+    try {
+      const scaleItems = scaleGuideContainerRef.current.querySelectorAll('.scale-note-item');
+      
+      scaleItems.forEach((item, index) => {
+        const htmlItem = item as HTMLElement;
       
       if (isActive && index === activeIndex) {
         // 現在の音階: ハイライト・拡大
@@ -161,8 +170,11 @@ export default function RandomTrainingPage() {
         htmlItem.style.color = '#6b7280';
         htmlItem.style.transform = 'scale(1)';
         htmlItem.style.boxShadow = 'none';
-      }
-    });
+        }
+      });
+    } catch (error) {
+      console.error('updateScaleGuideDisplay エラー:', error);
+    }
   }, []);
 
   const startGuideSystem = () => {
