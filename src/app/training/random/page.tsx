@@ -61,6 +61,9 @@ export default function RandomTrainingPage() {
   const volumeBarRef = useRef<HTMLDivElement | null>(null);
   const relativePitchDisplayRef = useRef<HTMLDivElement | null>(null);
   
+  // 8音階ガイドDOM直接操作用ref
+  const scaleGuideContainerRef = useRef<HTMLDivElement | null>(null);
+  
   // 10種類の基音候補（PITCHY_SPECS準拠 + ランダムトレーニング最適化）
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
   
@@ -102,20 +105,65 @@ export default function RandomTrainingPage() {
       setTimeout(() => {
         if (currentScaleIndex < scaleNotes.length - 1) {
           const nextIndex = currentScaleIndex + 1;
+          const completedIndexes = Array.from({length: currentScaleIndex + 1}, (_, i) => i);
+          
           setCurrentScaleIndex(nextIndex);
           setScaleProgress((nextIndex + 1) / scaleNotes.length * 100);
           setScaleStatus('singing');
+          
+          
           addLog(`🎵 次の音階: ${scaleNotes[nextIndex]}`);
         } else {
           // 8音階完了 - 結果表示準備
+          const allCompleted = Array.from({length: scaleNotes.length}, (_, i) => i);
+          
           setScaleStatus('correct');
           setIsGuideActive(false);
           setShowResults(true);
+          
+          
           addLog('🎉 8音階完了！結果を確認してください');
         }
       }, 1000);
     }
   }, [currentScaleIndex, isGuideActive, scaleNotes, addLog, setCurrentScaleIndex, setScaleProgress, setScaleStatus, setIsGuideActive, setScaleResults, setShowResults]);
+
+  // DOM直接操作: 8音階ガイドアニメーション制御
+  const updateScaleGuideDisplay = useCallback((activeIndex: number, completedIndexes: number[], isActive: boolean) => {
+    if (!scaleGuideContainerRef.current) return;
+    
+    const scaleItems = scaleGuideContainerRef.current.querySelectorAll('.scale-note-item');
+    
+    scaleItems.forEach((item, index) => {
+      const htmlItem = item as HTMLElement;
+      
+      if (isActive && index === activeIndex) {
+        // 現在の音階: ハイライト・拡大
+        htmlItem.style.fontSize = '20px';
+        htmlItem.style.borderColor = '#3b82f6';
+        htmlItem.style.backgroundColor = '#3b82f6';
+        htmlItem.style.color = 'white';
+        htmlItem.style.transform = 'scale(1.2)';
+        htmlItem.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+      } else if (isActive && completedIndexes.includes(index)) {
+        // 完了済み音階: フェードアウト
+        htmlItem.style.fontSize = '18px';
+        htmlItem.style.borderColor = '#ffffff';
+        htmlItem.style.backgroundColor = '#ffffff';
+        htmlItem.style.color = '#9ca3af';
+        htmlItem.style.transform = 'scale(1)';
+        htmlItem.style.boxShadow = 'none';
+      } else {
+        // 未開始音階: デフォルト
+        htmlItem.style.fontSize = '18px';
+        htmlItem.style.borderColor = '#d1d5db';
+        htmlItem.style.backgroundColor = '#f9fafb';
+        htmlItem.style.color = '#6b7280';
+        htmlItem.style.transform = 'scale(1)';
+        htmlItem.style.boxShadow = 'none';
+      }
+    });
+  }, []);
 
   const startGuideSystem = () => {
     setCurrentScaleIndex(0);
@@ -124,6 +172,8 @@ export default function RandomTrainingPage() {
     setIsGuideActive(true);
     setScaleResults([]); // 結果データリセット
     setShowResults(false); // 結果表示リセット
+    
+    
     addLog('🎵 8音階ガイド開始: ドから歌ってください');
   };
 
@@ -352,8 +402,22 @@ export default function RandomTrainingPage() {
       addLog('🔧 統一音響処理モジュール初期化完了');
     }
     
+    // 8音階ガイドDOM初期化
+    if (scaleGuideContainerRef.current) {
+      updateScaleGuideDisplay(-1, [], false); // 初期状態: 全て非アクティブ
+      addLog('🎵 8音階ガイドDOM初期化完了');
+    }
+    
     addLog('🖥️ DOM直接操作基盤初期化完了');
-  }, []);
+  }, [updateScaleGuideDisplay]);
+
+  // 8音階ガイドアニメーション状態同期
+  useEffect(() => {
+    if (scaleGuideContainerRef.current) {
+      const completedIndexes = Array.from({length: currentScaleIndex}, (_, i) => i);
+      updateScaleGuideDisplay(currentScaleIndex, completedIndexes, isGuideActive);
+    }
+  }, [currentScaleIndex, isGuideActive, updateScaleGuideDisplay]);
 
   // マイクロフォン初期化システム（マイクテストページから移植）
   const initializeMicrophone = async () => {
@@ -889,42 +953,33 @@ export default function RandomTrainingPage() {
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(56px, 1fr))',
-                  gap: '12px',
-                  maxWidth: '600px'
-                }}>
+                <div 
+                  ref={scaleGuideContainerRef}
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(56px, 1fr))',
+                    gap: '12px',
+                    maxWidth: '600px'
+                  }}
+                >
                   {scaleNotes.map((note, index) => (
                     <div
                       key={note}
+                      className="scale-note-item"
                       style={{
                         width: '56px',
                         height: '56px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: (isGuideActive && index === currentScaleIndex) ? '20px' : '18px',
+                        fontSize: '18px',
                         fontWeight: 'bold',
                         borderRadius: '8px',
-                        border: '2px solid',
-                        borderColor: (() => {
-                          if (isGuideActive && index === currentScaleIndex) return '#3b82f6';
-                          if (isGuideActive && index < currentScaleIndex) return '#ffffff';
-                          return '#d1d5db';
-                        })(),
-                        backgroundColor: (() => {
-                          if (isGuideActive && index === currentScaleIndex) return '#3b82f6';
-                          if (isGuideActive && index < currentScaleIndex) return '#ffffff';
-                          return '#f9fafb';
-                        })(),
-                        color: (() => {
-                          if (isGuideActive && index === currentScaleIndex) return 'white';
-                          if (isGuideActive && index < currentScaleIndex) return '#9ca3af';
-                          return '#6b7280';
-                        })(),
-                        transform: (isGuideActive && index === currentScaleIndex) ? 'scale(1.2)' : 'scale(1)',
-                        boxShadow: (isGuideActive && index === currentScaleIndex) ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                        border: '2px solid #d1d5db',
+                        backgroundColor: '#f9fafb',
+                        color: '#6b7280',
+                        transform: 'scale(1)',
+                        boxShadow: 'none',
                         transition: 'all 0.3s ease-in-out'
                       }}
                     >
