@@ -546,21 +546,7 @@ function MicrophoneTestContent() {
       const smoothedVolume = previousVolumeRef.current + microphoneSpec.smoothingFactor * (compensatedVolume - previousVolumeRef.current);
       previousVolumeRef.current = smoothedVolume;
       
-      // 🔍 仕様書準拠デバッグ情報
-      if (Math.random() < 0.01) {
-        console.log(`📝 Spec Debug - raw:${rawVolumePercent.toFixed(1)}, comp:${compensatedVolume.toFixed(1)}, smooth:${smoothedVolume.toFixed(1)}, thresh:${microphoneSpec.noiseThreshold}, iOS:${isIOS}`);
-      }
-      
-      // 🔍 iPhone実機用デバッグ表示
-      const debugInfoRef = document.getElementById('volume-debug-info');
-      if (debugInfoRef && Math.random() < 0.1) {
-        debugInfoRef.innerHTML = `
-          <div style="font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; margin-top: 8px;">
-            📝 Spec: raw=${rawVolumePercent.toFixed(1)}%, comp=${compensatedVolume.toFixed(1)}%, 
-            smooth=${smoothedVolume.toFixed(1)}%, thresh=${microphoneSpec.noiseThreshold}, iOS=${isIOS}
-          </div>
-        `;
-      }
+      // デバッグ情報削除: 音量問題解決により不要
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -1026,7 +1012,7 @@ function MicrophoneTestContent() {
                       }}>0%</span>
                     </div>
                     {/* 🔍 iPhone実機用デバッグ情報表示エリア */}
-                    <div id="volume-debug-info" style={{ marginTop: '8px' }}></div>
+                    {/* デバッグエリア削除: 音量問題解決により不要 */}
                   </div>
                 </div>
               </div>
