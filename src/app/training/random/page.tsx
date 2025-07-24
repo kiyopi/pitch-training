@@ -983,7 +983,7 @@ export default function RandomTrainingPage() {
                         transition: 'all 0.3s ease-in-out'
                       }}
                     >
-                      {String(note || '')}
+                      {note}
                     </div>
                   ))}
                 </div>
@@ -1014,7 +1014,7 @@ export default function RandomTrainingPage() {
                     gap: '8px',
                     marginBottom: '16px'
                   }}>
-                    {scaleResults.map((result, index) => (
+                    {scaleResults.filter(result => result != null).map((result, index) => (
                       <div key={index} style={{
                         textAlign: 'center',
                         padding: '8px',
@@ -1025,16 +1025,16 @@ export default function RandomTrainingPage() {
                         <div style={{
                           fontSize: '14px',
                           fontWeight: 'bold',
-                          color: result.correct ? '#059669' : '#dc2626',
+                          color: result?.correct ? '#059669' : '#dc2626',
                           marginBottom: '4px'
                         }}>
-                          {String(result.note || '')}
+                          {result?.note || '-'}
                         </div>
                         <div style={{
                           fontSize: '12px',
                           color: '#6b7280'
                         }}>
-                          {Math.round(result.cents || 0)}セント
+                          {Math.round(result?.cents || 0)}セント
                         </div>
                       </div>
                     ))}
@@ -1045,7 +1045,7 @@ export default function RandomTrainingPage() {
                     fontSize: '14px',
                     color: '#1e40af'
                   }}>
-                    平均誤差: {scaleResults.length > 0 ? Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length) : 0}セント
+                    平均誤差: {scaleResults.length > 0 ? Math.round(scaleResults.reduce((sum, r) => sum + (r?.cents || 0), 0) / scaleResults.length) : 0}セント
                   </div>
                 </div>
               )}
