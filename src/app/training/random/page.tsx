@@ -32,11 +32,19 @@ export default function RandomTrainingPage() {
   const frequencyDisplayRef = useRef<HTMLDivElement | null>(null);
   const volumeBarRef = useRef<HTMLDivElement | null>(null);
   
-  // 10種類の基音候補
+  // 10種類の基音候補（PITCHY_SPECS準拠 + ランダムトレーニング最適化）
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
+  
+  // 音程表記統一（ド4形式）+ 周波数情報
   const baseNoteNames = {
     'C4': 'ド4', 'D4': 'レ4', 'E4': 'ミ4', 'F4': 'ファ4', 'G4': 'ソ4',
     'A4': 'ラ4', 'B4': 'シ4', 'C5': 'ド5', 'D5': 'レ5', 'E5': 'ミ5'
+  };
+  
+  // PITCHY_SPECS準拠の基音周波数（参考値）
+  const baseNoteFrequencies = {
+    'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00,
+    'A4': 440.00, 'B4': 493.88, 'C5': 523.25, 'D5': 587.33, 'E5': 659.25
   };
   
   const addLog = (message: string) => {
@@ -278,56 +286,80 @@ export default function RandomTrainingPage() {
     addLog('⏹️ 音程検出を停止しました');
   };
 
+  // 基音再生システム（Tone.Sampler + Salamander Grand Piano統合）
   const handleStart = async () => {
-    // 再生中は新しい音を開始しない
+    // 重複再生防止（厳格チェック）
     if (isPlaying) {
       addLog('⚠️ 既に再生中のため新しい音をスキップ');
       return;
     }
     
-    // ランダムな基音を選択
-    const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
-    setCurrentBaseNote(randomNote);
+    // 10種類基音からランダム選択（統計的均等性確保）
+    const randomIndex = Math.floor(Math.random() * baseNotes.length);
+    const randomNote = baseNotes[randomIndex];
+    const noteDisplayName = baseNoteNames[randomNote as keyof typeof baseNoteNames];
     
+    setCurrentBaseNote(randomNote);
     setIsPlaying(true);
     
     try {
-      addLog(`🎲 ランダム基音: ${baseNoteNames[randomNote as keyof typeof baseNoteNames]}`);
+      const noteFrequency = baseNoteFrequencies[randomNote as keyof typeof baseNoteFrequencies];
+      addLog(`🎲 ランダム基音選択: ${noteDisplayName} (${randomNote})`);
+      addLog(`📊 選択詳細: ${randomIndex}/${baseNotes.length - 1}, ${noteFrequency}Hz`);
       
-      // AudioContext開始
+      // Tone.js AudioContext 確実初期化
       if (Tone.getContext().state !== 'running') {
         await Tone.start();
-        addLog('AudioContext開始完了');
+        addLog('🔊 Tone.js AudioContext 開始完了');
       }
       
-      // 高品質ピアノ音源作成（C4単一音源 + 自動ピッチシフト）
+      // 🎹 CLAUDE.md必須仕様: Tone.Sampler + Salamander Grand Piano
       const sampler = new Tone.Sampler({
         urls: {
-          "C4": "C4.mp3"
+          "C4": "C4.mp3" // C4単一音源（自動ピッチシフト対応）
         },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1.5,
-        volume: 6 // プロトタイプ準拠の音量設定（iPhone最適化）
+        release: 1.5,  // プロトタイプ準拠のリリース時間
+        volume: 6      // iPhone最適化音量（プロトタイプ準拠）
       }).toDestination();
       
-      // 音源読み込み待機
-      addLog('ピアノ音源読み込み中...');
+      addLog('🎹 Salamander Grand Piano音源作成完了');
+      
+      // 音源読み込み完全待機（エラー回避）
+      addLog('📦 ピアノ音源読み込み中...');
       await Tone.loaded();
+      addLog('✅ 音源読み込み完了');
       
-      // ランダム選択された基音を1.7秒間再生（C4から自動ピッチシフト）
-      addLog(`♪ 再生中: ${randomNote}`);
-      sampler.triggerAttack(randomNote, undefined, 0.8); // プロトタイプ準拠のvelocity設定
+      // 基音再生実行（1.7秒間・プロトタイプ準拠）
+      addLog(`♪ 再生開始: ${noteDisplayName} (${randomNote})`);
       
-      // 1.7秒後に手動でリリース
-      setTimeout(() => {
-        sampler.triggerRelease(randomNote);
-        addLog(`🔇 再生終了: ${randomNote}`);
-        setIsPlaying(false); // 再生状態をリセット
-      }, 1700);
+      // triggerAttack: velocity 0.8（プロトタイプ準拠）
+      sampler.triggerAttack(randomNote, undefined, 0.8);
+      
+      // 1.7秒後の確実な停止処理
+      const releaseTimer = setTimeout(() => {
+        try {
+          sampler.triggerRelease(randomNote);
+          addLog(`🔇 再生終了: ${noteDisplayName} (1.7sec)`);
+          
+          // 音源リソース解放（メモリリーク防止）
+          sampler.dispose();
+          addLog('🗑️ 音源リソース解放完了');
+          
+        } catch (releaseError) {
+          addLog(`⚠️ 再生停止エラー: ${releaseError}`);
+        } finally {
+          setIsPlaying(false); // 確実な状態リセット
+        }
+      }, 1700); // プロトタイプ準拠の1.7秒
+      
+      // タイマーIDをログ（デバッグ用）
+      addLog(`⏱️ リリースタイマー設定: ${releaseTimer}ms後に停止`);
       
     } catch (error) {
-      addLog(`❌ ピアノ音再生エラー: ${error}`);
-      setIsPlaying(false); // エラー時も再生状態をリセット
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addLog(`❌ ピアノ音源エラー: ${errorMessage}`);
+      setIsPlaying(false); // エラー時も確実に状態リセット
     }
   };
 
