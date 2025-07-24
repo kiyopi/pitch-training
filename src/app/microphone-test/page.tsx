@@ -514,7 +514,7 @@ function MicrophoneTestContent() {
       // 📝 MICROPHONE_PLATFORM_SPECIFICATIONS.md準拠: プラットフォーム特性対応
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const microphoneSpec = {
-        divisor: isIOS ? 4.0 : 3.0,           // 仕様書推奨: iPhone 4.0, PC 3.0
+        divisor: isIOS ? 4.0 : 5.0,           // PC音量レベル調整: 3.0→5.0で100%到達を防止
         gainCompensation: isIOS ? 1.5 : 1.0,  // iPhone低域カット補正
         noiseThreshold: isIOS ? 12 : 8,       // 確実な0%表示: iPhone 12, PC 8
         smoothingFactor: 0.2
