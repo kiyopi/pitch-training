@@ -494,6 +494,11 @@ export default function RandomTrainingPage() {
           
           addLog(`🎵 相対音程: ${noteName} (${semitones >= 0 ? '+' : ''}${semitones}) ${statusEmoji} 誤差: ${centsError}セント`);
         }
+      } else {
+        // デバッグ: 相対音程計算が実行されない理由をログ出力（10秒に1回）
+        if (Date.now() % 10000 < 17) {
+          addLog(`🔍 相対音程計算スキップ: 基音=${currentBaseFrequency ? `${currentBaseFrequency.toFixed(1)}Hz` : 'null'}, 検出=${correctedPitch.toFixed(1)}Hz`);
+        }
       }
       
       // リアルタイム検出ログ（1秒に1回）
@@ -631,6 +636,12 @@ export default function RandomTrainingPage() {
           // 音源リソース解放（メモリリーク防止）
           sampler.dispose();
           addLog('🗑️ 音源リソース解放完了');
+          
+          // Step B-2: 基音再生完了後に自動的に音程検出開始
+          setTimeout(async () => {
+            addLog('🎤 基音再生完了 → 音程検出を自動開始');
+            await startPitchDetection();
+          }, 300); // 0.3秒待機してから音程検出開始
           
         } catch (releaseError) {
           addLog(`⚠️ 再生停止エラー: ${releaseError}`);
