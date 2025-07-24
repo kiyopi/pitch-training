@@ -44,50 +44,113 @@ export default function RandomTrainingPage() {
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
 
-  // マイクストリーム取得関数
+  // マイクロフォン初期化システム（マイクテストページから移植）
   const initializeMicrophone = async () => {
     try {
-      // AudioContext初期化
-      if (!audioContextRef.current) {
-        const AudioCtx = (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).AudioContext || 
-                        (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        audioContextRef.current = new AudioCtx({
-          sampleRate: 44100
-        });
+      addLog('🎤 マイク初期化を開始...');
+      
+      // Web Audio API サポートチェック
+      if (!window.AudioContext && !(window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext) {
+        throw new Error('Web Audio APIがサポートされていません');
       }
       
-      // AnalyserNode作成
-      if (!analyserRef.current) {
-        analyserRef.current = audioContextRef.current.createAnalyser();
-        analyserRef.current.fftSize = 2048;
-        analyserRef.current.smoothingTimeConstant = 0.8;
+      // getUserMedia サポートチェック
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('マイクアクセスAPIがサポートされていません');
       }
       
-      // マイクアクセス許可取得
+      // マイクアクセス要求（iPhone/PC対応設定）
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          autoGainControl: false,
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false,
-          sampleRate: 44100
+          sampleRate: 44100,
+          channelCount: 1
         }
       });
       
       micStreamRef.current = stream;
+      addLog('✅ マイクストリーム取得成功');
       
-      // MediaStreamSource作成とAnalyserNode接続
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
+      // AudioContext セットアップ
+      const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      audioContextRef.current = audioContext;
+      
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        addLog('🔊 AudioContext resumed');
+      }
+      
+      // 音声分析ノード作成
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8; // 安定化重視
+      analyserRef.current = analyser;
+      
+      // 🚨 iPhone AudioContext競合対策: プラットフォーム適応型フィルター
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const source = audioContext.createMediaStreamSource(stream);
+      
+      if (isIOS) {
+        // iPhone: 軽量化フィルター（AudioContext競合回避）
+        const highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+        highPassFilter.Q.setValueAtTime(0.5, audioContext.currentTime);
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // iPhone音量補強
+        
+        // 軽量接続: source → highpass → gain → analyser
+        source.connect(highPassFilter);
+        highPassFilter.connect(gainNode);
+        gainNode.connect(analyser);
+        
+        addLog('🍎 iPhone軽量化フィルター適用');
+        
+      } else {
+        // PC: 標準3段階フィルター
+        const highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
+        highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
+        
+        const lowPassFilter = audioContext.createBiquadFilter();
+        lowPassFilter.type = 'lowpass';
+        lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
+        lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+        
+        const notchFilter = audioContext.createBiquadFilter();
+        notchFilter.type = 'notch';
+        notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+        notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
+        
+        const gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+        
+        // PC標準接続: source → 3段階フィルター → analyser
+        source.connect(highPassFilter);
+        highPassFilter.connect(lowPassFilter);
+        lowPassFilter.connect(notchFilter);
+        notchFilter.connect(gainNode);
+        gainNode.connect(analyser);
+        
+        addLog('💻 PC標準3段階フィルター適用');
+      }
       
       // Pitchy初期化
       if (!pitchDetectorRef.current) {
-        bufferLength.current = analyserRef.current.frequencyBinCount;
+        bufferLength.current = analyser.frequencyBinCount;
         dataArrayRef.current = new Float32Array(bufferLength.current);
         pitchDetectorRef.current = PitchDetector.forFloat32Array(bufferLength.current);
+        addLog('🎵 Pitchy音程検出器初期化完了');
       }
       
-      addLog('🎤 マイク初期化完了');
+      addLog('🎤 マイクロフォン初期化システム完了');
       return true;
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       addLog(`❌ マイク初期化エラー: ${errorMessage}`);
