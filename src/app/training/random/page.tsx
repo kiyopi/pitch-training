@@ -243,7 +243,7 @@ export default function RandomTrainingPage() {
         // FFTサイズに合わせたUint8Array用のDetectorを作成（統一仕様）
         const fftSize = analyser.fftSize; // 2048
         bufferLength.current = analyser.frequencyBinCount; // fftSize/2 = 1024
-        dataArrayRef.current = new Uint8Array(bufferLength.current); // バイト時間域データ用
+        dataArrayRef.current = new Uint8Array(fftSize); // Pitchy用は fftSize (2048) が必要
         
         // PITCHY_SPECS: forFloat32Array(fftSize) で初期化
         pitchDetectorRef.current = PitchDetector.forFloat32Array(fftSize);
