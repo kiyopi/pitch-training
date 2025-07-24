@@ -481,6 +481,11 @@ export default function RandomTrainingPage() {
       
       // Step B-1: 相対音程計算実行
       if (currentBaseFrequency && correctedPitch > 0) {
+        // デバッグ: 相対音程計算の実行確認（1秒に1回）
+        if (Date.now() % 1000 < 17) {
+          addLog(`🎯 相対音程計算実行: 基音=${currentBaseFrequency.toFixed(1)}Hz, 検出=${correctedPitch.toFixed(1)}Hz`);
+        }
+        
         const relativePitch = calculateRelativePitch(correctedPitch, currentBaseFrequency);
         setRelativePitchInfo(relativePitch);
         updateRelativePitchDisplay(relativePitch);
@@ -500,9 +505,11 @@ export default function RandomTrainingPage() {
           addLog(`🎵 相対音程: ${noteName} (${semitones >= 0 ? '+' : ''}${semitones}) ${statusEmoji} 誤差: ${centsError}セント`);
         }
       } else {
-        // デバッグ: 相対音程計算が実行されない理由をログ出力（5秒に1回）
-        if (Date.now() % 5000 < 17) {
-          addLog(`🔍 相対音程計算スキップ: 基音=${currentBaseFrequency ? `${currentBaseFrequency.toFixed(1)}Hz` : 'null'}, 検出=${correctedPitch.toFixed(1)}Hz`);
+        // デバッグ: 相対音程計算が実行されない理由をログ出力（1秒に1回）
+        if (Date.now() % 1000 < 17) {
+          const baseFreqStatus = currentBaseFrequency ? `${currentBaseFrequency.toFixed(1)}Hz` : 'null';
+          const pitchStatus = correctedPitch > 0 ? `${correctedPitch.toFixed(1)}Hz` : `${correctedPitch.toFixed(1)}Hz (≤0)`;
+          addLog(`🔍 相対音程計算スキップ: 基音=${baseFreqStatus}, 検出=${pitchStatus}`);
         }
       }
       
