@@ -214,8 +214,11 @@
 
 /* === マイク許可要求セクション === */
 .micPermissionSection {
-  text-align: center;
+  text-align: left;
   padding: 40px 20px;
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .micPermissionTitle {
@@ -223,6 +226,7 @@
   font-weight: bold;
   color: #dc2626;
   margin-bottom: 16px;
+  text-align: center;
 }
 
 .micPermissionDescription {
@@ -230,6 +234,7 @@
   color: #4b5563;
   margin-bottom: 24px;
   line-height: 1.6;
+  text-align: center;
 }
 
 .micPermissionButtons {
@@ -237,15 +242,22 @@
   flex-direction: column;
   gap: 12px;
   align-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .micPermissionButton {
-  padding: 12px 24px;
+  padding: 16px 32px;
   border-radius: 8px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.3s ease;
-  min-width: 250px;
+  min-width: 280px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  font-size: 16px;
 }
 
 .micPermissionButton.primary {
@@ -294,8 +306,14 @@
     grid-template-columns: repeat(4, 1fr);
   }
   
+  .micPermissionSection {
+    padding: 32px 16px;
+  }
+  
   .micPermissionButton {
-    min-width: 200px;
+    min-width: 250px;
+    padding: 14px 24px;
+    font-size: 15px;
   }
 }
 
@@ -317,5 +335,23 @@
   .baseToneButton {
     padding: 14px 28px;
     font-size: 16px;
+  }
+  
+  .micPermissionSection {
+    padding: 24px 12px;
+  }
+  
+  .micPermissionButton {
+    min-width: 200px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+  
+  .micPermissionTitle {
+    font-size: 18px;
+  }
+  
+  .micPermissionDescription {
+    font-size: 15px;
   }
 }
