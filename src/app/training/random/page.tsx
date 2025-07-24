@@ -278,54 +278,30 @@ export default function RandomTrainingPage() {
   return (
     <div className={styles.mainContainer}>
       {/* Header */}
-      <header style={{ borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link 
-              href="/" 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                color: '#6b7280', 
-                textDecoration: 'none',
-                transition: 'color 0.3s ease'
-              }}
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              ホーム
-            </Link>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>
+      <header className={styles.pageHeader}>
+        <div className={styles.headerContent}>
+          <Link href="/" className={styles.homeLink}>
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            ホーム
+          </Link>
+          <h1 className={styles.pageTitle}>
             ランダム基音トレーニング
-          </div>
-          <div style={{ width: '80px' }}></div>
+          </h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: '32px 0' }}>
+      <main className={styles.pageMain}>
         {renderContent()}
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '48px' }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>
+      <footer className={styles.pageFooter}>
+        <div className={styles.footerContent}>
+          <div className={styles.copyright}>
             © 2024 相対音感トレーニング. All rights reserved.
           </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            fontSize: '14px',
-            color: '#6b7280'
-          }}>
+          <div className={styles.version}>
             <span>Version 3.0</span>
             <span>•</span>
             <span>Powered by Next.js</span>
