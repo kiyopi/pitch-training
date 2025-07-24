@@ -275,7 +275,11 @@ export default function RandomTrainingPage() {
     
     // 統一音響処理モジュールによる音量計算
     const volumeResult = audioProcessorRef.current!.calculateVolume(dataArrayRef.current);
-    const finalVolume = audioProcessorRef.current!.getFinalDisplayVolume(volumeResult.finalVolume);
+    let adjustedVolume = audioProcessorRef.current!.getFinalDisplayVolume(volumeResult.finalVolume);
+    
+    // ランダムページ専用: 音量感度調整（過敏さ軽減）
+    adjustedVolume = adjustedVolume * 0.7; // 70%に調整
+    const finalVolume = Math.min(100, Math.max(0, adjustedVolume));
     
     // Float32Array変換（Pitchy用）
     const floatArray = new Float32Array(dataArrayRef.current.length);
