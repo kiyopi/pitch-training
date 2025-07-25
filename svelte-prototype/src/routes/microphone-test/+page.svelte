@@ -127,6 +127,13 @@
     try {
       console.log('AudioContext state:', audioContext.state);
       
+      // AudioContextがsuspendedの場合は自動resume（ユーザークリック内なので成功するはず）
+      if (audioContext.state === 'suspended') {
+        console.log('AudioContext suspended - attempting resume...');
+        await audioContext.resume();
+        console.log('AudioContext resumed, new state:', audioContext.state);
+      }
+      
       console.log('マイクアクセス開始...');
       // マイクアクセス
       mediaStream = await navigator.mediaDevices.getUserMedia({ 
@@ -135,6 +142,15 @@
           noiseSuppression: false,
           autoGainControl: false
         } 
+      });
+      
+      // MediaStreamTrack終了イベントの監視
+      mediaStream.getTracks().forEach(track => {
+        track.addEventListener('ended', () => {
+          console.log('MediaStreamTrack ended - stopping analysis');
+          stopListening();
+          micPermission = 'error';
+        });
       });
       
       console.log('アナライザー設定中...');
@@ -160,7 +176,13 @@
       
     } catch (error) {
       console.error('マイクアクセスエラー:', error);
+      console.error('エラー詳細:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
       micPermission = 'error';
+      audioContextBlocked = true;
     }
   }
 
