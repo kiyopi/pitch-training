@@ -8,7 +8,6 @@ import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import styles from './page.module.css';
 
 // === 型定義 ===
 type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
@@ -222,7 +221,7 @@ export default function RandomTrainingPage() {
         </Button>
         
         {currentBaseNote && (
-          <div className={styles.baseToneInfo}>
+          <div className="mt-4 text-base text-gray-900 font-semibold">
             基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
           </div>
         )}
@@ -309,16 +308,16 @@ export default function RandomTrainingPage() {
 
 
   return (
-    <div className={styles.mainContainer}>
+    <div className="w-full m-0 p-0 min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className={styles.pageHeader}>
-        <div>
-          <div className={styles.headerContent}>
-            <Link href="/" className={styles.homeLink}>
+      <header className="border-b border-gray-200 py-6">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center gap-6 justify-start">
+            <Link href="/" className="flex items-center text-gray-600 no-underline transition-colors duration-300 font-medium hover:text-gray-700">
               <ArrowLeft className="w-5 h-5 mr-2" />
               ホーム
             </Link>
-            <h1 className={styles.pageTitle}>
+            <h1 className="text-xl font-bold text-gray-900 m-0">
               ランダム基音トレーニング
             </h1>
           </div>
@@ -326,20 +325,20 @@ export default function RandomTrainingPage() {
       </header>
 
       {/* Main Content */}
-      <main className={styles.pageMain}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <main className="flex-1 py-8">
+        <div className="max-w-4xl mx-auto px-4">
           {renderContent()}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className={styles.pageFooter}>
-        <div style={{ margin: '0', padding: '0 16px' }}>
-          <div className={styles.footerContent}>
-            <div className={styles.copyright}>
+      <footer className="border-t border-gray-200 py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-sm text-gray-600 text-center">
               © 2024 相対音感トレーニング. All rights reserved.
             </div>
-            <div className={styles.version}>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>Version 3.0</span>
               <span>•</span>
               <span>Powered by Next.js</span>
