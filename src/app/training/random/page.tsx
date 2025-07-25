@@ -6,8 +6,6 @@ import { ArrowLeft, Play } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // === 型定義 ===
 type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
@@ -111,180 +109,512 @@ export default function RandomTrainingPage() {
 
   // === レンダリング: マイク許可要求画面 ===
   const renderMicrophonePermissionRequired = () => (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-destructive">
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
+      padding: '24px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      maxWidth: '672px',
+      margin: '0 auto'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div style={{
+          fontSize: '20px',
+          fontWeight: 'bold',
+          color: '#dc2626',
+          marginBottom: '12px'
+        }}>
           ⚠️ マイクアクセスが必要です
-        </CardTitle>
-        <CardDescription className="text-base">
+        </div>
+        <div style={{
+          fontSize: '16px',
+          color: '#6b7280',
+          lineHeight: '1.5'
+        }}>
           このトレーニングには音声入力が必要です。<br />
           推奨: マイクテストページで音声確認後ご利用ください。
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 flex flex-col items-center">
-        <Button asChild className="w-full max-w-md" size="lg">
-          <Link href="/microphone-test">
-            マイクテストページに移動
-          </Link>
-        </Button>
-        <Button 
-          variant="outline"
-          size="lg"
-          className="w-full max-w-md"
+        </div>
+      </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '16px'
+      }}>
+        <Link 
+          href="/microphone-test"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            whiteSpace: 'nowrap',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+            textDecoration: 'none',
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+            color: '#ffffff',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            border: 'none',
+            padding: '12px 24px',
+            width: '100%',
+            maxWidth: '448px'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+          }}
+        >
+          マイクテストページに移動
+        </Link>
+        <button 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            whiteSpace: 'nowrap',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+            border: '2px solid #059669',
+            backgroundColor: '#ffffff',
+            color: '#059669',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            padding: '12px 24px',
+            width: '100%',
+            maxWidth: '448px'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0fdf4';
+            e.currentTarget.style.color = '#047857';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.color = '#059669';
+          }}
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
         >
           直接マイク許可を取得
-        </Button>
-      </CardContent>
-    </Card>
+        </button>
+      </div>
+    </div>
   );
 
   // === レンダリング: マイクエラー回復画面 ===
   const renderMicrophoneErrorRecovery = () => (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-destructive">
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
+      padding: '24px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      maxWidth: '672px',
+      margin: '0 auto'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div style={{
+          fontSize: '20px',
+          fontWeight: 'bold',
+          color: '#dc2626',
+          marginBottom: '12px'
+        }}>
           🔇 マイクアクセスに問題があります
-        </CardTitle>
-        <CardDescription className="text-base">
+        </div>
+        <div style={{
+          fontSize: '16px',
+          color: '#6b7280',
+          lineHeight: '1.5'
+        }}>
           考えられる原因:<br />
           • マイク許可が取り消された<br />
           • マイクデバイスが利用できない<br />
           • ブラウザの設定変更<br />
           {micError && <><br />エラー詳細: {micError}</>}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 flex flex-col items-center">
-        <Button asChild className="w-full max-w-md" size="lg">
-          <Link href="/microphone-test">
-            マイクテストページで確認
-          </Link>
-        </Button>
-        <Button 
-          variant="outline"
-          size="lg"
-          className="w-full max-w-md"
+        </div>
+      </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '16px'
+      }}>
+        <Link 
+          href="/microphone-test"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            whiteSpace: 'nowrap',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+            textDecoration: 'none',
+            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+            color: '#ffffff',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            border: 'none',
+            padding: '12px 24px',
+            width: '100%',
+            maxWidth: '448px'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+          }}
+        >
+          マイクテストページで確認
+        </Link>
+        <button 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            whiteSpace: 'nowrap',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+            border: '2px solid #059669',
+            backgroundColor: '#ffffff',
+            color: '#059669',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            padding: '12px 24px',
+            width: '100%',
+            maxWidth: '448px'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0fdf4';
+            e.currentTarget.style.color = '#047857';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.color = '#059669';
+          }}
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
         >
           再度マイク許可を取得
-        </Button>
-      </CardContent>
-    </Card>
+        </button>
+      </div>
+    </div>
   );
 
   // === レンダリング: ローディング画面 ===
   const renderLoadingState = () => (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle>
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
+      padding: '24px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      maxWidth: '672px',
+      margin: '0 auto'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          fontSize: '20px',
+          fontWeight: 'bold',
+          color: '#1f2937'
+        }}>
           🔍 マイク状態を確認中...
-        </CardTitle>
-      </CardHeader>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 
   // === レンダリング: メイントレーニング画面（Phase 2で実装予定） ===
   const renderTrainingInterface = () => (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* マイク準備完了状態表示 */}
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="mb-5 p-3 rounded-lg text-center font-semibold bg-green-50 text-green-800 border border-green-200">
-            🎤 マイク準備完了
-          </div>
-        </CardContent>
-      </Card>
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        maxWidth: '672px',
+        margin: '0 auto'
+      }}>
+        <div style={{
+          marginBottom: '20px',
+          padding: '12px',
+          borderRadius: '8px',
+          textAlign: 'center',
+          fontWeight: '600',
+          backgroundColor: '#f0fdf4',
+          color: '#166534',
+          border: '1px solid #bbf7d0'
+        }}>
+          🎤 マイク準備完了
+        </div>
+      </div>
 
       {/* 基音再生セクション（Phase 2で実装） */}
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle>🎲 ランダム基音再生</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-        <Button 
-          disabled={isPlaying}
-          size="lg"
-          className="w-full max-w-md"
-          onClick={() => {
-            // Phase 2で実装予定
-            console.log('基音再生機能は Phase 2 で実装予定');
-          }}
-        >
-          <Play className="w-5 h-5 mr-2" />
-          {isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}
-        </Button>
-        
-        {currentBaseNote && (
-          <div className="mt-4 text-base text-gray-900 font-semibold">
-            基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
-          </div>
-        )}
-        </CardContent>
-      </Card>
-
-      {/* ドレミファソラシドガイドセクション（Phase 2で実装） */}
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle>🎵 ドレミファソラシド ガイド</CardTitle>
-        </CardHeader>
-        <CardContent>
-        <div className="flex justify-center">
-          <div ref={scaleGuideRef} className="grid grid-cols-8 gap-3 w-full max-w-full">
-            {scaleNotes.map((note, index) => (
-              <div
-                key={note}
-                className="w-14 h-14 flex items-center justify-center text-lg font-bold rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-500 transform scale-100 transition-all duration-300 ease-in-out"
-              >
-                {note}
-              </div>
-            ))}
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '0',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        maxWidth: '672px',
+        margin: '0 auto'
+      }}>
+        <div style={{
+          padding: '24px 24px 0 24px',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1f2937',
+            marginBottom: '0'
+          }}>
+            🎲 ランダム基音再生
           </div>
         </div>
-        </CardContent>
-      </Card>
+        <div style={{
+          padding: '24px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <button 
+            disabled={isPlaying}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              whiteSpace: 'nowrap',
+              borderRadius: '6px',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease',
+              cursor: isPlaying ? 'not-allowed' : 'pointer',
+              background: isPlaying ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              color: '#ffffff',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              border: 'none',
+              padding: '12px 24px',
+              width: '100%',
+              maxWidth: '448px',
+              opacity: isPlaying ? 0.5 : 1
+            }}
+            onMouseOver={(e) => {
+              if (!isPlaying) {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #047857 0%, #065f46 100%)';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!isPlaying) {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+              }
+            }}
+            onClick={() => {
+              // Phase 2で実装予定
+              console.log('基音再生機能は Phase 2 で実装予定');
+            }}
+          >
+            <Play className="w-5 h-5 mr-2" />
+            {isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}
+          </button>
+          
+          {currentBaseNote && (
+            <div style={{
+              marginTop: '16px',
+              fontSize: '16px',
+              color: '#1f2937',
+              fontWeight: '600'
+            }}>
+              基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ドレミファソラシドガイドセクション（Phase 2で実装） */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '0',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        maxWidth: '896px',
+        margin: '0 auto'
+      }}>
+        <div style={{
+          padding: '24px 24px 0 24px',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1f2937',
+            marginBottom: '0'
+          }}>
+            🎵 ドレミファソラシド ガイド
+          </div>
+        </div>
+        <div style={{
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <div 
+              ref={scaleGuideRef} 
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(8, 1fr)',
+                gap: '12px',
+                width: '100%',
+                maxWidth: '100%'
+              }}
+            >
+              {scaleNotes.map((note, index) => (
+                <div
+                  key={note}
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    borderRadius: '8px',
+                    border: '2px solid #d1d5db',
+                    backgroundColor: '#f9fafb',
+                    color: '#6b7280',
+                    transform: 'scale(1.0)',
+                    transition: 'all 0.3s ease-in-out'
+                  }}
+                >
+                  {note}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 相対音程表示セクション（Phase 2で実装） */}
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="pt-6">
-          <div ref={relativePitchRef} className="text-base font-semibold text-center leading-6">
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        maxWidth: '672px',
+        margin: '0 auto'
+      }}>
+        <div 
+          ref={relativePitchRef} 
+          style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            textAlign: 'center',
+            lineHeight: '1.5',
+            color: '#1f2937'
+          }}
+        >
           {currentPitch 
             ? `🎵 現在: ${currentPitch.note} (${currentPitch.cents}セント)`
             : '🎵 音程を検出中...'
           }
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* 結果表示セクション（Phase 2で実装） */}
       {showResults && scaleResults.length > 0 && (
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-green-700">🎉 オクターブ完了！結果</CardTitle>
-          </CardHeader>
-          <CardContent>
-          <div className="grid grid-cols-auto-fit gap-2 mb-4" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))'}}>
-            {scaleResults.map((result, index) => (
-              <div key={index} className="text-center p-2 bg-white rounded border border-blue-200">
-                <div className={`text-sm font-bold mb-1 ${result.correct ? 'text-green-600' : 'text-red-600'}`}>
-                  {result.note}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {Math.round(result.cents)}セント
-                </div>
-              </div>
-            ))}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          padding: '0',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          maxWidth: '896px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            padding: '24px 24px 0 24px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#15803d',
+              marginBottom: '0'
+            }}>
+              🎉 オクターブ完了！結果
+            </div>
           </div>
-          <div className="text-center text-sm text-green-800">
-            平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
+          <div style={{
+            padding: '24px'
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+              gap: '8px',
+              marginBottom: '16px'
+            }}>
+              {scaleResults.map((result, index) => (
+                <div key={index} style={{
+                  textAlign: 'center',
+                  padding: '8px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '6px',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '4px',
+                    color: result.correct ? '#16a34a' : '#dc2626'
+                  }}>
+                    {result.note}
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6b7280'
+                  }}>
+                    {Math.round(result.cents)}セント
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              textAlign: 'center',
+              fontSize: '14px',
+              color: '#166534'
+            }}>
+              平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
+            </div>
           </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
     </div>
   );
