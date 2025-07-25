@@ -248,13 +248,21 @@
         <div class="training-mode-content">
           {#if !audioConfirmationComplete}
             <!-- マイクテスト段階の表示 -->
-            <h3 class="instructions-title">マイクのテストを開始します</h3>
-            <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
+            {#if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
+              <!-- 音声確認中は説明非表示 -->
+              <p class="status-text voice-instruction">「ドー」と発声してください</p>
+              
+              <!-- ボイス確認中のサブ情報 -->
+              <h3 class="ready-title">マイク準備完了</h3>
+              <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
+            {:else}
+              <!-- 通常のマイクテスト説明 -->
+              <h3 class="instructions-title">マイクのテストを開始します</h3>
+              <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
+            {/if}
             
             {#if micPermission === 'pending'}
               <p class="status-text">マイク準備中...</p>
-            {:else if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
-              <p class="status-text voice-instruction">「ドー」と発声してください</p>
             {:else if micPermission === 'denied'}
               <div class="mic-test-button-area">
                 <button class="mic-test-button retry" on:click={requestMicrophone}>
@@ -270,10 +278,8 @@
             {/if}
           {:else}
             <!-- トレーニング開始段階の表示 -->
-            <h3 class="training-mode-title">{selectedMode.name}へ進みます</h3>
-            <p class="training-mode-description">
-              {selectedMode.description}
-            </p>
+            <h3 class="ready-title">マイク準備完了</h3>
+            <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
             
             <div class="training-start-button-area">
               <button class="training-start-button enabled" on:click={() => window.location.href = selectedMode.path}>
@@ -438,6 +444,21 @@
     color: #2563eb;
     font-size: var(--text-xl);
     font-weight: 700;
+  }
+
+  .ready-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: #2563eb;
+    margin: var(--space-4) 0 var(--space-2) 0;
+    text-align: center;
+  }
+
+  .ready-description {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    margin: 0 0 var(--space-6) 0;
+    text-align: center;
   }
 
   .mic-test-button-area,
