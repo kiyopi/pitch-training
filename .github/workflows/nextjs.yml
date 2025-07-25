@@ -75,13 +75,13 @@ jobs:
         run: |
           cd svelte-prototype
           npm ci
-          npm run build || echo "Build completed with warnings"
+          npm run build
           mkdir -p ../out
-          # Svelteビルド成果物をコピー（クライアント側のみ）
-          if [ -d ".svelte-kit/output/client" ]; then
-            cp -r .svelte-kit/output/client/* ../out/
+          # SvelteKit adapter-static出力をコピー
+          if [ -d "build" ]; then
+            cp -r build/* ../out/
           else
-            echo "Client output not found, creating fallback"
+            echo "Build directory not found, creating fallback"
             mkdir -p ../out
             echo "<h1>Svelte Prototype Build Issue</h1>" > ../out/index.html
           fi
