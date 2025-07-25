@@ -25,6 +25,7 @@
   let currentNote = '';
   let isListening = false;
   let detectionConfidence = 0; // 検出信頼度 (0-100)
+  let audioContextBlocked = false; // AudioContext開始がブロックされた場合
   
   // 周波数平滑化のための履歴
   let frequencyHistory = [];
@@ -121,9 +122,17 @@
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
       // AudioContextの状態確認
+      console.log('AudioContext state:', audioContext.state);
       if (audioContext.state === 'suspended') {
         console.log('AudioContext suspended - resuming...');
-        await audioContext.resume();
+        try {
+          await audioContext.resume();
+          console.log('AudioContext resumed successfully, state:', audioContext.state);
+        } catch (resumeError) {
+          console.error('AudioContext resume failed:', resumeError);
+          audioContextBlocked = true;
+          return; // エラーを投げずにブロック状態として処理
+        }
       }
       
       console.log('マイクアクセス開始...');
@@ -144,10 +153,12 @@
       
       const source = audioContext.createMediaStreamSource(mediaStream);
       source.connect(analyser);
+      console.log('メディアストリームソース接続完了');
       
       // データ配列
       const bufferLength = analyser.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength);
+      console.log('データ配列準備完了, bufferLength:', bufferLength);
       
       isListening = true;
       console.log('リアルタイム解析開始');
@@ -166,6 +177,12 @@
     if (!isListening || !analyser) {
       console.log('解析停止: isListening=', isListening, 'analyser=', !!analyser);
       return;
+    }
+    
+    // 最初の実行ログ（1回だけ）
+    if (!window.firstAnalysisLogged) {
+      console.log('初回音声解析実行中...');
+      window.firstAnalysisLogged = true;
     }
     
     // 周波数データ取得（音量計算用）
@@ -355,6 +372,23 @@
     stopListening();
   });
 
+  // 手動でAudioContextを開始
+  async function startAudioContextManually() {
+    if (!audioContext) return;
+    
+    console.log('手動AudioContext開始...');
+    try {
+      await audioContext.resume();
+      console.log('手動AudioContext開始成功, state:', audioContext.state);
+      audioContextBlocked = false;
+      
+      // リスニング再開
+      startListening();
+    } catch (error) {
+      console.error('手動AudioContext開始失敗:', error);
+    }
+  }
+
   onMount(() => {
     // ページ読み込み時にマイク許可をリクエスト
     setTimeout(() => {
@@ -402,6 +436,12 @@
                 <div class="status-indicator warning">⚠️ リスニング準備中...</div>
               {:else}
                 <div class="status-indicator success">🎤 リアルタイム解析中</div>
+              {/if}
+              {#if audioContextBlocked}
+                <div class="status-indicator warning">⚠️ 音声コンテキストがブロックされています</div>
+                <button class="retry-button" on:click={startAudioContextManually}>
+                  音声機能を開始
+                </button>
               {/if}
             {:else if micPermission === 'denied'}
               <div class="status-indicator error">❌ マイクアクセスが拒否されました</div>
