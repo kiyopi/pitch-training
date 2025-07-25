@@ -239,10 +239,39 @@
     <div class="training-mode-info">
       <Card variant="default" padding="lg">
         <div class="training-mode-content">
-          <h3 class="training-mode-title">{selectedMode.name}へ進みます</h3>
-          <p class="training-mode-description">
-            {selectedMode.description}
-          </p>
+          {#if micPermission !== 'granted' || !volumeDetected || !frequencyDetected}
+            <!-- マイクテスト段階の表示 -->
+            <h3 class="instructions-title">マイクのテストを開始します</h3>
+            <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
+            
+            <div class="mic-test-button-area">
+              {#if micPermission === 'pending'}
+                <button class="mic-test-button preparing" disabled>
+                  マイク準備中
+                </button>
+              {:else if micPermission === 'denied'}
+                <button class="mic-test-button retry" on:click={requestMicrophone}>
+                  マイク許可を再試行
+                </button>
+              {:else if micPermission === 'initial'}
+                <button class="mic-test-button start" on:click={requestMicrophone}>
+                  マイクテストを開始
+                </button>
+              {/if}
+            </div>
+          {:else}
+            <!-- トレーニング開始段階の表示 -->
+            <h3 class="training-mode-title">{selectedMode.name}へ進みます</h3>
+            <p class="training-mode-description">
+              {selectedMode.description}
+            </p>
+            
+            <div class="training-start-button-area">
+              <button class="training-start-button enabled" on:click={() => window.location.href = selectedMode.path}>
+                トレーニング開始
+              </button>
+            </div>
+          {/if}
         </div>
       </Card>
     </div>
@@ -252,27 +281,12 @@
       <Card variant="default" padding="lg">
         <div class="mic-test-content">
           
-          <!-- マイクテスト説明 -->
-          <div class="mic-test-instructions">
-            <h3 class="instructions-title">マイクのテストを開始します</h3>
-            <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
-          </div>
-
-          <!-- マイク状態表示 -->
-          <div class="mic-status">
-            {#if micPermission === 'pending'}
-              <div class="status-indicator pending">⏳ マイク許可を確認中...</div>
-            {:else if micPermission === 'denied'}
-              <div class="status-indicator error">❌ マイクアクセスが拒否されました</div>
-              <button class="retry-button" on:click={requestMicrophone}>
-                マイク許可を再試行
-              </button>
-            {:else if micPermission === 'initial'}
-              <button class="start-button" on:click={requestMicrophone}>
-                🎤 {buttonText}
-              </button>
-            {/if}
-          </div>
+          <!-- マイク状態表示（簡略化） -->
+          {#if micPermission === 'granted'}
+            <div class="mic-status-granted">
+              <div class="status-indicator success">✅ マイク接続完了</div>
+            </div>
+          {/if}
 
           <!-- リアルタイム表示（常時表示） -->
           <div class="realtime-display">
@@ -324,22 +338,6 @@
       </Card>
     </div>
 
-    <!-- トレーニング開始ボタン -->
-    <div class="start-section">
-      <Card variant="default" padding="lg">
-        <div class="start-content">
-          {#if startButtonEnabled}
-            <button class="training-button enabled" on:click={() => window.location.href = selectedMode.path}>
-              トレーニング開始
-            </button>
-          {:else}
-            <button class="training-button disabled" disabled>
-              トレーニング開始
-            </button>
-          {/if}
-        </div>
-      </Card>
-    </div>
   </div>
 </PageLayout>
 
@@ -426,6 +424,86 @@
     font-size: var(--text-sm);
     color: var(--color-gray-600);
     margin: 0;
+  }
+
+  .mic-test-button-area,
+  .training-start-button-area {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: center;
+  }
+
+  .mic-test-button {
+    max-width: 300px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .mic-test-button.start {
+    background-color: #2563eb;
+    color: white;
+  }
+
+  .mic-test-button.start:hover {
+    background-color: #1d4ed8;
+  }
+
+  .mic-test-button.preparing {
+    background-color: #f59e0b;
+    color: white;
+    cursor: not-allowed;
+  }
+
+  .mic-test-button.retry {
+    background-color: #dc2626;
+    color: white;
+  }
+
+  .mic-test-button.retry:hover {
+    background-color: #b91c1c;
+  }
+
+  .training-start-button {
+    max-width: 300px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #059669;
+    color: white;
+  }
+
+  .training-start-button.enabled:hover {
+    background-color: #047857;
+  }
+
+  .mic-status-granted {
+    margin-bottom: var(--space-4);
+    text-align: center;
+  }
+
+  .status-indicator.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #34d399;
   }
 
   .mic-test-content {
