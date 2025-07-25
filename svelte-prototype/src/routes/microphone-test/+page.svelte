@@ -249,7 +249,7 @@
                 マイク許可を再試行
               </button>
             {:else if micPermission === 'initial'}
-              <button class="retry-button" on:click={requestMicrophone}>
+              <button class="start-button" on:click={requestMicrophone}>
                 🎤 マイクテスト開始
               </button>
             {/if}
@@ -260,6 +260,9 @@
             <!-- 音量レベル -->
             <div class="volume-section">
               <h3 class="display-title">音量レベル</h3>
+              {#if isListening}
+                <div class="guidance-text">「ド」を発声してください</div>
+              {/if}
               <div class="volume-bar-container">
                 <div class="volume-bar" style="width: {currentVolume}%"></div>
               </div>
@@ -298,15 +301,6 @@
             </div>
           </div>
 
-          <!-- ガイダンス -->
-          {#if volumeDetected && !frequencyDetected && isListening}
-            <div class="guidance">
-              <div class="guidance-content">
-                <h3>「ド」を発声してください</h3>
-                <p>任意の高さで「ドー」と歌うように発声してください</p>
-              </div>
-            </div>
-          {/if}
         </div>
       </Card>
     </div>
@@ -321,23 +315,13 @@
           </p>
           
           {#if startButtonEnabled}
-            <Button 
-              href={selectedMode.path} 
-              variant="primary" 
-              size="lg" 
-              fullWidth
-            >
+            <button class="training-button enabled" on:click={() => window.location.href = selectedMode.path}>
               トレーニング開始
-            </Button>
+            </button>
           {:else}
-            <Button 
-              variant="disabled" 
-              size="lg" 
-              fullWidth 
-              disabled
-            >
+            <button class="training-button disabled" disabled>
               マイクテスト完了後に開始
-            </Button>
+            </button>
           {/if}
         </div>
       </Card>
@@ -422,19 +406,69 @@
     border: 1px solid #fca5a5;
   }
 
+  .start-button,
   .retry-button {
-    padding: var(--space-2) var(--space-4);
+    max-width: 300px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 12px 16px;
     background-color: #2563eb;
     color: white;
     border: none;
-    border-radius: 6px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
 
+  .start-button:hover,
   .retry-button:hover {
     background-color: #1d4ed8;
+  }
+
+  .training-button {
+    max-width: 300px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .training-button.enabled {
+    background-color: #059669;
+    color: white;
+  }
+
+  .training-button.enabled:hover {
+    background-color: #047857;
+  }
+
+  .training-button.disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .guidance-text {
+    font-size: var(--text-sm);
+    color: #2563eb;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    text-align: center;
   }
 
   .realtime-display {
@@ -511,25 +545,6 @@
     color: var(--color-gray-600);
   }
 
-  .guidance {
-    padding: var(--space-4);
-    background: #dbeafe;
-    border-radius: 8px;
-    border: 1px solid #93c5fd;
-  }
-
-  .guidance-content h3 {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-1) 0;
-  }
-
-  .guidance-content p {
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
-    margin: 0;
-  }
 
   .start-content {
     text-align: center;

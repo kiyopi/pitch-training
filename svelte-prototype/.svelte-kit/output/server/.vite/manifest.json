@@ -8,6 +8,14 @@
       "_internal.js"
     ]
   },
+  "_Button.js": {
+    "file": "chunks/Button.js",
+    "name": "Button",
+    "imports": [
+      "_ssr.js",
+      "_PageLayout.js"
+    ]
+  },
   "_PageLayout.js": {
     "file": "chunks/PageLayout.js",
     "name": "PageLayout",
@@ -93,7 +101,8 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js"
+      "_PageLayout.js",
+      "_Button.js"
     ],
     "css": [
       "_app/immutable/assets/_page.DlF9C3i4.css"
@@ -122,7 +131,7 @@
       "_PageLayout.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CaoFpu-W.css"
+      "_app/immutable/assets/_page.Bhs85OVh.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -132,7 +141,8 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js"
+      "_PageLayout.js",
+      "_Button.js"
     ],
     "css": [
       "_app/immutable/assets/_page.D7cf117A.css"
@@ -145,7 +155,8 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js"
+      "_PageLayout.js",
+      "_Button.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BydxfNHC.css"
@@ -158,7 +169,8 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js"
+      "_PageLayout.js",
+      "_Button.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BONojkLJ.css"
