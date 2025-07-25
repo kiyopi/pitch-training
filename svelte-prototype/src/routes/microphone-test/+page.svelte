@@ -62,7 +62,7 @@
     }
   }
   
-  // マイク許可リクエスト（シンプル版）
+  // マイク許可リクエスト（ノイズリダクション対応）
   async function requestMicrophone() {
     micPermission = 'pending';
     
@@ -79,6 +79,27 @@
         await audioContext.resume();
       }
       
+      // 3段階ノイズリダクション実装
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      
+      // 1. ハイパスフィルター（低周波ノイズ除去: 80Hz以下カット）
+      const highpassFilter = audioContext.createBiquadFilter();
+      highpassFilter.type = 'highpass';
+      highpassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
+      highpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      // 2. ローパスフィルター（高周波ノイズ除去: 800Hz以上カット）
+      const lowpassFilter = audioContext.createBiquadFilter();
+      lowpassFilter.type = 'lowpass';
+      lowpassFilter.frequency.setValueAtTime(800, audioContext.currentTime);
+      lowpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      
+      // 3. ノッチフィルター（電源ノイズ除去: 50Hz/60Hz）
+      const notchFilter = audioContext.createBiquadFilter();
+      notchFilter.type = 'notch';
+      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime); // 60Hz電源ノイズ
+      notchFilter.Q.setValueAtTime(10, audioContext.currentTime); // 狭帯域除去
+      
       // アナライザー設定（最適化）
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
@@ -86,8 +107,11 @@
       analyser.minDecibels = -90;
       analyser.maxDecibels = -10;
       
-      const source = audioContext.createMediaStreamSource(mediaStream);
-      source.connect(analyser);
+      // フィルターチェーン接続: source → highpass → lowpass → notch → analyser
+      source.connect(highpassFilter);
+      highpassFilter.connect(lowpassFilter);
+      lowpassFilter.connect(notchFilter);
+      notchFilter.connect(analyser);
       
       isListening = true;
       analyzeAudio();
