@@ -196,7 +196,7 @@ export default function RandomTrainingPage() {
       {/* マイク準備完了状態表示 */}
       <Card className="max-w-2xl mx-auto">
         <CardContent className="pt-6">
-          <div className={`${styles.microphoneStatus} ${styles.granted}`}>
+          <div className="mb-5 p-3 rounded-lg text-center font-semibold bg-green-50 text-green-800 border border-green-200">
             🎤 マイク準備完了
           </div>
         </CardContent>
@@ -235,12 +235,12 @@ export default function RandomTrainingPage() {
           <CardTitle>🎵 ドレミファソラシド ガイド</CardTitle>
         </CardHeader>
         <CardContent>
-        <div className={styles.scaleGuideContainer}>
-          <div ref={scaleGuideRef} className={styles.scaleGuideGrid}>
+        <div className="flex justify-center">
+          <div ref={scaleGuideRef} className="grid grid-cols-8 gap-3 w-full max-w-full">
             {scaleNotes.map((note, index) => (
               <div
                 key={note}
-                className={styles.scaleNoteItem}
+                className="w-14 h-14 flex items-center justify-center text-lg font-bold rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-500 transform scale-100 transition-all duration-300 ease-in-out"
               >
                 {note}
               </div>
@@ -253,7 +253,7 @@ export default function RandomTrainingPage() {
       {/* 相対音程表示セクション（Phase 2で実装） */}
       <Card className="max-w-2xl mx-auto">
         <CardContent className="pt-6">
-          <div ref={relativePitchRef} className={styles.relativePitchDisplay}>
+          <div ref={relativePitchRef} className="text-base font-semibold text-center leading-6">
           {currentPitch 
             ? `🎵 現在: ${currentPitch.note} (${currentPitch.cents}セント)`
             : '🎵 音程を検出中...'
@@ -269,19 +269,19 @@ export default function RandomTrainingPage() {
             <CardTitle className="text-green-700">🎉 オクターブ完了！結果</CardTitle>
           </CardHeader>
           <CardContent>
-          <div className={styles.resultsGrid}>
+          <div className="grid grid-cols-auto-fit gap-2 mb-4" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))'}}>
             {scaleResults.map((result, index) => (
-              <div key={index} className={styles.resultItem}>
-                <div className={`${styles.resultNote} ${result.correct ? styles.correct : styles.incorrect}`}>
+              <div key={index} className="text-center p-2 bg-white rounded border border-blue-200">
+                <div className={`text-sm font-bold mb-1 ${result.correct ? 'text-green-600' : 'text-red-600'}`}>
                   {result.note}
                 </div>
-                <div className={styles.resultCents}>
+                <div className="text-xs text-gray-600">
                   {Math.round(result.cents)}セント
                 </div>
               </div>
             ))}
           </div>
-          <div className={styles.resultsAverage}>
+          <div className="text-center text-sm text-green-800">
             平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
           </div>
           </CardContent>
