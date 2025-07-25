@@ -1,5 +1,31 @@
 # CLAUDE.md - 作業ルール・ガイドライン
 
+## 🚨🚨🚨 重要: フレームワーク移行検討中 🚨🚨🚨
+
+### **現在の状況（2025-01-25更新）**
+**Next.js/Reactの制約により、Svelte/SvelteKitへの移行を検討中**
+
+#### **移行検討の理由**
+1. 音響処理とReactの相性が悪い（DOM直接操作が必須）
+2. shadcn/uiが本番環境で動作しない
+3. インラインスタイル化を余儀なくされた
+
+#### **現在の作業**
+- 移行判断のための文書作成中
+- SVELTE_MIGRATION_CHARTER.md、SVELTE_MIGRATION_PLAN.md等を参照
+- **新規開発は一時停止**
+
+#### **重要**: 
+**このCLAUDE.mdの下記Next.js指示は、移行決定まで保留**
+移行の判断が出るまで、新規機能開発は行わないこと
+
+### **必ず確認すべき文書**
+1. **SVELTE_DEVELOPMENT_STATUS.md** - 最新の開発状態
+2. **SVELTE_MIGRATION_PLAN.md** - 移行計画と判断基準
+3. **SVELTE_DESIGN_SYSTEM_SPEC.md** - デザインシステム仕様
+
+---
+
 ## 🎵 プロジェクト概要
 
 ### 🚨 **開発環境認識 - 最重要確認事項**
