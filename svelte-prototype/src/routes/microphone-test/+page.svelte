@@ -157,9 +157,7 @@
                   <span class="volume-text">{Math.round(currentVolume)}%</span>
                 </div>
                 <div class="volume-status">
-                  {#if volumeDetected}
-                    <span class="status-success">✅ 音量を検出しています</span>
-                  {:else}
+                  {#if !volumeDetected}
                     <span class="status-pending">⏳ 声を出して音量を確認してください</span>
                   {/if}
                 </div>
