@@ -76,17 +76,20 @@
 
   // マイク許可リクエスト
   async function requestMicrophone() {
+    console.log('マイク許可リクエスト開始');
     micPermission = 'pending';
     
     try {
       // マイクアクセス許可をリクエスト
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('マイク許可取得成功');
       micPermission = 'granted';
       
       // テスト用ストリームを停止
       stream.getTracks().forEach(track => track.stop());
       
       // 自動でリスニング開始
+      console.log('リスニング開始準備中...');
       setTimeout(() => {
         startListening();
       }, 500);
@@ -105,12 +108,25 @@
 
   // リスニング開始（実際のWeb Audio API）
   async function startListening() {
-    if (micPermission !== 'granted') return;
+    console.log('startListening 開始, micPermission:', micPermission);
+    
+    if (micPermission !== 'granted') {
+      console.log('マイク許可がありません');
+      return;
+    }
     
     try {
+      console.log('Web Audio Context 作成中...');
       // Web Audio Context作成
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
+      // AudioContextの状態確認
+      if (audioContext.state === 'suspended') {
+        console.log('AudioContext suspended - resuming...');
+        await audioContext.resume();
+      }
+      
+      console.log('マイクアクセス開始...');
       // マイクアクセス
       mediaStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -120,6 +136,7 @@
         } 
       });
       
+      console.log('アナライザー設定中...');
       // アナライザー設定
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
@@ -133,19 +150,23 @@
       dataArray = new Uint8Array(bufferLength);
       
       isListening = true;
+      console.log('リアルタイム解析開始');
       
       // リアルタイム解析開始
       analyzeAudio();
       
     } catch (error) {
       console.error('マイクアクセスエラー:', error);
-      micPermission = 'denied';
+      micPermission = 'error';
     }
   }
 
   // 音声解析ループ
   function analyzeAudio() {
-    if (!isListening || !analyser) return;
+    if (!isListening || !analyser) {
+      console.log('解析停止: isListening=', isListening, 'analyser=', !!analyser);
+      return;
+    }
     
     // 周波数データ取得（音量計算用）
     analyser.getByteFrequencyData(dataArray);
@@ -159,6 +180,9 @@
     currentVolume = Math.min(100, (rms / 128) * 100);
     
     if (currentVolume > 20) {
+      if (!volumeDetected) {
+        console.log('音量検出成功:', currentVolume);
+      }
       volumeDetected = true;
     }
     
@@ -183,6 +207,9 @@
       detectionConfidence = Math.round(detectionResult.confidence * 100);
       
       if (currentFrequency > 80 && currentFrequency < 800) { // 人声範囲
+        if (!frequencyDetected) {
+          console.log('周波数検出成功:', currentFrequency, 'Hz', currentNote);
+        }
         frequencyDetected = true;
       }
     } else {
@@ -364,9 +391,33 @@
     <div class="test-section">
       <Card variant="default" padding="lg">
         <div class="mic-test-content">
+          
+          <!-- マイク状態表示 -->
+          <div class="mic-status">
+            {#if micPermission === 'pending'}
+              <div class="status-indicator pending">⏳ マイク許可を確認中...</div>
+            {:else if micPermission === 'granted'}
+              <div class="status-indicator granted">✅ マイクアクセス許可済み</div>
+              {#if !isListening}
+                <div class="status-indicator warning">⚠️ リスニング準備中...</div>
+              {:else}
+                <div class="status-indicator success">🎤 リアルタイム解析中</div>
+              {/if}
+            {:else if micPermission === 'denied'}
+              <div class="status-indicator error">❌ マイクアクセスが拒否されました</div>
+              <button class="retry-button" on:click={requestMicrophone}>
+                マイク許可を再試行
+              </button>
+            {:else if micPermission === 'error'}
+              <div class="status-indicator error">❌ マイクアクセスエラーが発生しました</div>
+              <button class="retry-button" on:click={requestMicrophone}>
+                マイク許可を再試行
+              </button>
+            {/if}
+          </div>
 
           <!-- リアルタイム表示 -->
-          {#if micPermission === 'granted'}
+          {#if micPermission === 'granted' && isListening}
             <div class="realtime-display">
               <!-- 音量レベル -->
               <div class="volume-section">
@@ -505,6 +556,65 @@
 
   .mic-test-content {
     text-align: center;
+  }
+
+  .mic-status {
+    margin-bottom: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .status-indicator {
+    padding: var(--space-3);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: var(--text-sm);
+  }
+
+  .status-indicator.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+
+  .status-indicator.granted {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+
+  .status-indicator.success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+
+  .status-indicator.warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+
+  .status-indicator.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  .retry-button {
+    padding: var(--space-2) var(--space-4);
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .retry-button:hover {
+    background-color: #1d4ed8;
   }
 
   .realtime-display {
