@@ -123,26 +123,16 @@
   <div class="microphone-test">
     <!-- ヘッダー -->
     <div class="header">
-      <div class="mode-info">
-        <div class="mode-icon {selectedMode.color}">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            {#if selectedMode.color === 'green'}
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            {:else if selectedMode.color === 'orange'}
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="12" r="6"/>
-              <circle cx="12" cy="12" r="2"/>
-            {:else}
-              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-            {/if}
+      <div class="mic-test-header">
+        <div class="mic-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1v6l4-4-4-4z"/>
+            <path d="M12 17.5c-2.5 0-4.5-2-4.5-4.5V7c0-2.5 2-4.5 4.5-4.5S16.5 4.5 16.5 7v6c0 2.5-2 4.5-4.5 4.5z"/>
           </svg>
         </div>
         <div>
-          <h1 class="mode-title">{selectedMode.name}</h1>
-          <p class="mode-description">{selectedMode.description}</p>
+          <h1 class="mic-test-title">マイクテスト</h1>
+          <p class="mic-test-description">音感トレーニングを始める前に、マイクの動作を確認します</p>
         </div>
       </div>
     </div>
@@ -151,36 +141,6 @@
     <div class="test-section">
       <Card variant="default" padding="lg">
         <div class="mic-test-content">
-          <h2 class="section-title">マイクロフォンテスト</h2>
-          <p class="section-description">
-            音感トレーニングを始める前に、マイクの動作を確認します
-          </p>
-
-          <!-- マイク許可状態 -->
-          <div class="status-card">
-            <div class="status-item">
-              <div class="status-icon {micPermission === 'granted' ? 'success' : 'pending'}">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 1v6l4-4-4-4z"/>
-                  <path d="M12 17.5c-2.5 0-4.5-2-4.5-4.5V7c0-2.5 2-4.5 4.5-4.5S16.5 4.5 16.5 7v6c0 2.5-2 4.5-4.5 4.5z"/>
-                </svg>
-              </div>
-              <div>
-                <span class="status-label">マイク許可</span>
-                <span class="status-value">
-                  {#if micPermission === 'pending'}
-                    許可を要求中...
-                  {:else if micPermission === 'granted'}
-                    ✅ 許可済み
-                  {:else if micPermission === 'denied'}
-                    ❌ 拒否されました
-                  {:else}
-                    ❌ エラーが発生しました
-                  {/if}
-                </span>
-              </div>
-            </div>
-          </div>
 
           <!-- リアルタイム表示 -->
           {#if micPermission === 'granted'}
@@ -238,9 +198,9 @@
     <div class="start-section">
       <Card variant="default" padding="lg">
         <div class="start-content">
-          <h3 class="start-title">準備完了</h3>
+          <h3 class="start-title">{selectedMode.name}</h3>
           <p class="start-description">
-            マイクの動作確認が完了したら、トレーニングを開始できます
+            {selectedMode.description}
           </p>
           
           {#if startButtonEnabled}
@@ -281,7 +241,7 @@
     text-align: center;
   }
 
-  .mode-info {
+  .mic-test-header {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -289,39 +249,26 @@
     margin-bottom: var(--space-4);
   }
 
-  .mode-icon {
+  .mic-icon {
     width: 64px;
     height: 64px;
     border-radius: 50%;
+    background-color: #dbeafe;
+    color: #2563eb;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  .mode-icon.green {
-    background-color: #dbeafe;
-    color: #2563eb;
-  }
-
-  .mode-icon.orange {
-    background-color: #dbeafe;
-    color: #2563eb;
-  }
-
-  .mode-icon.purple {
-    background-color: #dbeafe;
-    color: #2563eb;
-  }
-
-  .mode-title {
+  .mic-test-title {
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--color-gray-900);
     margin: 0 0 var(--space-2) 0;
   }
 
-  .mode-description {
+  .mic-test-description {
     font-size: var(--text-base);
     color: var(--color-gray-600);
     margin: 0;
@@ -329,64 +276,6 @@
 
   .mic-test-content {
     text-align: center;
-  }
-
-  .section-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .section-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0 0 var(--space-6) 0;
-  }
-
-  .status-card {
-    margin-bottom: var(--space-6);
-  }
-
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    background: var(--color-gray-50);
-    border-radius: 8px;
-  }
-
-  .status-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .status-icon.pending {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-600);
-  }
-
-  .status-icon.success {
-    background-color: #dbeafe;
-    color: #2563eb;
-  }
-
-  .status-label {
-    display: block;
-    font-weight: 600;
-    color: var(--color-gray-900);
-  }
-
-  .status-value {
-    display: block;
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
   }
 
   .realtime-display {
@@ -499,7 +388,7 @@
   }
 
   @media (min-width: 768px) {
-    .mode-info {
+    .mic-test-header {
       flex-direction: row;
       text-align: left;
     }
