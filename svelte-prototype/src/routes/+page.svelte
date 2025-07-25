@@ -7,9 +7,9 @@
 <PageLayout>
   <div class="homepage">
     <div class="hero">
-      <h1 class="hero-title">相対音感トレーニング</h1>
+      <h1 class="hero-title">音程の相対的な関係を効果的に鍛える</h1>
       <p class="hero-description">
-        ドレミファソラシドの音程関係を正確に聞き分ける力を鍛えましょう
+        高精度音程検出とピアノ音源による本格的な相対音感トレーニング
       </p>
     </div>
     
