@@ -7,7 +7,7 @@ name: Deploy Next.js site to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["main", "clean-homepage-v1-impl-001", "random-training-v3-impl-002", "shadcn-ui-homepage-reference-001", "svelte-prototype-001"]
+    branches: ["main", "clean-homepage-v1-impl-001", "random-training-v3-impl-002", "shadcn-ui-homepage-reference-001"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
