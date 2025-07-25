@@ -67,8 +67,17 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-      - name: Build with Next.js
+      - name: Build with Next.js (main branches)
+        if: github.ref_name != 'svelte-prototype-001'
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+      - name: Build Svelte prototype
+        if: github.ref_name == 'svelte-prototype-001'
+        run: |
+          cd svelte-prototype
+          npm ci
+          npm run build
+          mkdir -p ../out
+          cp -r .svelte-kit/output/prerendered/pages/* ../out/ 2>/dev/null || cp -r .svelte-kit/output/client/* ../out/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
