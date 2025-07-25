@@ -22,7 +22,7 @@
         </div>
       </div>
       <div class="header-right">
-        <span class="version-info">バージョン 3.0 - 更新: {new Date().toLocaleString('ja-JP')}</span>
+        <span class="version-info">Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}</span>
       </div>
     </div>
   </header>
@@ -37,9 +37,9 @@
         © 2024 相対音感トレーニング. All rights reserved.
       </div>
       <div class="footer-info">
-        <span>バージョン 3.0</span>
+        <span>Version 3.0</span>
         <span>•</span>
-        <span>Svelte で開発</span>
+        <span>Powered by Svelte</span>
       </div>
     </div>
   </footer>
