@@ -2,33 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🚨 インラインスタイル保護システム */
-@layer base {
-  /* トップページのインラインスタイル要素を保護 */
-  [style*="backgroundColor"] {
-    background-color: revert !important;
-  }
-  
-  [style*="fontSize"] {
-    font-size: revert !important;
-  }
-  
-  [style*="fontWeight"] {
-    font-weight: revert !important;
-  }
-  
-  [style*="color"]:not(.text-destructive):not([class*="text-"]) {
-    color: revert !important;
-  }
-  
-  [style*="padding"] {
-    padding: revert !important;
-  }
-  
-  [style*="margin"] {
-    margin: revert !important;
-  }
-}
+/* 🚨 インラインスタイル保護削除: 過度な影響により全ページ破綻 */
 
 /* 🚨 安全なbody marginリセット */
 html, body {
