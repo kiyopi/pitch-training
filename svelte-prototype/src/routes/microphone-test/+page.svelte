@@ -17,7 +17,7 @@
   });
 
   // マイクテスト状態管理
-  let micPermission = 'pending'; // 'pending' | 'granted' | 'denied' | 'error'
+  let micPermission = 'initial'; // 'initial' | 'pending' | 'granted' | 'denied' | 'error'
   let volumeDetected = false;
   let frequencyDetected = false;
   let currentVolume = 0;
@@ -30,6 +30,11 @@
   // 周波数平滑化のための履歴
   let frequencyHistory = [];
   const HISTORY_SIZE = 5;
+
+  // デバッグ用: 状態変更を監視
+  $: {
+    console.log('状態変更 - micPermission:', micPermission, 'isListening:', isListening, 'audioContextBlocked:', audioContextBlocked);
+  }
 
   // トレーニングモード設定
   const trainingModes = {
@@ -386,6 +391,7 @@
   onMount(() => {
     // 自動マイク許可は実行しない（ユーザー操作を待つ）
     console.log('ページ読み込み完了 - ユーザー操作を待機中');
+    console.log('初期状態 - micPermission:', micPermission, 'isListening:', isListening, 'audioContextBlocked:', audioContextBlocked);
   });
 </script>
 
