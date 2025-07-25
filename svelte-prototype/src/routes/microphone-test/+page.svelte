@@ -53,6 +53,7 @@
 
   const selectedMode = trainingModes[mode] || trainingModes.random;
   $: startButtonEnabled = micPermission === 'granted' && volumeDetected && frequencyDetected;
+  $: buttonText = micPermission === 'pending' ? 'マイク準備中' : 'マイクテスト開始';
   
   // マイク許可リクエスト（シンプル版）
   async function requestMicrophone() {
@@ -234,11 +235,29 @@
       </div>
     </div>
 
+    <!-- トレーニングモード情報 -->
+    <div class="training-mode-info">
+      <Card variant="default" padding="lg">
+        <div class="training-mode-content">
+          <h3 class="training-mode-title">{selectedMode.name}へ進みます</h3>
+          <p class="training-mode-description">
+            {selectedMode.description}
+          </p>
+        </div>
+      </Card>
+    </div>
+
     <!-- マイクテストセクション -->
     <div class="test-section">
       <Card variant="default" padding="lg">
         <div class="mic-test-content">
           
+          <!-- マイクテスト説明 -->
+          <div class="mic-test-instructions">
+            <h3 class="instructions-title">マイクのテストを開始します</h3>
+            <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
+          </div>
+
           <!-- マイク状態表示 -->
           <div class="mic-status">
             {#if micPermission === 'pending'}
@@ -250,7 +269,7 @@
               </button>
             {:else if micPermission === 'initial'}
               <button class="start-button" on:click={requestMicrophone}>
-                🎤 マイクテスト開始
+                🎤 {buttonText}
               </button>
             {/if}
           </div>
@@ -305,22 +324,17 @@
       </Card>
     </div>
 
-    <!-- スタートボタン -->
+    <!-- トレーニング開始ボタン -->
     <div class="start-section">
       <Card variant="default" padding="lg">
         <div class="start-content">
-          <h3 class="start-title">{selectedMode.name}</h3>
-          <p class="start-description">
-            {selectedMode.description}
-          </p>
-          
           {#if startButtonEnabled}
             <button class="training-button enabled" on:click={() => window.location.href = selectedMode.path}>
               トレーニング開始
             </button>
           {:else}
             <button class="training-button disabled" disabled>
-              マイクテスト完了後に開始
+              トレーニング開始
             </button>
           {/if}
         </div>
@@ -371,6 +385,45 @@
 
   .mic-test-description {
     font-size: var(--text-base);
+    color: var(--color-gray-600);
+    margin: 0;
+  }
+
+  .training-mode-info {
+    margin-bottom: var(--space-6);
+  }
+
+  .training-mode-content {
+    text-align: center;
+  }
+
+  .training-mode-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-2) 0;
+  }
+
+  .training-mode-description {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+    margin: 0;
+  }
+
+  .mic-test-instructions {
+    text-align: center;
+    margin-bottom: var(--space-6);
+  }
+
+  .instructions-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-2) 0;
+  }
+
+  .instructions-description {
+    font-size: var(--text-sm);
     color: var(--color-gray-600);
     margin: 0;
   }
@@ -548,19 +601,6 @@
 
   .start-content {
     text-align: center;
-  }
-
-  .start-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .start-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0 0 var(--space-6) 0;
   }
 
   @media (min-width: 768px) {
