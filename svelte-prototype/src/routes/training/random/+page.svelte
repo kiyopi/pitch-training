@@ -1,10 +1,15 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
+  
+  // Tone.js変数
+  let Tone = null;
+  let sampler = null;
+  let isToneLoaded = false;
 
   // トレーニング状態管理
   let isPlaying = false;
@@ -19,7 +24,67 @@
   
   // 音階システム
   const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
-  const baseNotes = ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'G4'];
+  const baseNotes = ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4']; // 10種類の基音
+  
+  // Tone.js初期化
+  async function initializeTone() {
+    try {
+      // Tone.js CDNから読み込み
+      if (typeof window !== 'undefined' && !window.Tone) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/tone@14.7.77/build/Tone.js';
+        script.onload = async () => {
+          window.Tone = window.Tone;
+          Tone = window.Tone;
+          await setupSampler();
+        };
+        document.head.appendChild(script);
+      } else if (window.Tone) {
+        Tone = window.Tone;
+        await setupSampler();
+      }
+    } catch (error) {
+      console.error('Tone.js初期化エラー:', error);
+    }
+  }
+  
+  // Salamander Grand Piano サンプラー設定
+  async function setupSampler() {
+    try {
+      if (!Tone) return;
+      
+      // AudioContextが停止している場合は開始
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+      
+      // Salamander Grand Piano音源でサンプラー作成
+      sampler = new Tone.Sampler({
+        urls: {
+          "C4": "C4.mp3",
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5,
+        onload: () => {
+          isToneLoaded = true;
+          console.log('Salamander Grand Piano読み込み完了');
+        }
+      }).toDestination();
+      
+    } catch (error) {
+      console.error('サンプラー設定エラー:', error);
+    }
+  }
+  
+  onMount(() => {
+    initializeTone();
+  });
+  
+  onDestroy(() => {
+    if (sampler) {
+      sampler.dispose();
+    }
+  });
   
   // 基音ランダム選択
   function selectRandomBase() {
@@ -40,16 +105,45 @@
     playBaseNote(baseNote);
   }
 
-  // 基音再生（モック）
-  function playBaseNote(note) {
+  // 基音再生（実装）
+  async function playBaseNote(note) {
     isPlaying = true;
     console.log(`基音再生: ${note}`);
     
-    // 2.5秒後に再生完了、検出開始
-    setTimeout(() => {
-      isPlaying = false;
-      startDetection();
-    }, 2500);
+    try {
+      if (!isToneLoaded || !sampler) {
+        console.warn('Tone.js または Sampler が未初期化');
+        // フォールバック: モックタイミング
+        setTimeout(() => {
+          isPlaying = false;
+          startDetection();
+        }, 2500);
+        return;
+      }
+      
+      // AudioContext開始（ユーザー操作後なので安全）
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+      
+      // 基音を2.5秒間再生
+      sampler.triggerAttackRelease(note, "2.5");
+      console.log(`Salamander Grand Piano で ${note} 再生開始`);
+      
+      // 2.5秒後に再生完了、検出開始
+      setTimeout(() => {
+        isPlaying = false;
+        startDetection();
+      }, 2500);
+      
+    } catch (error) {
+      console.error('基音再生エラー:', error);
+      // エラー時もフォールバック
+      setTimeout(() => {
+        isPlaying = false;
+        startDetection();
+      }, 2500);
+    }
   }
 
   // 音程検出開始（モック）
@@ -156,9 +250,19 @@
               </div>
             </div>
 
-            <Button variant="success" size="lg" fullWidth on:click={startTraining}>
-              トレーニング開始
+            <Button variant="success" size="lg" fullWidth on:click={startTraining} disabled={!isToneLoaded}>
+              {#if !isToneLoaded}
+                ピアノ音源読み込み中...
+              {:else}
+                トレーニング開始
+              {/if}
             </Button>
+            
+            {#if !isToneLoaded}
+              <p class="loading-message">
+                Salamander Grand Piano 音源を読み込んでいます
+              </p>
+            {/if}
           </div>
         </Card>
       </div>
@@ -644,6 +748,19 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+  }
+
+  .loading-message {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    text-align: center;
+    margin: var(--space-2) 0 0 0;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   @media (max-width: 767px) {

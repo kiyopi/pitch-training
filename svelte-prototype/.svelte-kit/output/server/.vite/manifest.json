@@ -131,7 +131,7 @@
       "_PageLayout.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.D7Xgj8uM.css"
+      "_app/immutable/assets/_page.Bj4LjpZd.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -173,7 +173,7 @@
       "_Button.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BONojkLJ.css"
+      "_app/immutable/assets/_page.Brp91sgi.css"
     ]
   }
 }
