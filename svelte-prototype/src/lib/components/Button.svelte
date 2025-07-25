@@ -13,6 +13,8 @@
     class:btn-primary={variant === 'primary'}
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
+    class:btn-success={variant === 'success'}
+    class:btn-disabled-variant={variant === 'disabled'}
     class:btn-sm={size === 'sm'}
     class:btn-md={size === 'md'}
     class:btn-lg={size === 'lg'}
@@ -29,6 +31,8 @@
     class:btn-primary={variant === 'primary'}
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
+    class:btn-success={variant === 'success'}
+    class:btn-disabled-variant={variant === 'disabled'}
     class:btn-sm={size === 'sm'}
     class:btn-md={size === 'md'}
     class:btn-lg={size === 'lg'}
@@ -91,6 +95,21 @@
   
   .btn-ghost:hover:not(:disabled) {
     background: var(--color-primary-pale);
+  }
+  
+  .btn-success {
+    background: #059669;
+    color: white;
+  }
+  
+  .btn-success:hover:not(:disabled) {
+    background: #047857;
+  }
+  
+  .btn-disabled-variant {
+    background: #9ca3af;
+    color: white;
+    cursor: not-allowed;
   }
   
   /* Sizes */

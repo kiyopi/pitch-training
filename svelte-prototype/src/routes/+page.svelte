@@ -14,38 +14,60 @@
     </div>
     
     <div class="modes-grid">
-      <Card variant="primary" padding="lg" interactive={true}>
+      <!-- ランダムモード（緑色テーマ） -->
+      <Card variant="default" padding="lg" interactive={true}>
         <div class="mode-card">
-          <h3 class="mode-title">ランダムモード</h3>
+          <div class="mode-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <h3 class="mode-title">ランダム基音モード</h3>
           <p class="mode-description">
-            基音がランダムに変わる中で、相対音程を鍛える基本モード
+            10種類の基音からランダムに選択してトレーニング
           </p>
-          <Button href="#" variant="primary" size="lg" fullWidth>
-            始める（準備中）
+          <Button href="#" variant="success" size="lg" fullWidth>
+            トレーニング開始
           </Button>
         </div>
       </Card>
       
-      <Card variant="default" padding="lg" interactive={true}>
-        <div class="mode-card">
-          <h3 class="mode-title">連続チャレンジ</h3>
+      <!-- 連続チャレンジ（オレンジ色テーマ・準備中） -->
+      <Card variant="default" padding="lg" interactive={false}>
+        <div class="mode-card disabled">
+          <div class="mode-icon orange">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </div>
+          <h3 class="mode-title">連続チャレンジモード</h3>
           <p class="mode-description">
-            制限時間内に連続で正解を目指す集中トレーニング
+            選択した回数だけ連続で実行し、総合評価を確認
           </p>
-          <Button href="#" variant="primary" size="lg" fullWidth>
-            始める（準備中）
+          <Button href="#" variant="disabled" size="lg" fullWidth disabled>
+            準備中
           </Button>
         </div>
       </Card>
       
-      <Card variant="default" padding="lg" interactive={true}>
-        <div class="mode-card">
+      <!-- 12音階モード（紫色テーマ・準備中） -->
+      <Card variant="default" padding="lg" interactive={false}>
+        <div class="mode-card disabled">
+          <div class="mode-icon purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+            </svg>
+          </div>
           <h3 class="mode-title">12音階モード</h3>
           <p class="mode-description">
-            半音階も含めた12音階での高度な音感トレーニング
+            クロマチックスケールの上行・下行で完全制覇
           </p>
-          <Button href="#" variant="primary" size="lg" fullWidth>
-            始める（準備中）
+          <Button href="#" variant="disabled" size="lg" fullWidth disabled>
+            準備中
           </Button>
         </div>
       </Card>
@@ -106,5 +128,34 @@
     color: var(--color-gray-600);
     margin-bottom: var(--space-6);
     line-height: 1.6;
+  }
+  
+  .mode-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4) auto;
+  }
+  
+  .mode-icon.green {
+    background-color: #d1fae5;
+    color: #059669;
+  }
+  
+  .mode-icon.orange {
+    background-color: #fed7aa;
+    color: #ea580c;
+  }
+  
+  .mode-icon.purple {
+    background-color: #e9d5ff;
+    color: #9333ea;
+  }
+  
+  .mode-card.disabled {
+    opacity: 0.6;
   }
 </style>
