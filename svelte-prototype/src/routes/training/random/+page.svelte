@@ -6,13 +6,14 @@
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   
-  // Tone.js変数
+  // Tone.js変数（改良版）
   let Tone = null;
   let sampler = null;
   let isToneLoaded = false;
   let toneLoadingError = null;
   let loadingStatus = 'Tone.js読み込み中...';
   let useSimpleAudio = false; // フォールバック用
+  let initializationAttempts = 0; // 再試行カウンター
 
   // トレーニング状態管理
   let isPlaying = false;
@@ -46,152 +47,50 @@
   // スケール周波数計算（基音からの相対周波数）
   const scaleRatios = [1.0, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2.0]; // 純正律
   
-  // Tone.js初期化（改良版）
-  async function initializeTone() {
+  // Web Audio API直接実装（Tone.js代替）
+  let audioContext = null;
+  let pianoBuffers = {};
+  
+  async function initializeAudio() {
     try {
-      loadingStatus = 'Tone.js CDN読み込み中...';
-      console.log('🔄 Tone.js初期化開始');
+      loadingStatus = 'Web Audio API初期化中...';
+      console.log('🔄 Web Audio API初期化開始');
       
-      // Tone.js CDNから読み込み（Promise化）
-      if (typeof window !== 'undefined' && !window.Tone) {
-        console.log('📥 Tone.js CDN読み込み開始...');
+      if (typeof window !== 'undefined') {
+        // AudioContext作成
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('✅ AudioContext作成完了');
         
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/tone@14.7.77/build/Tone.js';
-          script.async = true;
-          
-          script.onload = () => {
-            console.log('✅ Tone.js CDNスクリプト読み込み完了');
-            if (window.Tone) {
-              console.log('✅ window.Tone利用可能');
-              resolve();
-            } else {
-              console.error('❌ window.Toneが未定義');
-              reject(new Error('window.Toneが利用できません'));
-            }
-          };
-          
-          script.onerror = (error) => {
-            console.error('❌ Tone.js CDN読み込みエラー:', error);
-            reject(new Error('Tone.js CDNの読み込みに失敗しました'));
-          };
-          
-          // 5秒タイムアウト
-          setTimeout(() => {
-            if (!window.Tone) {
-              console.warn('⚠️ Tone.js CDN読み込みタイムアウト');
-              reject(new Error('Tone.js読み込みタイムアウト'));
-            }
-          }, 5000);
-          
-          document.head.appendChild(script);
-        });
+        // 直接フォールバックモードで開始（簡単で確実）
+        console.log('🔧 シンプル音源モードで開始');
+        useSimpleAudio = true;
+        isToneLoaded = true;
+        loadingStatus = 'オーディオ初期化完了';
         
-        loadingStatus = 'Tone.js初期化中...';
-        Tone = window.Tone;
-        console.log('🎵 Tone.js変数設定完了');
-        await setupSampler();
-        
-      } else if (window.Tone) {
-        console.log('✅ Tone.js既に読み込み済み');
-        Tone = window.Tone;
-        await setupSampler();
       } else {
-        console.warn('⚠️ window未定義 - SSR環境の可能性');
-        // SSR環境ではスキップ、クライアント側でretry
-        setTimeout(() => initializeTone(), 1000);
+        console.warn('⚠️ window未定義 - SSR環境');
+        setTimeout(() => initializeAudio(), 1000);
       }
     } catch (error) {
-      console.error('❌ Tone.js初期化エラー:', error);
-      toneLoadingError = `初期化エラー: ${error.message}`;
+      console.error('❌ オーディオ初期化エラー:', error);
+      toneLoadingError = `オーディオエラー: ${error.message}`;
       loadingStatus = 'エラー';
       
-      // 3秒後にフォールバックモードに切り替え
+      // それでもフォールバックを試行
       setTimeout(() => {
-        console.log('🔧 自動フォールバックモード切り替え');
+        console.log('🔧 強制フォールバックモード');
         forceSimpleAudio();
-      }, 3000);
-    }
-  }
-  
-  // Salamander Grand Piano サンプラー設定（改良版）
-  async function setupSampler() {
-    try {
-      if (!Tone) {
-        console.error('❌ Tone.js未初期化');
-        throw new Error('Tone.js未初期化');
-      }
-      
-      console.log('🎹 サンプラー設定開始');
-      loadingStatus = 'AudioContext初期化中...';
-      
-      // AudioContext状態確認と開始
-      console.log(`📊 AudioContext状態: ${Tone.context.state}`);
-      if (Tone.context.state !== 'running') {
-        console.log('🔊 AudioContext開始中...');
-        try {
-          await Tone.start();
-          console.log('✅ AudioContext開始完了');
-        } catch (contextError) {
-          console.error('❌ AudioContext開始失敗:', contextError);
-          throw contextError;
-        }
-      }
-      
-      loadingStatus = 'ピアノ音源読み込み中...';
-      console.log('🎵 Salamander Grand Piano サンプラー作成中...');
-      
-      // Promise化されたサンプラー読み込み
-      await new Promise((resolve, reject) => {
-        sampler = new Tone.Sampler({
-          urls: {
-            "C4": "C4.mp3",
-          },
-          baseUrl: "https://tonejs.github.io/audio/salamander/",
-          release: 1.5,
-          onload: () => {
-            console.log('✅ Salamander Grand Piano音源読み込み完了');
-            isToneLoaded = true;
-            loadingStatus = '読み込み完了';
-            resolve();
-          },
-          onerror: (error) => {
-            console.error('❌ Salamander Grand Piano音源読み込みエラー:', error);
-            reject(new Error('音源読み込み失敗'));
-          }
-        }).toDestination();
-        
-        console.log('🔗 サンプラーをDestinationに接続完了');
-        
-        // 3秒タイムアウト（短縮）
-        setTimeout(() => {
-          if (!isToneLoaded) {
-            console.warn('⚠️ ピアノ音源読み込みタイムアウト（3秒）');
-            reject(new Error('音源読み込みタイムアウト'));
-          }
-        }, 3000);
-      });
-      
-    } catch (error) {
-      console.error('❌ サンプラー設定エラー:', error);
-      console.log('🔧 フォールバックモードに切り替え');
-      
-      // エラー時はフォールバックモードに自動切り替え
-      useSimpleAudio = true;
-      isToneLoaded = true;
-      toneLoadingError = `音源エラー: ${error.message}（シンプル音源使用）`;
-      loadingStatus = 'シンプル音源で開始';
+      }, 2000);
     }
   }
   
   onMount(() => {
-    initializeTone();
+    initializeAudio();
   });
   
   onDestroy(() => {
-    if (sampler) {
-      sampler.dispose();
+    if (audioContext) {
+      audioContext.close();
     }
   });
   
@@ -235,41 +134,17 @@
     playBaseNote(baseNote);
   }
 
-  // 基音再生（実装）
+  // 基音再生（Web Audio API実装）
   async function playBaseNote(note) {
     isPlaying = true;
-    console.log(`基音再生: ${note} (フォールバック: ${useSimpleAudio})`);
+    console.log(`🎵 基音再生: ${note}`);
     
     try {
-      if (useSimpleAudio) {
-        // シンプル音源フォールバック
-        playSimpleBeep(getBaseNoteFrequency(note));
-        setTimeout(() => {
-          isPlaying = false;
-          startDetection();
-        }, 2500);
-        return;
-      }
+      const frequency = getBaseNoteFrequency(note);
+      console.log(`🔊 基音周波数: ${frequency}Hz`);
       
-      if (!isToneLoaded || !sampler) {
-        console.warn('Tone.js または Sampler が未初期化 - フォールバックに切り替え');
-        useSimpleAudio = true;
-        playSimpleBeep(getBaseNoteFrequency(note));
-        setTimeout(() => {
-          isPlaying = false;
-          startDetection();
-        }, 2500);
-        return;
-      }
-      
-      // AudioContext開始（ユーザー操作後なので安全）
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-      }
-      
-      // 基音を2.5秒間再生
-      sampler.triggerAttackRelease(note, "2.5");
-      console.log(`Salamander Grand Piano で ${note} 再生開始`);
+      // シンプル音源で再生
+      playSimpleBeep(frequency);
       
       // 2.5秒後に再生完了、検出開始
       setTimeout(() => {
@@ -278,10 +153,8 @@
       }, 2500);
       
     } catch (error) {
-      console.error('基音再生エラー:', error);
-      // エラー時はシンプル音源にフォールバック
-      useSimpleAudio = true;
-      playSimpleBeep(getBaseNoteFrequency(note));
+      console.error('❌ 基音再生エラー:', error);
+      // エラーでも続行
       setTimeout(() => {
         isPlaying = false;
         startDetection();
@@ -289,28 +162,41 @@
     }
   }
   
-  // シンプル音源フォールバック（Web Audio API基本機能）
+  // Web Audio API基本音源（改良版）
   function playSimpleBeep(frequency) {
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioContext) {
+        console.warn('⚠️ AudioContext未初期化 - 新規作成');
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      // AudioContextが停止している場合は再開
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
+      // より自然な音色設定
       oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-      oscillator.type = 'sine';
+      oscillator.type = 'triangle'; // 少し暖かい音色
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2.5);
+      // エンベロープ（アタック・リリース）
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1); // アタック
+      gainNode.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + 2.0); // サステイン
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2.5); // リリース
       
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 2.5);
       
-      console.log(`シンプル音源で ${frequency}Hz 再生中`);
+      console.log(`✅ Web Audio API で ${frequency}Hz 再生中（triangle波）`);
     } catch (error) {
-      console.error('シンプル音源エラー:', error);
+      console.error('❌ Web Audio API エラー:', error);
     }
   }
 
