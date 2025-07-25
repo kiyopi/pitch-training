@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -69,45 +69,148 @@
     return `${note}${octave}（${noteNamesJa[note]}${octave}）`;
   }
 
-  // マイク許可テスト（モック）
-  function requestMicrophone() {
+  // マイク許可リクエスト
+  async function requestMicrophone() {
     micPermission = 'pending';
-    // モック処理：実際のマイク許可をシミュレート
-    setTimeout(() => {
+    
+    try {
+      // マイクアクセス許可をリクエスト
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micPermission = 'granted';
-      startListening();
-    }, 1000);
+      
+      // テスト用ストリームを停止
+      stream.getTracks().forEach(track => track.stop());
+      
+      // 自動でリスニング開始
+      setTimeout(() => {
+        startListening();
+      }, 500);
+    } catch (error) {
+      console.error('マイク許可エラー:', error);
+      micPermission = 'denied';
+    }
   }
 
-  // リスニング開始（モック）
-  function startListening() {
+  // Web Audio API変数
+  let audioContext = null;
+  let mediaStream = null;
+  let analyser = null;
+  let dataArray = null;
+  let animationFrame = null;
+
+  // リスニング開始（実際のWeb Audio API）
+  async function startListening() {
     if (micPermission !== 'granted') return;
     
-    isListening = true;
+    try {
+      // Web Audio Context作成
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // マイクアクセス
+      mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        } 
+      });
+      
+      // アナライザー設定
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
+      
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      source.connect(analyser);
+      
+      // データ配列
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      
+      isListening = true;
+      
+      // リアルタイム解析開始
+      analyzeAudio();
+      
+    } catch (error) {
+      console.error('マイクアクセスエラー:', error);
+      micPermission = 'denied';
+    }
+  }
+
+  // 音声解析ループ
+  function analyzeAudio() {
+    if (!isListening || !analyser) return;
     
-    // モック：音量・周波数データのシミュレート
-    const interval = setInterval(() => {
-      if (!isListening) {
-        clearInterval(interval);
-        return;
+    // 周波数データ取得
+    analyser.getByteFrequencyData(dataArray);
+    
+    // 音量計算（RMS）
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i] * dataArray[i];
+    }
+    const rms = Math.sqrt(sum / dataArray.length);
+    currentVolume = Math.min(100, (rms / 128) * 100);
+    
+    if (currentVolume > 20) {
+      volumeDetected = true;
+    }
+    
+    // 基本的な周波数検出（最大振幅のbin）
+    let maxIndex = 0;
+    let maxValue = 0;
+    for (let i = 1; i < dataArray.length / 4; i++) { // 低域のみ
+      if (dataArray[i] > maxValue) {
+        maxValue = dataArray[i];
+        maxIndex = i;
       }
-      
-      // ランダムな音量（0-100）
-      currentVolume = Math.random() * 100;
-      if (currentVolume > 20) {
-        volumeDetected = true;
-      }
-      
-      // ランダムな周波数（C3-C6の範囲）
-      const frequencies = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63];
-      currentFrequency = frequencies[Math.floor(Math.random() * frequencies.length)];
+    }
+    
+    if (maxValue > 50) { // 閾値
+      const sampleRate = audioContext.sampleRate;
+      currentFrequency = (maxIndex * sampleRate) / (analyser.fftSize);
       currentNote = frequencyToNote(currentFrequency);
       
-      if (currentFrequency > 0) {
+      if (currentFrequency > 80 && currentFrequency < 800) { // 人声範囲
         frequencyDetected = true;
       }
-    }, 200);
+    } else {
+      currentFrequency = 0;
+      currentNote = '';
+    }
+    
+    // 次のフレーム
+    animationFrame = requestAnimationFrame(analyzeAudio);
   }
+
+  // リスニング停止
+  function stopListening() {
+    isListening = false;
+    
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+    
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close();
+      audioContext = null;
+    }
+    
+    analyser = null;
+    dataArray = null;
+  }
+
+  // コンポーネント破棄時のクリーンアップ
+  onDestroy(() => {
+    stopListening();
+  });
 
   onMount(() => {
     // ページ読み込み時にマイク許可をリクエスト
