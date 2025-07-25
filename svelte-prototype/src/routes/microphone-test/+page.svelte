@@ -246,7 +246,7 @@
           {#if startButtonEnabled}
             <Button 
               href={selectedMode.path} 
-              variant="success" 
+              variant="primary" 
               size="lg" 
               fullWidth
             >
@@ -300,18 +300,18 @@
   }
 
   .mode-icon.green {
-    background-color: #d1fae5;
-    color: #059669;
+    background-color: #dbeafe;
+    color: #2563eb;
   }
 
   .mode-icon.orange {
-    background-color: #fed7aa;
-    color: #ea580c;
+    background-color: #dbeafe;
+    color: #2563eb;
   }
 
   .mode-icon.purple {
-    background-color: #e9d5ff;
-    color: #9333ea;
+    background-color: #dbeafe;
+    color: #2563eb;
   }
 
   .mode-title {
@@ -373,8 +373,8 @@
   }
 
   .status-icon.success {
-    background-color: var(--color-primary-pale);
-    color: var(--color-primary);
+    background-color: #dbeafe;
+    color: #2563eb;
   }
 
   .status-label {
@@ -419,7 +419,7 @@
 
   .volume-fill {
     height: 100%;
-    background: linear-gradient(to right, var(--color-primary), var(--color-primary-light));
+    background: linear-gradient(to right, #3b82f6, #93c5fd);
     transition: width 0.1s ease;
   }
 
@@ -463,9 +463,9 @@
 
   .guidance {
     padding: var(--space-4);
-    background: var(--color-primary-pale);
+    background: #dbeafe;
     border-radius: 8px;
-    border: 1px solid var(--color-primary-light);
+    border: 1px solid #93c5fd;
   }
 
   .guidance-content h3 {

@@ -86,7 +86,7 @@
   .back-button {
     background: none;
     border: none;
-    color: var(--color-primary);
+    color: var(--color-gray-900);
     cursor: pointer;
     font-size: var(--text-base);
   }

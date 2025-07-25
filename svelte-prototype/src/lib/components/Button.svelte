@@ -75,12 +75,12 @@
   
   /* Variants */
   .btn-primary {
-    background: var(--color-primary);
+    background: #3b82f6;
     color: white;
   }
   
   .btn-primary:hover:not(:disabled) {
-    background: var(--color-primary-hover);
+    background: #2563eb;
   }
   
   .btn-secondary {
