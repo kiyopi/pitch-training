@@ -1,4 +1,4 @@
-@tailwind base;
+/* @tailwind base; */ /* 🚨 全要素リセット無効化: インラインスタイル保護 */
 @tailwind components;
 @tailwind utilities;
 
