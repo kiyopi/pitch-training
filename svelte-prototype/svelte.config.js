@@ -15,8 +15,8 @@ const config = {
 		},
 		prerender: {
 			handleHttpError: ({ path, referrer, message }) => {
-				// faviconエラーを無視
-				if (path.includes('favicon')) {
+				// faviconエラーとmicrophone-testエラーを無視
+				if (path.includes('favicon') || path.includes('microphone-test')) {
 					return;
 				}
 				throw new Error(message);

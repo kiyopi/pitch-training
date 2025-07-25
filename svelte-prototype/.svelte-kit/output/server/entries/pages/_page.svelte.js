@@ -56,7 +56,7 @@ const PageLayout = create_ssr_component(($$result, $$props, $$bindings, slots) =
 });
 const css = {
   code: ".homepage.svelte-w2netp{max-width:800px;margin:0 auto}.hero.svelte-w2netp{text-align:center;margin-bottom:var(--space-12)}.hero-title.svelte-w2netp{font-size:var(--text-4xl);font-weight:700;color:var(--color-gray-900);margin-bottom:var(--space-4)}.hero-description.svelte-w2netp{font-size:var(--text-lg);color:var(--color-gray-600);max-width:600px;margin:0 auto}.modes-grid.svelte-w2netp{display:grid;gap:var(--space-6);grid-template-columns:1fr}@media(min-width: 768px){.modes-grid.svelte-w2netp{grid-template-columns:repeat(auto-fit, minmax(300px, 1fr))}}.mode-card.svelte-w2netp{text-align:center}.mode-title.svelte-w2netp{font-size:var(--text-xl);font-weight:600;color:var(--color-gray-900);margin-bottom:var(--space-3)}.mode-description.svelte-w2netp{font-size:var(--text-base);color:var(--color-gray-600);margin-bottom:var(--space-6);line-height:1.6}",
-  map: `{"version":3,"file":"+page.svelte","sources":["+page.svelte"],"sourcesContent":["<script lang=\\"ts\\">\\n  import Card from '$lib/components/Card.svelte';\\n  import Button from '$lib/components/Button.svelte';\\n  import PageLayout from '$lib/components/PageLayout.svelte';\\n<\/script>\\n\\n<PageLayout title=\\"Pitch Training App\\">\\n  <div class=\\"homepage\\">\\n    <div class=\\"hero\\">\\n      <h1 class=\\"hero-title\\">相対音感トレーニング</h1>\\n      <p class=\\"hero-description\\">\\n        ドレミファソラシドの音程関係を正確に聞き分ける力を鍛えましょう\\n      </p>\\n    </div>\\n    \\n    <div class=\\"modes-grid\\">\\n      <Card variant=\\"primary\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">ランダムモード</h3>\\n          <p class=\\"mode-description\\">\\n            基音がランダムに変わる中で、相対音程を鍛える基本モード\\n          </p>\\n          <Button href=\\"/microphone-test?mode=random\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める\\n          </Button>\\n        </div>\\n      </Card>\\n      \\n      <Card variant=\\"default\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">連続チャレンジ</h3>\\n          <p class=\\"mode-description\\">\\n            制限時間内に連続で正解を目指す集中トレーニング\\n          </p>\\n          <Button href=\\"/microphone-test?mode=continuous\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める\\n          </Button>\\n        </div>\\n      </Card>\\n      \\n      <Card variant=\\"default\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">12音階モード</h3>\\n          <p class=\\"mode-description\\">\\n            半音階も含めた12音階での高度な音感トレーニング\\n          </p>\\n          <Button href=\\"/microphone-test?mode=chromatic\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める\\n          </Button>\\n        </div>\\n      </Card>\\n    </div>\\n  </div>\\n</PageLayout>\\n\\n<style>\\n  .homepage {\\n    max-width: 800px;\\n    margin: 0 auto;\\n  }\\n  \\n  .hero {\\n    text-align: center;\\n    margin-bottom: var(--space-12);\\n  }\\n  \\n  .hero-title {\\n    font-size: var(--text-4xl);\\n    font-weight: 700;\\n    color: var(--color-gray-900);\\n    margin-bottom: var(--space-4);\\n  }\\n  \\n  .hero-description {\\n    font-size: var(--text-lg);\\n    color: var(--color-gray-600);\\n    max-width: 600px;\\n    margin: 0 auto;\\n  }\\n  \\n  .modes-grid {\\n    display: grid;\\n    gap: var(--space-6);\\n    grid-template-columns: 1fr;\\n  }\\n  \\n  @media (min-width: 768px) {\\n    .modes-grid {\\n      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));\\n    }\\n  }\\n  \\n  .mode-card {\\n    text-align: center;\\n  }\\n  \\n  .mode-title {\\n    font-size: var(--text-xl);\\n    font-weight: 600;\\n    color: var(--color-gray-900);\\n    margin-bottom: var(--space-3);\\n  }\\n  \\n  .mode-description {\\n    font-size: var(--text-base);\\n    color: var(--color-gray-600);\\n    margin-bottom: var(--space-6);\\n    line-height: 1.6;\\n  }\\n</style>"],"names":[],"mappings":"AAwDE,uBAAU,CACR,SAAS,CAAE,KAAK,CAChB,MAAM,CAAE,CAAC,CAAC,IACZ,CAEA,mBAAM,CACJ,UAAU,CAAE,MAAM,CAClB,aAAa,CAAE,IAAI,UAAU,CAC/B,CAEA,yBAAY,CACV,SAAS,CAAE,IAAI,UAAU,CAAC,CAC1B,WAAW,CAAE,GAAG,CAChB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAC9B,CAEA,+BAAkB,CAChB,SAAS,CAAE,IAAI,SAAS,CAAC,CACzB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,SAAS,CAAE,KAAK,CAChB,MAAM,CAAE,CAAC,CAAC,IACZ,CAEA,yBAAY,CACV,OAAO,CAAE,IAAI,CACb,GAAG,CAAE,IAAI,SAAS,CAAC,CACnB,qBAAqB,CAAE,GACzB,CAEA,MAAO,YAAY,KAAK,CAAE,CACxB,yBAAY,CACV,qBAAqB,CAAE,OAAO,QAAQ,CAAC,CAAC,OAAO,KAAK,CAAC,CAAC,GAAG,CAAC,CAC5D,CACF,CAEA,wBAAW,CACT,UAAU,CAAE,MACd,CAEA,yBAAY,CACV,SAAS,CAAE,IAAI,SAAS,CAAC,CACzB,WAAW,CAAE,GAAG,CAChB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAC9B,CAEA,+BAAkB,CAChB,SAAS,CAAE,IAAI,WAAW,CAAC,CAC3B,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAAC,CAC7B,WAAW,CAAE,GACf"}`
+  map: `{"version":3,"file":"+page.svelte","sources":["+page.svelte"],"sourcesContent":["<script lang=\\"ts\\">\\n  import Card from '$lib/components/Card.svelte';\\n  import Button from '$lib/components/Button.svelte';\\n  import PageLayout from '$lib/components/PageLayout.svelte';\\n<\/script>\\n\\n<PageLayout title=\\"Pitch Training App\\">\\n  <div class=\\"homepage\\">\\n    <div class=\\"hero\\">\\n      <h1 class=\\"hero-title\\">相対音感トレーニング</h1>\\n      <p class=\\"hero-description\\">\\n        ドレミファソラシドの音程関係を正確に聞き分ける力を鍛えましょう\\n      </p>\\n    </div>\\n    \\n    <div class=\\"modes-grid\\">\\n      <Card variant=\\"primary\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">ランダムモード</h3>\\n          <p class=\\"mode-description\\">\\n            基音がランダムに変わる中で、相対音程を鍛える基本モード\\n          </p>\\n          <Button href=\\"#\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める（準備中）\\n          </Button>\\n        </div>\\n      </Card>\\n      \\n      <Card variant=\\"default\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">連続チャレンジ</h3>\\n          <p class=\\"mode-description\\">\\n            制限時間内に連続で正解を目指す集中トレーニング\\n          </p>\\n          <Button href=\\"#\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める（準備中）\\n          </Button>\\n        </div>\\n      </Card>\\n      \\n      <Card variant=\\"default\\" padding=\\"lg\\" interactive={true}>\\n        <div class=\\"mode-card\\">\\n          <h3 class=\\"mode-title\\">12音階モード</h3>\\n          <p class=\\"mode-description\\">\\n            半音階も含めた12音階での高度な音感トレーニング\\n          </p>\\n          <Button href=\\"#\\" variant=\\"primary\\" size=\\"lg\\" fullWidth>\\n            始める（準備中）\\n          </Button>\\n        </div>\\n      </Card>\\n    </div>\\n  </div>\\n</PageLayout>\\n\\n<style>\\n  .homepage {\\n    max-width: 800px;\\n    margin: 0 auto;\\n  }\\n  \\n  .hero {\\n    text-align: center;\\n    margin-bottom: var(--space-12);\\n  }\\n  \\n  .hero-title {\\n    font-size: var(--text-4xl);\\n    font-weight: 700;\\n    color: var(--color-gray-900);\\n    margin-bottom: var(--space-4);\\n  }\\n  \\n  .hero-description {\\n    font-size: var(--text-lg);\\n    color: var(--color-gray-600);\\n    max-width: 600px;\\n    margin: 0 auto;\\n  }\\n  \\n  .modes-grid {\\n    display: grid;\\n    gap: var(--space-6);\\n    grid-template-columns: 1fr;\\n  }\\n  \\n  @media (min-width: 768px) {\\n    .modes-grid {\\n      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));\\n    }\\n  }\\n  \\n  .mode-card {\\n    text-align: center;\\n  }\\n  \\n  .mode-title {\\n    font-size: var(--text-xl);\\n    font-weight: 600;\\n    color: var(--color-gray-900);\\n    margin-bottom: var(--space-3);\\n  }\\n  \\n  .mode-description {\\n    font-size: var(--text-base);\\n    color: var(--color-gray-600);\\n    margin-bottom: var(--space-6);\\n    line-height: 1.6;\\n  }\\n</style>"],"names":[],"mappings":"AAwDE,uBAAU,CACR,SAAS,CAAE,KAAK,CAChB,MAAM,CAAE,CAAC,CAAC,IACZ,CAEA,mBAAM,CACJ,UAAU,CAAE,MAAM,CAClB,aAAa,CAAE,IAAI,UAAU,CAC/B,CAEA,yBAAY,CACV,SAAS,CAAE,IAAI,UAAU,CAAC,CAC1B,WAAW,CAAE,GAAG,CAChB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAC9B,CAEA,+BAAkB,CAChB,SAAS,CAAE,IAAI,SAAS,CAAC,CACzB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,SAAS,CAAE,KAAK,CAChB,MAAM,CAAE,CAAC,CAAC,IACZ,CAEA,yBAAY,CACV,OAAO,CAAE,IAAI,CACb,GAAG,CAAE,IAAI,SAAS,CAAC,CACnB,qBAAqB,CAAE,GACzB,CAEA,MAAO,YAAY,KAAK,CAAE,CACxB,yBAAY,CACV,qBAAqB,CAAE,OAAO,QAAQ,CAAC,CAAC,OAAO,KAAK,CAAC,CAAC,GAAG,CAAC,CAC5D,CACF,CAEA,wBAAW,CACT,UAAU,CAAE,MACd,CAEA,yBAAY,CACV,SAAS,CAAE,IAAI,SAAS,CAAC,CACzB,WAAW,CAAE,GAAG,CAChB,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAC9B,CAEA,+BAAkB,CAChB,SAAS,CAAE,IAAI,WAAW,CAAC,CAC3B,KAAK,CAAE,IAAI,gBAAgB,CAAC,CAC5B,aAAa,CAAE,IAAI,SAAS,CAAC,CAC7B,WAAW,CAAE,GACf"}`
 };
 const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css);
@@ -75,7 +75,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
             return `<div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-tskkra">ランダムモード</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-3iej0e">基音がランダムに変わる中で、相対音程を鍛える基本モード</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
-                href: "/microphone-test?mode=random",
+                href: "#",
                 variant: "primary",
                 size: "lg",
                 fullWidth: true
@@ -83,7 +83,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
               {},
               {
                 default: () => {
-                  return `始める`;
+                  return `始める（準備中）`;
                 }
               }
             )}</div>`;
@@ -102,7 +102,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
             return `<div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-9j9o9z">連続チャレンジ</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-iv2ffh">制限時間内に連続で正解を目指す集中トレーニング</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
-                href: "/microphone-test?mode=continuous",
+                href: "#",
                 variant: "primary",
                 size: "lg",
                 fullWidth: true
@@ -110,7 +110,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
               {},
               {
                 default: () => {
-                  return `始める`;
+                  return `始める（準備中）`;
                 }
               }
             )}</div>`;
@@ -129,7 +129,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
             return `<div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-phqvlc">12音階モード</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-1yj2cyi">半音階も含めた12音階での高度な音感トレーニング</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
-                href: "/microphone-test?mode=chromatic",
+                href: "#",
                 variant: "primary",
                 size: "lg",
                 fullWidth: true
@@ -137,7 +137,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
               {},
               {
                 default: () => {
-                  return `始める`;
+                  return `始める（準備中）`;
                 }
               }
             )}</div>`;

@@ -20,8 +20,8 @@
           <p class="mode-description">
             基音がランダムに変わる中で、相対音程を鍛える基本モード
           </p>
-          <Button href="/microphone-test?mode=random" variant="primary" size="lg" fullWidth>
-            始める
+          <Button href="#" variant="primary" size="lg" fullWidth>
+            始める（準備中）
           </Button>
         </div>
       </Card>
@@ -32,8 +32,8 @@
           <p class="mode-description">
             制限時間内に連続で正解を目指す集中トレーニング
           </p>
-          <Button href="/microphone-test?mode=continuous" variant="primary" size="lg" fullWidth>
-            始める
+          <Button href="#" variant="primary" size="lg" fullWidth>
+            始める（準備中）
           </Button>
         </div>
       </Card>
@@ -44,8 +44,8 @@
           <p class="mode-description">
             半音階も含めた12音階での高度な音感トレーニング
           </p>
-          <Button href="/microphone-test?mode=chromatic" variant="primary" size="lg" fullWidth>
-            始める
+          <Button href="#" variant="primary" size="lg" fullWidth>
+            始める（準備中）
           </Button>
         </div>
       </Card>

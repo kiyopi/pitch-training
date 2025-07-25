@@ -13,19 +13,12 @@ return {
 		client: {start:"_app/immutable/entry/start.CHUf6Q7Q.js",app:"_app/immutable/entry/app.Co-yxgnv.js",imports:["_app/immutable/entry/start.CHUf6Q7Q.js","_app/immutable/chunks/CPC7ZkK5.js","_app/immutable/chunks/DER9Qk2L.js","_app/immutable/entry/app.Co-yxgnv.js","_app/immutable/chunks/DER9Qk2L.js","_app/immutable/chunks/D_t-kyLb.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
-			__memo(() => import('./nodes/1.js')),
-			__memo(() => import('./nodes/2.js'))
+			__memo(() => import('./nodes/1.js'))
 		],
 		routes: [
-			{
-				id: "/",
-				pattern: /^\/$/,
-				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 2 },
-				endpoint: null
-			}
+			
 		],
-		prerendered_routes: new Set([]),
+		prerendered_routes: new Set(["/"]),
 		matchers: async () => {
 			
 			return {  };
