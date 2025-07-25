@@ -19,6 +19,7 @@
   let isListening = false;
   let volumeDetected = false;
   let frequencyDetected = false;
+  let audioConfirmationComplete = false;
   let currentVolume = 0;
   let currentFrequency = 0;
   let currentNote = '';
@@ -52,8 +53,16 @@
   };
 
   const selectedMode = trainingModes[mode] || trainingModes.random;
-  $: startButtonEnabled = micPermission === 'granted' && volumeDetected && frequencyDetected;
-  $: buttonText = micPermission === 'pending' ? 'マイク準備中' : 'マイクテスト開始';
+  
+  // ボタン状態の計算
+  $: {
+    if (volumeDetected && frequencyDetected && !audioConfirmationComplete) {
+      // 音声確認完了の自動設定
+      setTimeout(() => {
+        audioConfirmationComplete = true;
+      }, 1000); // 1秒後に音声確認完了
+    }
+  }
   
   // マイク許可リクエスト（シンプル版）
   async function requestMicrophone() {
@@ -239,7 +248,7 @@
     <div class="training-mode-info">
       <Card variant="default" padding="lg">
         <div class="training-mode-content">
-          {#if micPermission !== 'granted' || !volumeDetected || !frequencyDetected}
+          {#if !audioConfirmationComplete}
             <!-- マイクテスト段階の表示 -->
             <h3 class="instructions-title">マイクのテストを開始します</h3>
             <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
@@ -248,6 +257,10 @@
               {#if micPermission === 'pending'}
                 <button class="mic-test-button preparing" disabled>
                   マイク準備中
+                </button>
+              {:else if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
+                <button class="mic-test-button confirming" disabled>
+                  音声確認中
                 </button>
               {:else if micPermission === 'denied'}
                 <button class="mic-test-button retry" on:click={requestMicrophone}>
@@ -460,6 +473,12 @@
 
   .mic-test-button.preparing {
     background-color: #f59e0b;
+    color: white;
+    cursor: not-allowed;
+  }
+
+  .mic-test-button.confirming {
+    background-color: #8b5cf6;
     color: white;
     cursor: not-allowed;
   }
