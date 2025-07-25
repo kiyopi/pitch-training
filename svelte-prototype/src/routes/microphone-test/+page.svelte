@@ -126,8 +126,10 @@
       <div class="mic-test-header">
         <div class="mic-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1v6l4-4-4-4z"/>
-            <path d="M12 17.5c-2.5 0-4.5-2-4.5-4.5V7c0-2.5 2-4.5 4.5-4.5S16.5 4.5 16.5 7v6c0 2.5-2 4.5-4.5 4.5z"/>
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" x2="12" y1="19" y2="22"/>
+            <line x1="8" x2="16" y1="22" y2="22"/>
           </svg>
         </div>
         <div>
