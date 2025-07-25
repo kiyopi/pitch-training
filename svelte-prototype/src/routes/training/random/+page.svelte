@@ -6,12 +6,12 @@
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   
-  // Tone.js変数（改良版）
+  // Web Audio API変数
   let Tone = null;
   let sampler = null;
   let isToneLoaded = false;
   let toneLoadingError = null;
-  let loadingStatus = 'Tone.js読み込み中...';
+  let loadingStatus = 'オーディオ初期化中...';
   let useSimpleAudio = false; // フォールバック用
   let initializationAttempts = 0; // 再試行カウンター
 
