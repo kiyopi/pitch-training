@@ -210,6 +210,13 @@
     const rms = Math.sqrt(sum / dataArray.length);
     currentVolume = Math.min(100, (rms / 128) * 100);
     
+    // 音量デバッグ（10回に1回ログ出力）
+    if (!window.volumeLogCount) window.volumeLogCount = 0;
+    window.volumeLogCount++;
+    if (window.volumeLogCount % 60 === 0) { // 約1秒に1回
+      console.log('音量値:', currentVolume.toFixed(1), 'RMS:', rms.toFixed(3));
+    }
+    
     if (currentVolume > 20) {
       if (!volumeDetected) {
         console.log('音量検出成功:', currentVolume);
