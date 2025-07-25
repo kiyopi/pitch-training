@@ -416,16 +416,18 @@
   }
 
   .instructions-title {
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
     font-weight: 600;
     color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
+    margin: var(--space-4) 0 var(--space-2) 0;
+    text-align: center;
   }
 
   .instructions-description {
     font-size: var(--text-sm);
     color: var(--color-gray-600);
     margin: 0;
+    text-align: center;
   }
 
   .status-text {
