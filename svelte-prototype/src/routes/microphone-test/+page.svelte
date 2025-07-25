@@ -24,6 +24,11 @@
   let currentFrequency = 0;
   let currentNote = '';
   let isListening = false;
+  let detectionConfidence = 0; // 検出信頼度 (0-100)
+  
+  // 周波数平滑化のための履歴
+  let frequencyHistory = [];
+  const HISTORY_SIZE = 5;
 
   // トレーニングモード設定
   const trainingModes = {
@@ -142,7 +147,7 @@
   function analyzeAudio() {
     if (!isListening || !analyser) return;
     
-    // 周波数データ取得
+    // 周波数データ取得（音量計算用）
     analyser.getByteFrequencyData(dataArray);
     
     // 音量計算（RMS）
@@ -157,31 +162,142 @@
       volumeDetected = true;
     }
     
-    // 基本的な周波数検出（最大振幅のbin）
-    let maxIndex = 0;
-    let maxValue = 0;
-    for (let i = 1; i < dataArray.length / 4; i++) { // 低域のみ
-      if (dataArray[i] > maxValue) {
-        maxValue = dataArray[i];
-        maxIndex = i;
-      }
-    }
+    // 時間領域データ取得（音程検出用）
+    const timeDataArray = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(timeDataArray);
     
-    if (maxValue > 50) { // 閾値
-      const sampleRate = audioContext.sampleRate;
-      currentFrequency = (maxIndex * sampleRate) / (analyser.fftSize);
+    // 自己相関関数による基本周波数検出
+    const detectionResult = detectPitchWithAutocorrelation(timeDataArray, audioContext.sampleRate);
+    
+    if (detectionResult.frequency > 0) {
+      // 周波数履歴に追加
+      frequencyHistory.push(detectionResult.frequency);
+      if (frequencyHistory.length > HISTORY_SIZE) {
+        frequencyHistory.shift();
+      }
+      
+      // 平滑化された周波数を計算
+      const smoothedFrequency = smoothFrequency(frequencyHistory);
+      currentFrequency = smoothedFrequency;
       currentNote = frequencyToNote(currentFrequency);
+      detectionConfidence = Math.round(detectionResult.confidence * 100);
       
       if (currentFrequency > 80 && currentFrequency < 800) { // 人声範囲
         frequencyDetected = true;
       }
     } else {
+      // 検出失敗時は履歴をクリア
+      frequencyHistory = [];
       currentFrequency = 0;
       currentNote = '';
+      detectionConfidence = 0;
     }
     
     // 次のフレーム
     animationFrame = requestAnimationFrame(analyzeAudio);
+  }
+
+  // 自己相関関数による音程検出（改良版）
+  function detectPitchWithAutocorrelation(buffer, sampleRate) {
+    // 音量チェック（閾値以下は処理しない）
+    let rms = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      rms += buffer[i] * buffer[i];
+    }
+    rms = Math.sqrt(rms / buffer.length);
+    if (rms < 0.01) return 0; // 音量が小さすぎる場合
+    
+    // ハイパスフィルター適用（低周波ノイズ除去）
+    const filteredBuffer = applyHighPassFilter(buffer, sampleRate, 70);
+    
+    // 自己相関関数計算の範囲設定
+    const minPeriod = Math.floor(sampleRate / 800); // 最高800Hz
+    const maxPeriod = Math.floor(sampleRate / 70);  // 最低70Hz
+    
+    let bestCorrelation = 0;
+    let bestPeriod = 0;
+    let secondBestCorrelation = 0;
+    
+    // 各遅延（period）での自己相関を計算
+    for (let period = minPeriod; period <= maxPeriod; period++) {
+      let correlation = 0;
+      let normalizer = 0;
+      
+      // 正規化された自己相関計算
+      for (let i = 0; i < filteredBuffer.length - period; i++) {
+        correlation += filteredBuffer[i] * filteredBuffer[i + period];
+        normalizer += filteredBuffer[i] * filteredBuffer[i];
+      }
+      
+      if (normalizer > 0) {
+        correlation = correlation / Math.sqrt(normalizer);
+        
+        // 相関値の更新
+        if (correlation > bestCorrelation) {
+          secondBestCorrelation = bestCorrelation;
+          bestCorrelation = correlation;
+          bestPeriod = period;
+        } else if (correlation > secondBestCorrelation) {
+          secondBestCorrelation = correlation;
+        }
+      }
+    }
+    
+    // 明確なピークがある場合のみ周波数を返す
+    const clarity = bestCorrelation - secondBestCorrelation;
+    if (bestCorrelation > 0.3 && clarity > 0.05 && bestPeriod > 0) {
+      // 信頼度を計算 (0.0 - 1.0)
+      const confidence = Math.min(1.0, bestCorrelation * clarity * 2);
+      return {
+        frequency: sampleRate / bestPeriod,
+        confidence: confidence
+      };
+    }
+    
+    return { frequency: 0, confidence: 0 };
+  }
+
+  // シンプルなハイパスフィルター（IIR 1次）
+  function applyHighPassFilter(buffer, sampleRate, cutoffFreq) {
+    const dt = 1.0 / sampleRate;
+    const rc = 1.0 / (cutoffFreq * 2 * Math.PI);
+    const alpha = rc / (rc + dt);
+    
+    const filtered = new Float32Array(buffer.length);
+    filtered[0] = buffer[0];
+    
+    for (let i = 1; i < buffer.length; i++) {
+      filtered[i] = alpha * (filtered[i-1] + buffer[i] - buffer[i-1]);
+    }
+    
+    return filtered;
+  }
+
+  // 周波数平滑化関数
+  function smoothFrequency(frequencies) {
+    if (frequencies.length === 0) return 0;
+    if (frequencies.length === 1) return frequencies[0];
+    
+    // 外れ値を除去した中央値的な平滑化
+    const sorted = [...frequencies].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    
+    // 中央値から大きく外れた値を除外
+    const filtered = frequencies.filter(f => Math.abs(f - median) / median < 0.1);
+    
+    if (filtered.length === 0) return median;
+    
+    // 残った値の加重平均（新しい値ほど重み大）
+    let weightedSum = 0;
+    let totalWeight = 0;
+    
+    for (let i = 0; i < filtered.length; i++) {
+      const weight = (i + 1); // 新しい値ほど重い
+      weightedSum += filtered[i] * weight;
+      totalWeight += weight;
+    }
+    
+    return weightedSum / totalWeight;
   }
 
   // リスニング停止
@@ -269,10 +385,25 @@
                 <div class="frequency-display">
                   <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
                   <div class="note-value">{currentNote}</div>
+                  {#if detectionConfidence > 0}
+                    <div class="confidence-display">
+                      信頼度: {detectionConfidence}%
+                      <div class="confidence-bar">
+                        <div 
+                          class="confidence-fill" 
+                          style="width: {detectionConfidence}%; background-color: {detectionConfidence > 70 ? '#10b981' : detectionConfidence > 40 ? '#f59e0b' : '#ef4444'}"
+                        ></div>
+                      </div>
+                    </div>
+                  {/if}
                 </div>
                 <div class="frequency-status">
                   {#if !frequencyDetected}
                     <span class="status-pending">⏳ 「ド」を発声して音程を確認してください</span>
+                  {:else if detectionConfidence < 50}
+                    <span class="status-warning">⚠️ より明確に発声してください</span>
+                  {:else}
+                    <span class="status-success">✅ 音程検出中</span>
                   {/if}
                 </div>
               </div>
@@ -429,6 +560,32 @@
 
   .status-pending {
     color: var(--color-gray-600);
+  }
+
+  .status-warning {
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  .confidence-display {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-gray-700);
+  }
+
+  .confidence-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-gray-200);
+    border-radius: 4px;
+    margin-top: var(--space-1);
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.2s ease, background-color 0.2s ease;
   }
 
   .guidance {
