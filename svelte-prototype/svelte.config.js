@@ -8,10 +8,19 @@ const config = {
 			assets: 'build',
 			fallback: undefined,
 			precompress: false,
-			strict: true
+			strict: false
 		}),
 		paths: {
 			base: process.env.NODE_ENV === 'production' ? '/pitch-training' : ''
+		},
+		prerender: {
+			handleHttpError: ({ path, referrer, message }) => {
+				// faviconエラーを無視
+				if (path.includes('favicon')) {
+					return;
+				}
+				throw new Error(message);
+			}
 		}
 	}
 };
