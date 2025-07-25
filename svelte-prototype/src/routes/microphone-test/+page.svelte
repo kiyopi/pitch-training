@@ -57,10 +57,8 @@
   // ボタン状態の計算
   $: {
     if (volumeDetected && frequencyDetected && !audioConfirmationComplete) {
-      // 音声確認完了の自動設定
-      setTimeout(() => {
-        audioConfirmationComplete = true;
-      }, 1000); // 1秒後に音声確認完了
+      // 音声確認完了の即座設定
+      audioConfirmationComplete = true;
     }
   }
   
