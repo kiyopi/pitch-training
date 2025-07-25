@@ -59,7 +59,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.BlWlVubC.css"
+      "_app/immutable/assets/_layout.CrWZKMKI.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -77,7 +77,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CNACrUlV.css"
+      "_app/immutable/assets/_page.CYZ2ahmP.css"
     ]
   }
 }

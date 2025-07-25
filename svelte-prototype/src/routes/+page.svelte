@@ -4,7 +4,7 @@
   import PageLayout from '$lib/components/PageLayout.svelte';
 </script>
 
-<PageLayout title="Pitch Training App">
+<PageLayout>
   <div class="homepage">
     <div class="hero">
       <h1 class="hero-title">相対音感トレーニング</h1>
@@ -40,7 +40,8 @@
           <div class="mode-icon orange">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
+              <circle cx="12" cy="12" r="6"/>
+              <circle cx="12" cy="12" r="2"/>
             </svg>
           </div>
           <h3 class="mode-title">連続チャレンジモード</h3>
