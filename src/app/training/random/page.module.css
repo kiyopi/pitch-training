@@ -85,7 +85,7 @@
 }
 
 .baseToneButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -99,7 +99,7 @@
 
 .baseToneButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 15px -3px rgba(5, 150, 105, 0.3);
 }
 
 .baseToneButton:disabled {
@@ -166,8 +166,8 @@
 /* ガイドアニメーション状態 */
 .scaleNoteItem.active {
   font-size: 20px;
-  border-color: #3b82f6;
-  background-color: #3b82f6;
+  border-color: #059669;
+  background-color: #059669;
   color: white;
   transform: scale(1.2);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -204,13 +204,13 @@
   padding: 20px;
   background-color: #f0f9ff;
   border-radius: 12px;
-  border: 2px solid #3b82f6;
+  border: 2px solid #059669;
 }
 
 .resultsTitle {
   font-size: 18px;
   font-weight: bold;
-  color: #1e40af;
+  color: #166534;
   margin-bottom: 16px;
   text-align: center;
 }
@@ -252,7 +252,7 @@
 .resultsAverage {
   text-align: center;
   font-size: 14px;
-  color: #1e40af;
+  color: #166534;
 }
 
 /* === マイク状態表示 === */
@@ -329,24 +329,24 @@
 }
 
 .micPermissionButton.primary {
-  background-color: #3b82f6;
+  background-color: #059669;
   color: white;
-  border: 2px solid #3b82f6;
+  border: 2px solid #059669;
 }
 
 .micPermissionButton.primary:hover {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #047857;
+  border-color: #047857;
 }
 
 .micPermissionButton.secondary {
   background-color: white;
-  color: #3b82f6;
-  border: 2px solid #3b82f6;
+  color: #059669;
+  border: 2px solid #059669;
 }
 
 .micPermissionButton.secondary:hover {
-  background-color: #eff6ff;
+  background-color: #ecfdf5;
 }
 
 /* === レスポンシブ対応 === */
