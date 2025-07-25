@@ -243,69 +243,69 @@
           <div class="mic-status">
             {#if micPermission === 'pending'}
               <div class="status-indicator pending">⏳ マイク許可を確認中...</div>
-            {:else if micPermission === 'granted'}
-              <div class="status-indicator granted">✅ マイクアクセス許可済み</div>
-              {#if isListening}
-                <div class="status-indicator success">🎤 リアルタイム解析中</div>
-              {/if}
             {:else if micPermission === 'denied'}
               <div class="status-indicator error">❌ マイクアクセスが拒否されました</div>
               <button class="retry-button" on:click={requestMicrophone}>
                 マイク許可を再試行
               </button>
-            {:else}
-              <div class="status-indicator pending">🎤 マイクテストを開始してください</div>
+            {:else if micPermission === 'initial'}
               <button class="retry-button" on:click={requestMicrophone}>
-                マイク許可を取得
+                🎤 マイクテスト開始
               </button>
             {/if}
           </div>
 
-          <!-- リアルタイム表示 -->
-          {#if micPermission === 'granted' && isListening}
-            <div class="realtime-display">
-              <!-- 音量レベル -->
-              <div class="volume-section">
-                <h3 class="display-title">音量レベル</h3>
-                <div class="volume-bar-container">
-                  <div class="volume-bar" style="width: {currentVolume}%"></div>
-                </div>
-                <div class="volume-text">{currentVolume.toFixed(1)}%</div>
-                <div class="volume-status">
-                  {#if !volumeDetected}
-                    <span class="status-pending">⏳ 声を出して音量を確認してください</span>
-                  {:else}
-                    <span class="status-success">✅ 音量検出成功</span>
-                  {/if}
-                </div>
+          <!-- リアルタイム表示（常時表示） -->
+          <div class="realtime-display">
+            <!-- 音量レベル -->
+            <div class="volume-section">
+              <h3 class="display-title">音量レベル</h3>
+              <div class="volume-bar-container">
+                <div class="volume-bar" style="width: {currentVolume}%"></div>
               </div>
-
-              <!-- 周波数・音程表示 -->
-              <div class="frequency-section">
-                <h3 class="display-title">音程検出</h3>
-                <div class="frequency-display">
-                  <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
-                  <div class="note-value">{currentNote}</div>
-                </div>
-                <div class="frequency-status">
-                  {#if !frequencyDetected}
-                    <span class="status-pending">⏳ 「ド」を発声して音程を確認してください</span>
+              <div class="volume-text">{currentVolume.toFixed(1)}%</div>
+              <div class="volume-status">
+                <span class="status-pending">
+                  {#if !volumeDetected && isListening}
+                    ⏳ 声を出して音量を確認してください
+                  {:else if !isListening}
+                    マイクテスト開始後に表示されます
                   {:else}
-                    <span class="status-success">✅ 音程検出成功</span>
+                    &nbsp;
                   {/if}
-                </div>
+                </span>
               </div>
             </div>
 
-            <!-- ガイダンス -->
-            {#if volumeDetected && !frequencyDetected}
-              <div class="guidance">
-                <div class="guidance-content">
-                  <h3>「ド」を発声してください</h3>
-                  <p>任意の高さで「ドー」と歌うように発声してください</p>
-                </div>
+            <!-- 周波数・音程表示 -->
+            <div class="frequency-section">
+              <h3 class="display-title">音程検出</h3>
+              <div class="frequency-display">
+                <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+                <div class="note-value">{currentNote}</div>
               </div>
-            {/if}
+              <div class="frequency-status">
+                <span class="status-pending">
+                  {#if !frequencyDetected && isListening}
+                    ⏳ 「ド」を発声して音程を確認してください
+                  {:else if !isListening}
+                    マイクテスト開始後に表示されます
+                  {:else}
+                    &nbsp;
+                  {/if}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ガイダンス -->
+          {#if volumeDetected && !frequencyDetected && isListening}
+            <div class="guidance">
+              <div class="guidance-content">
+                <h3>「ド」を発声してください</h3>
+                <p>任意の高さで「ドー」と歌うように発声してください</p>
+              </div>
+            </div>
           {/if}
         </div>
       </Card>
@@ -415,17 +415,6 @@
     border: 1px solid #fcd34d;
   }
 
-  .status-indicator.granted {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #86efac;
-  }
-
-  .status-indicator.success {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #86efac;
-  }
 
   .status-indicator.error {
     background-color: #fee2e2;
@@ -511,12 +500,12 @@
   .volume-status,
   .frequency-status {
     text-align: center;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .status-success {
-    color: var(--color-success);
-    font-weight: 600;
-  }
 
   .status-pending {
     color: var(--color-gray-600);
