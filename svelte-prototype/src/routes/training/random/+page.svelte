@@ -3,6 +3,8 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import VolumeBar from '$lib/components/VolumeBar.svelte';
+  import PitchDisplay from '$lib/components/PitchDisplay.svelte';
 
   // トレーニング状態管理
   let isPlaying = false;
@@ -88,7 +90,6 @@
   }
 
   // 音量バー幅計算
-  $: volumeWidth = Math.max(0, Math.min(100, currentVolume));
   
   // スコア計算
   $: correctCount = scaleResults.filter(result => result).length;
@@ -215,24 +216,19 @@
             <Card variant="default" padding="md">
               <div class="volume-display">
                 <h3 class="display-title">音量レベル</h3>
-                <div class="volume-bar-container">
-                  <div class="volume-bar">
-                    <div class="volume-fill" style="width: {volumeWidth}%"></div>
-                  </div>
-                  <span class="volume-text">{Math.round(currentVolume)}%</span>
-                </div>
+                <VolumeBar volume={currentVolume} height="20px" />
               </div>
             </Card>
 
             <!-- 音程表示 -->
             <Card variant="default" padding="md">
-              <div class="pitch-display">
-                <h3 class="display-title">検出音程</h3>
-                <div class="pitch-info">
-                  <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
-                  <div class="note-value">{currentNote}</div>
-                </div>
-              </div>
+              <PitchDisplay 
+                frequency={currentFrequency}
+                targetNote={scaleNotes[currentScaleIndex]}
+                currentNote={currentNote}
+                accuracy={0}
+                isDetecting={isDetecting}
+              />
             </Card>
           </div>
         </div>
@@ -535,49 +531,7 @@
     text-align: center;
   }
 
-  .volume-bar-container {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
 
-  .volume-bar {
-    flex: 1;
-    height: 8px;
-    background: var(--color-gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .volume-fill {
-    height: 100%;
-    background: linear-gradient(to right, var(--color-primary), var(--color-primary-light));
-    transition: width 0.1s ease;
-  }
-
-  .volume-text {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--color-gray-700);
-    min-width: 30px;
-  }
-
-  .pitch-info {
-    text-align: center;
-  }
-
-  .frequency-value {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    color: var(--color-gray-900);
-    margin-bottom: var(--space-1);
-  }
-
-  .note-value {
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--color-gray-700);
-  }
 
   .progress-info {
     text-align: center;

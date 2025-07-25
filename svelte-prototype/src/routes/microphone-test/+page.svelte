@@ -4,6 +4,8 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import VolumeBar from '$lib/components/VolumeBar.svelte';
+  import PitchDisplay from '$lib/components/PitchDisplay.svelte';
 
   // URL パラメータから mode を取得
   let mode = 'random';
@@ -150,12 +152,7 @@
               <!-- 音量レベル -->
               <div class="volume-section">
                 <h3 class="display-title">音量レベル</h3>
-                <div class="volume-bar-container">
-                  <div class="volume-bar">
-                    <div class="volume-fill" style="width: {currentVolume}%"></div>
-                  </div>
-                  <span class="volume-text">{Math.round(currentVolume)}%</span>
-                </div>
+                <VolumeBar volume={currentVolume} height="16px" className="volume-bar-wrapper" />
                 <div class="volume-status">
                   {#if !volumeDetected}
                     <span class="status-pending">⏳ 声を出して音量を確認してください</span>
@@ -296,32 +293,8 @@
     min-height: 120px;
   }
 
-  .volume-bar-container {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
+  .volume-bar-wrapper {
     margin-bottom: var(--space-2);
-  }
-
-  .volume-bar {
-    flex: 1;
-    height: 12px;
-    background: var(--color-gray-200);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-
-  .volume-fill {
-    height: 100%;
-    background: linear-gradient(to right, #3b82f6, #93c5fd);
-    transition: width 0.1s ease;
-  }
-
-  .volume-text {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--color-gray-700);
-    min-width: 40px;
   }
 
   .frequency-display {
