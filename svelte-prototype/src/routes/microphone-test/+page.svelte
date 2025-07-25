@@ -254,7 +254,7 @@
             {#if micPermission === 'pending'}
               <p class="status-text">マイク準備中...</p>
             {:else if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
-              <p class="status-text">音声確認中...</p>
+              <p class="status-text voice-instruction">「ドー」と発声してください</p>
             {:else if micPermission === 'denied'}
               <div class="mic-test-button-area">
                 <button class="mic-test-button retry" on:click={requestMicrophone}>
@@ -290,12 +290,6 @@
       <Card variant="default" padding="lg">
         <div class="mic-test-content">
           
-          <!-- マイク状態表示（簡略化） -->
-          {#if micPermission === 'granted'}
-            <div class="mic-status-granted">
-              <div class="status-indicator success">✅ マイク接続完了</div>
-            </div>
-          {/if}
 
           <!-- リアルタイム表示（常時表示） -->
           <div class="realtime-display">
@@ -441,6 +435,10 @@
     color: var(--color-gray-900);
     margin: var(--space-6) 0;
     text-align: center;
+  }
+
+  .status-text.voice-instruction {
+    color: #2563eb;
   }
 
   .mic-test-button-area,
