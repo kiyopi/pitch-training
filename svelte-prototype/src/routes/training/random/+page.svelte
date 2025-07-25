@@ -10,6 +10,8 @@
   let Tone = null;
   let sampler = null;
   let isToneLoaded = false;
+  let toneLoadingError = null;
+  let loadingStatus = 'Tone.js読み込み中...';
 
   // トレーニング状態管理
   let isPlaying = false;
@@ -46,34 +48,63 @@
   // Tone.js初期化
   async function initializeTone() {
     try {
+      loadingStatus = 'Tone.js CDN読み込み中...';
+      console.log('Tone.js初期化開始');
+      
       // Tone.js CDNから読み込み
       if (typeof window !== 'undefined' && !window.Tone) {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/tone@14.7.77/build/Tone.js';
+        
         script.onload = async () => {
+          console.log('Tone.js CDN読み込み完了');
+          loadingStatus = 'Tone.js初期化中...';
           window.Tone = window.Tone;
           Tone = window.Tone;
           await setupSampler();
         };
+        
+        script.onerror = (error) => {
+          console.error('Tone.js CDN読み込みエラー:', error);
+          toneLoadingError = 'Tone.js CDNの読み込みに失敗しました';
+          loadingStatus = 'エラー';
+        };
+        
         document.head.appendChild(script);
       } else if (window.Tone) {
+        console.log('Tone.js既に読み込み済み');
         Tone = window.Tone;
         await setupSampler();
+      } else {
+        console.log('window未定義');
+        loadingStatus = 'ブラウザ環境チェック中...';
       }
     } catch (error) {
       console.error('Tone.js初期化エラー:', error);
+      toneLoadingError = `初期化エラー: ${error.message}`;
+      loadingStatus = 'エラー';
     }
   }
   
   // Salamander Grand Piano サンプラー設定
   async function setupSampler() {
     try {
-      if (!Tone) return;
+      if (!Tone) {
+        console.error('Tone.js未初期化');
+        return;
+      }
+      
+      console.log('サンプラー設定開始');
+      loadingStatus = 'AudioContext初期化中...';
       
       // AudioContextが停止している場合は開始
       if (Tone.context.state !== 'running') {
+        console.log('AudioContext開始中...');
         await Tone.start();
       }
+      
+      loadingStatus = 'ピアノ音源読み込み中...';
+      console.log('Salamander Grand Piano サンプラー作成中...');
       
       // Salamander Grand Piano音源でサンプラー作成
       sampler = new Tone.Sampler({
@@ -84,12 +115,24 @@
         release: 1.5,
         onload: () => {
           isToneLoaded = true;
-          console.log('Salamander Grand Piano読み込み完了');
+          loadingStatus = '読み込み完了';
+          console.log('✅ Salamander Grand Piano読み込み完了');
         }
       }).toDestination();
       
+      // タイムアウト設定（10秒）
+      setTimeout(() => {
+        if (!isToneLoaded) {
+          console.warn('⚠️ ピアノ音源読み込みタイムアウト');
+          toneLoadingError = 'ピアノ音源の読み込みがタイムアウトしました';
+          loadingStatus = 'タイムアウト';
+        }
+      }, 10000);
+      
     } catch (error) {
       console.error('サンプラー設定エラー:', error);
+      toneLoadingError = `サンプラーエラー: ${error.message}`;
+      loadingStatus = 'エラー';
     }
   }
   
@@ -314,16 +357,26 @@
 
             <Button variant="success" size="lg" fullWidth on:click={startTraining} disabled={!isToneLoaded}>
               {#if !isToneLoaded}
-                ピアノ音源読み込み中...
+                {loadingStatus}
               {:else}
                 トレーニング開始
               {/if}
             </Button>
             
             {#if !isToneLoaded}
-              <p class="loading-message">
-                Salamander Grand Piano 音源を読み込んでいます
-              </p>
+              <div class="loading-info">
+                <p class="loading-message">
+                  {loadingStatus}
+                </p>
+                {#if toneLoadingError}
+                  <p class="error-message">
+                    ❌ {toneLoadingError}
+                  </p>
+                  <p class="retry-message">
+                    ページを再読み込みしてみてください
+                  </p>
+                {/if}
+              </div>
             {/if}
           </div>
         </Card>
@@ -880,12 +933,29 @@
     gap: var(--space-3);
   }
 
+  .loading-info {
+    text-align: center;
+    margin: var(--space-3) 0 0 0;
+  }
+
   .loading-message {
     font-size: var(--text-sm);
     color: var(--color-gray-600);
-    text-align: center;
-    margin: var(--space-2) 0 0 0;
+    margin: var(--space-2) 0;
     animation: pulse 2s infinite;
+  }
+
+  .error-message {
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    margin: var(--space-2) 0;
+    font-weight: 600;
+  }
+
+  .retry-message {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    margin: var(--space-1) 0 0 0;
   }
 
   @keyframes pulse {
