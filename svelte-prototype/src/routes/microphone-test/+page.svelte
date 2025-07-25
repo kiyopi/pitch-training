@@ -29,19 +29,19 @@
       name: 'ランダム基音モード',
       description: '10種類の基音からランダムに選択してトレーニング',
       color: 'green',
-      path: '/training/random'
+      path: './training/random'
     },
     continuous: {
       name: '連続チャレンジモード',
       description: '選択した回数だけ連続で実行し、総合評価を確認',
       color: 'orange',
-      path: '/training/continuous'
+      path: './training/continuous'
     },
     chromatic: {
       name: '12音階モード',
       description: 'クロマチックスケールの上行・下行で完全制覇',
       color: 'purple',
-      path: '/training/chromatic'
+      path: './training/chromatic'
     }
   };
 

@@ -9,6 +9,7 @@
 {#if href}
   <a 
     {href}
+    data-sveltekit-preload-data="hover"
     class="btn"
     class:btn-primary={variant === 'primary'}
     class:btn-secondary={variant === 'secondary'}
