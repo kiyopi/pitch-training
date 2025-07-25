@@ -2,5 +2,17 @@
 	"/": [
 		"src/routes/+layout.ts",
 		"src/routes/+layout.ts"
+	],
+	"/microphone-test": [
+		"src/routes/+layout.ts"
+	],
+	"/training/chromatic": [
+		"src/routes/+layout.ts"
+	],
+	"/training/continuous": [
+		"src/routes/+layout.ts"
+	],
+	"/training/random": [
+		"src/routes/+layout.ts"
 	]
 }

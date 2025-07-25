@@ -10,11 +10,15 @@ return {
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {start:"_app/immutable/entry/start.CGfDh6L_.js",app:"_app/immutable/entry/app.C003L_70.js",imports:["_app/immutable/entry/start.CGfDh6L_.js","_app/immutable/chunks/CmAHWokF.js","_app/immutable/chunks/D5V3uhf7.js","_app/immutable/entry/app.C003L_70.js","_app/immutable/chunks/D5V3uhf7.js","_app/immutable/chunks/TQMthVLs.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.R76ZbHGN.js",app:"_app/immutable/entry/app.BzJHc89j.js",imports:["_app/immutable/entry/start.R76ZbHGN.js","_app/immutable/chunks/C884qSPe.js","_app/immutable/chunks/p0IT90XR.js","_app/immutable/entry/app.BzJHc89j.js","_app/immutable/chunks/p0IT90XR.js","_app/immutable/chunks/B0HqwU-P.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
-			__memo(() => import('./nodes/2.js'))
+			__memo(() => import('./nodes/2.js')),
+			__memo(() => import('./nodes/3.js')),
+			__memo(() => import('./nodes/4.js')),
+			__memo(() => import('./nodes/5.js')),
+			__memo(() => import('./nodes/6.js'))
 		],
 		routes: [
 			{
@@ -22,6 +26,34 @@ return {
 				pattern: /^\/$/,
 				params: [],
 				page: { layouts: [0,], errors: [1,], leaf: 2 },
+				endpoint: null
+			},
+			{
+				id: "/microphone-test",
+				pattern: /^\/microphone-test\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 3 },
+				endpoint: null
+			},
+			{
+				id: "/training/chromatic",
+				pattern: /^\/training\/chromatic\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 4 },
+				endpoint: null
+			},
+			{
+				id: "/training/continuous",
+				pattern: /^\/training\/continuous\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				endpoint: null
+			},
+			{
+				id: "/training/random",
+				pattern: /^\/training\/random\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 6 },
 				endpoint: null
 			}
 		],

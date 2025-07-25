@@ -291,6 +291,13 @@
     margin: 0 0 var(--space-3) 0;
   }
 
+  .volume-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 120px;
+  }
+
   .volume-bar-container {
     display: flex;
     align-items: center;
