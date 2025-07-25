@@ -115,7 +115,7 @@
     }
   }
   
-  // Salamander Grand Piano サンプラー設定（改良版）
+  // Salamander Grand Piano サンプラー設定（ローカル音源版）
   async function setupSampler() {
     try {
       if (!Tone) {
@@ -139,38 +139,50 @@
         }
       }
       
-      loadingStatus = 'ピアノ音源読み込み中...';
-      console.log('🎵 Salamander Grand Piano サンプラー作成中...');
+      loadingStatus = 'ローカルピアノ音源読み込み中...';
+      console.log('🎵 ローカル Salamander Grand Piano サンプラー作成中...');
+      
+      // ローカル音源マップ（基音として使用する10種類）
+      const localPianoUrls = {
+        "Bb3": "Bb3.mp3",
+        "B3": "B3.mp3", 
+        "C4": "C4.mp3",
+        "Db4": "Db4.mp3",
+        "D4": "D4.mp3",
+        "Eb4": "Eb4.mp3",
+        "E4": "E4.mp3",
+        "F4": "F4.mp3",
+        "Gb4": "Gb4.mp3",
+        "Ab4": "Ab4.mp3"
+      };
       
       // Promise化されたサンプラー読み込み
       await new Promise((resolve, reject) => {
         sampler = new Tone.Sampler({
-          urls: {
-            "C4": "C4.mp3",
-          },
-          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          urls: localPianoUrls,
+          baseUrl: "/audio/piano/",  // ローカルパス
           release: 1.5,
           onload: () => {
-            console.log('✅ Salamander Grand Piano音源読み込み完了');
+            console.log('✅ ローカル Salamander Grand Piano音源読み込み完了');
             isToneLoaded = true;
             loadingStatus = '読み込み完了';
             resolve();
           },
           onerror: (error) => {
-            console.error('❌ Salamander Grand Piano音源読み込みエラー:', error);
-            reject(new Error('音源読み込み失敗'));
+            console.error('❌ ローカル Salamander Grand Piano音源読み込みエラー:', error);
+            reject(new Error('ローカル音源読み込み失敗'));
           }
         }).toDestination();
         
         console.log('🔗 サンプラーをDestinationに接続完了');
         
-        // 3秒タイムアウト（短縮）
+        // 5秒タイムアウト（ローカル読み込みで安全のため延長）
         setTimeout(() => {
           if (!isToneLoaded) {
-            console.warn('⚠️ ピアノ音源読み込みタイムアウト（3秒）');
-            reject(new Error('音源読み込みタイムアウト'));
+            console.warn('⚠️ ローカルピアノ音源読み込みタイムアウト（5秒）');
+            reject(new Error('ローカル音源読み込みタイムアウト'));
           }
-        }, 3000);
+        }, 5000);
       });
       
     } catch (error) {
