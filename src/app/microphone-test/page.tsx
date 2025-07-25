@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// shadcn/ui コンポーネントをインラインスタイルで実装するため削除
 import { Music, RotateCcw, Target, Mic, VolumeX, Volume2, ArrowLeft } from "lucide-react";
 import { PitchDetector } from 'pitchy';
 
@@ -32,7 +31,7 @@ const TRAINING_MODES: Record<string, TrainingMode> = {
     name: 'ランダム基音モード',
     description: '10種類の基音からランダムに選択してトレーニング',
     icon: Music,
-    targetPath: '/random-training',
+    targetPath: '/training/random',
     bgColor: 'bg-emerald-100',
     iconColor: 'text-emerald-600'
   },
@@ -143,6 +142,9 @@ function MicrophoneTestContent() {
   
   // 音量スムージング用
   const previousVolumeRef = useRef<number>(0);
+  
+  // 🎯 チラチラ防止: 安定性バッファ
+  // 安定化処理削除: シンプル実装に変更
 
   // 🔍 Webインスペクター用グローバル公開関数
   useEffect(() => {
@@ -219,6 +221,18 @@ function MicrophoneTestContent() {
     };
   }, []); // cleanup関数は後で定義されるため依存配列から削除
   
+  // 音量バー初期化（CLAUDE.md準拠: iPhone WebKit対応）
+  useEffect(() => {
+    // コンポーネントマウント時に確実に初期化
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+  }, []);
+  
   // DOM直接操作関数（DDAS）
   const updateFrequencyDisplay = useCallback((frequency: number | null) => {
     if (frequencyDisplayRef.current) {
@@ -265,7 +279,6 @@ function MicrophoneTestContent() {
         // 音名種別判定（基本音・半音の視覚的区別）
         const isSharpNote = note.includes('#');
         const noteTypeIcon = isSharpNote ? '♯' : '♪';
-        const noteTypeClass = isSharpNote ? 'bg-yellow-100 border-yellow-300' : 'bg-blue-100 border-blue-300';
         
         // 🔍 デバッグ状態更新: 詳細音名情報
         debugStateRef.current.lastFrequency = frequency;
@@ -310,6 +323,21 @@ function MicrophoneTestContent() {
     // パーセント表示更新（innerHTMLで全体を更新）
     if (volumePercentRef.current) {
       volumePercentRef.current.innerHTML = `<span class="text-sm text-neutral-700 font-medium">${clampedVolume.toFixed(1)}%</span>`;
+    }
+  }, []);
+  
+  // 初期音量表示設定（0%確実表示）
+  useEffect(() => {
+    // コンポーネント初期化時に確実に0%表示
+    if (volumeBarRef.current) {
+      volumeBarRef.current.style.width = '0%';
+      volumeBarRef.current.style.backgroundColor = '#10b981';
+      volumeBarRef.current.style.height = '12px';
+      volumeBarRef.current.style.borderRadius = '9999px';
+      volumeBarRef.current.style.transition = 'all 0.1s ease-out';
+    }
+    if (volumePercentRef.current) {
+      volumePercentRef.current.innerHTML = '<span class="text-sm text-neutral-700 font-medium">0.0%</span>';
     }
   }, []);
   
@@ -361,34 +389,64 @@ function MicrophoneTestContent() {
       analyser.smoothingTimeConstant = 0.8; // 安定化重視（テスト実装と同じ）
       analyserRef.current = analyser;
       
-      // ノイズリダクションフィルター作成（無音時ノイズ抑制強化）
-      const highPassFilter = audioContext.createBiquadFilter();
-      highPassFilter.type = 'highpass';
-      highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime); // より高い周波数でカット
-      highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
-      
-      const lowPassFilter = audioContext.createBiquadFilter();
-      lowPassFilter.type = 'lowpass';
-      lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
-      lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      const notchFilter = audioContext.createBiquadFilter();
-      notchFilter.type = 'notch';
-      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
-      notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
-      
-      const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(1.0, audioContext.currentTime); // 無音時ノイズを抑制するためゲインを調整
-      
-      // MediaStreamSource作成・接続
+      // 🚨 iPhone AudioContext競合対策: プラットフォーム適応型フィルター
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const source = audioContext.createMediaStreamSource(stream);
-      source.connect(highPassFilter);
-      highPassFilter.connect(lowPassFilter);
-      lowPassFilter.connect(notchFilter);
-      notchFilter.connect(gainNode);
-      gainNode.connect(analyser);
       
-      // Refs保存
+      // フィルター変数を共通スコープで宣言
+      let highPassFilter: BiquadFilterNode;
+      let lowPassFilter: BiquadFilterNode | null = null;
+      let notchFilter: BiquadFilterNode | null = null;
+      let gainNode: GainNode;
+      
+      if (isIOS) {
+        // iPhone: 軽量化フィルター（AudioContext競合回避）
+        highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(60, audioContext.currentTime); // 軽量設定
+        highPassFilter.Q.setValueAtTime(0.5, audioContext.currentTime); // 軽量Q値
+        
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // iPhone音量補強
+        
+        // 軽量接続: source → highpass → gain → analyser
+        source.connect(highPassFilter);
+        highPassFilter.connect(gainNode);
+        gainNode.connect(analyser);
+        
+        console.log('🍎 iPhone軽量化フィルター適用: AudioContext競合回避');
+        
+      } else {
+        // PC: 標準3段階フィルター（従来通り）
+        highPassFilter = audioContext.createBiquadFilter();
+        highPassFilter.type = 'highpass';
+        highPassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
+        highPassFilter.Q.setValueAtTime(1.0, audioContext.currentTime);
+        
+        lowPassFilter = audioContext.createBiquadFilter();
+        lowPassFilter.type = 'lowpass';
+        lowPassFilter.frequency.setValueAtTime(4000, audioContext.currentTime);
+        lowPassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+        
+        notchFilter = audioContext.createBiquadFilter();
+        notchFilter.type = 'notch';
+        notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+        notchFilter.Q.setValueAtTime(30, audioContext.currentTime);
+        
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+        
+        // PC標準接続: source → 3段階フィルター → analyser
+        source.connect(highPassFilter);
+        lowPassFilter && highPassFilter.connect(lowPassFilter);
+        notchFilter && lowPassFilter && lowPassFilter.connect(notchFilter);
+        (notchFilter || lowPassFilter || highPassFilter).connect(gainNode);
+        gainNode.connect(analyser);
+        
+        console.log('💻 PC標準3段階フィルター適用');
+      }
+      
+      // 🔧 フィルターRefs保存（プラットフォーム適応型）
       highPassFilterRef.current = highPassFilter;
       lowPassFilterRef.current = lowPassFilter;
       notchFilterRef.current = notchFilter;
@@ -466,46 +524,29 @@ function MicrophoneTestContent() {
       }
       
       const rms = Math.sqrt(sum / bufferLength);
-      // pitchy-clean準拠：音量計算スケーリング
+      // 📝 MICROPHONE_PLATFORM_SPECIFICATIONS.md準拠: プラットフォーム特性対応
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const microphoneSpec = {
+        divisor: isIOS ? 4.0 : 6.0,           // PC適切感度復元: 8.0→6.0
+        gainCompensation: isIOS ? 1.5 : 1.0,  // iPhone低域カット補正
+        noiseThreshold: isIOS ? 12 : 15,      // PC無音時確実0%: 8→15
+        smoothingFactor: 0.2
+      };
+      
+      // 📝 仕様書準拠: 基本音量計算
       const calculatedVolume = Math.max(rms * 200, maxAmplitude * 100);
       
-      // iPhone専用音量オフセット方式（発声検出連動）+ PC無音時ノイズフロア改善
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const baseVolume = calculatedVolume / 12 * 100;
+      // 📝 プラットフォーム適応音量計算
+      const rawVolumePercent = Math.min(Math.max(calculatedVolume / microphoneSpec.divisor * 100, 0), 100);
       
-      let volumePercent;
-      if (isIOS) {
-        // iPhone専用音量オフセット方式（発声検出連動）- 成功実装復元
-        if (calculatedVolume > 3) { // 発声検出閾値
-          const iOSOffset = 40; // 40%のベースオフセット
-          const iOSMultiplier = 2.0; // 発声時の増幅倍率
-          volumePercent = Math.min(Math.max((baseVolume * iOSMultiplier) + iOSOffset, 0), 100);
-        } else {
-          // 無音時: 通常計算（オフセットなし）
-          volumePercent = Math.min(Math.max(baseVolume, 0), 100);
-        }
-      } else {
-        // PC: 無音時のみノイズフロア削減を追加
-        if (calculatedVolume <= 3) {
-          // 無音時: ノイズフロア削減（18%→3%程度）
-          volumePercent = Math.min(Math.max(baseVolume * 0.2, 0), 100);
-        } else {
-          // 発声時: 従来通り
-          volumePercent = Math.min(Math.max(baseVolume, 0), 100);
-        }
-      }
-      // const normalizedVolume = volumePercent / 100; // 0-1正規化（未使用のため削除）
+      // 📝 iPhone特性補正: 250Hzローカット対応
+      const compensatedVolume = rawVolumePercent * microphoneSpec.gainCompensation;
       
-      // 音量スムージング（より安定した表示）
-      const smoothingFactor = 0.2;
-      const smoothedVolume = previousVolumeRef.current + smoothingFactor * (volumePercent - previousVolumeRef.current);
+      // 📝 音量スムージング
+      const smoothedVolume = previousVolumeRef.current + microphoneSpec.smoothingFactor * (compensatedVolume - previousVolumeRef.current);
       previousVolumeRef.current = smoothedVolume;
       
-      // DOM直接更新 + デバッグ状態更新
-      updateVolumeDisplay(smoothedVolume);
-      
-      // 🔍 デバッグ状態更新: 音量
-      debugStateRef.current.lastVolume = smoothedVolume;
+      // デバッグ情報削除: 音量問題解決により不要
       
       // 周波数検出用のFloat32Array取得
       const floatDataArray = new Float32Array(bufferLength);
@@ -518,24 +559,36 @@ function MicrophoneTestContent() {
       debugStateRef.current.lastFrequency = frequency || 0;
       debugStateRef.current.lastClarity = clarity || 0;
       
+      // 📝 仕様書準拠: 周波数検知連動型音量表示（シンプル実装）
       if (frequency && clarity > 0.6 && frequency >= 80 && frequency <= 2000) {
-        // DOM直接更新
+        // 発声検知時: 補正音量表示
+        const finalVolume = smoothedVolume > microphoneSpec.noiseThreshold ? smoothedVolume : 0;
+        
+        updateVolumeDisplay(finalVolume);
         updateFrequencyDisplay(frequency);
         updateNoteDisplay(frequency);
         
-        setMicState(prev => ({ 
-          ...prev, 
-          volumeDetected: smoothedVolume > 1,
-          frequencyDetected: true,
-          startButtonEnabled: smoothedVolume > 1
-        }));
-      } else {
-        updateFrequencyDisplay(null);
-        updateNoteDisplay(null);
+        // 🔍 デバッグ状態更新
+        debugStateRef.current.lastVolume = finalVolume;
         
         setMicState(prev => ({ 
           ...prev, 
-          volumeDetected: smoothedVolume > 1,
+          volumeDetected: finalVolume > 1,
+          frequencyDetected: true,
+          startButtonEnabled: finalVolume > 1
+        }));
+      } else {
+        // 無音時: 強制的に0%表示（仕様書準拠）
+        updateVolumeDisplay(0);
+        updateFrequencyDisplay(null);
+        updateNoteDisplay(null);
+        
+        // 🔍 デバッグ状態更新
+        debugStateRef.current.lastVolume = 0;
+        
+        setMicState(prev => ({ 
+          ...prev, 
+          volumeDetected: false,
           frequencyDetected: false
         }));
       }
@@ -586,6 +639,9 @@ function MicrophoneTestContent() {
     notchFilterRef.current = null;
     gainNodeRef.current = null;
     previousVolumeRef.current = 0;
+    
+    // 🎯 チラチラ防止: バッファリセット
+    // 安定化処理削除: シンプル実装に変更
     
     // 5. UIリセット
     if (volumeBarRef.current) {
@@ -696,88 +752,233 @@ function MicrophoneTestContent() {
   }, []);
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
         
         {/* ヘッダー */}
-        <div className="flex items-center mb-6 sm:mb-8">
-          <Button asChild variant="outline" className="mr-4">
-            <Link href="/">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              戻る
-            </Link>
-          </Button>
-          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">
-            マイクロフォンテスト
-          </h1>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            padding: '24px 16px' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/" style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#1a1a1a',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease-in-out'
+              }}>
+                <ArrowLeft style={{ width: '16px', height: '16px' }} />
+                戻る
+              </Link>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                マイクロフォンテスト
+              </h1>
+            </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
+            </div>
+          </div>
+        </header>
+
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 16px' }}>
+          {/* 選択されたモード表示 */}
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          marginBottom: '24px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: selectedMode.id === 'random' ? '#d1fae5' : selectedMode.id === 'continuous' ? '#fed7aa' : '#e9d5ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: selectedMode.id === 'random' ? '#059669' : selectedMode.id === 'continuous' ? '#ea580c' : '#9333ea'
+            }}>
+              {selectedMode.id === 'random' ? '🎵' : selectedMode.id === 'continuous' ? '🔄' : '🎹'}
+            </div>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#1a1a1a',
+              margin: 0
+            }}>
+              {selectedMode.name}
+            </h2>
+          </div>
+          <p style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            lineHeight: '1.5',
+            margin: 0
+          }}>
+            {selectedMode.description}
+          </p>
         </div>
         
-        {/* 選択されたモード表示 */}
-        <Card className="mb-6 border-neutral-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-3 text-lg text-neutral-900">
-              <div className={`w-10 h-10 rounded-full ${selectedMode.bgColor} flex items-center justify-center`}>
-                <selectedMode.icon className={`w-5 h-5 ${selectedMode.iconColor}`} />
-              </div>
-              {selectedMode.name}
-            </CardTitle>
-            <CardDescription className="text-neutral-700">
-              {selectedMode.description}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-        
         {/* マイクロフォン許可セクション */}
-        <Card className="mb-6 border-neutral-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-neutral-900">
-              <Mic className="w-6 h-6" />
-              マイクロフォンの許可
-            </CardTitle>
-            <CardDescription className="text-neutral-700">
+        <div style={{
+          backgroundColor: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          marginBottom: '24px'
+        }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <Mic style={{ width: '24px', height: '24px', color: '#1a1a1a' }} />
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                マイクロフォンの許可
+              </h3>
+            </div>
+            <p style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              lineHeight: '1.5',
+              margin: 0
+            }}>
               音程検出のためにマイクロフォンへのアクセスを許可してください。
               許可後、「ド」を発声してマイクの動作確認を行ってください。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div>
             {micState.micPermission === 'pending' && (
-              <div className="text-center space-y-4">
-                <Button onClick={requestMicrophonePermission} className="bg-blue-600 hover:bg-blue-700">
-                  <Mic className="w-4 h-4 mr-2" />
+              <div style={{ textAlign: 'center' }}>
+                <button onClick={requestMicrophonePermission} style={{
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  margin: '0 auto 16px auto',
+                  transition: 'background-color 0.2s ease-in-out'
+                }}>
+                  <Mic style={{ width: '16px', height: '16px' }} />
                   マイクロフォンを許可
-                </Button>
-                <p className="text-sm text-neutral-700">
+                </button>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
                   ブラウザでマイクロフォンへのアクセス許可を求められます
                 </p>
               </div>
             )}
             
             {micState.micPermission === 'granted' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-600">
-                  <Volume2 className="w-5 h-5" />
-                  <span className="font-medium">マイクロフォン許可済み</span>
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#059669',
+                  marginBottom: '16px'
+                }}>
+                  <Volume2 style={{ width: '20px', height: '20px' }} />
+                  <span style={{ fontWeight: '500' }}>マイクロフォン許可済み</span>
                 </div>
                 
                 {/* リアルタイム表示（DDAS - DOM直接更新） */}
-                <div className="bg-neutral-50 rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium text-neutral-900">リアルタイム検出</h3>
+                <div style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h4 style={{
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#1a1a1a',
+                    margin: '0 0 16px 0'
+                  }}>リアルタイム検出</h4>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '16px'
+                  }}>
                     <div>
-                      <p className="text-sm text-neutral-700 font-medium mb-2">周波数</p>
-                      <div ref={frequencyDisplayRef} className="h-16 flex items-center justify-center">
-                        <div className="text-center text-neutral-600">
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        margin: '0 0 8px 0'
+                      }}>周波数</p>
+                      <div ref={frequencyDisplayRef} style={{
+                        height: '64px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ textAlign: 'center', color: '#6b7280' }}>
                           🎵 音声を発声してください
                         </div>
                       </div>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-neutral-700 font-medium mb-2">🎵 音名・オクターブ</p>
-                      <div ref={noteDisplayRef} className="h-16 flex items-center justify-center">
-                        <div className="text-center text-neutral-600">
-                          <div className="text-xl sm:text-2xl">🎵 音声を発声してください</div>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        margin: '0 0 8px 0'
+                      }}>🎵 音名・オクターブ</p>
+                      <div ref={noteDisplayRef} style={{
+                        height: '64px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ textAlign: 'center', color: '#6b7280' }}>
+                          <div style={{ fontSize: '16px' }}>🎵 音声を発声してください</div>
                         </div>
                       </div>
                     </div>
@@ -785,41 +986,78 @@ function MicrophoneTestContent() {
                   
                   {/* 音量バー（DDAS - DOM直接更新） */}
                   <div>
-                    <p className="text-sm text-neutral-700 font-medium mb-2">音量レベル</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-3 mb-2">
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontWeight: '500',
+                      margin: '0 0 8px 0'
+                    }}>音量レベル</p>
+                    <div style={{
+                      width: '100%',
+                      backgroundColor: '#e5e7eb',
+                      borderRadius: '9999px',
+                      height: '12px',
+                      marginBottom: '8px'
+                    }}>
                       <div 
                         ref={volumeBarRef}
-                        className="h-3 rounded-full transition-all duration-100"
+                        // CLAUDE.md準拠: 初期style属性は設定せず、JavaScript制御のみ
                       />
                     </div>
-                    <div ref={volumePercentRef} className="text-right">
-                      <span className="text-sm text-neutral-700 font-medium">0%</span>
+                    <div ref={volumePercentRef} style={{ textAlign: 'right' }}>
+                      <span style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        fontWeight: '500'
+                      }}>0%</span>
                     </div>
+                    {/* 🔍 iPhone実機用デバッグ情報表示エリア */}
+                    {/* デバッグエリア削除: 音量問題解決により不要 */}
                   </div>
                 </div>
               </div>
             )}
             
             {micState.micPermission === 'error' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-red-600">
-                  <VolumeX className="w-5 h-5" />
-                  <span className="font-medium">マイクロフォンアクセスエラー</span>
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                  marginBottom: '16px'
+                }}>
+                  <VolumeX style={{ width: '20px', height: '20px' }} />
+                  <span style={{ fontWeight: '500' }}>マイクロフォンアクセスエラー</span>
                 </div>
-                <p className="text-sm text-red-700">{error}</p>
-                <div className="flex gap-3">
-                  <Button 
+                <p style={{
+                  fontSize: '14px',
+                  color: '#dc2626',
+                  marginBottom: '16px'
+                }}>{error}</p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
                     onClick={() => {
                       console.log('🔄 エラー状態からの再試行: クリーンアップ後再試行');
                       manualComponentCleanup(); // useEffectの代わりに手動クリーンアップ
                       cleanup(); // エラー状態からの再試行時にクリーンアップ
                       requestMicrophonePermission();
-                    }} 
-                    variant="outline"
+                    }}
+                    style={{
+                      backgroundColor: 'white',
+                      color: '#1a1a1a',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease-in-out'
+                    }}
                   >
                     再試行
-                  </Button>
-                  <Button 
+                  </button>
+                  <button 
                     onClick={() => {
                       console.log('📱 手動マイクOFF: ユーザー操作で即座停止');
                       manualComponentCleanup(); // useEffectの代わりに手動クリーンアップ
@@ -827,53 +1065,149 @@ function MicrophoneTestContent() {
                       setMicState(prev => ({ ...prev, micPermission: 'pending' }));
                       setError('');
                     }}
-                    variant="secondary"
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      color: '#1a1a1a',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease-in-out'
+                    }}
                   >
                     マイクOFF
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
         {/* レッスンスタートボタン */}
         {micState.micPermission === 'granted' && (
-          <Card className="border-neutral-200">
-            <CardHeader>
-              <CardTitle className="text-neutral-900">レッスンを開始</CardTitle>
-              <CardDescription className="text-neutral-700">
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 8px 0'
+              }}>
+                レッスンを開始
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                lineHeight: '1.5',
+                margin: 0
+              }}>
                 音量バーが反応し、周波数が検出されることを確認してからボタンを押してください
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <Button 
-                asChild 
-                disabled={!micState.startButtonEnabled} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-neutral-300 disabled:text-neutral-500 px-8 py-3 text-lg font-bold border-2 disabled:border-neutral-200"
-              >
-                <Link href={selectedMode.targetPath}>
-                  🎵 {selectedMode.name}を開始
+              </p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              {micState.startButtonEnabled ? (
+                <Link href={selectedMode.targetPath} style={{
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s ease-in-out',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}>
+                  {selectedMode.name}を開始
                 </Link>
-              </Button>
-              
-            </CardContent>
-          </Card>
+              ) : (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#d1d5db',
+                  color: '#6b7280',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'not-allowed',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}>
+                  {selectedMode.name}を開始
+                </div>
+              )}
+            </div>
+          </div>
         )}
         
-      </div>
+        </main>
+        
+        {/* フッター */}
+        <footer style={{ borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px 16px',
+            gap: '16px'
+          }}>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
+            </div>
+          </div>
+        </footer>
+        
     </div>
   );
 }
 
 export default function MicrophoneTestPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-neutral-50 to-neutral-100 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-neutral-700 font-medium">読み込み中...</p>
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            border: '2px solid #e5e7eb',
+            borderTop: '2px solid #2563eb',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px auto'
+          }}></div>
+          <p style={{
+            color: '#6b7280',
+            fontWeight: '500',
+            margin: 0
+          }}>読み込み中...</p>
+        </div>
       </div>
-    </div>}>
+    }>
       <MicrophoneTestContent />
     </Suspense>
   );

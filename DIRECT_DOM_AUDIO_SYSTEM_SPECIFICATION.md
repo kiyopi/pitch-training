@@ -21,7 +21,8 @@ Next.js + React状態管理 + DOM直接操作による高速音声UI更新シス
 ### **⚠️ 重要な区別**
 - **旧HYBRID権限システム**: マイクロフォン許可管理（**使用禁止**）
 - **Direct DOM Audio System**: UI更新手法（**推進中**）
-- **技術的関連性**: なし（完全に別のシステム）
+- **統一音響処理モジュール**: 音響処理・DOM操作の統合基盤（**2025-07-24実装**）
+- **技術的関連性**: DDASの進化形として統一モジュールを位置づけ
 
 ---
 
@@ -584,7 +585,122 @@ export default function DirectDomAudioTestPage() {
 
 ---
 
-**この仕様書は、Direct DOM Audio Systemの完全な技術実装ガイドです。旧HYBRID権限システムとの混同を避け、高品質な音声UIシステムを構築するための詳細な指針を提供します。**
+## 🔄 **統一音響処理モジュールへの発展（2025-07-24）**
+
+### **DDASからモジュール化への進化**
+
+**従来のDDAS実装（分散型）**:
+```typescript
+// 各ページでの独自実装
+const updateVolumeDisplay = (volume: number) => {
+  if (volumeBarRef.current) {
+    volumeBarRef.current.style.width = `${volume}%`;
+    // iPhone対応の個別実装
+  }
+};
+```
+
+**統一音響処理モジュール（統合型）**:
+```typescript
+// モジュール化された統一実装
+import { AudioDOMController } from '@/utils/audioDOMHelpers';
+
+// 全プラットフォーム対応の統一操作
+AudioDOMController.updateVolumeDisplay(volumeBarRef.current, volume);
+```
+
+### **進化のポイント**
+
+#### **1. 統一性の確保**
+- **DDAS時代**: 各ページでのDOM操作実装
+- **モジュール化後**: AudioDOMControllerによる統一操作
+
+#### **2. プラットフォーム対応の統合**
+- **DDAS時代**: ページ毎のiPhone Safari対応
+- **モジュール化後**: UnifiedAudioProcessorによる自動判定・最適化
+
+#### **3. 保守性の向上**
+- **DDAS時代**: 修正時の全ページ影響調査
+- **モジュール化後**: モジュール側修正で一括対応
+
+### **統一モジュールの技術継承**
+
+#### **DDASの継承要素**
+```typescript
+// DOM直接操作の継承（React状態管理回避）
+element.style.width = `${volume}%`;
+element.style.backgroundColor = '#10b981';
+
+// iPhone Safari WebKit制約対応の継承
+element.style.transition = 'width 0.1s ease-out';
+element.style.transformOrigin = 'left center';
+```
+
+#### **モジュール化での改善**
+```typescript
+// 統一化されたDOM操作
+export class AudioDOMController {
+  static updateVolumeDisplay(element: HTMLElement, volume: number): void {
+    // iPhone対応が組み込まれた統一実装
+    const clampedVolume = Math.max(0, Math.min(100, volume));
+    element.style.width = `${clampedVolume}%`;
+    element.style.backgroundColor = '#10b981';
+    element.style.height = '100%';
+    element.style.borderRadius = '9999px';
+    element.style.transition = 'width 0.1s ease-out';
+  }
+}
+```
+
+### **移行ガイドライン**
+
+#### **既存DDAS実装からの移行**
+1. **独自DOM操作の特定**: 既存の`volumeBarRef.current.style`操作
+2. **統一モジュール導入**: `AudioDOMController`のimport
+3. **呼び出し置換**: 独自実装を統一メソッド呼び出しに変更
+4. **動作検証**: iPhone/PC両環境での完全テスト
+
+#### **新規実装での適用**
+```typescript
+// 推奨実装パターン
+import { AudioDOMController } from '@/utils/audioDOMHelpers';
+
+const MyAudioComponent = () => {
+  const volumeBarRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    // 初期化
+    if (volumeBarRef.current) {
+      AudioDOMController.initializeVolumeBar(volumeBarRef.current);
+    }
+  }, []);
+  
+  const updateVolume = (volume: number) => {
+    // 統一操作
+    if (volumeBarRef.current) {
+      AudioDOMController.updateVolumeDisplay(volumeBarRef.current, volume);
+    }
+  };
+};
+```
+
+### **今後の発展方向**
+
+#### **統一モジュールの拡張予定**
+- **高度音響分析**: スペクトル解析・倍音解析の統合
+- **リアルタイム可視化**: 周波数スペクトラム・波形表示
+- **カスタム設定**: ページ別・用途別の細かな調整機能
+- **パフォーマンス最適化**: WebAssembly活用・GPU加速
+
+#### **DDASからの完全移行計画**
+1. **Phase 1**: ランダムページ統合完了 ✅
+2. **Phase 2**: 連続チャレンジページ統合
+3. **Phase 3**: 12音階ページ統合
+4. **Phase 4**: テストページ群の統合
+
+---
+
+**この仕様書は、Direct DOM Audio Systemの完全な技術実装ガイドです。2025-07-24の統一音響処理モジュール化により、DDASの概念を発展・統合し、より保守性の高いシステムへと進化しています。**
 
 *最終更新: 2025-07-21*  
 *バージョン: v1.0.0-ddas*  

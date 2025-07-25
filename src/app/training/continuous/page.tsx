@@ -115,126 +115,328 @@ export default function ContinousChallengePage() {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="text-center">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 16px'
+      }}>
         {/* ヘッダー */}
-        <div className="mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🔄</span>
-          </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            連続チャレンジモード
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            ランダム基音が連続再生・相対音感の持続的トレーニング
-          </p>
-          <div className="inline-block bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 px-6 py-3 rounded-full text-lg font-bold">
-            音源テスト版
-          </div>
-          
-          {/* 現在の基音表示 */}
-          {currentBaseNote && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
-              <p className="text-lg font-bold text-purple-800">
-                🎵 第{playCount}回: <span className="text-2xl">{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
-              </p>
-              <p className="text-sm text-purple-600 mt-1">
-                この基音でドレミファソラシドを歌ってください
-              </p>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/" style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#1a1a1a',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease-in-out'
+              }}>
+                <ArrowLeft style={{ width: '16px', height: '16px' }} />
+                戻る
+              </Link>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: 0
+              }}>連続チャレンジモード</h1>
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
+            </div>
+          </div>
+        </header>
 
-        {/* 制御ボタン */}
-        <div className="mb-12 flex gap-4 justify-center">
-          <button
-            onClick={handleStart}
-            disabled={isPlaying}
-            className={`group relative overflow-hidden px-8 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg ${
-              isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Play className="w-6 h-6" />
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 0' }}>
+          {/* メインエリア */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔄</div>
+              <h2 style={{
+                fontSize: '32px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 16px 0'
+              }}>連続チャレンジモード</h2>
+              <p style={{
+                fontSize: '18px',
+                color: '#6b7280',
+                lineHeight: '1.6',
+                margin: '0 0 16px 0'
+              }}>
+                ランダム基音が連続再生・相対音感の持続的トレーニング
+              </p>
+              <div style={{
+                display: 'inline-block',
+                backgroundColor: '#e9d5ff',
+                color: '#7c3aed',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                音源テスト版
+              </div>
+            </div>
+          
+            {/* 現在の基音表示 */}
+            {currentBaseNote && (
+              <div style={{
+                marginTop: '24px',
+                padding: '16px',
+                backgroundColor: '#f5f3ff',
+                border: '1px solid #c4b5fd',
+                borderRadius: '12px'
+              }}>
+                <p style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#6b21a8',
+                  margin: '0 0 4px 0'
+                }}>
+                  🎵 第{playCount}回: <span style={{ fontSize: '24px' }}>{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#7c3aed',
+                  margin: 0
+                }}>
+                  この基音でドレミファソラシドを歌ってください
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '48px',
+            display: 'flex',
+            gap: '16px',
+            justifyContent: 'center'
+          }}>
+            <button
+              onClick={handleStart}
+              disabled={isPlaying}
+              style={{
+                backgroundColor: isPlaying ? '#9ca3af' : '#7c3aed',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Play style={{ width: '16px', height: '16px' }} />
               <span>🚀 開始</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleStop}
-            disabled={!isPlaying}
-            className={`group relative overflow-hidden px-8 py-4 rounded-2xl text-xl font-bold text-white transition-all duration-300 shadow-lg ${
-              !isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Square className="w-6 h-6" />
+            </button>
+            
+            <button
+              onClick={handleStop}
+              disabled={!isPlaying}
+              style={{
+                backgroundColor: !isPlaying ? '#9ca3af' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: !isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Square style={{ width: '16px', height: '16px' }} />
               <span>⏹️ 停止</span>
-            </div>
-          </button>
-        </div>
-
-        {/* 説明 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">音源テスト内容</h3>
-          <div className="text-left space-y-3 text-gray-600">
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <span>ランダム基音を1.7秒再生</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>1秒間隔を空ける</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>次のランダム基音を再生（継続）</span>
-            </div>
+            </button>
           </div>
-          
-          {/* テスト項目 */}
-          <div className="mt-6 p-4 bg-purple-50 rounded-xl">
-            <h4 className="font-bold text-purple-700 mb-3">🧪 テスト検証項目</h4>
-            <div className="grid grid-cols-1 gap-2 text-sm text-purple-600">
-              <div>✓ 連続ランダム選択の動作確認</div>
-              <div>✓ iPhone Safari での継続動作</div>
-              <div>✓ メモリリーク・パフォーマンス確認</div>
-              <div>✓ 停止・再開制御の確実性</div>
-              <div>✓ タイミング制御の精度</div>
-            </div>
-          </div>
-        </div>
 
-        {/* デバッグログ表示 */}
-        {debugLog.length > 0 && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-xl">
-            <h4 className="font-bold text-gray-800 mb-2">📝 動作ログ:</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              {debugLog.map((log, index) => (
-                <div key={index} className="font-mono">{log}</div>
+          {/* 使い方説明 */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h3 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 8px 0'
+              }}>音源テスト内容</h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#6b7280',
+                lineHeight: '1.5',
+                margin: 0
+              }}>
+                連続チャレンジシステムの動作確認
+              </p>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '24px'
+            }}>
+              {[
+                { step: 1, title: "基音再生", desc: "ランダム基音を1.7秒再生" },
+                { step: 2, title: "間隔制御", desc: "1秒間隔を空ける" },
+                { step: 3, title: "連続実行", desc: "次のランダム基音を再生（継続）" }
+              ].map((item) => (
+                <div key={item.step} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px auto',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#1a1a1a'
+                  }}>
+                    {item.step}
+                  </div>
+                  <h4 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>{item.title}</h4>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>{item.desc}</p>
+                </div>
               ))}
             </div>
+            
+            {/* テスト項目 */}
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              backgroundColor: '#f5f3ff',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#7c3aed',
+                margin: '0 0 12px 0'
+              }}>🧪 テスト検証項目</h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '8px',
+                fontSize: '14px',
+                color: '#7c3aed'
+              }}>
+                <div>✓ 連続ランダム選択の動作確認</div>
+                <div>✓ iPhone Safari での継続動作</div>
+                <div>✓ メモリリーク・パフォーマンス確認</div>
+                <div>✓ 停止・再開制御の確実性</div>
+                <div>✓ タイミング制御の精度</div>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* 戻るボタン */}
-        <Link 
-          href="/"
-          className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>トップページに戻る</span>
-        </Link>
+          {/* デバッグログ表示 */}
+          {debugLog.length > 0 && (
+            <div style={{
+              marginBottom: '32px',
+              padding: '16px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                margin: '0 0 8px 0'
+              }}>📝 動作ログ:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {debugLog.map((log, index) => (
+                  <div key={index} style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontFamily: 'monospace'
+                  }}>{log}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+
+        {/* フッター */}
+        <footer style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

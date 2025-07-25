@@ -18,6 +18,8 @@ export * from './pitchAnalysis';
 // 音声処理・フィルターユーティリティ
 export * from './audioFilters';
 export * from './audioProcessing';
+export * from './audioDOMHelpers';
+export * from './platformDetection';
 export * from './harmonicCorrection';
 
 // 汎用ユーティリティ
@@ -34,10 +36,11 @@ export {
 } from './pitchAnalysis';
 
 export {
-  // 音声処理統合 
-  createAudioProcessingResult,
-  analyzeVolume,
-  analyzeFrequencySpectrum
+  // 音響処理統合 
+  UnifiedAudioProcessor,
+  createUnifiedAudioProcessor,
+  detectPlatform,
+  frequencyToNoteName
 } from './audioProcessing';
 
 export {

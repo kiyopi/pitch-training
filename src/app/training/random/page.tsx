@@ -1,201 +1,497 @@
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
+import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
+import styles from './page.module.css';
 
+// === 型定義 ===
+type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
+
+interface ScaleResult {
+  note: string;
+  correct: boolean;
+  cents: number;
+}
+
+// === メインコンポーネント ===
 export default function RandomTrainingPage() {
+  // === マイク状態管理 ===
+  const [micState, setMicState] = useState<MicrophoneState>('checking');
+  const [micError, setMicError] = useState<string | null>(null);
+
+  // === 基音再生状態 ===
   const [isPlaying, setIsPlaying] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
-  
-  // Pitchy統合基盤
+  const [currentBaseFreq, setCurrentBaseFreq] = useState<number | null>(null);
+
+  // === ガイドシステム状態 ===
+  const [isGuideActive, setIsGuideActive] = useState(false);
+  const [currentScaleIndex, setCurrentScaleIndex] = useState(0);
+  const [scaleResults, setScaleResults] = useState<ScaleResult[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
+  // === 音程検出状態 ===
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [currentPitch, setCurrentPitch] = useState<{
+    frequency: number;
+    note: string;
+    cents: number;
+  } | null>(null);
+
+  // === DOM参照 ===
+  const scaleGuideRef = useRef<HTMLDivElement | null>(null);
+  const relativePitchRef = useRef<HTMLDivElement | null>(null);
+
+  // === 音響処理参照 ===
+  const audioProcessorRef = useRef<UnifiedAudioProcessor | null>(null);
   const pitchDetectorRef = useRef<PitchDetector<Float32Array> | null>(null);
-  
-  // AudioContext・AnalyserNode基盤
   const audioContextRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  
-  // 10種類の基音候補
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // === 定数 ===
+  const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
   const baseNoteNames = {
-    'C4': 'ド（低）', 'D4': 'レ（低）', 'E4': 'ミ（低）', 'F4': 'ファ（低）', 'G4': 'ソ（低）',
-    'A4': 'ラ（中）', 'B4': 'シ（中）', 'C5': 'ド（高）', 'D5': 'レ（高）', 'E5': 'ミ（高）'
-  };
-  
-  const addLog = (message: string) => {
-    console.log(message);
-    setDebugLog(prev => [...prev.slice(-4), message]);
+    'C4': 'ド4', 'D4': 'レ4', 'E4': 'ミ4', 'F4': 'ファ4', 'G4': 'ソ4',
+    'A4': 'ラ4', 'B4': 'シ4', 'C5': 'ド5', 'D5': 'レ5', 'E5': 'ミ5'
   };
 
-  const handleStart = async () => {
-    // 再生中は新しい音を開始しない
-    if (isPlaying) {
-      addLog('⚠️ 既に再生中のため新しい音をスキップ');
-      return;
-    }
-    
-    // ランダムな基音を選択
-    const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
-    setCurrentBaseNote(randomNote);
-    
-    setIsPlaying(true);
-    
+  // === Phase 1: マイク状態検出システム ===
+  const checkMicrophonePermission = useCallback(async (): Promise<MicrophoneState> => {
     try {
-      addLog(`🎲 ランダム基音: ${baseNoteNames[randomNote as keyof typeof baseNoteNames]}`);
-      
-      // AudioContext開始
-      if (Tone.getContext().state !== 'running') {
-        await Tone.start();
-        addLog('AudioContext開始完了');
+      // Navigator permissions API で状態確認
+      if (navigator.permissions) {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        return permissionStatus.state as MicrophoneState;
       }
       
-      // 高品質ピアノ音源作成（C4単一音源 + 自動ピッチシフト）
-      const sampler = new Tone.Sampler({
-        urls: {
-          "C4": "C4.mp3"
-        },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1.5,
-        volume: 6 // プロトタイプ準拠の音量設定（iPhone最適化）
-      }).toDestination();
-      
-      // 音源読み込み待機
-      addLog('ピアノ音源読み込み中...');
-      await Tone.loaded();
-      
-      // ランダム選択された基音を1.7秒間再生（C4から自動ピッチシフト）
-      addLog(`♪ 再生中: ${randomNote}`);
-      sampler.triggerAttack(randomNote, undefined, 0.8); // プロトタイプ準拠のvelocity設定
-      
-      // 1.7秒後に手動でリリース
-      setTimeout(() => {
-        sampler.triggerRelease(randomNote);
-        addLog(`🔇 再生終了: ${randomNote}`);
-        setIsPlaying(false); // 再生状態をリセット
-      }, 1700);
+      // Fallback: 実際にマイクアクセスを試行
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      return 'granted';
       
     } catch (error) {
-      addLog(`❌ ピアノ音再生エラー: ${error}`);
-      setIsPlaying(false); // エラー時も再生状態をリセット
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('マイク許可確認エラー:', errorMessage);
+      
+      if (errorMessage.includes('Permission denied')) {
+        return 'denied';
+      } else if (errorMessage.includes('NotFoundError')) {
+        return 'error';
+      } else {
+        return 'prompt';
+      }
+    }
+  }, []);
+
+  // === 初期化: マイク状態検出 ===
+  useEffect(() => {
+    const initializeMicrophoneState = async () => {
+      try {
+        const state = await checkMicrophonePermission();
+        setMicState(state);
+        setMicError(null);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        setMicState('error');
+        setMicError(errorMessage);
+      }
+    };
+
+    initializeMicrophoneState();
+  }, [checkMicrophonePermission]);
+
+  // === レンダリング: マイク許可要求画面 ===
+  const renderMicrophonePermissionRequired = () => (
+    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
+      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
+        ⚠️ マイクアクセスが必要です
+      </div>
+      <div style={{ fontSize: '16px', color: '#4b5563', marginBottom: '24px', lineHeight: '1.6', textAlign: 'center' }}>
+        このトレーニングには音声入力が必要です。<br />
+        推奨: マイクテストページで音声確認後ご利用ください。
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', margin: '0 auto' }}>
+        <Link href="/microphone-test" style={{ 
+          padding: '16px 32px', 
+          borderRadius: '8px', 
+          fontWeight: '600', 
+          textDecoration: 'none', 
+ 
+          maxWidth: '400px', 
+          minWidth: '200px', 
+          textAlign: 'center', 
+          fontSize: '16px',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
+        }}>
+          マイクテストページに移動
+        </Link>
+        <button 
+          onClick={async () => {
+            const state = await checkMicrophonePermission();
+            setMicState(state);
+          }}
+          style={{ 
+            padding: '16px 32px', 
+            borderRadius: '8px', 
+            fontWeight: '600', 
+            textDecoration: 'none', 
+   
+            maxWidth: '400px', 
+            minWidth: '200px', 
+            textAlign: 'center', 
+            fontSize: '16px',
+            backgroundColor: 'white',
+            color: '#3b82f6',
+            border: '2px solid #3b82f6',
+            cursor: 'pointer',
+          display: 'inline-block'
+          }}
+        >
+          直接マイク許可を取得
+        </button>
+      </div>
+    </div>
+  );
+
+  // === レンダリング: マイクエラー回復画面 ===
+  const renderMicrophoneErrorRecovery = () => (
+    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
+      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
+        🔇 マイクアクセスに問題があります
+      </div>
+      <div style={{ fontSize: '16px', color: '#4b5563', marginBottom: '24px', lineHeight: '1.6', textAlign: 'center' }}>
+        考えられる原因:<br />
+        • マイク許可が取り消された<br />
+        • マイクデバイスが利用できない<br />
+        • ブラウザの設定変更<br />
+        {micError && <><br />エラー詳細: {micError}</>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', margin: '0 auto' }}>
+        <Link href="/microphone-test" style={{ 
+          padding: '16px 32px', 
+          borderRadius: '8px', 
+          fontWeight: '600', 
+          textDecoration: 'none', 
+ 
+          maxWidth: '400px', 
+          minWidth: '200px', 
+          textAlign: 'center', 
+          fontSize: '16px',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
+        }}>
+          マイクテストページで確認
+        </Link>
+        <button 
+          onClick={async () => {
+            const state = await checkMicrophonePermission();
+            setMicState(state);
+          }}
+          style={{ 
+            padding: '16px 32px', 
+            borderRadius: '8px', 
+            fontWeight: '600', 
+            textDecoration: 'none', 
+   
+            maxWidth: '400px', 
+            minWidth: '200px', 
+            textAlign: 'center', 
+            fontSize: '16px',
+            backgroundColor: 'white',
+            color: '#3b82f6',
+            border: '2px solid #3b82f6',
+            cursor: 'pointer',
+          display: 'inline-block'
+          }}
+        >
+          再度マイク許可を取得
+        </button>
+      </div>
+    </div>
+  );
+
+  // === レンダリング: ローディング画面 ===
+  const renderLoadingState = () => (
+    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
+      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
+        🔍 マイク状態を確認中...
+      </div>
+    </div>
+  );
+
+  // === レンダリング: メイントレーニング画面（Phase 2で実装予定） ===
+  const renderTrainingInterface = () => (
+    <div>
+      {/* マイク準備完了状態表示 */}
+      <div style={{ 
+        marginBottom: '20px', 
+        padding: '12px', 
+        borderRadius: '8px', 
+        textAlign: 'center', 
+        fontWeight: '600',
+        backgroundColor: '#dcfce7',
+        color: '#166534',
+        border: '1px solid #bbf7d0'
+      }}>
+        🎤 マイク準備完了
+      </div>
+
+      {/* 基音再生セクション（Phase 2で実装） */}
+      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+        <button 
+          disabled={isPlaying}
+          onClick={() => {
+            // Phase 2で実装予定
+            console.log('基音再生機能は Phase 2 で実装予定');
+          }}
+          style={{
+            background: isPlaying ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            padding: '16px 32px',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            cursor: isPlaying ? 'not-allowed' : 'pointer',
+            boxShadow: isPlaying ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto'
+          }}
+        >
+          <Play className="w-5 h-5 mr-2" />
+          {isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}
+        </button>
+        
+        {currentBaseNote && (
+          <div style={{ marginTop: '16px', fontSize: '16px', color: '#1f2937', fontWeight: '600' }}>
+            基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
+          </div>
+        )}
+      </div>
+
+      {/* ドレミファソラシドガイドセクション（Phase 2で実装） */}
+      <div style={{
+        marginTop: '32px',
+        padding: '24px',
+        backgroundColor: '#f9fafb',
+        borderRadius: '12px',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div style={{
+          fontSize: '16px',
+          fontWeight: 'bold',
+          color: '#1f2937',
+          marginBottom: '16px',
+          textAlign: 'center'
+        }}>
+          🎵 ドレミファソラシド ガイド
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div ref={scaleGuideRef} style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(8, 1fr)',
+            gap: '12px',
+            width: '100%',
+            maxWidth: '100%'
+          }}>
+            {scaleNotes.map((note, index) => (
+              <div
+                key={note}
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  border: '2px solid #d1d5db',
+                  backgroundColor: '#f9fafb',
+                  color: '#6b7280',
+                  transform: 'scale(1)',
+                  boxShadow: 'none',
+                  transition: 'all 0.3s ease-in-out'
+                }}
+              >
+                {note}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 相対音程表示セクション（Phase 2で実装） */}
+      <div style={{
+        marginTop: '24px',
+        padding: '20px',
+        backgroundColor: '#f3f4f6',
+        borderRadius: '10px',
+        border: '1px solid #d1d5db'
+      }}>
+        <div ref={relativePitchRef} style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          textAlign: 'center',
+          lineHeight: '1.5'
+        }}>
+          {currentPitch 
+            ? `🎵 現在: ${currentPitch.note} (${currentPitch.cents}セント)`
+            : '🎵 音程を検出中...'
+          }
+        </div>
+      </div>
+
+      {/* 結果表示セクション（Phase 2で実装） */}
+      {showResults && scaleResults.length > 0 && (
+        <div style={{
+          marginTop: '24px',
+          padding: '20px',
+          backgroundColor: '#f0f9ff',
+          borderRadius: '12px',
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
+        }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: '#1e40af',
+            marginBottom: '16px',
+            textAlign: 'center'
+          }}>
+            🎉 オクターブ完了！結果
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+            gap: '8px',
+            marginBottom: '16px'
+          }}>
+            {scaleResults.map((result, index) => (
+              <div key={index} style={{
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: 'white',
+                borderRadius: '6px',
+                border: '1px solid #bfdbfe'
+              }}>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  marginBottom: '4px',
+                  color: result.correct ? '#059669' : '#dc2626'
+                }}>
+                  {result.note}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280'
+                }}>
+                  {Math.round(result.cents)}セント
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            textAlign: 'center',
+            fontSize: '14px',
+            color: '#1e40af'
+          }}>
+            平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // === メインレンダリング: 状態別分岐 ===
+  const renderContent = () => {
+    switch (micState) {
+      case 'granted':
+        return renderTrainingInterface();
+      case 'denied':
+      case 'prompt':
+        return renderMicrophonePermissionRequired();
+      case 'error':
+        return renderMicrophoneErrorRecovery();
+      case 'checking':
+        return renderLoadingState();
+      default:
+        return renderLoadingState();
     }
   };
 
+
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="text-center">
-        {/* ヘッダー */}
-        <div className="mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🎲</span>
+    <div 
+      style={{ 
+        backgroundColor: '#ffffff',
+        color: '#1a1a1a',
+        minHeight: '100vh',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        margin: 0,
+        padding: 0
+      }}
+    >
+      {/* Header */}
+      <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ margin: '0', padding: '0 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '24px 0', gap: '24px' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', fontWeight: '500' }}>
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              ホーム
+            </Link>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+              ランダム基音トレーニング
+            </h1>
           </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-4">
-            ランダム基音モード
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            10種類の基音からランダムに選択してドレミファソラシドを発声
-          </p>
-          <div className="inline-block bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 px-6 py-3 rounded-full text-lg font-bold">
-            初心者向け
-          </div>
-          
-          {/* 現在の基音表示 */}
-          {currentBaseNote && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-              <p className="text-lg font-bold text-blue-800">
-                🎵 現在の基音: <span className="text-2xl">{baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}</span>
-              </p>
-              <p className="text-sm text-blue-600 mt-1">
-                この音を基準にドレミファソラシドを歌ってください
-              </p>
-            </div>
-          )}
         </div>
+      </header>
 
-        {/* スタートボタン */}
-        <div className="mb-12">
-          <button
-            onClick={handleStart}
-            disabled={isPlaying}
-            className={`group relative overflow-hidden px-12 py-6 rounded-3xl text-2xl font-bold text-white transition-all duration-300 shadow-lg ${
-              isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Play className="w-8 h-8" />
-              <span>{isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}</span>
-            </div>
-            
-            {/* ホバーエフェクト（再生中は無効） */}
-            {!isPlaying && (
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            )}
-          </button>
+      {/* Main Content */}
+      <main style={{ margin: '0', padding: '32px 16px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          {renderContent()}
         </div>
+      </main>
 
-        {/* 説明 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">使い方</h3>
-          <div className="text-left space-y-3 text-gray-600">
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <span>ボタンを押してランダムな基音を聞く（10種類からランダム選択）</span>
+      {/* Footer */}
+      <footer style={{ borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
+        <div style={{ margin: '0', padding: '0 16px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '24px 0',
+            gap: '16px'
+          }}>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              © 2024 相対音感トレーニング. All rights reserved.
             </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>表示された基音を覚えて、ドレミファソラシドを正確に発声</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>繰り返し練習して様々な基音に対応できる相対音感を鍛える</span>
-            </div>
-          </div>
-          
-          {/* 基音一覧 */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <h4 className="font-bold text-gray-700 mb-3">🎵 基音候補（10種類）</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-              {Object.entries(baseNoteNames).map(([note, name]) => (
-                <div key={note} className="flex justify-between">
-                  <span className="font-mono">{note}</span>
-                  <span>{name}</span>
-                </div>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
             </div>
           </div>
         </div>
-
-        {/* デバッグログ表示 */}
-        {debugLog.length > 0 && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-xl">
-            <h4 className="font-bold text-gray-800 mb-2">📝 デバッグログ:</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              {debugLog.map((log, index) => (
-                <div key={index} className="font-mono">{log}</div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 戻るボタン */}
-        <Link 
-          href="/"
-          className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>トップページに戻る</span>
-        </Link>
-      </div>
+      </footer>
     </div>
   );
 }

@@ -127,156 +127,389 @@ export default function ChromaticScalePage() {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-center justify-center p-6">
-      {/* タイムスタンプ表示 */}
-      <div className="fixed top-6 right-6 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
-        📱 {new Date().toLocaleTimeString('ja-JP')}
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="text-center">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 16px'
+      }}>
         {/* ヘッダー */}
-        <div className="mb-12">
-          <div className="inline-block mb-6">
-            <span className="text-8xl">🎼</span>
-          </div>
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-4">
-            12音階モード
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            クロマチックスケール上行・下行で完全制覇
-          </p>
-          <div className="inline-block bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-6 py-3 rounded-full text-lg font-bold">
-            音源テスト版
-          </div>
-          
-          {/* 現在の音表示 */}
-          {currentNote && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
-              <p className="text-lg font-bold text-orange-800">
-                🎵 {currentIndex + 1}/13: <span className="text-2xl">{chromaticNoteNames[currentNote as keyof typeof chromaticNoteNames]}</span>
-              </p>
-              <p className="text-sm text-orange-600 mt-1">
-                {direction === 'ascending' ? '上行' : '下行'}: {currentNote}
-              </p>
+        <header style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/" style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#1a1a1a',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s ease-in-out'
+              }}>
+                <ArrowLeft style={{ width: '16px', height: '16px' }} />
+                戻る
+              </Link>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: 0
+              }}>12音階モード</h1>
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+              Version 3.0 - Updated: {new Date().toLocaleString('ja-JP')}
+            </div>
+          </div>
+        </header>
 
-        {/* 制御ボタン */}
-        <div className="mb-12 flex gap-4 justify-center flex-wrap">
-          <button
-            onClick={() => handleStart('ascending')}
-            disabled={isPlaying}
-            className={`group relative overflow-hidden px-6 py-4 rounded-2xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-              isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <ArrowUp className="w-5 h-5" />
+        {/* メインコンテンツ */}
+        <main style={{ padding: '32px 0' }}>
+          {/* メインエリア */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎼</div>
+              <h2 style={{
+                fontSize: '32px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 16px 0'
+              }}>12音階モード</h2>
+              <p style={{
+                fontSize: '18px',
+                color: '#6b7280',
+                lineHeight: '1.6',
+                margin: '0 0 16px 0'
+              }}>
+                クロマチックスケール上行・下行で完全制覇
+              </p>
+              <div style={{
+                display: 'inline-block',
+                backgroundColor: '#fed7aa',
+                color: '#ea580c',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                音源テスト版
+              </div>
+            </div>
+          
+            {/* 現在の音表示 */}
+            {currentNote && (
+              <div style={{
+                marginTop: '24px',
+                padding: '16px',
+                backgroundColor: '#fff7ed',
+                border: '1px solid #fdba74',
+                borderRadius: '12px'
+              }}>
+                <p style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#c2410c',
+                  margin: '0 0 4px 0'
+                }}>
+                  🎵 {currentIndex + 1}/13: <span style={{ fontSize: '24px' }}>{chromaticNoteNames[currentNote as keyof typeof chromaticNoteNames]}</span>
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#ea580c',
+                  margin: 0
+                }}>
+                  {direction === 'ascending' ? '上行' : '下行'}: {currentNote}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '48px',
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => handleStart('ascending')}
+              disabled={isPlaying}
+              style={{
+                backgroundColor: isPlaying ? '#9ca3af' : '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <ArrowUp style={{ width: '16px', height: '16px' }} />
               <span>⬆️ 上行</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => handleStart('descending')}
-            disabled={isPlaying}
-            className={`group relative overflow-hidden px-6 py-4 rounded-2xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-              isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <ArrowDown className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={() => handleStart('descending')}
+              disabled={isPlaying}
+              style={{
+                backgroundColor: isPlaying ? '#9ca3af' : '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <ArrowDown style={{ width: '16px', height: '16px' }} />
               <span>⬇️ 下行</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleStop}
-            disabled={!isPlaying}
-            className={`group relative overflow-hidden px-6 py-4 rounded-2xl text-lg font-bold text-white transition-all duration-300 shadow-lg ${
-              !isPlaying 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 hover:scale-105 hover:shadow-2xl'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <Square className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={handleStop}
+              disabled={!isPlaying}
+              style={{
+                backgroundColor: !isPlaying ? '#9ca3af' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: !isPlaying ? 'not-allowed' : 'pointer',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s ease-in-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Square style={{ width: '16px', height: '16px' }} />
               <span>⏹️ 停止</span>
-            </div>
-          </button>
-        </div>
-
-        {/* 説明 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-12 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">音源テスト内容</h3>
-          <div className="text-left space-y-3 text-gray-600">
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-              <span>13音のクロマチックスケールを連続再生</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>各音0.8秒再生 + 1秒間隔</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>上行・下行の両方向をテスト</span>
-            </div>
+            </button>
           </div>
-          
-          {/* クロマチックスケール表示 */}
-          <div className="mt-6 p-4 bg-orange-50 rounded-xl">
-            <h4 className="font-bold text-orange-700 mb-3">🎼 クロマチックスケール（13音）</h4>
-            <div className="grid grid-cols-4 gap-2 text-sm text-orange-600">
-              {chromaticScale.map((note, index) => (
-                <div key={note} className={`flex justify-between p-2 rounded ${
-                  currentNote === note ? 'bg-orange-200 font-bold' : ''
-                }`}>
-                  <span className="font-mono">{note}</span>
-                  <span>{chromaticNoteNames[note as keyof typeof chromaticNoteNames]}</span>
+
+          {/* 使い方説明 */}
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            marginBottom: '48px'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h3 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a1a',
+                margin: '0 0 8px 0'
+              }}>音源テスト内容</h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#6b7280',
+                lineHeight: '1.5',
+                margin: 0
+              }}>
+                クロマチックスケールの完全テスト
+              </p>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '24px'
+            }}>
+              {[
+                { step: 1, title: "13音連続再生", desc: "クロマチックスケールを連続再生" },
+                { step: 2, title: "タイミング制御", desc: "各音0.8秒再生 + 1秒間隔" },
+                { step: 3, title: "両方向テスト", desc: "上行・下行の両方向をテスト" }
+              ].map((item) => (
+                <div key={item.step} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px auto',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#1a1a1a'
+                  }}>
+                    {item.step}
+                  </div>
+                  <h4 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>{item.title}</h4>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>{item.desc}</p>
                 </div>
               ))}
             </div>
-          </div>
-          
-          {/* テスト項目 */}
-          <div className="mt-6 p-4 bg-orange-50 rounded-xl">
-            <h4 className="font-bold text-orange-700 mb-3">🧪 テスト検証項目</h4>
-            <div className="grid grid-cols-1 gap-2 text-sm text-orange-600">
-              <div>✓ 13音連続再生の完走確認</div>
-              <div>✓ ピッチシフト精度の聴感確認</div>
-              <div>✓ iPhone Safari での動作確認</div>
-              <div>✓ 上行・下行両方向の動作確認</div>
-              <div>✓ 停止制御の確実性</div>
+            
+            {/* クロマチックスケール表示 */}
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              backgroundColor: '#fff7ed',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#ea580c',
+                margin: '0 0 12px 0'
+              }}>🎼 クロマチックスケール（13音）</h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '8px',
+                fontSize: '14px',
+                color: '#ea580c'
+              }}>
+                {chromaticScale.map((note) => (
+                  <div key={note} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    backgroundColor: currentNote === note ? '#fed7aa' : 'transparent',
+                    fontWeight: currentNote === note ? 'bold' : 'normal'
+                  }}>
+                    <span style={{ fontFamily: 'monospace' }}>{note}</span>
+                    <span>{chromaticNoteNames[note as keyof typeof chromaticNoteNames]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* テスト項目 */}
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              backgroundColor: '#fff7ed',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#ea580c',
+                margin: '0 0 12px 0'
+              }}>🧪 テスト検証項目</h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '8px',
+                fontSize: '14px',
+                color: '#ea580c'
+              }}>
+                <div>✓ 13音連続再生の完走確認</div>
+                <div>✓ ピッチシフト精度の聴感確認</div>
+                <div>✓ iPhone Safari での動作確認</div>
+                <div>✓ 上行・下行両方向の動作確認</div>
+                <div>✓ 停止制御の確実性</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* デバッグログ表示 */}
-        {debugLog.length > 0 && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-xl">
-            <h4 className="font-bold text-gray-800 mb-2">📝 動作ログ:</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              {debugLog.map((log, index) => (
-                <div key={index} className="font-mono">{log}</div>
-              ))}
+          {/* デバッグログ表示 */}
+          {debugLog.length > 0 && (
+            <div style={{
+              marginBottom: '32px',
+              padding: '16px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '12px'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                margin: '0 0 8px 0'
+              }}>📝 動作ログ:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {debugLog.map((log, index) => (
+                  <div key={index} style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontFamily: 'monospace'
+                  }}>{log}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+
+        {/* フッター */}
+        <footer style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '48px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              © 2024 相対音感トレーニング. All rights reserved.
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              <span>Version 3.0</span>
+              <span>•</span>
+              <span>Powered by Next.js</span>
             </div>
           </div>
-        )}
-
-        {/* 戻るボタン */}
-        <Link 
-          href="/"
-          className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-300 hover:scale-105"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>トップページに戻る</span>
-        </Link>
+        </footer>
       </div>
     </div>
   );

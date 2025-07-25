@@ -283,6 +283,10 @@ Step 4: GitHub Actions確認
 - プッシュ: ✅ 完了 / ❌ 失敗
 - GitHub Actions: ✅ 実行中/成功 / ❌ 失敗
 
+### **確認パス（必須）**
+**ローカル確認**: `http://localhost:3000/[ページパス]`  
+**GitHub Pages確認**: `https://kiyopi.github.io/pitch-training/[ページパス]`
+
 ---
 
 ## ❓ Step X の確認作業
@@ -314,6 +318,7 @@ Step 4: GitHub Actions確認
 - ✅ 各Stepで強制停止してユーザー確認
 - ✅ Git操作の必須実行（add → commit → push）
 - ✅ GitHub Actions実行確認の必須実行
+- ✅ 確認パス（ローカル・GitHub Pages）の必須記載
 
 ## 🚨 Claude確認強制プロトコル
 

@@ -1,0 +1,473 @@
+/* ランダムトレーニングページ専用スタイル */
+
+/* === メインコンテナ === */
+.mainContainer {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === ページヘッダー === */
+.pageHeader {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 24px 0;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: flex-start;
+}
+
+.homeLink {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 500;
+}
+
+.homeLink:hover {
+  color: #374151;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* === ページメイン === */
+.pageMain {
+  flex: 1;
+  padding: 32px 0;
+}
+
+/* === ページフッター === */
+.pageFooter {
+  border-top: 1px solid #e5e7eb;
+  padding: 24px 0;
+  margin-top: 48px;
+}
+
+.footerContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.copyright {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.version {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* === 基音再生セクション === */
+.baseToneSection {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.baseToneButton {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.baseToneButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(5, 150, 105, 0.3);
+}
+
+.baseToneButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.baseToneInfo {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+/* === ドレミファソラシドガイドセクション === */
+.scaleGuideSection {
+  margin-top: 32px;
+  padding: 24px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.scaleGuideTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.scaleGuideContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.scaleGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.scaleNoteItem {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #6b7280;
+  transform: scale(1);
+  box-shadow: none;
+  transition: all 0.3s ease-in-out;
+}
+
+/* ガイドアニメーション状態 */
+.scaleNoteItem.active {
+  font-size: 20px;
+  border-color: #059669;
+  background-color: #059669;
+  color: white;
+  transform: scale(1.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.scaleNoteItem.completed {
+  font-size: 18px;
+  border-color: #ffffff;
+  background-color: #ffffff;
+  color: #9ca3af;
+  transform: scale(1);
+  box-shadow: none;
+}
+
+/* === 相対音程表示セクション === */
+.relativePitchSection {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: #f3f4f6;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+}
+
+.relativePitchDisplay {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* === 結果表示セクション === */
+.resultsSection {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: #f0f9ff;
+  border-radius: 12px;
+  border: 2px solid #059669;
+}
+
+.resultsTitle {
+  font-size: 18px;
+  font-weight: bold;
+  color: #166534;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.resultItem {
+  text-align: center;
+  padding: 8px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+
+.resultNote {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.resultNote.correct {
+  color: #059669;
+}
+
+.resultNote.incorrect {
+  color: #dc2626;
+}
+
+.resultCents {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.resultsAverage {
+  text-align: center;
+  font-size: 14px;
+  color: #166534;
+}
+
+/* === マイク状態表示 === */
+.microphoneStatus {
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.microphoneStatus.granted {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.microphoneStatus.denied {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.microphoneStatus.error {
+  background-color: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+/* === マイク許可要求セクション === */
+.micPermissionSection {
+  text-align: left;
+  padding: 40px 0;
+  width: 100%;
+  margin: 0;
+}
+
+.micPermissionTitle {
+  font-size: 20px;
+  font-weight: bold;
+  color: #dc2626;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.micPermissionDescription {
+  font-size: 16px;
+  color: #4b5563;
+  margin-bottom: 24px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.micPermissionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.micPermissionButton {
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 80%;
+  max-width: 500px;
+  min-width: 250px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.micPermissionButton.primary {
+  background-color: #059669;
+  color: white;
+  border: 2px solid #059669;
+}
+
+.micPermissionButton.primary:hover {
+  background-color: #047857;
+  border-color: #047857;
+}
+
+.micPermissionButton.secondary {
+  background-color: white;
+  color: #059669;
+  border: 2px solid #059669;
+}
+
+.micPermissionButton.secondary:hover {
+  background-color: #ecfdf5;
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 768px) {
+  .pageHeader {
+    padding: 20px 0;
+  }
+  
+  .pageMain {
+    padding: 28px 0;
+  }
+  
+  .pageFooter {
+    padding: 20px 0;
+  }
+  
+  .headerContent {
+    gap: 16px;
+  }
+  
+  .pageTitle {
+    font-size: 18px;
+  }
+  
+  .scaleGuideGrid {
+    grid-template-columns: repeat(4, 2fr);
+    gap: 8px;
+  }
+  
+  .scaleNoteItem {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+  
+  .scaleNoteItem.active {
+    font-size: 18px;
+  }
+  
+  .resultsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .micPermissionSection {
+    padding: 32px 0;
+  }
+  
+  .micPermissionButton {
+    width: 85%;
+    min-width: 200px;
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageHeader {
+    padding: 16px 0;
+  }
+  
+  .pageMain {
+    padding: 24px 0;
+  }
+  
+  .pageFooter {
+    padding: 16px 0;
+  }
+  
+  .headerContent {
+    gap: 12px;
+  }
+  
+  .pageTitle {
+    font-size: 16px;
+  }
+  
+  .pageMain {
+    padding: 24px 0;
+  }
+  
+  .version {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .scaleGuideGrid {
+    gap: 8px;
+  }
+  
+  .scaleNoteItem {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  .scaleNoteItem.active {
+    font-size: 16px;
+  }
+  
+  .baseToneButton {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
+  
+  .micPermissionSection {
+    padding: 24px 0;
+  }
+  
+  .micPermissionButton {
+    width: 90%;
+    min-width: 180px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+  
+  .micPermissionTitle {
+    font-size: 18px;
+  }
+  
+  .micPermissionDescription {
+    font-size: 15px;
+  }
+}
