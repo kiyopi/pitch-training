@@ -22,7 +22,7 @@
   let audioConfirmationComplete = false;
   let currentVolume = 0;
   let currentFrequency = 0;
-  let currentNote = '';
+  let currentNote = 'ーー';
   
   // Web Audio API変数
   let audioContext = null;
@@ -131,7 +131,7 @@
       frequencyDetected = true;
     } else {
       currentFrequency = 0;
-      currentNote = '';
+      currentNote = 'ーー';
     }
     
     animationFrame = requestAnimationFrame(analyzeAudio);
@@ -291,40 +291,44 @@
     <div class="test-section">
       <!-- 音量レベルカード -->
       <Card variant="default" padding="lg">
-        <div class="volume-section">
-          <h3 class="display-title">音量レベル</h3>
-          <div class="volume-bar-container">
-            <div class="volume-bar" style="width: {currentVolume}%"></div>
-          </div>
-          <div class="volume-text">{currentVolume.toFixed(1)}%</div>
-          <div class="volume-status">
-            <span class="status-pending">
-              {#if !volumeDetected && isListening}
-                ⏳ 声を出して音量を確認してください
-              {:else}
-                &nbsp;
-              {/if}
-            </span>
+        <div class="card-inner">
+          <div class="volume-section">
+            <h3 class="display-title">音量レベル</h3>
+            <div class="volume-bar-container">
+              <div class="volume-bar" style="width: {currentVolume}%"></div>
+            </div>
+            <div class="volume-text">{currentVolume.toFixed(1)}%</div>
+            <div class="volume-status">
+              <span class="status-pending">
+                {#if !volumeDetected && isListening}
+                  ⏳ 声を出して音量を確認してください
+                {:else}
+                  &nbsp;
+                {/if}
+              </span>
+            </div>
           </div>
         </div>
       </Card>
 
       <!-- 音程検出カード -->
       <Card variant="default" padding="lg">
-        <div class="frequency-section">
-          <h3 class="display-title">音程検出</h3>
-          <div class="frequency-display">
-            <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
-            <div class="note-value">{currentNote}</div>
-          </div>
-          <div class="frequency-status">
-            <span class="status-pending">
-              {#if !frequencyDetected && isListening}
-                ⏳ 「ド」を発声して音程を確認してください
-              {:else}
-                &nbsp;
-              {/if}
-            </span>
+        <div class="card-inner">
+          <div class="frequency-section">
+            <h3 class="display-title">音程検出</h3>
+            <div class="frequency-display">
+              <div class="frequency-value">{currentFrequency > 0 ? currentFrequency.toFixed(1) + ' Hz' : 'ーー'}</div>
+              <div class="note-value">{currentNote}</div>
+            </div>
+            <div class="frequency-status">
+              <span class="status-pending">
+                {#if !frequencyDetected && isListening}
+                  ⏳ 「ド」を発声して音程を確認してください
+                {:else}
+                  &nbsp;
+                {/if}
+              </span>
+            </div>
           </div>
         </div>
       </Card>
@@ -644,20 +648,27 @@
     margin: 0 0 var(--space-3) 0;
   }
 
+  .card-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+  }
+  
   .volume-section {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 120px;
     text-align: center;
+    width: 100%;
   }
   
   .frequency-section {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 120px;
     text-align: center;
+    width: 100%;
   }
 
   .volume-bar-container {
