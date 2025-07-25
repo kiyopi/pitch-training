@@ -253,25 +253,23 @@
             <h3 class="instructions-title">マイクのテストを開始します</h3>
             <p class="instructions-description">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>
             
-            <div class="mic-test-button-area">
-              {#if micPermission === 'pending'}
-                <button class="mic-test-button preparing" disabled>
-                  マイク準備中
-                </button>
-              {:else if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
-                <button class="mic-test-button confirming" disabled>
-                  音声確認中
-                </button>
-              {:else if micPermission === 'denied'}
+            {#if micPermission === 'pending'}
+              <p class="status-text">マイク準備中...</p>
+            {:else if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
+              <p class="status-text">音声確認中...</p>
+            {:else if micPermission === 'denied'}
+              <div class="mic-test-button-area">
                 <button class="mic-test-button retry" on:click={requestMicrophone}>
                   マイク許可を再試行
                 </button>
-              {:else if micPermission === 'initial'}
+              </div>
+            {:else if micPermission === 'initial'}
+              <div class="mic-test-button-area">
                 <button class="mic-test-button start" on:click={requestMicrophone}>
                   マイクテストを開始
                 </button>
-              {/if}
-            </div>
+              </div>
+            {/if}
           {:else}
             <!-- トレーニング開始段階の表示 -->
             <h3 class="training-mode-title">{selectedMode.name}へ進みます</h3>
@@ -437,6 +435,14 @@
     font-size: var(--text-sm);
     color: var(--color-gray-600);
     margin: 0;
+  }
+
+  .status-text {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: var(--space-6) 0;
+    text-align: center;
   }
 
   .mic-test-button-area,
