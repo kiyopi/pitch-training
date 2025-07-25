@@ -46,10 +46,8 @@ jobs:
       - name: Copy build to output
         run: |
           mkdir -p output
-          cp -r svelte-prototype/.svelte-kit/output/prerendered/pages/* output/
-          # Next.js側のファイルも並行表示用にコピー
-          cp -r out svelte-prototype-nextjs
-          cp -r svelte-prototype-nextjs output/
+          # SvelteKit adapter-staticのbuildディレクトリ全体をコピー
+          cp -r svelte-prototype/build/* output/
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
