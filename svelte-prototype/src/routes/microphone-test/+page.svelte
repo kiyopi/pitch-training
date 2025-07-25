@@ -24,6 +24,12 @@
   let currentFrequency = 0;
   let currentNote = 'ーー';
   
+  // ノイズリダクション効果確認用
+  let rawVolume = 0;        // フィルター前の音量
+  let filteredVolume = 0;   // フィルター後の音量
+  let noiseReduction = 0;   // ノイズ削減率（%）
+  let rawAnalyser = null;   // フィルター前のアナライザー
+  
   // Web Audio API変数
   let audioContext = null;
   let mediaStream = null;
@@ -82,6 +88,14 @@
       // 3段階ノイズリダクション実装
       const source = audioContext.createMediaStreamSource(mediaStream);
       
+      // フィルター前の信号解析用（比較用）
+      rawAnalyser = audioContext.createAnalyser();
+      rawAnalyser.fftSize = 2048;
+      rawAnalyser.smoothingTimeConstant = 0.8;
+      rawAnalyser.minDecibels = -90;
+      rawAnalyser.maxDecibels = -10;
+      source.connect(rawAnalyser); // 生信号を直接アナライザーに接続
+      
       // 1. ハイパスフィルター（低周波ノイズ除去: 80Hz以下カット）
       const highpassFilter = audioContext.createBiquadFilter();
       highpassFilter.type = 'highpass';
@@ -100,7 +114,7 @@
       notchFilter.frequency.setValueAtTime(60, audioContext.currentTime); // 60Hz電源ノイズ
       notchFilter.Q.setValueAtTime(10, audioContext.currentTime); // 狭帯域除去
       
-      // アナライザー設定（最適化）
+      // フィルター後の信号解析用（メイン）
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.8;
@@ -121,29 +135,47 @@
     }
   }
   
-  // 音声解析ループ（最適化済み）
+  // 音声解析ループ（ノイズリダクション効果測定対応）
   function analyzeAudio() {
-    if (!isListening || !analyser) return;
+    if (!isListening || !analyser || !rawAnalyser) return;
     
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
+    const rawDataArray = new Uint8Array(rawAnalyser.frequencyBinCount);
     
-    // 周波数データ取得
+    // フィルター前後の周波数データ取得
     analyser.getByteFrequencyData(dataArray);
+    rawAnalyser.getByteFrequencyData(rawDataArray);
     
-    // RMS音量計算（マイクレベル最適化）
-    let sum = 0;
-    for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i] * dataArray[i];
+    // フィルター前の音量計算（生信号）
+    let rawSum = 0;
+    for (let i = 0; i < rawDataArray.length; i++) {
+      rawSum += rawDataArray[i] * rawDataArray[i];
     }
-    const rms = Math.sqrt(sum / dataArray.length);
-    currentVolume = Math.min(100, (rms / 64) * 100);
+    const rawRms = Math.sqrt(rawSum / rawDataArray.length);
+    rawVolume = Math.min(100, (rawRms / 64) * 100);
+    
+    // フィルター後の音量計算（最適化済み）
+    let filteredSum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      filteredSum += dataArray[i] * dataArray[i];
+    }
+    const filteredRms = Math.sqrt(filteredSum / dataArray.length);
+    filteredVolume = Math.min(100, (filteredRms / 64) * 100);
+    currentVolume = filteredVolume;
+    
+    // ノイズ削減率計算（フィルター前後の差分）
+    if (rawVolume > 0) {
+      noiseReduction = Math.max(0, Math.round(((rawVolume - filteredVolume) / rawVolume) * 100));
+    } else {
+      noiseReduction = 0;
+    }
     
     if (currentVolume > 15) {
       volumeDetected = true;
     }
     
-    // 時間領域データ取得
+    // 時間領域データ取得（フィルター後）
     const timeDataArray = new Float32Array(analyser.fftSize);
     analyser.getFloatTimeDomainData(timeDataArray);
     
@@ -234,6 +266,7 @@
     }
     
     analyser = null;
+    rawAnalyser = null;
   }
   
   // ページ離脱時のクリーンアップ
@@ -322,6 +355,27 @@
               <div class="volume-bar" style="width: {currentVolume}%"></div>
             </div>
             <div class="volume-text">{currentVolume.toFixed(1)}%</div>
+            
+            <!-- ノイズリダクション効果表示 -->
+            {#if isListening}
+              <div class="noise-reduction-info">
+                <div class="noise-stats">
+                  <div class="stat-item">
+                    <span class="stat-label">フィルター前:</span>
+                    <span class="stat-value raw">{rawVolume.toFixed(1)}%</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">フィルター後:</span>
+                    <span class="stat-value filtered">{filteredVolume.toFixed(1)}%</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">ノイズ削減:</span>
+                    <span class="stat-value reduction">{noiseReduction}%</span>
+                  </div>
+                </div>
+              </div>
+            {/if}
+            
             <div class="volume-status">
               <span class="status-pending">
                 {#if !volumeDetected && isListening}
@@ -749,6 +803,50 @@
     color: var(--color-gray-600);
   }
 
+  /* ノイズリダクション効果表示 */
+  .noise-reduction-info {
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .noise-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-sm);
+  }
+
+  .stat-label {
+    color: var(--color-gray-600);
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-weight: 600;
+    font-family: 'Monaco', 'Menlo', monospace;
+  }
+
+  .stat-value.raw {
+    color: #dc2626; /* 赤: フィルター前（ノイズ含む） */
+  }
+
+  .stat-value.filtered {
+    color: #2563eb; /* 青: フィルター後（クリーン） */
+  }
+
+  .stat-value.reduction {
+    color: #059669; /* 緑: 削減効果 */
+    font-weight: 700;
+  }
 
   .start-content {
     text-align: center;
