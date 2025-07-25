@@ -153,15 +153,15 @@
       rawSum += rawDataArray[i] * rawDataArray[i];
     }
     const rawRms = Math.sqrt(rawSum / rawDataArray.length);
-    rawVolume = Math.min(100, (rawRms / 64) * 100);
+    rawVolume = Math.min(100, (rawRms / 35) * 100); // 感度向上: 64 → 35
     
-    // フィルター後の音量計算（最適化済み）
+    // フィルター後の音量計算（感度最適化）
     let filteredSum = 0;
     for (let i = 0; i < dataArray.length; i++) {
       filteredSum += dataArray[i] * dataArray[i];
     }
     const filteredRms = Math.sqrt(filteredSum / dataArray.length);
-    filteredVolume = Math.min(100, (filteredRms / 64) * 100);
+    filteredVolume = Math.min(100, (filteredRms / 35) * 100); // 感度向上: 64 → 35（「ドー」で60-70%）
     currentVolume = filteredVolume;
     
     // ノイズ削減率計算（フィルター前後の差分）
