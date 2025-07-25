@@ -289,53 +289,43 @@
 
     <!-- マイクテストセクション -->
     <div class="test-section">
+      <!-- 音量レベルカード -->
       <Card variant="default" padding="lg">
-        <div class="mic-test-content">
-          
-
-          <!-- リアルタイム表示（常時表示） -->
-          <div class="realtime-display">
-            <!-- 音量レベル -->
-            <div class="volume-section">
-              <h3 class="display-title">音量レベル</h3>
-              <div class="volume-bar-container">
-                <div class="volume-bar" style="width: {currentVolume}%"></div>
-              </div>
-              <div class="volume-text">{currentVolume.toFixed(1)}%</div>
-              <div class="volume-status">
-                <span class="status-pending">
-                  {#if !volumeDetected && isListening}
-                    ⏳ 声を出して音量を確認してください
-                  {:else if !isListening}
-                    マイクテスト開始後に表示されます
-                  {:else}
-                    &nbsp;
-                  {/if}
-                </span>
-              </div>
-            </div>
-
-            <!-- 周波数・音程表示 -->
-            <div class="frequency-section">
-              <h3 class="display-title">音程検出</h3>
-              <div class="frequency-display">
-                <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
-                <div class="note-value">{currentNote}</div>
-              </div>
-              <div class="frequency-status">
-                <span class="status-pending">
-                  {#if !frequencyDetected && isListening}
-                    ⏳ 「ド」を発声して音程を確認してください
-                  {:else if !isListening}
-                    マイクテスト開始後に表示されます
-                  {:else}
-                    &nbsp;
-                  {/if}
-                </span>
-              </div>
-            </div>
+        <div class="volume-section">
+          <h3 class="display-title">音量レベル</h3>
+          <div class="volume-bar-container">
+            <div class="volume-bar" style="width: {currentVolume}%"></div>
           </div>
+          <div class="volume-text">{currentVolume.toFixed(1)}%</div>
+          <div class="volume-status">
+            <span class="status-pending">
+              {#if !volumeDetected && isListening}
+                ⏳ 声を出して音量を確認してください
+              {:else}
+                &nbsp;
+              {/if}
+            </span>
+          </div>
+        </div>
+      </Card>
 
+      <!-- 音程検出カード -->
+      <Card variant="default" padding="lg">
+        <div class="frequency-section">
+          <h3 class="display-title">音程検出</h3>
+          <div class="frequency-display">
+            <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+            <div class="note-value">{currentNote}</div>
+          </div>
+          <div class="frequency-status">
+            <span class="status-pending">
+              {#if !frequencyDetected && isListening}
+                ⏳ 「ド」を発声して音程を確認してください
+              {:else}
+                &nbsp;
+              {/if}
+            </span>
+          </div>
         </div>
       </Card>
     </div>
@@ -641,10 +631,10 @@
     text-align: center;
   }
 
-  .realtime-display {
-    display: grid;
-    gap: var(--space-6);
-    margin-bottom: var(--space-6);
+  .test-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
 
   .display-title {
@@ -659,6 +649,15 @@
     flex-direction: column;
     justify-content: center;
     min-height: 120px;
+    text-align: center;
+  }
+  
+  .frequency-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 120px;
+    text-align: center;
   }
 
   .volume-bar-container {
@@ -672,7 +671,7 @@
 
   .volume-bar {
     height: 100%;
-    background-color: #10b981;
+    background-color: #2563eb;
     border-radius: 10px;
     transition: width 0.1s ease;
   }
@@ -726,8 +725,13 @@
       text-align: left;
     }
 
-    .realtime-display {
-      grid-template-columns: 1fr 1fr;
+    .test-section {
+      flex-direction: row;
+      align-items: stretch;
+    }
+    
+    .test-section > :global(.card) {
+      flex: 1;
     }
   }
 </style>
