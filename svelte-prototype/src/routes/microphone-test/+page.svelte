@@ -135,21 +135,51 @@
       }
       
       console.log('マイクアクセス開始...');
-      // マイクアクセス
-      mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        } 
+      // マイクアクセス（基本設定から試行）
+      try {
+        // まず最もシンプルな設定で試行
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('基本設定でMediaStream取得成功');
+      } catch (basicError) {
+        console.log('基本設定失敗、詳細設定で再試行...', basicError);
+        // 詳細設定で再試行
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          } 
+        });
+        console.log('詳細設定でMediaStream取得成功');
+      }
+      
+      console.log('MediaStream取得成功:', {
+        tracks: mediaStream.getTracks().length,
+        active: mediaStream.active,
+        trackState: mediaStream.getTracks()[0]?.readyState
       });
       
-      // MediaStreamTrack終了イベントの監視
-      mediaStream.getTracks().forEach(track => {
+      // MediaStreamTrack終了・エラーイベントの監視
+      mediaStream.getTracks().forEach((track, index) => {
+        console.log(`Track ${index}:`, {
+          kind: track.kind,
+          label: track.label,
+          enabled: track.enabled,
+          readyState: track.readyState
+        });
+        
         track.addEventListener('ended', () => {
           console.log('MediaStreamTrack ended - stopping analysis');
           stopListening();
           micPermission = 'error';
+        });
+        
+        track.addEventListener('mute', () => {
+          console.log('MediaStreamTrack muted');
+        });
+        
+        track.addEventListener('unmute', () => {
+          console.log('MediaStreamTrack unmuted');
         });
       });
       
