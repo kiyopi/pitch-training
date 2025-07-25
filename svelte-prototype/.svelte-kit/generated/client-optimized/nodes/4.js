@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/chromatic/+page.svelte";
+export { default as component } from "../../../../src/routes/microphone-test-simple/+page.svelte";

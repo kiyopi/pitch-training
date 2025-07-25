@@ -42,10 +42,12 @@
         addLog(`AudioContext再開完了, state: ${audioContext.state}`);
       }
       
-      // アナライザー設定
+      // アナライザー設定（最適化）
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.3;
+      analyser.smoothingTimeConstant = 0.8; // より安定した検出のため
+      analyser.minDecibels = -90;
+      analyser.maxDecibels = -10;
       
       const source = audioContext.createMediaStreamSource(mediaStream);
       source.connect(analyser);
@@ -91,13 +93,14 @@
     // 周波数データ取得
     analyser.getByteFrequencyData(dataArray);
     
-    // RMS音量計算
+    // RMS音量計算（マイクレベル最適化）
     let sum = 0;
     for (let i = 0; i < dataArray.length; i++) {
       sum += dataArray[i] * dataArray[i];
     }
     const rms = Math.sqrt(sum / dataArray.length);
-    currentVolume = Math.min(100, (rms / 128) * 100);
+    // マイク感度を調整（より敏感に反応するよう調整）
+    currentVolume = Math.min(100, (rms / 64) * 100); // 64に変更でより敏感に
     
     // 時間領域データ取得
     const timeDataArray = new Float32Array(analyser.fftSize);
@@ -116,19 +119,19 @@
     animationFrame = requestAnimationFrame(analyzeAudio);
   }
   
-  // シンプルな音程検出
+  // シンプルな音程検出（最適化済み）
   function detectPitch(buffer, sampleRate) {
-    // 音量チェック
+    // 音量チェック（より敏感に調整）
     let rms = 0;
     for (let i = 0; i < buffer.length; i++) {
       rms += buffer[i] * buffer[i];
     }
     rms = Math.sqrt(rms / buffer.length);
-    if (rms < 0.01) return 0;
+    if (rms < 0.005) return 0; // 閾値を下げてより敏感に
     
-    // 自己相関関数
-    const minPeriod = Math.floor(sampleRate / 500);
-    const maxPeriod = Math.floor(sampleRate / 80);
+    // 自己相関関数（人声に最適化した範囲）
+    const minPeriod = Math.floor(sampleRate / 800); // 最高800Hz
+    const maxPeriod = Math.floor(sampleRate / 80);  // 最低80Hz
     
     let bestCorrelation = 0;
     let bestPeriod = 0;
@@ -151,7 +154,8 @@
       }
     }
     
-    return bestCorrelation > 0.3 ? sampleRate / bestPeriod : 0;
+    // 信頼度閾値を下げてより検出しやすく
+    return bestCorrelation > 0.25 ? sampleRate / bestPeriod : 0;
   }
   
   // 周波数から音名へ変換

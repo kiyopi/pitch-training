@@ -18,10 +18,6 @@
       "_app/immutable/assets/PageLayout.Cz8yIb7J.css"
     ]
   },
-  "_PitchDisplay.svelte_svelte_type_style_lang.js": {
-    "file": "_app/immutable/assets/PitchDisplay.BA7IGEa6.css",
-    "src": "_PitchDisplay.svelte_svelte_type_style_lang.js"
-  },
   "_exports.js": {
     "file": "chunks/exports.js",
     "name": "exports"
@@ -103,6 +99,18 @@
       "_app/immutable/assets/_page.DlF9C3i4.css"
     ]
   },
+  "src/routes/microphone-test-simple/+page.svelte": {
+    "file": "entries/pages/microphone-test-simple/_page.svelte.js",
+    "name": "entries/pages/microphone-test-simple/_page.svelte",
+    "src": "src/routes/microphone-test-simple/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.CwlaRopw.css"
+    ]
+  },
   "src/routes/microphone-test/+page.svelte": {
     "file": "entries/pages/microphone-test/_page.svelte.js",
     "name": "entries/pages/microphone-test/_page.svelte",
@@ -114,8 +122,7 @@
       "_PageLayout.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BfjfJQzJ.css",
-      "_app/immutable/assets/PitchDisplay.BA7IGEa6.css"
+      "_app/immutable/assets/_page.Bicmy9BU.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -154,8 +161,7 @@
       "_PageLayout.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.ChIlRHmL.css",
-      "_app/immutable/assets/PitchDisplay.BA7IGEa6.css"
+      "_app/immutable/assets/_page.BONojkLJ.css"
     ]
   }
 }
