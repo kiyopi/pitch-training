@@ -75,7 +75,7 @@
     return `${note}${octave}（${noteNamesJa[note]}${octave}）`;
   }
 
-  // マイク許可リクエスト
+  // マイク許可リクエスト（AudioContextは作成しない）
   async function requestMicrophone() {
     console.log('マイク許可リクエスト開始');
     micPermission = 'pending';
@@ -89,11 +89,8 @@
       // テスト用ストリームを停止
       stream.getTracks().forEach(track => track.stop());
       
-      // 自動でリスニング開始
-      console.log('リスニング開始準備中...');
-      setTimeout(() => {
-        startListening();
-      }, 500);
+      // AudioContextの作成はユーザークリックまで待機
+      console.log('マイク許可完了 - ユーザークリックでAudioContext開始を待機');
     } catch (error) {
       console.error('マイク許可エラー:', error);
       micPermission = 'denied';
@@ -107,7 +104,7 @@
   let dataArray = null;
   let animationFrame = null;
 
-  // リスニング開始（実際のWeb Audio API）
+  // リスニング開始（AudioContextは既に作成済み前提）
   async function startListening() {
     console.log('startListening 開始, micPermission:', micPermission);
     
@@ -115,25 +112,15 @@
       console.log('マイク許可がありません');
       return;
     }
+
+    if (!audioContext) {
+      console.log('AudioContextが作成されていません');
+      audioContextBlocked = true;
+      return;
+    }
     
     try {
-      console.log('Web Audio Context 作成中...');
-      // Web Audio Context作成
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // AudioContextの状態確認
       console.log('AudioContext state:', audioContext.state);
-      if (audioContext.state === 'suspended') {
-        console.log('AudioContext suspended - resuming...');
-        try {
-          await audioContext.resume();
-          console.log('AudioContext resumed successfully, state:', audioContext.state);
-        } catch (resumeError) {
-          console.error('AudioContext resume failed:', resumeError);
-          audioContextBlocked = true;
-          return; // エラーを投げずにブロック状態として処理
-        }
-      }
       
       console.log('マイクアクセス開始...');
       // マイクアクセス
@@ -372,28 +359,33 @@
     stopListening();
   });
 
-  // 手動でAudioContextを開始
+  // ユーザークリックでAudioContextを開始
   async function startAudioContextManually() {
-    if (!audioContext) return;
+    console.log('ユーザークリックでAudioContext開始...');
     
-    console.log('手動AudioContext開始...');
+    if (micPermission !== 'granted') {
+      console.log('マイク許可が必要です');
+      return;
+    }
+
     try {
-      await audioContext.resume();
-      console.log('手動AudioContext開始成功, state:', audioContext.state);
+      // 新しいAudioContextを作成
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('AudioContext作成完了, state:', audioContext.state);
+      
       audioContextBlocked = false;
       
-      // リスニング再開
-      startListening();
+      // リスニング開始
+      await startListening();
     } catch (error) {
-      console.error('手動AudioContext開始失敗:', error);
+      console.error('AudioContext開始失敗:', error);
+      audioContextBlocked = true;
     }
   }
 
   onMount(() => {
-    // ページ読み込み時にマイク許可をリクエスト
-    setTimeout(() => {
-      requestMicrophone();
-    }, 500);
+    // 自動マイク許可は実行しない（ユーザー操作を待つ）
+    console.log('ページ読み込み完了 - ユーザー操作を待機中');
   });
 </script>
 
@@ -432,16 +424,18 @@
               <div class="status-indicator pending">⏳ マイク許可を確認中...</div>
             {:else if micPermission === 'granted'}
               <div class="status-indicator granted">✅ マイクアクセス許可済み</div>
-              {#if !isListening}
-                <div class="status-indicator warning">⚠️ リスニング準備中...</div>
-              {:else}
-                <div class="status-indicator success">🎤 リアルタイム解析中</div>
-              {/if}
-              {#if audioContextBlocked}
+              {#if !isListening && !audioContextBlocked}
+                <div class="status-indicator warning">🎵 音声機能を開始してください</div>
+                <button class="retry-button" on:click={startAudioContextManually}>
+                  🎤 マイクテストを開始
+                </button>
+              {:else if !isListening && audioContextBlocked}
                 <div class="status-indicator warning">⚠️ 音声コンテキストがブロックされています</div>
                 <button class="retry-button" on:click={startAudioContextManually}>
-                  音声機能を開始
+                  音声機能を再試行
                 </button>
+              {:else if isListening}
+                <div class="status-indicator success">🎤 リアルタイム解析中</div>
               {/if}
             {:else if micPermission === 'denied'}
               <div class="status-indicator error">❌ マイクアクセスが拒否されました</div>
@@ -452,6 +446,11 @@
               <div class="status-indicator error">❌ マイクアクセスエラーが発生しました</div>
               <button class="retry-button" on:click={requestMicrophone}>
                 マイク許可を再試行
+              </button>
+            {:else}
+              <div class="status-indicator pending">🎤 マイクテストを開始してください</div>
+              <button class="retry-button" on:click={requestMicrophone}>
+                マイク許可を取得
               </button>
             {/if}
           </div>
