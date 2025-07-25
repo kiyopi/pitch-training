@@ -6,6 +6,8 @@ import { ArrowLeft, Play } from "lucide-react";
 import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import styles from './page.module.css';
 
 // === 型定義 ===
@@ -110,104 +112,129 @@ export default function RandomTrainingPage() {
 
   // === レンダリング: マイク許可要求画面 ===
   const renderMicrophonePermissionRequired = () => (
-    <div className={styles.micPermissionSection}>
-      <div className={styles.micPermissionTitle}>
-        ⚠️ マイクアクセスが必要です
-      </div>
-      <div className={styles.micPermissionDescription}>
-        このトレーニングには音声入力が必要です。<br />
-        推奨: マイクテストページで音声確認後ご利用ください。
-      </div>
-      <div className={styles.micPermissionButtons}>
-        <Link href="/microphone-test" className={`${styles.micPermissionButton} ${styles.primary}`}>
-          マイクテストページに移動
-        </Link>
-        <button 
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <CardTitle className="text-destructive">
+          ⚠️ マイクアクセスが必要です
+        </CardTitle>
+        <CardDescription className="text-base">
+          このトレーニングには音声入力が必要です。<br />
+          推奨: マイクテストページで音声確認後ご利用ください。
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 flex flex-col items-center">
+        <Button asChild className="w-full max-w-md" size="lg">
+          <Link href="/microphone-test">
+            マイクテストページに移動
+          </Link>
+        </Button>
+        <Button 
+          variant="outline"
+          size="lg"
+          className="w-full max-w-md"
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
-          className={`${styles.micPermissionButton} ${styles.secondary}`}
         >
           直接マイク許可を取得
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 
   // === レンダリング: マイクエラー回復画面 ===
   const renderMicrophoneErrorRecovery = () => (
-    <div className={styles.micPermissionSection}>
-      <div className={styles.micPermissionTitle}>
-        🔇 マイクアクセスに問題があります
-      </div>
-      <div className={styles.micPermissionDescription}>
-        考えられる原因:<br />
-        • マイク許可が取り消された<br />
-        • マイクデバイスが利用できない<br />
-        • ブラウザの設定変更<br />
-        {micError && <><br />エラー詳細: {micError}</>}
-      </div>
-      <div className={styles.micPermissionButtons}>
-        <Link href="/microphone-test" className={`${styles.micPermissionButton} ${styles.primary}`}>
-          マイクテストページで確認
-        </Link>
-        <button 
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <CardTitle className="text-destructive">
+          🔇 マイクアクセスに問題があります
+        </CardTitle>
+        <CardDescription className="text-base">
+          考えられる原因:<br />
+          • マイク許可が取り消された<br />
+          • マイクデバイスが利用できない<br />
+          • ブラウザの設定変更<br />
+          {micError && <><br />エラー詳細: {micError}</>}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 flex flex-col items-center">
+        <Button asChild className="w-full max-w-md" size="lg">
+          <Link href="/microphone-test">
+            マイクテストページで確認
+          </Link>
+        </Button>
+        <Button 
+          variant="outline"
+          size="lg"
+          className="w-full max-w-md"
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
-          className={`${styles.micPermissionButton} ${styles.secondary}`}
         >
           再度マイク許可を取得
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 
   // === レンダリング: ローディング画面 ===
   const renderLoadingState = () => (
-    <div className={styles.micPermissionSection}>
-      <div className={styles.micPermissionTitle}>
-        🔍 マイク状態を確認中...
-      </div>
-    </div>
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <CardTitle>
+          🔍 マイク状態を確認中...
+        </CardTitle>
+      </CardHeader>
+    </Card>
   );
 
   // === レンダリング: メイントレーニング画面（Phase 2で実装予定） ===
   const renderTrainingInterface = () => (
-    <div>
+    <div className="space-y-6">
       {/* マイク準備完了状態表示 */}
-      <div className={`${styles.microphoneStatus} ${styles.granted}`}>
-        🎤 マイク準備完了
-      </div>
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="pt-6">
+          <div className={`${styles.microphoneStatus} ${styles.granted}`}>
+            🎤 マイク準備完了
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 基音再生セクション（Phase 2で実装） */}
-      <div className={styles.baseToneSection}>
-        <button 
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader className="text-center">
+          <CardTitle>🎲 ランダム基音再生</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+        <Button 
           disabled={isPlaying}
+          size="lg"
+          className="w-full max-w-md"
           onClick={() => {
             // Phase 2で実装予定
             console.log('基音再生機能は Phase 2 で実装予定');
           }}
-          className={styles.baseToneButton}
         >
           <Play className="w-5 h-5 mr-2" />
           {isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}
-        </button>
+        </Button>
         
         {currentBaseNote && (
           <div className={styles.baseToneInfo}>
             基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ドレミファソラシドガイドセクション（Phase 2で実装） */}
-      <div className={styles.scaleGuideSection}>
-        <div className={styles.scaleGuideTitle}>
-          🎵 ドレミファソラシド ガイド
-        </div>
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader className="text-center">
+          <CardTitle>🎵 ドレミファソラシド ガイド</CardTitle>
+        </CardHeader>
+        <CardContent>
         <div className={styles.scaleGuideContainer}>
           <div ref={scaleGuideRef} className={styles.scaleGuideGrid}>
             {scaleNotes.map((note, index) => (
@@ -220,24 +247,28 @@ export default function RandomTrainingPage() {
             ))}
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 相対音程表示セクション（Phase 2で実装） */}
-      <div className={styles.relativePitchSection}>
-        <div ref={relativePitchRef} className={styles.relativePitchDisplay}>
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="pt-6">
+          <div ref={relativePitchRef} className={styles.relativePitchDisplay}>
           {currentPitch 
             ? `🎵 現在: ${currentPitch.note} (${currentPitch.cents}セント)`
             : '🎵 音程を検出中...'
           }
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 結果表示セクション（Phase 2で実装） */}
       {showResults && scaleResults.length > 0 && (
-        <div className={styles.resultsSection}>
-          <div className={styles.resultsTitle}>
-            🎉 オクターブ完了！結果
-          </div>
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="text-green-700">🎉 オクターブ完了！結果</CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className={styles.resultsGrid}>
             {scaleResults.map((result, index) => (
               <div key={index} className={styles.resultItem}>
@@ -253,7 +284,8 @@ export default function RandomTrainingPage() {
           <div className={styles.resultsAverage}>
             平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
