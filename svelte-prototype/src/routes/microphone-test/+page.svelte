@@ -296,9 +296,6 @@
             <!-- 音量レベル -->
             <div class="volume-section">
               <h3 class="display-title">音量レベル</h3>
-              {#if isListening}
-                <div class="guidance-text">「ド」を発声してください</div>
-              {/if}
               <div class="volume-bar-container">
                 <div class="volume-bar" style="width: {currentVolume}%"></div>
               </div>
@@ -439,6 +436,8 @@
 
   .status-text.voice-instruction {
     color: #2563eb;
+    font-size: var(--text-xl);
+    font-weight: 700;
   }
 
   .mic-test-button-area,
