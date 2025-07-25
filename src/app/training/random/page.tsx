@@ -124,14 +124,15 @@ export default function RandomTrainingPage() {
           borderRadius: '8px', 
           fontWeight: '600', 
           textDecoration: 'none', 
-          width: '80%', 
-          maxWidth: '500px', 
-          minWidth: '250px', 
+ 
+          maxWidth: '400px', 
+          minWidth: '200px', 
           textAlign: 'center', 
           fontSize: '16px',
           backgroundColor: '#3b82f6',
           color: 'white',
-          border: '2px solid #3b82f6'
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
         }}>
           マイクテストページに移動
         </Link>
@@ -145,15 +146,16 @@ export default function RandomTrainingPage() {
             borderRadius: '8px', 
             fontWeight: '600', 
             textDecoration: 'none', 
-            width: '80%', 
-            maxWidth: '500px', 
-            minWidth: '250px', 
+   
+            maxWidth: '400px', 
+            minWidth: '200px', 
             textAlign: 'center', 
             fontSize: '16px',
             backgroundColor: 'white',
             color: '#3b82f6',
             border: '2px solid #3b82f6',
-            cursor: 'pointer'
+            cursor: 'pointer',
+          display: 'inline-block'
           }}
         >
           直接マイク許可を取得
@@ -181,14 +183,15 @@ export default function RandomTrainingPage() {
           borderRadius: '8px', 
           fontWeight: '600', 
           textDecoration: 'none', 
-          width: '80%', 
-          maxWidth: '500px', 
-          minWidth: '250px', 
+ 
+          maxWidth: '400px', 
+          minWidth: '200px', 
           textAlign: 'center', 
           fontSize: '16px',
           backgroundColor: '#3b82f6',
           color: 'white',
-          border: '2px solid #3b82f6'
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
         }}>
           マイクテストページで確認
         </Link>
@@ -202,15 +205,16 @@ export default function RandomTrainingPage() {
             borderRadius: '8px', 
             fontWeight: '600', 
             textDecoration: 'none', 
-            width: '80%', 
-            maxWidth: '500px', 
-            minWidth: '250px', 
+   
+            maxWidth: '400px', 
+            minWidth: '200px', 
             textAlign: 'center', 
             fontSize: '16px',
             backgroundColor: 'white',
             color: '#3b82f6',
             border: '2px solid #3b82f6',
-            cursor: 'pointer'
+            cursor: 'pointer',
+          display: 'inline-block'
           }}
         >
           再度マイク許可を取得
@@ -360,7 +364,8 @@ export default function RandomTrainingPage() {
           padding: '20px',
           backgroundColor: '#f0f9ff',
           borderRadius: '12px',
-          border: '2px solid #3b82f6'
+          border: '2px solid #3b82f6',
+          display: 'inline-block'
         }}>
           <div style={{
             fontSize: '18px',
@@ -460,7 +465,9 @@ export default function RandomTrainingPage() {
 
       {/* Main Content */}
       <main style={{ margin: '0', padding: '32px 16px' }}>
-        {renderContent()}
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          {renderContent()}
+        </div>
       </main>
 
       {/* Footer */}
