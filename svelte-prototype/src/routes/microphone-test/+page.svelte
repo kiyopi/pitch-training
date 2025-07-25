@@ -135,22 +135,43 @@
       }
       
       console.log('マイクアクセス開始...');
-      // マイクアクセス（基本設定から試行）
-      try {
-        // まず最もシンプルな設定で試行
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('基本設定でMediaStream取得成功');
-      } catch (basicError) {
-        console.log('基本設定失敗、詳細設定で再試行...', basicError);
-        // 詳細設定で再試行
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      // マイクアクセス（段階的設定で試行）
+      let constraints = [
+        // 1. 最もシンプルな設定
+        { audio: true },
+        // 2. エフェクト無効化設定
+        { 
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
             autoGainControl: false
           } 
-        });
-        console.log('詳細設定でMediaStream取得成功');
+        },
+        // 3. より詳細な安定設定
+        { 
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            sampleRate: 44100,
+            channelCount: 1
+          } 
+        }
+      ];
+      
+      let streamObtained = false;
+      for (let i = 0; i < constraints.length && !streamObtained; i++) {
+        try {
+          console.log(`設定${i+1}でMediaStream取得試行:`, constraints[i]);
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+          console.log(`設定${i+1}でMediaStream取得成功`);
+          streamObtained = true;
+        } catch (error) {
+          console.log(`設定${i+1}失敗:`, error.message);
+          if (i === constraints.length - 1) {
+            throw error; // 最後の設定でも失敗した場合は例外を投げる
+          }
+        }
       }
       
       console.log('MediaStream取得成功:', {
@@ -169,9 +190,14 @@
         });
         
         track.addEventListener('ended', () => {
-          console.log('MediaStreamTrack ended - stopping analysis');
-          stopListening();
-          micPermission = 'error';
+          console.log('MediaStreamTrack ended - attempting restart...');
+          // 自動再接続を試行
+          setTimeout(() => {
+            if (micPermission === 'granted' && isListening) {
+              console.log('MediaStream自動再接続開始');
+              restartMicrophoneCapture();
+            }
+          }, 1000);
         });
         
         track.addEventListener('mute', () => {
@@ -416,6 +442,55 @@
     
     analyser = null;
     dataArray = null;
+  }
+
+  // マイクキャプチャ再開（MediaStreamTrack失敗時の自動復旧）
+  async function restartMicrophoneCapture() {
+    console.log('restartMicrophoneCapture 開始');
+    
+    // 現在のリスニングを停止
+    if (isListening) {
+      console.log('既存のリスニングを停止中...');
+      isListening = false;
+      
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+    }
+    
+    // 状態をリセット
+    volumeDetected = false;
+    frequencyDetected = false;
+    currentVolume = 0;
+    currentFrequency = 0;
+    currentNote = '';
+    detectionConfidence = 0;
+    frequencyHistory = [];
+    
+    // AudioContextが無効化されている場合は再作成
+    if (!audioContext || audioContext.state === 'closed') {
+      console.log('AudioContext再作成中...');
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('AudioContext再作成完了, state:', audioContext.state);
+      } catch (error) {
+        console.error('AudioContext再作成失敗:', error);
+        audioContextBlocked = true;
+        return;
+      }
+    }
+    
+    // 短い待機後にリスニング再開
+    setTimeout(async () => {
+      console.log('リスニング再開中...');
+      await startListening();
+    }, 500);
   }
 
   // コンポーネント破棄時のクリーンアップ
