@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   export let variant = 'primary';
   export let size = 'md';
   export let disabled = false;
@@ -14,6 +14,8 @@
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
     class:btn-success={variant === 'success'}
+    class:btn-warning={variant === 'warning'}
+    class:btn-tertiary={variant === 'tertiary'}
     class:btn-disabled-variant={variant === 'disabled'}
     class:btn-sm={size === 'sm'}
     class:btn-md={size === 'md'}
@@ -32,6 +34,8 @@
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
     class:btn-success={variant === 'success'}
+    class:btn-warning={variant === 'warning'}
+    class:btn-tertiary={variant === 'tertiary'}
     class:btn-disabled-variant={variant === 'disabled'}
     class:btn-sm={size === 'sm'}
     class:btn-md={size === 'md'}
@@ -104,6 +108,24 @@
   
   .btn-success:hover:not(:disabled) {
     background: #047857;
+  }
+  
+  .btn-warning {
+    background: #ea580c;
+    color: white;
+  }
+  
+  .btn-warning:hover:not(:disabled) {
+    background: #dc2626;
+  }
+  
+  .btn-tertiary {
+    background: #9333ea;
+    color: white;
+  }
+  
+  .btn-tertiary:hover:not(:disabled) {
+    background: #7c3aed;
   }
   
   .btn-disabled-variant {

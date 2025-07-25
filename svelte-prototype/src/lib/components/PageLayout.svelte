@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   export let showBackButton = false;
   export let maxWidth = '1200px';
 </script>

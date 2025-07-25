@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
@@ -28,15 +28,15 @@
           <p class="mode-description">
             10種類の基音からランダムに選択してトレーニング
           </p>
-          <Button href="#" variant="success" size="lg" fullWidth>
+          <Button href="/microphone-test?mode=random" variant="success" size="lg" fullWidth>
             トレーニング開始
           </Button>
         </div>
       </Card>
       
-      <!-- 連続チャレンジ（オレンジ色テーマ・準備中） -->
-      <Card variant="default" padding="lg" interactive={false}>
-        <div class="mode-card disabled">
+      <!-- 連続チャレンジモード（オレンジ色テーマ） -->
+      <Card variant="default" padding="lg" interactive={true}>
+        <div class="mode-card">
           <div class="mode-icon orange">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -48,15 +48,15 @@
           <p class="mode-description">
             選択した回数だけ連続で実行し、総合評価を確認
           </p>
-          <Button href="#" variant="disabled" size="lg" fullWidth disabled>
-            準備中
+          <Button href="/microphone-test?mode=continuous" variant="warning" size="lg" fullWidth>
+            トレーニング開始
           </Button>
         </div>
       </Card>
       
-      <!-- 12音階モード（紫色テーマ・準備中） -->
-      <Card variant="default" padding="lg" interactive={false}>
-        <div class="mode-card disabled">
+      <!-- 12音階モード（紫色テーマ） -->
+      <Card variant="default" padding="lg" interactive={true}>
+        <div class="mode-card">
           <div class="mode-icon purple">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
@@ -67,8 +67,8 @@
           <p class="mode-description">
             クロマチックスケールの上行・下行で完全制覇
           </p>
-          <Button href="#" variant="disabled" size="lg" fullWidth disabled>
-            準備中
+          <Button href="/microphone-test?mode=chromatic" variant="tertiary" size="lg" fullWidth>
+            トレーニング開始
           </Button>
         </div>
       </Card>
@@ -156,7 +156,4 @@
     color: #9333ea;
   }
   
-  .mode-card.disabled {
-    opacity: 0.6;
-  }
 </style>

@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import Card from '$lib/components/Card.svelte';

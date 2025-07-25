@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   export let variant = 'default';
   export let padding = 'md';
   export let interactive = false;
