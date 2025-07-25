@@ -164,17 +164,40 @@
           release: 1.5,
           onload: () => {
             console.log('✅ ローカル Salamander Grand Piano音源読み込み完了');
+            console.log('🎹 読み込み済み音源:', Object.keys(localPianoUrls));
             isToneLoaded = true;
             loadingStatus = '読み込み完了';
             resolve();
           },
           onerror: (error) => {
             console.error('❌ ローカル Salamander Grand Piano音源読み込みエラー:', error);
+            console.error('🔍 デバッグ情報 - baseUrl:', "/audio/piano/");
+            console.error('🔍 デバッグ情報 - urls:', localPianoUrls);
             reject(new Error('ローカル音源読み込み失敗'));
           }
         }).toDestination();
         
         console.log('🔗 サンプラーをDestinationに接続完了');
+        
+        // 個別音源ファイルのテスト読み込み
+        console.log('🧪 個別音源ファイルテスト開始...');
+        for (const [note, filename] of Object.entries(localPianoUrls)) {
+          const testUrl = `/audio/piano/${filename}`;
+          console.log(`🎵 テスト: ${note} -> ${testUrl}`);
+          
+          // 音源ファイルの存在確認
+          fetch(testUrl, { method: 'HEAD' })
+            .then(response => {
+              if (response.ok) {
+                console.log(`✅ 音源ファイル確認成功: ${testUrl}`);
+              } else {
+                console.error(`❌ 音源ファイル確認失敗: ${testUrl} (${response.status})`);
+              }
+            })
+            .catch(error => {
+              console.error(`❌ 音源ファイルアクセスエラー: ${testUrl}`, error);
+            });
+        }
         
         // 5秒タイムアウト（ローカル読み込みで安全のため延長）
         setTimeout(() => {
@@ -187,13 +210,27 @@
       
     } catch (error) {
       console.error('❌ サンプラー設定エラー:', error);
-      console.log('🔧 フォールバックモードに切り替え');
+      console.log('🔧 サンプラー再試行を試みます');
       
-      // エラー時はフォールバックモードに自動切り替え
-      useSimpleAudio = true;
-      isToneLoaded = true;
-      toneLoadingError = `音源エラー: ${error.message}（シンプル音源使用）`;
-      loadingStatus = 'シンプル音源で開始';
+      // エラー時は再試行してみる
+      toneLoadingError = `音源エラー: ${error.message} - 再試行中...`;
+      loadingStatus = '音源読み込み再試行中...';
+      
+      // 3秒後に再試行
+      setTimeout(async () => {
+        try {
+          console.log('🔄 サンプラー再試行開始');
+          await setupSampler();
+        } catch (retryError) {
+          console.error('❌ 再試行も失敗:', retryError);
+          console.log('🔧 最終的にフォールバックモードに切り替え');
+          
+          useSimpleAudio = true;
+          isToneLoaded = true;
+          toneLoadingError = `音源エラー: ${retryError.message}（シンプル音源使用）`;
+          loadingStatus = 'シンプル音源で開始';
+        }
+      }, 3000);
     }
   }
   
