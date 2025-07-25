@@ -1,4 +1,4 @@
-import { c as create_ssr_component, b as subscribe, o as onDestroy, v as validate_component, e as escape } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, b as validate_store, d as subscribe, o as onDestroy, v as validate_component, e as escape } from "../../../chunks/ssr.js";
 import { p as page } from "../../../chunks/stores.js";
 import { P as PageLayout, C as Card } from "../../../chunks/PageLayout.js";
 const css = {
@@ -7,6 +7,7 @@ const css = {
 };
 const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let $$unsubscribe_page;
+  validate_store(page, "page");
   $$unsubscribe_page = subscribe(page, (value) => value);
   let isListening = false;
   let currentVolume = 0;
@@ -24,7 +25,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$unsubscribe_page();
   return `${$$result.head += `<!-- HEAD_svelte-8st1fo_START -->${$$result.title = `<title>マイクテスト - 相対音感トレーニング</title>`, ""}<!-- HEAD_svelte-8st1fo_END -->`, ""} ${validate_component(PageLayout, "PageLayout").$$render($$result, { showBackButton: true }, {}, {
     default: () => {
-      return `<div class="microphone-test svelte-19mrh3"> <div class="header svelte-19mrh3" data-svelte-h="svelte-4qcd63"><div class="mic-test-header svelte-19mrh3"><div class="mic-icon svelte-19mrh3"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line><line x1="8" x2="16" y1="22" y2="22"></line></svg></div> <div><h1 class="mic-test-title svelte-19mrh3">マイクテスト</h1> <p class="mic-test-description svelte-19mrh3">音感トレーニングを始める前に、マイクの動作を確認します</p></div></div></div>  <div class="training-mode-info svelte-19mrh3">${validate_component(Card, "Card").$$render($$result, { variant: "default", padding: "lg" }, {}, {
+      return `<div class="microphone-test svelte-19mrh3"> <div class="header svelte-19mrh3"><div class="mic-test-header svelte-19mrh3"><div class="mic-icon svelte-19mrh3"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line><line x1="8" x2="16" y1="22" y2="22"></line></svg></div> <div><h1 class="mic-test-title svelte-19mrh3" data-svelte-h="svelte-z7m4lk">マイクテスト</h1> <p class="mic-test-description svelte-19mrh3" data-svelte-h="svelte-1vtv92f">音感トレーニングを始める前に、マイクの動作を確認します</p></div></div></div>  <div class="training-mode-info svelte-19mrh3">${validate_component(Card, "Card").$$render($$result, { variant: "default", padding: "lg" }, {}, {
         default: () => {
           return `<div class="training-mode-content svelte-19mrh3">${` ${` <h3 class="instructions-title svelte-19mrh3" data-svelte-h="svelte-gfi16f">マイクのテストを開始します</h3> <p class="instructions-description svelte-19mrh3" data-svelte-h="svelte-1w19y1h">マイクテスト開始ボタンを押してマイクの使用を許可してください</p>`} ${`${`${`<div class="mic-test-button-area svelte-19mrh3"><button class="mic-test-button start svelte-19mrh3" data-svelte-h="svelte-caex95">マイクテストを開始</button></div>`}`}`}`}</div>`;
         }

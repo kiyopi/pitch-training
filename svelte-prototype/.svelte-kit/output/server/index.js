@@ -6,7 +6,7 @@ import { m as make_trackable, d as disable_search, a as decode_params, v as vali
 import { n as noop, s as safe_not_equal } from "./chunks/ssr.js";
 import { parse, serialize } from "cookie";
 import * as set_cookie_parser from "set-cookie-parser";
-const BROWSER = false;
+const DEV = true;
 const SVELTE_KIT_ASSETS = "/_svelte_kit_assets";
 const ENDPOINT_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"];
 const PAGE_METHODS = ["GET", "POST", "HEAD"];
@@ -139,6 +139,9 @@ function allowed_methods(mod) {
 }
 function static_error_page(options2, status, message) {
   let page = options2.templates.error({ status, message: escape_html(message) });
+  {
+    page = page.replace("</head>", '<script type="module" src="/@vite/client"><\/script></head>');
+  }
   return text(page, {
     headers: { "content-type": "text/html; charset=utf-8" },
     status
@@ -325,7 +328,7 @@ async function handle_action_json_request(event, options2, server) {
     const no_actions_error = new SvelteKitError(
       405,
       "Method Not Allowed",
-      `POST method not allowed. No form actions exist for ${"this page"}`
+      `POST method not allowed. No form actions exist for ${`the page at ${event.route.id}`}`
     );
     return action_json(
       {
@@ -418,7 +421,7 @@ async function handle_action_request(event, server) {
       error: new SvelteKitError(
         405,
         "Method Not Allowed",
-        `POST method not allowed. No form actions exist for ${"this page"}`
+        `POST method not allowed. No form actions exist for ${`the page at ${event.route.id}`}`
       )
     };
   }
@@ -587,11 +590,21 @@ async function load_server_data({ event, state, node, parent }) {
   const url = make_trackable(
     event.url,
     () => {
+      if (done && !uses.url) {
+        console.warn(
+          `${node.server_id}: Accessing URL properties in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the URL changes`
+        );
+      }
       if (is_tracking) {
         uses.url = true;
       }
     },
     (param) => {
+      if (done && !uses.search_params.has(param)) {
+        console.warn(
+          `${node.server_id}: Accessing URL properties in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the URL changes`
+        );
+      }
       if (is_tracking) {
         uses.search_params.add(param);
       }
@@ -607,20 +620,37 @@ async function load_server_data({ event, state, node, parent }) {
       ...event,
       fetch: (info, init2) => {
         const url2 = new URL(info instanceof Request ? info.url : info, event.url);
-        if (BROWSER && done && !uses.dependencies.has(url2.href)) ;
+        if (DEV && done && !uses.dependencies.has(url2.href)) {
+          console.warn(
+            `${node.server_id}: Calling \`event.fetch(...)\` in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the dependency is invalidated`
+          );
+        }
         return event.fetch(info, init2);
       },
       /** @param {string[]} deps */
       depends: (...deps) => {
         for (const dep of deps) {
           const { href } = new URL(dep, event.url);
-          if (BROWSER) ;
+          if (DEV) {
+            validate_depends(node.server_id || "missing route ID", dep);
+            if (done && !uses.dependencies.has(href)) {
+              console.warn(
+                `${node.server_id}: Calling \`depends(...)\` in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the dependency is invalidated`
+              );
+            }
+          }
           uses.dependencies.add(href);
         }
       },
       params: new Proxy(event.params, {
         get: (target, key2) => {
-          if (BROWSER && done && typeof key2 === "string" && !uses.params.has(key2)) ;
+          if (DEV && done && typeof key2 === "string" && !uses.params.has(key2)) {
+            console.warn(
+              `${node.server_id}: Accessing \`params.${String(
+                key2
+              )}\` in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the param changes`
+            );
+          }
           if (is_tracking) {
             uses.params.add(key2);
           }
@@ -631,7 +661,11 @@ async function load_server_data({ event, state, node, parent }) {
         }
       }),
       parent: async () => {
-        if (BROWSER && done && !uses.parent) ;
+        if (DEV && done && !uses.parent) {
+          console.warn(
+            `${node.server_id}: Calling \`parent(...)\` in a promise handler after \`load(...)\` has returned will not cause the function to re-run when parent data changes`
+          );
+        }
         if (is_tracking) {
           uses.parent = true;
         }
@@ -639,7 +673,13 @@ async function load_server_data({ event, state, node, parent }) {
       },
       route: new Proxy(event.route, {
         get: (target, key2) => {
-          if (BROWSER && done && typeof key2 === "string" && !uses.route) ;
+          if (DEV && done && typeof key2 === "string" && !uses.route) {
+            console.warn(
+              `${node.server_id}: Accessing \`route.${String(
+                key2
+              )}\` in a promise handler after \`load(...)\` has returned will not cause the function to re-run when the route changes`
+            );
+          }
           if (is_tracking) {
             uses.route = true;
           }
@@ -1796,6 +1836,21 @@ ${indent}}`);
   if (!chunks) {
     headers2.set("etag", `"${hash(transformed)}"`);
   }
+  {
+    if (page_config.csr) {
+      if (transformed.split("<!--").length < html.split("<!--").length) {
+        console.warn(
+          "\x1B[1m\x1B[31mRemoving comments in transformPageChunk can break Svelte's hydration\x1B[39m\x1B[22m"
+        );
+      }
+    } else {
+      if (chunks) {
+        console.warn(
+          "\x1B[1m\x1B[31mReturning promises from server `load` functions will only work if `csr === true`\x1B[39m\x1B[22m"
+        );
+      }
+    }
+  }
   return !chunks ? text(transformed, {
     status,
     headers: headers2
@@ -2319,7 +2374,17 @@ async function render_page(event, page, options2, manifest, state, nodes, resolv
     const ssr = nodes.ssr();
     const csr = nodes.csr();
     if (ssr === false && !(state.prerendering && should_prerender_data)) {
-      if (BROWSER && action_result && !event.request.headers.has("x-sveltekit-action")) ;
+      if (DEV && action_result && !event.request.headers.has("x-sveltekit-action")) {
+        if (action_result.type === "error") {
+          console.warn(
+            "The form action returned an error, but +error.svelte wasn't rendered because SSR is off. To get the error page with CSR, enhance your form with `use:enhance`. See https://svelte.dev/docs/kit/form-actions#progressive-enhancement-use-enhance"
+          );
+        } else if (action_result.data) {
+          console.warn(
+            "The form action returned a value, but it isn't available in `page.form`, because SSR is off. To handle the returned value in CSR, enhance your form with `use:enhance`. See https://svelte.dev/docs/kit/form-actions#progressive-enhancement-use-enhance"
+          );
+        }
+      }
       return await render_response({
         branch: [],
         fetched,
@@ -2973,12 +3038,20 @@ async function respond(request, options2, manifest, state) {
       if (url.pathname === base || url.pathname === base + "/") {
         trailing_slash = "always";
       } else if (page_nodes) {
-        if (BROWSER) ;
+        if (DEV) {
+          page_nodes.validate();
+        }
         trailing_slash = page_nodes.trailing_slash();
       } else if (route.endpoint) {
         const node = await route.endpoint();
         trailing_slash = node.trailingSlash ?? "never";
-        if (BROWSER) ;
+        if (DEV) {
+          validate_server_exports(
+            node,
+            /** @type {string} */
+            route.endpoint_id
+          );
+        }
       }
       if (!is_data_request) {
         const normalized = normalize_path(url.pathname, trailing_slash);
@@ -3199,7 +3272,17 @@ async function respond(request, options2, manifest, state) {
         });
       }
       if (state.depth === 0) {
-        if (BROWSER && event2.url.pathname === "/.well-known/appspecific/com.chrome.devtools.json") ;
+        if (DEV && event2.url.pathname === "/.well-known/appspecific/com.chrome.devtools.json") {
+          if (!warned_on_devtools_json_request) {
+            console.log(
+              `
+Google Chrome is requesting ${event2.url.pathname} to automatically configure devtools project settings. To learn why, and how to prevent this message, see https://svelte.dev/docs/cli/devtools-json
+`
+            );
+            warned_on_devtools_json_request = true;
+          }
+          return new Response(void 0, { status: 404 });
+        }
         return await respond_with_error({
           event: event2,
           options: options2,
@@ -3334,7 +3417,16 @@ class Server {
         }
       } catch (error) {
         {
-          throw error;
+          this.#options.hooks = {
+            handle: () => {
+              throw error;
+            },
+            handleError: ({ error: error2 }) => console.error(error2),
+            handleFetch: ({ request, fetch: fetch2 }) => fetch2(request),
+            reroute: () => {
+            },
+            transport: {}
+          };
         }
       }
     })());

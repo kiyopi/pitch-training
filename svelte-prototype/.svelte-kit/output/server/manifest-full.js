@@ -6,11 +6,11 @@ function __memo(fn) {
 
 return {
 	appDir: "_app",
-	appPath: "pitch-training/_app",
+	appPath: "_app",
 	assets: new Set([]),
 	mimeTypes: {},
 	_: {
-		client: {start:"_app/immutable/entry/start.BAEA3Cms.js",app:"_app/immutable/entry/app.D9br77Ad.js",imports:["_app/immutable/entry/start.BAEA3Cms.js","_app/immutable/chunks/BxHIJR0L.js","_app/immutable/chunks/Dh4MrDnZ.js","_app/immutable/entry/app.D9br77Ad.js","_app/immutable/chunks/Dh4MrDnZ.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.BHFlIpua.js",app:"_app/immutable/entry/app.DsAKP5g2.js",imports:["_app/immutable/entry/start.BHFlIpua.js","_app/immutable/chunks/CjsXAJJa.js","_app/immutable/chunks/Dujr-1LT.js","_app/immutable/entry/app.DsAKP5g2.js","_app/immutable/chunks/Dujr-1LT.js","_app/immutable/chunks/B_rl9Jj9.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
