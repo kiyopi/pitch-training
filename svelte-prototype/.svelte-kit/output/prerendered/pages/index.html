@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="./favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Pitch Training App</title>
+		
+		<link href="./_app/immutable/assets/0.BlWlVubC.css" rel="stylesheet">
+		<link href="./_app/immutable/assets/2.D7VIfSXx.css" rel="stylesheet">
+		<link rel="modulepreload" href="./_app/immutable/entry/start.CUncRI1L.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DqhXlws0.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DER9Qk2L.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/app.Bz0HfUEY.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/D_t-kyLb.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/0.VMQqPWxz.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/2.Djx9uQbl.js">
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">  <div class="page-layout svelte-1c3cw99"><header class="page-header svelte-1c3cw99"><div class="page-header-content svelte-1c3cw99"> <h1 class="page-title svelte-1c3cw99">Pitch Training App</h1></div></header> <main class="page-main svelte-1c3cw99" style="max-width: 1200px;"><div class="homepage svelte-w2netp"><div class="hero svelte-w2netp"><h1 class="hero-title svelte-w2netp" data-svelte-h="svelte-1h4goym">相対音感トレーニング</h1> <p class="hero-description svelte-w2netp" data-svelte-h="svelte-ukit5l">ドレミファソラシドの音程関係を正確に聞き分ける力を鍛えましょう</p></div> <div class="modes-grid svelte-w2netp"><div class="card svelte-11vrzpo  card-primary     card-lg card-interactive"><div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-tskkra">ランダムモード</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-3iej0e">基音がランダムに変わる中で、相対音程を鍛える基本モード</p> <a href="/microphone-test?mode=random" class="btn svelte-ad033c btn-primary     btn-lg  btn-full">始める</a></div> </div> <div class="card svelte-11vrzpo card-default      card-lg card-interactive"><div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-9j9o9z">連続チャレンジ</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-iv2ffh">制限時間内に連続で正解を目指す集中トレーニング</p> <a href="/microphone-test?mode=continuous" class="btn svelte-ad033c btn-primary     btn-lg  btn-full">始める</a></div> </div> <div class="card svelte-11vrzpo card-default      card-lg card-interactive"><div class="mode-card svelte-w2netp"><h3 class="mode-title svelte-w2netp" data-svelte-h="svelte-phqvlc">12音階モード</h3> <p class="mode-description svelte-w2netp" data-svelte-h="svelte-1yj2cyi">半音階も含めた12音階での高度な音感トレーニング</p> <a href="/microphone-test?mode=chromatic" class="btn svelte-ad033c btn-primary     btn-lg  btn-full">始める</a></div> </div></div></div></main> <footer class="page-footer svelte-1c3cw99"><div class="footer-content svelte-1c3cw99"><p data-svelte-h="svelte-18lmrhl">Pitch Training App v3.0.0 - Svelte移行プロトタイプ</p></div></footer> </div> 
+			
+			<script>
+				{
+					__sveltekit_l896t7 = {
+						base: new URL(".", location).pathname.slice(0, -1)
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("./_app/immutable/entry/start.CUncRI1L.js"),
+						import("./_app/immutable/entry/app.Bz0HfUEY.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2],
+							data: [null,null],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
