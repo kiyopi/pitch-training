@@ -26,6 +26,23 @@
   const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
   const baseNotes = ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4']; // 10種類の基音
   
+  // 基音周波数マップ（A4=440Hzを基準）
+  const baseNoteFrequencies = {
+    'Bb3': 233.08,
+    'B3': 246.94,
+    'C4': 261.63,
+    'Db4': 277.18,
+    'D4': 293.66,
+    'Eb4': 311.13,
+    'E4': 329.63,
+    'F4': 349.23,
+    'Gb4': 369.99,
+    'Ab4': 415.30
+  };
+  
+  // スケール周波数計算（基音からの相対周波数）
+  const scaleRatios = [1.0, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2.0]; // 純正律
+  
   // Tone.js初期化
   async function initializeTone() {
     try {
@@ -85,6 +102,18 @@
       sampler.dispose();
     }
   });
+  
+  // 基音周波数取得
+  function getBaseNoteFrequency(note) {
+    return Math.round(baseNoteFrequencies[note] || 0);
+  }
+  
+  // スケール周波数取得
+  function getScaleFrequency(baseNote, scaleIndex) {
+    const baseFreq = baseNoteFrequencies[baseNote];
+    if (!baseFreq) return 0;
+    return Math.round(baseFreq * scaleRatios[scaleIndex]);
+  }
   
   // 基音ランダム選択
   function selectRandomBase() {
@@ -146,35 +175,50 @@
     }
   }
 
-  // 音程検出開始（モック）
+  // 音程検出開始（改良版）
   function startDetection() {
     isDetecting = true;
     
-    // モック：音程検出シミュレート
+    // 期待周波数を計算
+    const expectedFrequencies = scaleNotes.map((_, index) => 
+      getScaleFrequency(currentBaseNote, index)
+    );
+    
+    // 音程検出シミュレート（改良版）
     const detectionInterval = setInterval(() => {
       if (!isDetecting) {
         clearInterval(detectionInterval);
         return;
       }
       
-      // ランダムな音量・周波数データ
-      currentVolume = Math.random() * 100;
-      const frequencies = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
-      currentFrequency = frequencies[Math.floor(Math.random() * frequencies.length)];
-      currentNote = scaleNotes[Math.floor(Math.random() * scaleNotes.length)];
+      // より現実的な音量・周波数データ
+      currentVolume = 40 + Math.random() * 50; // 40-90%の範囲
       
-      // モック：正解判定（ランダム）
-      if (Math.random() > 0.7) {
-        const isCorrect = Math.random() > 0.3; // 70%の確率で正解
+      // 現在の期待音階に基づいた周波数（±誤差を含む）
+      const expectedFreq = expectedFrequencies[currentScaleIndex];
+      const deviation = (Math.random() - 0.5) * 40; // ±20Hzの誤差
+      currentFrequency = expectedFreq + deviation;
+      
+      // 検出精度シミュレート（5セント精度を模擬）
+      const accuracy = Math.max(0, 100 - Math.abs(deviation) * 2);
+      
+      // 音階名の更新
+      currentNote = scaleNotes[currentScaleIndex];
+      
+      // 正解判定（精度ベース）
+      if (Math.random() > 0.6) { // 40%の確率で判定
+        const isCorrect = accuracy > 70; // 70%以上の精度で正解
         scaleResults[currentScaleIndex] = isCorrect;
         currentScaleIndex++;
+        
+        console.log(`${currentNote}: ${accuracy.toFixed(1)}% 精度, ${isCorrect ? '正解' : '不正解'}`);
         
         // 8音階完了チェック
         if (currentScaleIndex >= 8) {
           finishTraining();
         }
       }
-    }, 500);
+    }, 300); // より高速な更新
   }
 
   // トレーニング終了
@@ -185,9 +229,27 @@
 
   // 音量バー幅計算
   
-  // スコア計算
+  // スコア計算と評価
   $: correctCount = scaleResults.filter(result => result).length;
   $: score = Math.round((correctCount / 8) * 100);
+  $: grade = getGrade(score);
+  $: feedback = getFeedback(score);
+  
+  // 成績評価
+  function getGrade(score) {
+    if (score >= 90) return 'Excellent';
+    if (score >= 70) return 'Good';
+    if (score >= 50) return 'Practice';
+    return 'Needs Work';
+  }
+  
+  // フィードバックメッセージ
+  function getFeedback(score) {
+    if (score >= 90) return '素晴らしい相対音感です！完璧な演奏でした。';
+    if (score >= 70) return '良好な相対音感です。もう少し練習すれば完璧になります。';
+    if (score >= 50) return '基本的な相対音感は身についています。継続練習で向上できます。';
+    return '相対音感の基礎練習から始めましょう。毎日少しずつ練習することが大切です。';
+  }
 </script>
 
 <svelte:head>
@@ -279,6 +341,7 @@
             </div>
             <h2 class="playing-title">基音再生中</h2>
             <p class="playing-note">基音: {currentBaseNote}</p>
+            <p class="playing-frequency">周波数: {getBaseNoteFrequency(currentBaseNote)}Hz</p>
             <p class="playing-instruction">
               この音を覚えて「ド」として認識してください
             </p>
@@ -302,6 +365,7 @@
               {#each scaleNotes as note, index}
                 <div class="scale-note" class:active={index === currentScaleIndex} class:completed={scaleResults[index] !== undefined}>
                   <span class="note-text">{note}</span>
+                  <span class="note-frequency">{getScaleFrequency(currentBaseNote, index)}Hz</span>
                   {#if scaleResults[index] !== undefined}
                     <span class="result-icon {scaleResults[index] ? 'correct' : 'incorrect'}">
                       {scaleResults[index] ? '✓' : '×'}
@@ -357,13 +421,19 @@
             
             <!-- スコア表示 -->
             <div class="score-display">
-              <div class="score-circle">
+              <div class="score-circle {grade.toLowerCase()}">
                 <span class="score-value">{score}</span>
                 <span class="score-unit">点</span>
               </div>
-              <p class="score-description">
-                8音階中 {correctCount}音階 正解
-              </p>
+              <div class="grade-info">
+                <h3 class="grade-title">{grade}</h3>
+                <p class="score-description">
+                  8音階中 {correctCount}音階 正解
+                </p>
+                <p class="feedback-message">
+                  {feedback}
+                </p>
+              </div>
             </div>
 
             <!-- 音階別結果 -->
@@ -532,6 +602,13 @@
     margin: 0 0 var(--space-2) 0;
   }
 
+  .playing-frequency {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin: 0 0 var(--space-2) 0;
+  }
+
   .playing-instruction {
     font-size: var(--text-base);
     color: var(--color-gray-600);
@@ -601,7 +678,14 @@
 
   .note-text {
     font-weight: 600;
-    margin-bottom: var(--space-1);
+    font-size: var(--text-lg);
+  }
+
+  .note-frequency {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    font-weight: 500;
+    margin-top: var(--space-1);
   }
 
   .result-icon {
@@ -669,6 +753,11 @@
 
   .score-display {
     margin-bottom: var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .score-circle {
@@ -679,8 +768,41 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-3) auto;
     border: 4px solid var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .score-circle.excellent {
+    background-color: #dcfce7;
+    border-color: #16a34a;
+  }
+
+  .score-circle.good {
+    background-color: #dbeafe;
+    border-color: #2563eb;
+  }
+
+  .score-circle.practice {
+    background-color: #fef3c7;
+    border-color: #d97706;
+  }
+
+  .score-circle.needs {
+    background-color: #fee2e2;
+    border-color: #dc2626;
+  }
+
+  .grade-info {
+    text-align: left;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .grade-title {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-2) 0;
   }
 
   .score-value {
@@ -699,7 +821,15 @@
   .score-description {
     font-size: var(--text-base);
     color: var(--color-gray-600);
+    margin: 0 0 var(--space-3) 0;
+  }
+
+  .feedback-message {
+    font-size: var(--text-sm);
+    color: var(--color-gray-700);
+    line-height: 1.5;
     margin: 0;
+    font-style: italic;
   }
 
   .details-title {
@@ -776,6 +906,19 @@
     .mode-header {
       flex-direction: column;
       text-align: center;
+    }
+
+    .score-display {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .grade-info {
+      text-align: center;
+    }
+
+    .note-frequency {
+      display: none;
     }
   }
 </style>
