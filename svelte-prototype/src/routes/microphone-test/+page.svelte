@@ -171,9 +171,7 @@
                   <div class="note-value">{currentNote}</div>
                 </div>
                 <div class="frequency-status">
-                  {#if frequencyDetected}
-                    <span class="status-success">✅ 音程を検出しています</span>
-                  {:else}
+                  {#if !frequencyDetected}
                     <span class="status-pending">⏳ 「ド」を発声して音程を確認してください</span>
                   {/if}
                 </div>
