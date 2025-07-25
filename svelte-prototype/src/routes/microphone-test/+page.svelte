@@ -251,10 +251,6 @@
             {#if micPermission === 'granted' && isListening && (!volumeDetected || !frequencyDetected)}
               <!-- 音声確認中は説明非表示 -->
               <p class="status-text voice-instruction">「ドー」と発声してください</p>
-              
-              <!-- ボイス確認中のサブ情報 -->
-              <h3 class="ready-title">マイク準備完了</h3>
-              <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
             {:else}
               <!-- 通常のマイクテスト説明 -->
               <h3 class="instructions-title">マイクのテストを開始します</h3>
