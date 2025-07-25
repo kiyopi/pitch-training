@@ -7,6 +7,7 @@ import * as Tone from "tone";
 import { PitchDetector } from 'pitchy';
 import { UnifiedAudioProcessor } from '@/utils/audioProcessing';
 import styles from './page.module.css';
+import { cn } from '@/lib/utils';  // shadcn/ui ユーティリティ
 
 // === 型定義 ===
 type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
@@ -110,124 +111,72 @@ export default function RandomTrainingPage() {
 
   // === レンダリング: マイク許可要求画面 ===
   const renderMicrophonePermissionRequired = () => (
-    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
-      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
-        ⚠️ マイクアクセスが必要です
-      </div>
-      <div style={{ fontSize: '16px', color: '#4b5563', marginBottom: '24px', lineHeight: '1.6', textAlign: 'center' }}>
-        このトレーニングには音声入力が必要です。<br />
-        推奨: マイクテストページで音声確認後ご利用ください。
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', margin: '0 auto' }}>
-        <Link href="/microphone-test" style={{ 
-          padding: '16px 32px', 
-          borderRadius: '8px', 
-          fontWeight: '600', 
-          textDecoration: 'none', 
- 
-          maxWidth: '400px', 
-          minWidth: '200px', 
-          textAlign: 'center', 
-          fontSize: '16px',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          border: '2px solid #3b82f6',
-          display: 'inline-block'
-        }}>
-          マイクテストページに移動
-        </Link>
-        <button 
-          onClick={async () => {
-            const state = await checkMicrophonePermission();
-            setMicState(state);
-          }}
-          style={{ 
-            padding: '16px 32px', 
-            borderRadius: '8px', 
-            fontWeight: '600', 
-            textDecoration: 'none', 
-   
-            maxWidth: '400px', 
-            minWidth: '200px', 
-            textAlign: 'center', 
-            fontSize: '16px',
-            backgroundColor: 'white',
-            color: '#3b82f6',
-            border: '2px solid #3b82f6',
-            cursor: 'pointer',
-          display: 'inline-block'
-          }}
-        >
-          直接マイク許可を取得
-        </button>
+    <div className="bg-card text-card-foreground rounded-xl border py-8 px-6 shadow-sm">
+      <div className="text-center">
+        <div className="text-xl font-bold text-destructive mb-4">
+          ⚠️ マイクアクセスが必要です
+        </div>
+        <div className="text-muted-foreground mb-6 leading-relaxed">
+          このトレーニングには音声入力が必要です。<br />
+          推奨: マイクテストページで音声確認後ご利用ください。
+        </div>
+        <div className="flex flex-col gap-3 items-center">
+          <Link href="/microphone-test" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-11 px-8">
+            マイクテストページに移動
+          </Link>
+          <button 
+            onClick={async () => {
+              const state = await checkMicrophonePermission();
+              setMicState(state);
+            }}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8"
+          >
+            直接マイク許可を取得
+          </button>
+        </div>
       </div>
     </div>
   );
 
   // === レンダリング: マイクエラー回復画面 ===
   const renderMicrophoneErrorRecovery = () => (
-    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
-      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
-        🔇 マイクアクセスに問題があります
-      </div>
-      <div style={{ fontSize: '16px', color: '#4b5563', marginBottom: '24px', lineHeight: '1.6', textAlign: 'center' }}>
-        考えられる原因:<br />
-        • マイク許可が取り消された<br />
-        • マイクデバイスが利用できない<br />
-        • ブラウザの設定変更<br />
-        {micError && <><br />エラー詳細: {micError}</>}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', margin: '0 auto' }}>
-        <Link href="/microphone-test" style={{ 
-          padding: '16px 32px', 
-          borderRadius: '8px', 
-          fontWeight: '600', 
-          textDecoration: 'none', 
- 
-          maxWidth: '400px', 
-          minWidth: '200px', 
-          textAlign: 'center', 
-          fontSize: '16px',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          border: '2px solid #3b82f6',
-          display: 'inline-block'
-        }}>
-          マイクテストページで確認
-        </Link>
-        <button 
-          onClick={async () => {
-            const state = await checkMicrophonePermission();
-            setMicState(state);
-          }}
-          style={{ 
-            padding: '16px 32px', 
-            borderRadius: '8px', 
-            fontWeight: '600', 
-            textDecoration: 'none', 
-   
-            maxWidth: '400px', 
-            minWidth: '200px', 
-            textAlign: 'center', 
-            fontSize: '16px',
-            backgroundColor: 'white',
-            color: '#3b82f6',
-            border: '2px solid #3b82f6',
-            cursor: 'pointer',
-          display: 'inline-block'
-          }}
-        >
-          再度マイク許可を取得
-        </button>
+    <div className="bg-card text-card-foreground rounded-xl border py-8 px-6 shadow-sm">
+      <div className="text-center">
+        <div className="text-xl font-bold text-destructive mb-4">
+          🔇 マイクアクセスに問題があります
+        </div>
+        <div className="text-muted-foreground mb-6 leading-relaxed">
+          考えられる原因:<br />
+          • マイク許可が取り消された<br />
+          • マイクデバイスが利用できない<br />
+          • ブラウザの設定変更<br />
+          {micError && <><br />エラー詳細: {micError}</>}
+        </div>
+        <div className="flex flex-col gap-3 items-center">
+          <Link href="/microphone-test" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-11 px-8">
+            マイクテストページで確認
+          </Link>
+          <button 
+            onClick={async () => {
+              const state = await checkMicrophonePermission();
+              setMicState(state);
+            }}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8"
+          >
+            再度マイク許可を取得
+          </button>
+        </div>
       </div>
     </div>
   );
 
   // === レンダリング: ローディング画面 ===
   const renderLoadingState = () => (
-    <div style={{ textAlign: 'left', padding: '40px 0', width: '100%', margin: '0' }}>
-      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
-        🔍 マイク状態を確認中...
+    <div className="bg-card text-card-foreground rounded-xl border py-8 px-6 shadow-sm">
+      <div className="text-center">
+        <div className="text-xl font-bold text-primary">
+          🔍 マイク状態を確認中...
+        </div>
       </div>
     </div>
   );
@@ -235,99 +184,49 @@ export default function RandomTrainingPage() {
   // === レンダリング: メイントレーニング画面（Phase 2で実装予定） ===
   const renderTrainingInterface = () => (
     <div>
-      {/* マイク準備完了状態表示 */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '12px', 
-        borderRadius: '8px', 
-        textAlign: 'center', 
-        fontWeight: '600',
-        backgroundColor: '#dcfce7',
-        color: '#166534',
-        border: '1px solid #bbf7d0'
-      }}>
+      {/* マイク準備完了状態表示 - shadcn/ui テーマ */}
+      <div className="mb-5 p-3 rounded-lg text-center font-semibold bg-green-50 text-green-900 border border-green-200">
         🎤 マイク準備完了
       </div>
 
-      {/* 基音再生セクション（Phase 2で実装） */}
-      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+      {/* 基音再生セクション（Phase 2で実装） - shadcn/ui テーマ */}
+      <div className="mb-8 text-center">
         <button 
           disabled={isPlaying}
           onClick={() => {
             // Phase 2で実装予定
             console.log('基音再生機能は Phase 2 で実装予定');
           }}
-          style={{
-            background: isPlaying ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            padding: '16px 32px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            cursor: isPlaying ? 'not-allowed' : 'pointer',
-            boxShadow: isPlaying ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto'
-          }}
+          className={cn(
+            "inline-flex items-center justify-center rounded-xl text-lg font-bold transition-all",
+            "shadow-md hover:shadow-lg px-8 py-4",
+            isPlaying 
+              ? "bg-muted text-muted-foreground cursor-not-allowed" 
+              : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70"
+          )}
         >
           <Play className="w-5 h-5 mr-2" />
           {isPlaying ? '🎹 再生中...' : '🎲 ランダム基音再生'}
         </button>
         
         {currentBaseNote && (
-          <div style={{ marginTop: '16px', fontSize: '16px', color: '#1f2937', fontWeight: '600' }}>
+          <div className="mt-4 text-foreground font-semibold">
             基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]} ({currentBaseFreq?.toFixed(1)}Hz)
           </div>
         )}
       </div>
 
-      {/* ドレミファソラシドガイドセクション（Phase 2で実装） */}
-      <div style={{
-        marginTop: '32px',
-        padding: '24px',
-        backgroundColor: '#f9fafb',
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb'
-      }}>
-        <div style={{
-          fontSize: '16px',
-          fontWeight: 'bold',
-          color: '#1f2937',
-          marginBottom: '16px',
-          textAlign: 'center'
-        }}>
+      {/* ドレミファソラシドガイドセクション（Phase 2で実装） - shadcn/ui テーマ */}
+      <div className="mt-8 p-6 bg-muted rounded-xl border">
+        <div className="text-center font-bold mb-4">
           🎵 ドレミファソラシド ガイド
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div ref={scaleGuideRef} style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(8, 1fr)',
-            gap: '12px',
-            width: '100%',
-            maxWidth: '100%'
-          }}>
+        <div className="flex justify-center">
+          <div ref={scaleGuideRef} className="grid grid-cols-8 gap-3 w-full max-w-full">
             {scaleNotes.map((note, index) => (
               <div
                 key={note}
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  borderRadius: '8px',
-                  border: '2px solid #d1d5db',
-                  backgroundColor: '#f9fafb',
-                  color: '#6b7280',
-                  transform: 'scale(1)',
-                  boxShadow: 'none',
-                  transition: 'all 0.3s ease-in-out'
-                }}
+                className="w-14 h-14 flex items-center justify-center text-lg font-bold rounded-lg border-2 border-border bg-background text-muted-foreground transform scale-100 shadow-none transition-all duration-300 ease-in-out"
               >
                 {note}
               </div>
@@ -336,20 +235,9 @@ export default function RandomTrainingPage() {
         </div>
       </div>
 
-      {/* 相対音程表示セクション（Phase 2で実装） */}
-      <div style={{
-        marginTop: '24px',
-        padding: '20px',
-        backgroundColor: '#f3f4f6',
-        borderRadius: '10px',
-        border: '1px solid #d1d5db'
-      }}>
-        <div ref={relativePitchRef} style={{
-          fontSize: '16px',
-          fontWeight: '600',
-          textAlign: 'center',
-          lineHeight: '1.5'
-        }}>
+      {/* 相対音程表示セクション（Phase 2で実装） - shadcn/ui テーマ */}
+      <div className="mt-6 p-5 bg-muted rounded-lg border">
+        <div ref={relativePitchRef} className="font-semibold text-center leading-relaxed">
           {currentPitch 
             ? `🎵 現在: ${currentPitch.note} (${currentPitch.cents}セント)`
             : '🎵 音程を検出中...'
@@ -357,61 +245,28 @@ export default function RandomTrainingPage() {
         </div>
       </div>
 
-      {/* 結果表示セクション（Phase 2で実装） */}
+      {/* 結果表示セクション（Phase 2で実装） - shadcn/ui テーマ */}
       {showResults && scaleResults.length > 0 && (
-        <div style={{
-          marginTop: '24px',
-          padding: '20px',
-          backgroundColor: '#f0f9ff',
-          borderRadius: '12px',
-          border: '2px solid #3b82f6',
-          display: 'inline-block'
-        }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 'bold',
-            color: '#1e40af',
-            marginBottom: '16px',
-            textAlign: 'center'
-          }}>
+        <div className="mt-6 p-5 bg-blue-50 rounded-xl border-2 border-primary">
+          <div className="text-lg font-bold text-primary mb-4 text-center">
             🎉 オクターブ完了！結果
           </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-            gap: '8px',
-            marginBottom: '16px'
-          }}>
+          <div className="grid grid-cols-4 gap-2 mb-4">
             {scaleResults.map((result, index) => (
-              <div key={index} style={{
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: 'white',
-                borderRadius: '6px',
-                border: '1px solid #bfdbfe'
-              }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  marginBottom: '4px',
-                  color: result.correct ? '#059669' : '#dc2626'
-                }}>
+              <div key={index} className="text-center p-2 bg-background rounded-md border">
+                <div className={cn(
+                  "text-sm font-bold mb-1",
+                  result.correct ? "text-green-600" : "text-destructive"
+                )}>
                   {result.note}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6b7280'
-                }}>
+                <div className="text-xs text-muted-foreground">
                   {Math.round(result.cents)}セント
                 </div>
               </div>
             ))}
           </div>
-          <div style={{
-            textAlign: 'center',
-            fontSize: '14px',
-            color: '#1e40af'
-          }}>
+          <div className="text-center text-sm text-primary">
             平均誤差: {Math.round(scaleResults.reduce((sum, r) => sum + r.cents, 0) / scaleResults.length)}セント
           </div>
         </div>
@@ -438,53 +293,37 @@ export default function RandomTrainingPage() {
 
 
   return (
-    <div 
-      style={{ 
-        backgroundColor: '#ffffff',
-        color: '#1a1a1a',
-        minHeight: '100vh',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        margin: 0,
-        padding: 0
-      }}
-    >
-      {/* Header */}
-      <header style={{ borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ margin: '0', padding: '0 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '24px 0', gap: '24px' }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', fontWeight: '500' }}>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header - shadcn/ui テーマ */}
+      <header className="border-b">
+        <div className="px-4">
+          <div className="flex items-center justify-start py-6 gap-6">
+            <Link href="/" className="flex items-center text-muted-foreground hover:text-foreground transition-colors font-medium">
               <ArrowLeft className="w-5 h-5 mr-2" />
               ホーム
             </Link>
-            <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+            <h1 className="text-xl font-bold">
               ランダム基音トレーニング
             </h1>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main style={{ margin: '0', padding: '32px 16px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      {/* Main Content - shadcn/ui テーマ */}
+      <main className="px-4 py-8">
+        <div className="max-w-4xl mx-auto">
           {renderContent()}
         </div>
       </main>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
-        <div style={{ margin: '0', padding: '0 16px' }}>
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            padding: '24px 0',
-            gap: '16px'
-          }}>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>
+      {/* Footer - shadcn/ui テーマ */}
+      <footer className="border-t mt-12">
+        <div className="px-4">
+          <div className="flex flex-col items-center justify-between py-6 gap-4">
+            <div className="text-sm text-muted-foreground">
               © 2024 相対音感トレーニング. All rights reserved.
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>Version 3.0</span>
               <span>•</span>
               <span>Powered by Next.js</span>

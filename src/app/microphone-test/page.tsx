@@ -1,5 +1,12 @@
 'use client';
 
+/**
+ * マイクテストページ
+ * デザインシステム: shadcn/ui (https://ui.shadcn.com)
+ * カラーテーマ: globals.css の CSS変数を使用
+ * コンポーネント: インラインスタイルでshadcn/uiテーマを適用
+ */
+
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
