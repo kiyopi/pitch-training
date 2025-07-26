@@ -168,8 +168,8 @@
     // 音程検出（PitchDetector使用）
     const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    // 細かいノイズを完全除去（より厳しい閾値）
-    if (pitch && clarity > 0.85 && currentVolume > 15) {
+    // ノイズ除去（調整された閾値）
+    if (pitch && clarity > 0.75 && currentVolume > 8) {
       // 周波数の安定化（3フレーム移動平均）
       frequencyHistory.push(pitch);
       if (frequencyHistory.length > 3) {
@@ -209,6 +209,20 @@
           detectedNote = frequencyToNote(currentFrequency);
         }
       }
+    }
+    
+    // デバッグログ（初回と大きな変化時のみ）
+    if (!window.pitchDetectorLastLog || 
+        Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
+        Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20) {
+      console.log('PitchDetector:', {
+        rawVolume: Math.round(rawVolume),
+        filteredVolume: Math.round(currentVolume), 
+        frequency: currentFrequency,
+        note: detectedNote,
+        clarity: Math.round(clarity * 100)
+      });
+      window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency };
     }
     
     // 親コンポーネントにデータを送信
@@ -281,12 +295,12 @@
     </div>
     
     <div class="volume-section">
-      <div class="volume-label">音量レベル: {Math.round(currentVolume)}%</div>
-      <VolumeBar volume={currentVolume} className="volume-bar" />
+      <div class="volume-label">音量レベル: {Math.round(rawVolume)}%</div>
+      <VolumeBar volume={rawVolume} className="volume-bar" />
       
-      {#if rawVolume > 0}
+      {#if rawVolume > 0 && currentVolume > 0}
         <div class="noise-reduction-info">
-          <span class="noise-label">ノイズ除去効果: {Math.round(rawVolume - currentVolume)}%削減</span>
+          <span class="noise-label">フィルター後音量: {Math.round(currentVolume)}%</span>
         </div>
       {/if}
     </div>
