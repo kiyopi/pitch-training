@@ -169,33 +169,57 @@
   {#if microphoneState === 'granted'}
     <!-- メイントレーニングインターフェース -->
     
-    <!-- Base Tone Section -->
-    <Card class="main-card">
-      <div class="card-header">
-        <h3 class="section-title">🎹 基音再生</h3>
-      </div>
-      <div class="card-content">
-        <Button 
-          class="primary-button {isPlaying ? 'playing' : ''}"
-          disabled={isPlaying || trainingPhase === 'detecting'}
-          on:click={playBaseNote}
-        >
-          {#if isPlaying}
-            🎵 再生中...
-          {:else if trainingPhase === 'setup'}
-            🎹 ランダム基音再生
-          {:else}
-            🔄 再生
+    <!-- Base Tone and Detection Side by Side -->
+    <div class="side-by-side-container">
+      <!-- Base Tone Section -->
+      <Card class="main-card half-width">
+        <div class="card-header">
+          <h3 class="section-title">🎹 基音再生</h3>
+        </div>
+        <div class="card-content">
+          <Button 
+            variant="primary"
+            disabled={isPlaying || trainingPhase === 'detecting'}
+            on:click={playBaseNote}
+          >
+            {#if isPlaying}
+              🎵 再生中...
+            {:else if trainingPhase === 'setup'}
+              🎹 ランダム基音再生
+            {:else}
+              🔄 再生
+            {/if}
+          </Button>
+          
+          {#if currentBaseNote}
+            <div class="base-note-info">
+              現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
+            </div>
           {/if}
-        </Button>
-        
-        {#if currentBaseNote}
-          <div class="base-note-info">
-            現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
+        </div>
+      </Card>
+
+      <!-- Detection Section (Always Visible) -->
+      <Card class="main-card half-width">
+        <div class="card-header">
+          <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
+        </div>
+        <div class="card-content">
+          <div class="detection-display">
+            <div class="detected-info">
+              <span class="detected-label">検出中:</span>
+              <span class="detected-note">{detectedNote}</span>
+              <span class="pitch-diff">({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
+            </div>
+            
+            <div class="volume-section">
+              <div class="volume-label">音量レベル: {Math.round(currentVolume)}%</div>
+              <VolumeBar volume={currentVolume} className="modern-volume-bar" />
+            </div>
           </div>
-        {/if}
-      </div>
-    </Card>
+        </div>
+      </Card>
+    </div>
 
     <!-- Scale Guide Section -->
     <Card class="main-card">
@@ -221,28 +245,6 @@
       </div>
     </Card>
 
-    <!-- Detection Section -->
-    {#if trainingPhase === 'detecting'}
-      <Card class="main-card">
-        <div class="card-header">
-          <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
-        </div>
-        <div class="card-content">
-          <div class="detection-display">
-            <div class="detected-info">
-              <span class="detected-label">検出中:</span>
-              <span class="detected-note">{detectedNote}</span>
-              <span class="pitch-diff">({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
-            </div>
-            
-            <div class="volume-section">
-              <div class="volume-label">音量レベル: {Math.round(currentVolume)}%</div>
-              <VolumeBar volume={currentVolume} className="modern-volume-bar" />
-            </div>
-          </div>
-        </div>
-      </Card>
-    {/if}
 
     <!-- Results Section -->
     {#if sessionResults.isCompleted}
@@ -281,34 +283,25 @@
       </Card>
     {/if}
 
-  {:else if microphoneState === 'checking'}
-    <!-- Loading State -->
+  {:else}
+    <!-- Direct Access Error State -->
     <Card class="error-card">
       <div class="error-content">
-        <div class="loading-icon">🔄</div>
-        <h3>マイク状態確認中...</h3>
-        <p>マイクロフォンの使用許可を確認しています。</p>
-      </div>
-    </Card>
-
-  {:else if microphoneState === 'denied' || microphoneState === 'error'}
-    <!-- Error State -->
-    <Card class="error-card">
-      <div class="error-content">
-        <div class="error-icon">⚠️</div>
-        <h3>マイクアクセスが必要です</h3>
-        <p>このトレーニングには音声入力が必要です。</p>
+        <div class="error-icon">🎤</div>
+        <h3>マイクテストが必要です</h3>
+        <p>ランダム基音トレーニングを開始する前に、マイクテストページで音声入力の確認をお願いします。</p>
         
         <div class="recommendation">
-          <p><strong>推奨:</strong> マイクテストページで音声確認後ご利用ください</p>
+          <p>このページは<strong>マイクテスト完了後</strong>にご利用いただけます。</p>
+          <p>まずはマイクテストページで音声確認を行ってください。</p>
         </div>
         
         <div class="action-buttons">
-          <Button class="primary-button" on:click={goToMicrophoneTest}>
-            🎤 マイクテストページに移動
+          <Button variant="primary" on:click={goToMicrophoneTest}
+            🎤 マイクテストページへ移動
           </Button>
-          <Button class="secondary-button" on:click={checkMicrophonePermission}>
-            🔄 再試行
+          <Button variant="secondary" on:click={goHome}>
+            🏠 ホームに戻る
           </Button>
         </div>
       </div>
@@ -403,48 +396,25 @@
     color: hsl(215.4 16.3% 46.9%);
   }
 
-  /* ボタンスタイル（shadcn/ui風） */
-  :global(.primary-button) {
-    background: hsl(222.2 47.4% 11.2%) !important;
-    color: hsl(210 40% 98%) !important;
-    border: 1px solid hsl(222.2 47.4% 11.2%) !important;
-    border-radius: 6px !important;
-    padding: 0.75rem 1.5rem !important;
-    font-weight: 500 !important;
-    min-width: 200px;
-    transition: all 0.2s ease !important;
+  /* サイドバイサイドレイアウト */
+  .side-by-side-container {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
   }
   
-  :global(.primary-button:hover) {
-    background: hsl(222.2 47.4% 8%) !important;
-    border-color: hsl(222.2 47.4% 8%) !important;
+  :global(.half-width) {
+    flex: 1;
   }
   
-  :global(.primary-button:disabled) {
-    background: hsl(210 40% 96%) !important;
-    color: hsl(215.4 16.3% 46.9%) !important;
-    border-color: hsl(214.3 31.8% 91.4%) !important;
-    cursor: not-allowed !important;
-  }
-  
-  :global(.primary-button.playing) {
-    background: hsl(47.9 95.8% 53.1%) !important;
-    border-color: hsl(47.9 95.8% 53.1%) !important;
-    color: hsl(222.2 84% 4.9%) !important;
-  }
-  
-  :global(.secondary-button) {
-    background: hsl(210 40% 96%) !important;
-    color: hsl(222.2 84% 4.9%) !important;
-    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
-    border-radius: 6px !important;
-    padding: 0.5rem 1rem !important;
-    font-weight: 500 !important;
-    transition: all 0.2s ease !important;
-  }
-  
-  :global(.secondary-button:hover) {
-    background: hsl(210 40% 94%) !important;
+  @media (max-width: 768px) {
+    .side-by-side-container {
+      flex-direction: column;
+    }
+    
+    :global(.half-width) {
+      width: 100%;
+    }
   }
 
   /* 基音情報 */
