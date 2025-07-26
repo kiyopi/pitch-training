@@ -186,8 +186,8 @@
         
         currentScaleIndex++;
         
-        // 1秒後に次のステップ
-        guideAnimationTimer = setTimeout(animateNextStep, 1000);
+        // 0.6秒後に次のステップ（テンポアップ）
+        guideAnimationTimer = setTimeout(animateNextStep, 600);
       } else {
         // アニメーション完了
         finishGuideAnimation();
@@ -472,83 +472,87 @@
   {#if microphoneState === 'granted'}
     <!-- メイントレーニングインターフェース -->
     
-    <!-- Base Tone and Detection Side by Side -->
-    <div class="side-by-side-container">
-      <!-- Base Tone Section -->
-      <Card class="main-card half-width">
-        <div class="card-header">
-          <h3 class="section-title">🎹 基音再生</h3>
-        </div>
-        <div class="card-content">
-          <Button 
-            variant="primary"
-            disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting' || isLoading}
-            on:click={playBaseNote}
-          >
-            {#if isLoading}
-              🎵 音源読み込み中...
-            {:else if isPlaying}
-              🎵 再生中...
-            {:else if trainingPhase === 'setup'}
-              🎹 ランダム基音再生
-            {:else}
-              🔄 再生
-            {/if}
-          </Button>
-          
-          {#if currentBaseNote}
-            <div class="base-note-info">
-              現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
-            </div>
-          {/if}
-        </div>
-      </Card>
-
-      <!-- Detection Section (Always Visible) -->
-      <Card class="main-card half-width">
-        <div class="card-header">
-          <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
-        </div>
-        <div class="card-content">
-          {#if mediaStream}
-            <PitchDetector
-              bind:this={pitchDetectorComponent}
-              isActive={trainingPhase === 'guiding'}
-              on:pitchUpdate={handlePitchUpdate}
-              className="pitch-detector-content"
-            />
-          {:else}
-            <div class="pitch-detector-placeholder">
-              マイク許可待ち...
-            </div>
-          {/if}
-          
-        </div>
-      </Card>
-    </div>
-
-    <!-- Scale Guide Section -->
-    <Card class="main-card">
-      <div class="card-header">
-        <h3 class="section-title">🎵 相対音程ガイド</h3>
-      </div>
-      <div class="card-content">
-        <div class="scale-guide">
-          {#each scaleSteps as step, index}
-            <div 
-              class="scale-item {step.state}"
-            >
-              {step.name}
-            </div>
-          {/each}
-        </div>
-        {#if trainingPhase === 'guiding'}
-          <div class="guide-instruction">
-            ガイドに合わせて <strong>ドレミファソラシド</strong> を歌ってください
+    {#if trainingPhase !== 'results'}
+      <!-- Base Tone and Detection Side by Side -->
+      <div class="side-by-side-container">
+        <!-- Base Tone Section -->
+        <Card class="main-card half-width">
+          <div class="card-header">
+            <h3 class="section-title">🎹 基音再生</h3>
           </div>
-        {/if}
+          <div class="card-content">
+            <Button 
+              variant="primary"
+              disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting' || isLoading}
+              on:click={playBaseNote}
+            >
+              {#if isLoading}
+                🎵 音源読み込み中...
+              {:else if isPlaying}
+                🎵 再生中...
+              {:else if trainingPhase === 'setup'}
+                🎹 ランダム基音再生
+              {:else}
+                🔄 再生
+              {/if}
+            </Button>
+            
+            {#if currentBaseNote}
+              <div class="base-note-info">
+                現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
+              </div>
+            {/if}
+          </div>
+        </Card>
+
+        <!-- Detection Section (Always Visible) -->
+        <Card class="main-card half-width">
+          <div class="card-header">
+            <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
+          </div>
+          <div class="card-content">
+            {#if mediaStream}
+              <PitchDetector
+                bind:this={pitchDetectorComponent}
+                isActive={trainingPhase === 'guiding'}
+                on:pitchUpdate={handlePitchUpdate}
+                className="pitch-detector-content"
+              />
+            {:else}
+              <div class="pitch-detector-placeholder">
+                マイク許可待ち...
+              </div>
+            {/if}
+            
+          </div>
+        </Card>
       </div>
-    </Card>
+    {/if}
+
+    {#if trainingPhase !== 'results'}
+      <!-- Scale Guide Section -->
+      <Card class="main-card">
+        <div class="card-header">
+          <h3 class="section-title">🎵 ドレミ音階ガイド</h3>
+        </div>
+        <div class="card-content">
+          <div class="scale-guide">
+            {#each scaleSteps as step, index}
+              <div 
+                class="scale-item {step.state}"
+              >
+                {step.name}
+              </div>
+            {/each}
+          </div>
+          {#if trainingPhase === 'guiding'}
+            <div class="guide-instruction">
+              ガイドに合わせて <strong>ドレミファソラシド</strong> を歌ってください
+            </div>
+          {/if}
+        </div>
+      </Card>
+    {/if}
 
 
     <!-- Results Section -->
@@ -818,9 +822,9 @@
   }
   
   .scale-item.active {
-    background: hsl(330 81% 60%);
+    background: hsl(343.8 79.7% 53.7%);
     color: hsl(210 40% 98%);
-    border: 1px solid hsla(330 81% 60% / 0.5);
+    border: 1px solid hsla(343.8 79.7% 53.7% / 0.5);
     transform: scale(1.2);
     font-size: 1.125rem;
     font-weight: 700;
