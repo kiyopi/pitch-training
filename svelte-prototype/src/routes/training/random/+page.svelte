@@ -418,9 +418,16 @@
     
     // 状態リセット
     trainingPhase = 'setup';
+    isLoading = false; // 音源読み込み中表示を解除
     currentScaleIndex = 0;
     isGuideAnimationActive = false;
-    scaleEvaluations = []; // 新しいセッション用にリセット
+    
+    // 新しいセッション用に評価データをリセット（次回トレーニング開始時）
+    setTimeout(() => {
+      if (trainingPhase === 'setup') {
+        scaleEvaluations = [];
+      }
+    }, 100);
     
     sessionResults = {
       correctCount: 0,
