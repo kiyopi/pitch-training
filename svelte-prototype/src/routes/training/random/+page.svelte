@@ -164,8 +164,8 @@
         console.log('🔍 BASE_URL確認:', import.meta.env.BASE_URL);
         console.log('🔍 完全baseUrl:', `${import.meta.env.BASE_URL}audio/piano/`);
         
-        // 本番環境での明示的パス設定
-        const pianoBaseUrl = import.meta.env.PROD ? '/pitch-training/audio/piano/' : '/audio/piano/';
+        // SvelteKit BASE_URL統一設定
+        const pianoBaseUrl = `${import.meta.env.BASE_URL || ''}/audio/piano/`;
         console.log('🔍 最終pianoBaseUrl:', pianoBaseUrl);
         
         sampler = new Tone.Sampler({
@@ -192,7 +192,7 @@
         // 個別音源ファイルのテスト読み込み
         console.log('🧪 個別音源ファイルテスト開始...');
         for (const [note, filename] of Object.entries(localPianoUrls)) {
-          const testUrl = `/audio/piano/${filename}`;
+          const testUrl = `${pianoBaseUrl}${filename}`;
           console.log(`🎵 テスト: ${note} -> ${testUrl}`);
           
           // 音源ファイルの存在確認
