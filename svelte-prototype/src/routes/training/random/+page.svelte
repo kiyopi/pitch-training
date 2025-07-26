@@ -43,6 +43,10 @@
   // 裏での評価蓄積
   let scaleEvaluations = [];
   
+  // セッション履歴管理（2回目以降の結果表示用）
+  let sessionHistory = [];
+  let currentSessionIndex = 0;
+  
   // 音程検出
   let currentVolume = 0;
   let currentFrequency = 0;
@@ -168,11 +172,16 @@
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
     isGuideAnimationActive = true;
-    scaleEvaluations = [];
+    scaleEvaluations = []; // 新しいセッションの評価データ用にクリア
     
-    // 音程検出開始
-    if (pitchDetectorComponent && mediaStream) {
+    // 音程検出開始（マイク状態確認強化）
+    if (pitchDetectorComponent && mediaStream && mediaStream.active) {
       pitchDetectorComponent.startDetection();
+      console.log('🎙️ 音程検出開始 - マイク状態: アクティブ');
+    } else {
+      console.warn('⚠️ マイク状態異常 - 再初期化が必要');
+      // マイク再初期化を試行
+      checkMicrophonePermission();
     }
     
     console.log('🎵 ガイドアニメーション開始');
@@ -246,7 +255,18 @@
       isCompleted: true
     };
     
+    // セッション履歴に保存（2回目以降の結果表示用）
+    const sessionData = {
+      sessionIndex: currentSessionIndex + 1,
+      results: { ...sessionResults },
+      evaluations: [...scaleEvaluations],
+      timestamp: new Date().toLocaleTimeString()
+    };
+    sessionHistory.push(sessionData);
+    currentSessionIndex++;
+    
     console.log('📊 最終採点結果:', sessionResults);
+    console.log('📚 セッション履歴保存:', sessionData);
   }
 
   // ステータスメッセージ取得
@@ -271,6 +291,19 @@
       default:
         return '🔄 準備中...';
     }
+  }
+
+  // 表示用の評価データを取得（現在のセッションまたは最新履歴）
+  function getDisplayEvaluations() {
+    // 現在のセッションに評価データがある場合は現在のデータを表示
+    if (scaleEvaluations.length > 0) {
+      return scaleEvaluations;
+    }
+    // 現在のセッションにデータがない場合は最新の履歴を表示
+    if (sessionHistory.length > 0) {
+      return sessionHistory[sessionHistory.length - 1].evaluations;
+    }
+    return [];
   }
 
   // マイクテストページへの誘導
@@ -582,9 +615,9 @@
           <!-- 詳細結果 -->
           <div class="detailed-results">
             <h4 class="detailed-title">音階別結果</h4>
-            {#if scaleEvaluations.length > 0}
+            {#if getDisplayEvaluations().length > 0}
               <div class="scale-results">
-                {#each scaleEvaluations as evaluation, index}
+                {#each getDisplayEvaluations() as evaluation, index}
                   <div class="scale-result-item" class:correct={evaluation.isCorrect} class:incorrect={!evaluation.isCorrect}>
                     <span class="scale-name">{evaluation.stepName}</span>
                     <span class="scale-accuracy">{evaluation.accuracy}%</span>
