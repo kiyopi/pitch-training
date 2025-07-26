@@ -5,9 +5,9 @@
   import Button from '$lib/components/Button.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
+  import PitchDetector from '$lib/components/PitchDetector.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
-  import { PitchDetector } from 'pitchy';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'detecting' | 'completed'
@@ -50,13 +50,9 @@
   let sampler = null;
   let isLoading = true;
   
-  // 音程検出用Web Audio API
-  let audioContext = null;
+  // 音程検出コンポーネント
+  let pitchDetectorComponent = null;
   let mediaStream = null;
-  let analyser = null;
-  let animationFrame = null;
-  let isDetecting = false;
-  let pitchDetector = null;
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
@@ -72,7 +68,7 @@
     { note: 'B3', name: 'シ（低）', frequency: 246.94 }
   ];
 
-  // マイクロフォン許可チェック（ストリーム保持版）
+  // マイクロフォン許可チェック（コンポーネント統合版）
   async function checkMicrophonePermission() {
     microphoneState = 'checking';
     
@@ -82,11 +78,17 @@
         return;
       }
       
-      // マイクストリームを取得して保持
+      // マイクストリームを取得
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // PitchDetectorコンポーネントを初期化
+      if (pitchDetectorComponent) {
+        await pitchDetectorComponent.initialize(mediaStream);
+      }
+      
       microphoneState = 'granted';
       trainingPhase = 'setup';
-      console.log('マイク許可取得成功 - ストリーム保持');
+      console.log('マイク許可取得成功 - PitchDetectorコンポーネント初期化完了');
     } catch (error) {
       console.error('マイク許可エラー:', error);
       microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
@@ -132,8 +134,10 @@
         trainingPhase = 'detecting';
         scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
         
-        // 音程検出開始
-        startPitchDetection();
+        // PitchDetectorコンポーネントで検出開始
+        if (pitchDetectorComponent) {
+          pitchDetectorComponent.startDetection();
+        }
       }, 2000);
     } catch (error) {
       console.error('基音再生エラー:', error);
@@ -218,108 +222,35 @@
     initializeSampler();
   });
   
-  // 音程検出開始（既存ストリーム使用）
-  async function startPitchDetection() {
-    try {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      
-      // 既存のマイクストリームを使用（checkMicrophonePermissionで取得済み）
-      if (!mediaStream) {
-        console.error('マイクストリームが存在しません。許可を再取得します。');
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      }
-      
-      const source = audioContext.createMediaStreamSource(mediaStream);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
-      
-      // PitchDetector初期化
-      pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
-      
-      isDetecting = true;
-      detectPitch();
-      console.log('音程検出開始 - PitchDetector使用・ビルド成功版');
-      
-    } catch (error) {
-      console.error('音程検出開始エラー:', error);
-    }
-  }
-  
-  // 音程検出停止
-  function stopPitchDetection() {
-    isDetecting = false;
-    if (animationFrame) {
-      cancelAnimationFrame(animationFrame);
-    }
-    console.log('音程検出停止');
-  }
-  
-  // リアルタイム音程検出
-  function detectPitch() {
-    if (!isDetecting || !analyser || !pitchDetector) return;
+  // PitchDetectorコンポーネントからのイベントハンドラー
+  function handlePitchUpdate(event) {
+    const { frequency, note, volume, rawVolume, clarity } = event.detail;
     
-    const bufferLength = analyser.fftSize;
-    const buffer = new Float32Array(bufferLength);
-    analyser.getFloatTimeDomainData(buffer);
+    currentFrequency = frequency;
+    detectedNote = note;
+    currentVolume = volume;
     
-    // 音量計算（感度向上版）
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      sum += Math.abs(buffer[i]);
-    }
-    // RMS計算とログスケール調整で通常の声に適した音量レベルに
-    const rms = Math.sqrt(sum / bufferLength);
-    const logVolume = Math.log10(rms + 0.001) * 50 + 100; // ログスケール
-    currentVolume = Math.max(0, Math.min(100, logVolume)); // 0-100%に正規化
-    
-    // 音程検出（PitchDetector使用）
-    const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
-    
-    if (pitch && clarity > 0.6 && currentVolume > 5) {
-      currentFrequency = pitch;
-      detectedNote = frequencyToNote(pitch);
-      
-      // 基音との相対音程を計算
-      if (currentBaseFrequency > 0) {
-        pitchDifference = Math.round(1200 * Math.log2(pitch / currentBaseFrequency));
-      }
+    // 基音との相対音程を計算
+    if (currentBaseFrequency > 0 && frequency > 0) {
+      pitchDifference = Math.round(1200 * Math.log2(frequency / currentBaseFrequency));
     } else {
-      detectedNote = 'ーー';
-      currentFrequency = 0;
       pitchDifference = 0;
     }
     
-    animationFrame = requestAnimationFrame(detectPitch);
+    // スケール進行チェック（実装予定）
+    checkScaleProgression(frequency, note);
   }
   
-  // 周波数から音程名に変換
-  function frequencyToNote(frequency) {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const A4 = 440;
-    const semitoneRatio = Math.pow(2, 1/12);
-    
-    if (frequency <= 0) return 'ーー';
-    
-    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
-    const noteIndex = (semitonesFromA4 + 9 + 120) % 12;
-    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
-    
-    return noteNames[noteIndex] + octave;
+  // スケール進行チェック（プレースホルダー）
+  function checkScaleProgression(frequency, note) {
+    // TODO: ドレミファソラシドの進行チェックロジック
+    // 現在はプレースホルダー
   }
   
   // クリーンアップ
   onDestroy(() => {
-    stopPitchDetection();
-    
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-    }
-    
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close();
+    if (pitchDetectorComponent) {
+      pitchDetectorComponent.cleanup();
     }
     
     if (sampler) {
@@ -389,19 +320,25 @@
           <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
         </div>
         <div class="card-content">
-          <div class="detection-display">
-            <div class="detected-info">
-              <span class="detected-label">検出中:</span>
-              <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) + 'Hz' : '---Hz'}</span>
-              <span class="detected-note">({detectedNote})</span>
-              <span class="pitch-diff">({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
+          <PitchDetector
+            bind:this={pitchDetectorComponent}
+            isActive={trainingPhase === 'detecting'}
+            on:pitchUpdate={handlePitchUpdate}
+            className="pitch-detector-content"
+          />
+          
+          {#if currentBaseFrequency > 0}
+            <div class="relative-pitch-info">
+              <div class="frequency-display-large">
+                {#if currentFrequency > 0}
+                  <span class="large-hz">{Math.round(currentFrequency)}Hz</span>
+                  <span class="note-with-cents">（{detectedNote}）({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
+                {:else}
+                  <span class="no-signal">---Hz</span>
+                {/if}
+              </div>
             </div>
-            
-            <div class="volume-section">
-              <div class="volume-label">音量レベル: {Math.round(currentVolume)}%</div>
-              <VolumeBar volume={currentVolume} className="modern-volume-bar" />
-            </div>
-          </div>
+          {/if}
         </div>
       </Card>
     </div>
@@ -614,6 +551,43 @@
     border: 1px solid hsl(214.3 31.8% 91.4%);
     font-size: 0.875rem;
     color: hsl(215.4 16.3% 46.9%);
+  }
+
+  /* 相対音程情報 */
+  .relative-pitch-info {
+    text-align: center;
+    padding: 1rem;
+    background: hsl(210 40% 98%);
+    border-radius: 6px;
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    margin-top: 1rem;
+  }
+  
+  .frequency-display-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .large-hz {
+    font-size: 2rem;
+    font-weight: 700;
+    color: hsl(222.2 84% 4.9%);
+    line-height: 1;
+  }
+  
+  .note-with-cents {
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
+    font-weight: 500;
+  }
+  
+  .no-signal {
+    font-size: 2rem;
+    font-weight: 700;
+    color: hsl(215.4 16.3% 46.9%);
+    line-height: 1;
   }
 
   /* スケールガイド */

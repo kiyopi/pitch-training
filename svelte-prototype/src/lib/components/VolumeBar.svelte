@@ -8,12 +8,10 @@
   
   let barElement;
   
-  // 音量レベルに応じた色の計算
+  // 音量レベルに応じた色の計算（テーマ青一色統一）
   function getVolumeColor(volume) {
     if (volume < threshold) return '#94a3b8'; // グレー - 低音量
-    if (volume < 60) return '#10b981'; // 緑 - 良好
-    if (volume < 80) return '#f59e0b'; // オレンジ - 高め
-    return '#ef4444'; // 赤 - 過大
+    return '#2563eb'; // テーマ青一色 - 全レベル統一
   }
   
   // 音量バーの更新（DOM直接操作）
@@ -40,10 +38,10 @@
     // 初期スタイル設定（iPhone WebKit対応）
     if (barElement) {
       barElement.style.width = '0%';
-      barElement.style.backgroundColor = '#94a3b8';
+      barElement.style.backgroundColor = '#2563eb';
       barElement.style.height = height;
       barElement.style.borderRadius = '9999px';
-      barElement.style.transition = 'all 0.1s ease-out';
+      barElement.style.transition = 'width 0.2s ease-out, background-color 0.2s ease-out'; // より滑らかなトランジション
     }
   });
 </script>
