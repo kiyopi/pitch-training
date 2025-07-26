@@ -2,1173 +2,659 @@
   import { onMount, onDestroy } from 'svelte';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
-  import PageLayout from '$lib/components/PageLayout.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
-  
-  // Tone.js変数
-  let Tone = null;
-  let sampler = null;
-  let isToneLoaded = false;
-  let toneLoadingError = null;
-  let loadingStatus = 'Tone.js読み込み中...';
-  let useSimpleAudio = false; // フォールバック用
+  import PageLayout from '$lib/components/PageLayout.svelte';
 
-  // トレーニング状態管理
-  let isPlaying = false;
-  let isDetecting = false;
+  // 基本状態管理
+  let trainingPhase = 'setup'; // 'setup' | 'listening' | 'detecting' | 'completed'
+  let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
+  
+  // 基音関連
   let currentBaseNote = '';
+  let currentBaseFrequency = 0;
+  let isPlaying = false;
+  
+  // 音程ガイド
   let currentScaleIndex = 0;
-  let scaleResults = [];
-  let showResults = false;
+  let scaleSteps = [
+    { name: 'ド', state: 'inactive', completed: false },
+    { name: 'レ', state: 'inactive', completed: false },
+    { name: 'ミ', state: 'inactive', completed: false },
+    { name: 'ファ', state: 'inactive', completed: false },
+    { name: 'ソ', state: 'inactive', completed: false },
+    { name: 'ラ', state: 'inactive', completed: false },
+    { name: 'シ', state: 'inactive', completed: false },
+    { name: 'ド（高）', state: 'inactive', completed: false }
+  ];
+  
+  // 音程検出
   let currentVolume = 0;
   let currentFrequency = 0;
-  let currentNote = '';
+  let detectedNote = 'ーー';
+  let pitchDifference = 0;
   
-  // 音階システム
-  const scaleNotes = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
-  const baseNotes = ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4']; // 10種類の基音
-  
-  // 基音周波数マップ（A4=440Hzを基準）
-  const baseNoteFrequencies = {
-    'Bb3': 233.08,
-    'B3': 246.94,
-    'C4': 261.63,
-    'Db4': 277.18,
-    'D4': 293.66,
-    'Eb4': 311.13,
-    'E4': 329.63,
-    'F4': 349.23,
-    'Gb4': 369.99,
-    'Ab4': 415.30
+  // セッション結果
+  let sessionResults = {
+    correctCount: 0,
+    totalCount: 8,
+    averageAccuracy: 0,
+    averageTime: 0,
+    isCompleted: false
   };
-  
-  // スケール周波数計算（基音からの相対周波数）
-  const scaleRatios = [1.0, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2.0]; // 純正律
-  
-  // Tone.js初期化（改良版）
-  async function initializeTone() {
+
+  // 基音候補（10種類）
+  const baseNotes = [
+    { note: 'C4', name: 'ド（低）', frequency: 261.63 },
+    { note: 'D4', name: 'レ（低）', frequency: 293.66 },
+    { note: 'E4', name: 'ミ（低）', frequency: 329.63 },
+    { note: 'F4', name: 'ファ（低）', frequency: 349.23 },
+    { note: 'G4', name: 'ソ（低）', frequency: 392.00 },
+    { note: 'A4', name: 'ラ（中）', frequency: 440.00 },
+    { note: 'B4', name: 'シ（中）', frequency: 493.88 },
+    { note: 'C5', name: 'ド（高）', frequency: 523.25 },
+    { note: 'D5', name: 'レ（高）', frequency: 587.33 },
+    { note: 'E5', name: 'ミ（高）', frequency: 659.25 }
+  ];
+
+  // マイクロフォン許可チェック
+  async function checkMicrophonePermission() {
+    microphoneState = 'checking';
+    
     try {
-      loadingStatus = 'Tone.js CDN読み込み中...';
-      console.log('🔄 Tone.js初期化開始（ピアノ音源必須モード）');
-      
-      // Tone.js CDNから読み込み（Promise化）
-      if (typeof window !== 'undefined' && !window.Tone) {
-        console.log('📥 Tone.js CDN読み込み開始...');
-        
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/tone@14.7.77/build/Tone.js';
-          script.async = true;
-          
-          script.onload = () => {
-            console.log('✅ Tone.js CDNスクリプト読み込み完了');
-            if (window.Tone) {
-              console.log('✅ window.Tone利用可能');
-              resolve();
-            } else {
-              console.error('❌ window.Toneが未定義');
-              reject(new Error('window.Toneが利用できません'));
-            }
-          };
-          
-          script.onerror = (error) => {
-            console.error('❌ Tone.js CDN読み込みエラー:', error);
-            reject(new Error('Tone.js CDNの読み込みに失敗しました'));
-          };
-          
-          // 5秒タイムアウト
-          setTimeout(() => {
-            if (!window.Tone) {
-              console.warn('⚠️ Tone.js CDN読み込みタイムアウト');
-              reject(new Error('Tone.js読み込みタイムアウト'));
-            }
-          }, 5000);
-          
-          document.head.appendChild(script);
-        });
-        
-        loadingStatus = 'Tone.js初期化中...';
-        Tone = window.Tone;
-        console.log('🎵 Tone.js変数設定完了');
-        await setupSampler();
-        
-      } else if (window.Tone) {
-        console.log('✅ Tone.js既に読み込み済み');
-        Tone = window.Tone;
-        await setupSampler();
-      } else {
-        console.warn('⚠️ window未定義 - SSR環境の可能性');
-        // SSR環境ではスキップ、クライアント側でretry
-        setTimeout(() => initializeTone(), 1000);
+      if (!navigator.mediaDevices?.getUserMedia) {
+        microphoneState = 'error';
+        return;
       }
+      
+      // 簡単な許可チェック
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      microphoneState = 'granted';
+      trainingPhase = 'setup';
     } catch (error) {
-      console.error('❌ Tone.js初期化エラー:', error);
-      toneLoadingError = `初期化エラー: ${error.message}`;
-      loadingStatus = 'エラー';
-      
-      // 3秒後にフォールバックモードに切り替え
-      setTimeout(() => {
-        console.log('🔧 自動フォールバックモード切り替え');
-        forceSimpleAudio();
-      }, 3000);
+      console.error('マイク許可エラー:', error);
+      microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
     }
   }
-  
-  // Salamander Grand Piano サンプラー設定（ローカル音源版）
-  async function setupSampler() {
-    try {
-      // Tone変数の再確認（リアクティブ更新のため）
-      if (!window.Tone) {
-        console.error('❌ window.Tone が利用できません');
-        throw new Error('Tone.js未読み込み');
-      }
-      Tone = window.Tone;
-      
-      if (!Tone) {
-        console.error('❌ Tone.js未初期化');
-        throw new Error('Tone.js未初期化');
-      }
-      
-      console.log('🎹 サンプラー設定開始');
-      loadingStatus = 'AudioContext初期化中...';
-      
-      // AudioContext状態確認
-      console.log(`📊 AudioContext状態: ${Tone.context.state}`);
-      if (Tone.context.state !== 'running') {
-        console.log('🔊 AudioContext開始中...');
-        // ユーザーインタラクションが必要なため、手動開始を待つ
-        loadingStatus = 'AudioContext手動開始が必要です';
-        return; // ここで処理を停止
-      }
-      
-      loadingStatus = 'ローカルピアノ音源読み込み中...';
-      console.log('🎵 ローカル Salamander Grand Piano サンプラー作成中...');
-      
-      // ローカル音源マップ（基音として使用する10種類）
-      const localPianoUrls = {
-        "Bb3": "Bb3.mp3",
-        "B3": "B3.mp3", 
-        "C4": "C4.mp3",
-        "Db4": "Db4.mp3",
-        "D4": "D4.mp3",
-        "Eb4": "Eb4.mp3",
-        "E4": "E4.mp3",
-        "F4": "F4.mp3",
-        "Gb4": "Gb4.mp3",
-        "Ab4": "Ab4.mp3"
-      };
-      
-      // Promise化されたサンプラー読み込み
-      await new Promise((resolve, reject) => {
-        console.log('🔍 BASE_URL確認:', import.meta.env.BASE_URL);
-        console.log('🔍 完全baseUrl:', `${import.meta.env.BASE_URL}audio/piano/`);
-        
-        // SvelteKit BASE_URL統一設定
-        const pianoBaseUrl = `${import.meta.env.BASE_URL || ''}/audio/piano/`;
-        console.log('🔍 最終pianoBaseUrl:', pianoBaseUrl);
-        
-        sampler = new Tone.Sampler({
-          urls: localPianoUrls,
-          baseUrl: pianoBaseUrl,
-          release: 1.5,
-          onload: () => {
-            console.log('✅ ローカル Salamander Grand Piano音源読み込み完了');
-            console.log('🎹 読み込み済み音源:', Object.keys(localPianoUrls));
-            isToneLoaded = true;
-            loadingStatus = '読み込み完了';
-            resolve();
-          },
-          onerror: (error) => {
-            console.error('❌ ローカル Salamander Grand Piano音源読み込みエラー:', error);
-            console.error('🔍 デバッグ情報 - baseUrl:', "/audio/piano/");
-            console.error('🔍 デバッグ情報 - urls:', localPianoUrls);
-            reject(new Error('ローカル音源読み込み失敗'));
-          }
-        }).toDestination();
-        
-        console.log('🔗 サンプラーをDestinationに接続完了');
-        
-        // 個別音源ファイルのテスト読み込み
-        console.log('🧪 個別音源ファイルテスト開始...');
-        for (const [note, filename] of Object.entries(localPianoUrls)) {
-          const testUrl = `${pianoBaseUrl}${filename}`;
-          console.log(`🎵 テスト: ${note} -> ${testUrl}`);
-          
-          // 音源ファイルの存在確認
-          fetch(testUrl, { method: 'HEAD' })
-            .then(response => {
-              if (response.ok) {
-                console.log(`✅ 音源ファイル確認成功: ${testUrl}`);
-              } else {
-                console.error(`❌ 音源ファイル確認失敗: ${testUrl} (${response.status})`);
-              }
-            })
-            .catch(error => {
-              console.error(`❌ 音源ファイルアクセスエラー: ${testUrl}`, error);
-            });
-        }
-        
-        // 5秒タイムアウト（ローカル読み込みで安全のため延長）
-        setTimeout(() => {
-          if (!isToneLoaded) {
-            console.warn('⚠️ ローカルピアノ音源読み込みタイムアウト（5秒）');
-            reject(new Error('ローカル音源読み込みタイムアウト'));
-          }
-        }, 5000);
-      });
-      
-    } catch (error) {
-      console.error('❌ サンプラー設定エラー:', error);
-      console.log('🔧 サンプラー再試行を試みます');
-      
-      // エラー時は再試行してみる
-      toneLoadingError = `音源エラー: ${error.message} - 再試行中...`;
-      loadingStatus = '音源読み込み再試行中...';
-      
-      // 3秒後に再試行
-      setTimeout(async () => {
-        try {
-          console.log('🔄 サンプラー再試行開始');
-          await setupSampler();
-        } catch (retryError) {
-          console.error('❌ 再試行も失敗:', retryError);
-          console.log('🚨 ピアノ音源必須モード - フォールバック無効');
-          
-          toneLoadingError = `❌ ピアノ音源読み込み失敗: ${retryError.message}`;
-          loadingStatus = 'ピアノ音源読み込み失敗 - ページを再読み込みしてください';
-          
-          // フォールバックは使用しない
-          useSimpleAudio = false;
-          isToneLoaded = false;
-        }
-      }, 3000);
-    }
-  }
-  
-  onMount(() => {
-    console.log('🚀 onMount実行 - Tone.js強制初期化開始');
-    initializeTone();
-  });
-  
-  onDestroy(() => {
-    if (sampler) {
-      sampler.dispose();
-    }
-  });
-  
-  // 基音周波数取得
-  function getBaseNoteFrequency(note) {
-    return Math.round(baseNoteFrequencies[note] || 0);
-  }
-  
-  // スケール周波数取得
-  function getScaleFrequency(baseNote, scaleIndex) {
-    const baseFreq = baseNoteFrequencies[baseNote];
-    if (!baseFreq) return 0;
-    return Math.round(baseFreq * scaleRatios[scaleIndex]);
-  }
-  
-  // 手動AudioContext開始
-  async function handleManualAudioStart() {
-    console.log('🔊 手動AudioContext開始実行');
-    try {
-      if (Tone && Tone.context && Tone.context.state === 'suspended') {
-        await Tone.start();
-        console.log('✅ AudioContext手動開始完了');
-        // AudioContextが開始されたら、サンプラー設定を続行
-        await setupSampler();
-      }
-    } catch (error) {
-      console.error('❌ 手動AudioContext開始失敗:', error);
-      toneLoadingError = `AudioContext開始失敗: ${error.message}`;
-    }
-  }
-  
-  // 強制的にシンプル音源モードに切り替え
-  function forceSimpleAudio() {
-    console.log('🔧 手動でシンプル音源モードに切り替え');
-    useSimpleAudio = true;
-    isToneLoaded = true;
-    toneLoadingError = null;
-    loadingStatus = 'シンプル音源モード';
-  }
-  
-  // 基音ランダム選択
-  function selectRandomBase() {
+
+  // ランダム基音選択
+  function selectRandomBaseNote() {
     const randomIndex = Math.floor(Math.random() * baseNotes.length);
-    currentBaseNote = baseNotes[randomIndex];
-    return currentBaseNote;
+    const selectedNote = baseNotes[randomIndex];
+    currentBaseNote = selectedNote.name;
+    currentBaseFrequency = selectedNote.frequency;
+    console.log('選択された基音:', currentBaseNote, currentBaseFrequency + 'Hz');
   }
 
-  // トレーニング開始
-  function startTraining() {
-    // リセット
-    currentScaleIndex = 0;
-    scaleResults = [];
-    showResults = false;
+  // 基音再生（プレースホルダー）
+  async function playBaseNote() {
+    if (isPlaying) return;
     
-    // 基音選択・再生
-    const baseNote = selectRandomBase();
-    playBaseNote(baseNote);
-  }
-
-  // 基音再生（Tone.js必須モード）
-  async function playBaseNote(note) {
     isPlaying = true;
-    console.log(`🎹 ピアノ基音再生: ${note} (Tone.js読み込み状態: ${isToneLoaded})`);
+    selectRandomBaseNote();
     
-    try {
-      if (!isToneLoaded || !sampler) {
-        console.error('❌ Tone.js または Sampler が未初期化 - 再生不可');
-        alert('ピアノ音源が読み込まれていません。ページを再読み込みしてください。');
-        isPlaying = false;
-        return;
-      }
-      
-      // AudioContext開始（ユーザー操作後なので安全）
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-      }
-      
-      // 基音を2.5秒間再生
-      sampler.triggerAttackRelease(note, "2.5");
-      console.log(`Salamander Grand Piano で ${note} 再生開始`);
-      
-      // 2.5秒後に再生完了、検出開始
-      setTimeout(() => {
-        isPlaying = false;
-        startDetection();
-      }, 2500);
-      
-    } catch (error) {
-      console.error('❌ ピアノ音源再生エラー:', error);
-      alert(`ピアノ音源再生に失敗しました: ${error.message}`);
+    // TODO: Tone.js実装
+    console.log('基音再生:', currentBaseNote);
+    
+    // 3秒後に検出フェーズに移行
+    setTimeout(() => {
       isPlaying = false;
-    }
+      trainingPhase = 'detecting';
+      scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
+    }, 3000);
   }
-  
-  // シンプル音源フォールバック（Web Audio API基本機能）
-  function playSimpleBeep(frequency) {
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 2.5);
-      
-      console.log(`シンプル音源で ${frequency}Hz 再生中`);
-    } catch (error) {
-      console.error('シンプル音源エラー:', error);
+
+  // スケールガイドの状態取得
+  function getScaleVariant(state) {
+    switch (state) {
+      case 'active': return 'warning';
+      case 'correct': return 'success';
+      case 'incorrect': return 'default';
+      default: return 'default';
     }
   }
 
-  // 音程検出開始（改良版）
-  function startDetection() {
-    isDetecting = true;
-    
-    // 期待周波数を計算
-    const expectedFrequencies = scaleNotes.map((_, index) => 
-      getScaleFrequency(currentBaseNote, index)
-    );
-    
-    // 音程検出シミュレート（改良版）
-    const detectionInterval = setInterval(() => {
-      if (!isDetecting) {
-        clearInterval(detectionInterval);
-        return;
-      }
-      
-      // より現実的な音量・周波数データ
-      currentVolume = 40 + Math.random() * 50; // 40-90%の範囲
-      
-      // 現在の期待音階に基づいた周波数（±誤差を含む）
-      const expectedFreq = expectedFrequencies[currentScaleIndex];
-      const deviation = (Math.random() - 0.5) * 40; // ±20Hzの誤差
-      currentFrequency = expectedFreq + deviation;
-      
-      // 検出精度シミュレート（5セント精度を模擬）
-      const accuracy = Math.max(0, 100 - Math.abs(deviation) * 2);
-      
-      // 音階名の更新
-      currentNote = scaleNotes[currentScaleIndex];
-      
-      // 正解判定（精度ベース）
-      if (Math.random() > 0.6) { // 40%の確率で判定
-        const isCorrect = accuracy > 70; // 70%以上の精度で正解
-        scaleResults[currentScaleIndex] = isCorrect;
-        currentScaleIndex++;
-        
-        console.log(`${currentNote}: ${accuracy.toFixed(1)}% 精度, ${isCorrect ? '正解' : '不正解'}`);
-        
-        // 8音階完了チェック
-        if (currentScaleIndex >= 8) {
-          finishTraining();
-        }
-      }
-    }, 300); // より高速な更新
+  // ステータスメッセージ取得
+  function getStatusMessage() {
+    switch (trainingPhase) {
+      case 'setup':
+        return '🎤 マイク準備完了 - トレーニング開始可能';
+      case 'listening':
+        return '🎵 基音再生中...';
+      case 'detecting':
+        return '🎙️ 練習中 - ドレミファソラシドを歌ってください';
+      case 'completed':
+        return '🎉 セッション完了！';
+      default:
+        return '🔄 準備中...';
+    }
   }
 
-  // トレーニング終了
-  function finishTraining() {
-    isDetecting = false;
-    showResults = true;
+  // マイクテストページへの誘導
+  function goToMicrophoneTest() {
+    window.location.href = '/microphone-test?mode=random';
   }
 
-  // 音量バー幅計算
-  
-  // スコア計算と評価
-  $: correctCount = scaleResults.filter(result => result).length;
-  $: score = Math.round((correctCount / 8) * 100);
-  $: grade = getGrade(score);
-  $: feedback = getFeedback(score);
-  
-  // 成績評価
-  function getGrade(score) {
-    if (score >= 90) return 'Excellent';
-    if (score >= 70) return 'Good';
-    if (score >= 50) return 'Practice';
-    return 'Needs Work';
+  // ホームページに戻る
+  function goHome() {
+    window.location.href = '/';
   }
-  
-  // フィードバックメッセージ
-  function getFeedback(score) {
-    if (score >= 90) return '素晴らしい相対音感です！完璧な演奏でした。';
-    if (score >= 70) return '良好な相対音感です。もう少し練習すれば完璧になります。';
-    if (score >= 50) return '基本的な相対音感は身についています。継続練習で向上できます。';
-    return '相対音感の基礎練習から始めましょう。毎日少しずつ練習することが大切です。';
-  }
+
+  // 初期化
+  onMount(() => {
+    checkMicrophonePermission();
+  });
 </script>
 
-<svelte:head>
-  <title>ランダム基音モード - 相対音感トレーニング</title>
-</svelte:head>
-
-<PageLayout showBackButton={true}>
-  <div class="random-training">
-    <!-- ヘッダー -->
-    <div class="header">
-      <div class="mode-header">
-        <div class="mode-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="mode-title">ランダム基音モード</h1>
-          <p class="mode-description">10種類の基音からランダムに選択してトレーニング</p>
-        </div>
-      </div>
-    </div>
-
-    {#if !isPlaying && !isDetecting && !showResults}
-      <!-- 開始画面 -->
-      <div class="start-screen">
-        <Card variant="default" padding="lg">
-          <div class="start-content">
-            <h2 class="start-title">トレーニング開始</h2>
-            <p class="start-description">
-              基音を聞いた後、その音を「ド」として<br>
-              ドレミファソラシドを連続して歌ってください
-            </p>
-            
-            <div class="instructions">
-              <div class="instruction-item">
-                <span class="step-number">1</span>
-                <div>
-                  <h3>基音を聞く</h3>
-                  <p>ランダムに選ばれた基音をピアノで再生します</p>
-                </div>
-              </div>
-              
-              <div class="instruction-item">
-                <span class="step-number">2</span>
-                <div>
-                  <h3>連続歌唱</h3>
-                  <p>基音を「ド」として、ドレミファソラシドを連続して歌います</p>
-                </div>
-              </div>
-              
-              <div class="instruction-item">
-                <span class="step-number">3</span>
-                <div>
-                  <h3>自動判定</h3>
-                  <p>歌唱中にリアルタイムで各音階を自動判定します</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- AudioContext が suspended の場合の手動開始ボタン -->
-            {#if !isToneLoaded && Tone && Tone.context && Tone.context.state === 'suspended'}
-              <Button variant="primary" size="lg" fullWidth on:click={handleManualAudioStart}>
-                🔊 音声を有効化（クリックしてください）
-              </Button>
-              <div class="loading-info">
-                <p class="loading-message">
-                  ブラウザの制限により、音声を使用するには手動での有効化が必要です
-                </p>
-              </div>
-            {:else}
-              <Button variant="success" size="lg" fullWidth on:click={startTraining} disabled={!isToneLoaded}>
-                {#if !isToneLoaded}
-                  {loadingStatus}
-                {:else}
-                  トレーニング開始
-                {/if}
-              </Button>
-              
-              {#if !isToneLoaded}
-                <div class="loading-info">
-                  <p class="loading-message">
-                    {loadingStatus}
-                  </p>
-                  {#if toneLoadingError}
-                    <p class="error-message">
-                      ❌ {toneLoadingError}
-                    </p>
-                    <div class="fallback-options">
-                      <Button variant="secondary" size="sm" on:click={forceSimpleAudio}>
-                        シンプル音源で開始
-                      </Button>
-                      <p class="retry-message">
-                        または、ページを再読み込みしてみてください
-                      </p>
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            {/if}
-          </div>
-        </Card>
-      </div>
-    {:else if isPlaying}
-      <!-- 基音再生中 -->
-      <div class="playing-screen">
-        <Card variant="success" padding="lg">
-          <div class="playing-content">
-            <div class="playing-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polygon points="10,8 16,12 10,16"/>
-              </svg>
-            </div>
-            <h2 class="playing-title">基音再生中</h2>
-            <p class="playing-note">基音: {currentBaseNote}</p>
-            <p class="playing-frequency">周波数: {getBaseNoteFrequency(currentBaseNote)}Hz</p>
-            <p class="playing-instruction">
-              この音を覚えて「ド」として認識してください
-            </p>
-            
-            <div class="playing-progress">
-              <div class="progress-bar">
-                <div class="progress-fill"></div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    {:else if isDetecting}
-      <!-- 音程検出中 -->
-      <div class="detection-screen">
-        <!-- ガイドアニメーション -->
-        <Card variant="default" padding="lg">
-          <div class="guide-content">
-            <h2 class="guide-title">ドレミファソラシドを歌ってください</h2>
-            <div class="scale-guide">
-              {#each scaleNotes as note, index}
-                <div class="scale-note" class:active={index === currentScaleIndex} class:completed={scaleResults[index] !== undefined}>
-                  <span class="note-text">{note}</span>
-                  <span class="note-frequency">{getScaleFrequency(currentBaseNote, index)}Hz</span>
-                  {#if scaleResults[index] !== undefined}
-                    <span class="result-icon {scaleResults[index] ? 'correct' : 'incorrect'}">
-                      {scaleResults[index] ? '✓' : '×'}
-                    </span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          </div>
-        </Card>
-
-        <!-- リアルタイム表示 -->
-        <div class="realtime-display">
-          <div class="display-grid">
-            <!-- 音量表示 -->
-            <Card variant="default" padding="md">
-              <div class="volume-display">
-                <h3 class="display-title">音量レベル</h3>
-                <VolumeBar volume={currentVolume} height="20px" />
-              </div>
-            </Card>
-
-            <!-- 音程表示 -->
-            <Card variant="default" padding="md">
-              <PitchDisplay 
-                frequency={currentFrequency}
-                targetNote={scaleNotes[currentScaleIndex]}
-                currentNote={currentNote}
-                accuracy={0}
-                isDetecting={isDetecting}
-              />
-            </Card>
-          </div>
-        </div>
-
-        <!-- 進行状況 -->
-        <Card variant="default" padding="md">
-          <div class="progress-info">
-            <h3 class="progress-title">進行状況</h3>
-            <div class="progress-details">
-              <span>現在: {scaleNotes[currentScaleIndex]} ({currentScaleIndex + 1}/8)</span>
-              <span>正解: {correctCount}/{currentScaleIndex}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-    {:else if showResults}
-      <!-- 結果表示 -->
-      <div class="results-screen">
-        <Card variant="default" padding="lg">
-          <div class="results-content">
-            <h2 class="results-title">トレーニング結果</h2>
-            
-            <!-- スコア表示 -->
-            <div class="score-display">
-              <div class="score-circle {grade.toLowerCase()}">
-                <span class="score-value">{score}</span>
-                <span class="score-unit">点</span>
-              </div>
-              <div class="grade-info">
-                <h3 class="grade-title">{grade}</h3>
-                <p class="score-description">
-                  8音階中 {correctCount}音階 正解
-                </p>
-                <p class="feedback-message">
-                  {feedback}
-                </p>
-              </div>
-            </div>
-
-            <!-- 音階別結果 -->
-            <div class="detailed-results">
-              <h3 class="details-title">音階別結果</h3>
-              <div class="scale-results">
-                {#each scaleNotes as note, index}
-                  <div class="scale-result">
-                    <span class="scale-note-name">{note}</span>
-                    <span class="scale-result-icon {scaleResults[index] ? 'correct' : 'incorrect'}">
-                      {scaleResults[index] ? '✓' : '×'}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            </div>
-
-            <!-- アクションボタン -->
-            <div class="action-buttons">
-              <Button variant="success" size="lg" fullWidth on:click={startTraining}>
-                もう一度チャレンジ
-              </Button>
-              <Button variant="secondary" size="md" fullWidth>
-                結果を保存
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    {/if}
+<PageLayout>
+  <!-- Header -->
+  <div class="header-section">
+    <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
+    <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
   </div>
+
+  <!-- Status Bar -->
+  <Card variant="primary" class="status-card">
+    <div class="status-content">
+      <div class="status-message">{getStatusMessage()}</div>
+      {#if trainingPhase === 'detecting'}
+        <div class="progress-indicator">
+          進行状況: {currentScaleIndex + 1}/8
+        </div>
+      {/if}
+    </div>
+  </Card>
+
+  {#if microphoneState === 'granted'}
+    <!-- メイントレーニングインターフェース -->
+    
+    <!-- Base Tone Section -->
+    <Card class="main-card">
+      <div class="card-header">
+        <h3 class="section-title">🎹 基音再生</h3>
+      </div>
+      <div class="card-content">
+        <Button 
+          class="primary-button {isPlaying ? 'playing' : ''}"
+          disabled={isPlaying || trainingPhase === 'detecting'}
+          on:click={playBaseNote}
+        >
+          {#if isPlaying}
+            🎵 再生中...
+          {:else if trainingPhase === 'setup'}
+            🎹 ランダム基音再生
+          {:else}
+            🔄 再生
+          {/if}
+        </Button>
+        
+        {#if currentBaseNote}
+          <div class="base-note-info">
+            現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
+          </div>
+        {/if}
+      </div>
+    </Card>
+
+    <!-- Scale Guide Section -->
+    <Card class="main-card">
+      <div class="card-header">
+        <h3 class="section-title">🎵 相対音程ガイド</h3>
+      </div>
+      <div class="card-content">
+        <div class="scale-guide">
+          {#each scaleSteps as step, index}
+            <div 
+              class="scale-item {step.state}"
+              class:current={index === currentScaleIndex}
+            >
+              {step.name}
+            </div>
+          {/each}
+        </div>
+        {#if trainingPhase === 'detecting'}
+          <div class="guide-instruction">
+            現在: <strong>{scaleSteps[currentScaleIndex].name}</strong> を歌ってください
+          </div>
+        {/if}
+      </div>
+    </Card>
+
+    <!-- Detection Section -->
+    {#if trainingPhase === 'detecting'}
+      <Card class="main-card">
+        <div class="card-header">
+          <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
+        </div>
+        <div class="card-content">
+          <div class="detection-display">
+            <div class="detected-info">
+              <span class="detected-label">検出中:</span>
+              <span class="detected-note">{detectedNote}</span>
+              <span class="pitch-diff">({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
+            </div>
+            
+            <div class="volume-section">
+              <div class="volume-label">音量レベル: {Math.round(currentVolume)}%</div>
+              <VolumeBar volume={currentVolume} className="modern-volume-bar" />
+            </div>
+          </div>
+        </div>
+      </Card>
+    {/if}
+
+    <!-- Results Section -->
+    {#if sessionResults.isCompleted}
+      <Card class="main-card results-card">
+        <div class="card-header">
+          <h3 class="section-title">🎉 セッション完了</h3>
+        </div>
+        <div class="card-content">
+          <div class="results-summary">
+            <div class="result-item">
+              <span class="result-label">正解率</span>
+              <span class="result-value success">{sessionResults.correctCount}/{sessionResults.totalCount} ({Math.round(sessionResults.correctCount / sessionResults.totalCount * 100)}%)</span>
+            </div>
+            <div class="result-item">
+              <span class="result-label">平均精度</span>
+              <span class="result-value">{sessionResults.averageAccuracy}%</span>
+            </div>
+            <div class="result-item">
+              <span class="result-label">平均時間</span>
+              <span class="result-value">{sessionResults.averageTime}秒</span>
+            </div>
+          </div>
+          
+          <div class="action-buttons">
+            <Button class="primary-button" on:click={() => window.location.reload()}>
+              🔄 再挑戦
+            </Button>
+            <Button class="secondary-button">
+              🎊 SNS共有
+            </Button>
+            <Button class="secondary-button" on:click={goHome}>
+              🏠 ホーム
+            </Button>
+          </div>
+        </div>
+      </Card>
+    {/if}
+
+  {:else if microphoneState === 'checking'}
+    <!-- Loading State -->
+    <Card class="error-card">
+      <div class="error-content">
+        <div class="loading-icon">🔄</div>
+        <h3>マイク状態確認中...</h3>
+        <p>マイクロフォンの使用許可を確認しています。</p>
+      </div>
+    </Card>
+
+  {:else if microphoneState === 'denied' || microphoneState === 'error'}
+    <!-- Error State -->
+    <Card class="error-card">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h3>マイクアクセスが必要です</h3>
+        <p>このトレーニングには音声入力が必要です。</p>
+        
+        <div class="recommendation">
+          <p><strong>推奨:</strong> マイクテストページで音声確認後ご利用ください</p>
+        </div>
+        
+        <div class="action-buttons">
+          <Button class="primary-button" on:click={goToMicrophoneTest}>
+            🎤 マイクテストページに移動
+          </Button>
+          <Button class="secondary-button" on:click={checkMicrophonePermission}>
+            🔄 再試行
+          </Button>
+        </div>
+      </div>
+    </Card>
+  {/if}
 </PageLayout>
 
 <style>
-  .random-training {
-    max-width: 800px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-  }
-
-  .header {
+  /* === shadcn/ui風モダンデザイン === */
+  
+  /* ヘッダーセクション */
+  .header-section {
     text-align: center;
+    margin-bottom: 2rem;
   }
-
-  .mode-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
-  }
-
-  .mode-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background-color: #d1fae5;
-    color: #059669;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .mode-title {
-    font-size: var(--text-2xl);
+  
+  .page-title {
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-1) 0;
+    color: hsl(222.2 84% 4.9%);
+    margin-bottom: 0.5rem;
   }
-
-  .mode-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
+  
+  .page-description {
+    color: hsl(215.4 16.3% 46.9%);
+    font-size: 1rem;
     margin: 0;
   }
 
-  /* 開始画面 */
-  .start-content {
-    text-align: center;
+  /* カードスタイル（shadcn/ui風） */
+  :global(.main-card) {
+    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
+    background: hsl(0 0% 100%) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06) !important;
+    margin-bottom: 1.5rem;
+  }
+  
+  :global(.status-card) {
+    border-radius: 8px !important;
+    margin-bottom: 1.5rem;
+  }
+  
+  :global(.error-card) {
+    border: 1px solid hsl(0 84.2% 60.2%) !important;
+    background: hsl(0 84.2% 97%) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1) !important;
+  }
+  
+  :global(.results-card) {
+    border: 1px solid hsl(142.1 76.2% 36.3%) !important;
+    background: linear-gradient(135deg, hsl(142.1 76.2% 95%) 0%, hsl(0 0% 100%) 100%) !important;
   }
 
-  .start-title {
-    font-size: var(--text-xl);
+  /* カードヘッダー */
+  .card-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
+    margin-bottom: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.125rem;
     font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .start-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0 0 var(--space-6) 0;
-    line-height: 1.6;
-  }
-
-  .instructions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
-    text-align: left;
-  }
-
-  .instruction-item {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-  }
-
-  .step-number {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--color-primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  .instruction-item h3 {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-1) 0;
-  }
-
-  .instruction-item p {
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
+    color: hsl(222.2 84% 4.9%);
     margin: 0;
   }
 
-  /* 基音再生画面 */
-  .playing-content {
-    text-align: center;
-  }
-
-  .playing-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background-color: var(--color-primary-pale);
-    color: var(--color-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto var(--space-4) auto;
-  }
-
-  .playing-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .playing-note {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-primary);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .playing-frequency {
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--color-gray-700);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .playing-instruction {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0 0 var(--space-6) 0;
-  }
-
-  .playing-progress {
-    margin: 0 auto;
-    max-width: 200px;
-  }
-
-  .progress-bar {
-    height: 8px;
-    background-color: var(--color-gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background-color: var(--color-primary);
-    animation: progress 2.5s ease-in-out;
-  }
-
-  @keyframes progress {
-    from { width: 0%; }
-    to { width: 100%; }
-  }
-
-  /* 検出画面 */
-  .guide-content {
-    text-align: center;
-  }
-
-  .guide-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-6) 0;
-  }
-
-  .scale-guide {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: var(--space-2);
-  }
-
-  .scale-note {
+  /* カードコンテンツ */
+  .card-content {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: var(--space-3);
-    border-radius: 8px;
-    background-color: var(--color-gray-100);
-    transition: all 0.3s ease;
+    gap: 1rem;
   }
 
-  .scale-note.active {
-    background-color: var(--color-primary);
-    color: white;
-    transform: scale(1.1);
-  }
-
-  .scale-note.completed {
-    background-color: var(--color-gray-200);
-  }
-
-  .note-text {
-    font-weight: 600;
-    font-size: var(--text-lg);
-  }
-
-  .note-frequency {
-    font-size: var(--text-xs);
-    color: var(--color-gray-500);
-    font-weight: 500;
-    margin-top: var(--space-1);
-  }
-
-  .result-icon {
-    font-size: var(--text-sm);
-    font-weight: 600;
-  }
-
-  .result-icon.correct {
-    color: var(--color-success);
-  }
-
-  .result-icon.incorrect {
-    color: var(--color-error);
-  }
-
-  .realtime-display {
-    margin-top: var(--space-6);
-  }
-
-  .display-grid {
-    display: grid;
-    gap: var(--space-4);
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .display-title {
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-3) 0;
-    text-align: center;
-  }
-
-
-
-  .progress-info {
-    text-align: center;
-  }
-
-  .progress-title {
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .progress-details {
+  /* ステータス表示 */
+  .status-content {
     display: flex;
     justify-content: space-between;
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
-  }
-
-  /* 結果画面 */
-  .results-content {
-    text-align: center;
-  }
-
-  .results-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-6) 0;
-  }
-
-  .score-display {
-    margin-bottom: var(--space-6);
-    display: flex;
     align-items: center;
-    gap: var(--space-6);
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .status-message {
+    font-weight: 500;
+    color: hsl(222.2 84% 4.9%);
+  }
+  
+  .progress-indicator {
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
   }
 
-  .score-circle {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background-color: var(--color-primary-pale);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 4px solid var(--color-primary);
-    flex-shrink: 0;
-  }
-
-  .score-circle.excellent {
-    background-color: #dcfce7;
-    border-color: #16a34a;
-  }
-
-  .score-circle.good {
-    background-color: #dbeafe;
-    border-color: #2563eb;
-  }
-
-  .score-circle.practice {
-    background-color: #fef3c7;
-    border-color: #d97706;
-  }
-
-  .score-circle.needs {
-    background-color: #fee2e2;
-    border-color: #dc2626;
-  }
-
-  .grade-info {
-    text-align: left;
-    flex: 1;
+  /* ボタンスタイル（shadcn/ui風） */
+  :global(.primary-button) {
+    background: hsl(222.2 47.4% 11.2%) !important;
+    color: hsl(210 40% 98%) !important;
+    border: 1px solid hsl(222.2 47.4% 11.2%) !important;
+    border-radius: 6px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 500 !important;
     min-width: 200px;
+    transition: all 0.2s ease !important;
+  }
+  
+  :global(.primary-button:hover) {
+    background: hsl(222.2 47.4% 8%) !important;
+    border-color: hsl(222.2 47.4% 8%) !important;
+  }
+  
+  :global(.primary-button:disabled) {
+    background: hsl(210 40% 96%) !important;
+    color: hsl(215.4 16.3% 46.9%) !important;
+    border-color: hsl(214.3 31.8% 91.4%) !important;
+    cursor: not-allowed !important;
+  }
+  
+  :global(.primary-button.playing) {
+    background: hsl(47.9 95.8% 53.1%) !important;
+    border-color: hsl(47.9 95.8% 53.1%) !important;
+    color: hsl(222.2 84% 4.9%) !important;
+  }
+  
+  :global(.secondary-button) {
+    background: hsl(210 40% 96%) !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  :global(.secondary-button:hover) {
+    background: hsl(210 40% 94%) !important;
   }
 
-  .grade-title {
-    font-size: var(--text-2xl);
-    font-weight: 700;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
+  /* 基音情報 */
+  .base-note-info {
+    text-align: center;
+    padding: 1rem;
+    background: hsl(210 40% 98%);
+    border-radius: 6px;
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
   }
 
-  .score-value {
-    font-size: var(--text-4xl);
-    font-weight: 700;
-    color: var(--color-primary);
-  }
-
-  .score-unit {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-primary);
-    margin-left: var(--space-1);
-  }
-
-  .score-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0 0 var(--space-3) 0;
-  }
-
-  .feedback-message {
-    font-size: var(--text-sm);
-    color: var(--color-gray-700);
-    line-height: 1.5;
-    margin: 0;
-    font-style: italic;
-  }
-
-  .details-title {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-4) 0;
-  }
-
-  .scale-results {
+  /* スケールガイド */
+  .scale-guide {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: var(--space-2);
-    margin-bottom: var(--space-8);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .scale-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 3rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    background: hsl(0 0% 100%);
+    color: hsl(215.4 16.3% 46.9%);
+    transition: all 0.3s ease;
+  }
+  
+  .scale-item.active {
+    background: hsl(47.9 95.8% 53.1%);
+    color: hsl(222.2 84% 4.9%);
+    border-color: hsl(47.9 95.8% 53.1%);
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px 0 rgb(245 158 11 / 0.3);
+  }
+  
+  .scale-item.correct {
+    background: hsl(142.1 76.2% 36.3%);
+    color: hsl(210 40% 98%);
+    border-color: hsl(142.1 76.2% 36.3%);
+  }
+  
+  .scale-item.current {
+    box-shadow: 0 0 0 2px hsl(222.2 84% 4.9%);
+  }
+  
+  .guide-instruction {
+    text-align: center;
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
+    padding: 0.75rem;
+    background: hsl(210 40% 98%);
+    border-radius: 6px;
   }
 
-  .scale-result {
+  /* 検出表示 */
+  .detection-display {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .detected-info {
+    display: flex;
     align-items: center;
-    padding: var(--space-2);
-    border-radius: 8px;
-    background-color: var(--color-gray-50);
+    gap: 0.5rem;
+    font-size: 0.875rem;
   }
-
-  .scale-note-name {
+  
+  .detected-label {
+    color: hsl(215.4 16.3% 46.9%);
+  }
+  
+  .detected-note {
     font-weight: 600;
-    color: var(--color-gray-900);
-    margin-bottom: var(--space-1);
+    color: hsl(222.2 84% 4.9%);
+  }
+  
+  .pitch-diff {
+    color: hsl(47.9 95.8% 40%);
+    font-weight: 500;
+  }
+  
+  .volume-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .volume-label {
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
+  }
+  
+  :global(.modern-volume-bar) {
+    border-radius: 4px !important;
   }
 
-  .scale-result-icon {
-    font-size: var(--text-lg);
-    font-weight: 600;
+  /* 結果表示 */
+  .results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .result-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 6px;
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+  }
+  
+  .result-label {
+    display: block;
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
+    margin-bottom: 0.25rem;
+  }
+  
+  .result-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(222.2 84% 4.9%);
+  }
+  
+  .result-value.success {
+    color: hsl(142.1 76.2% 36.3%);
   }
 
-  .scale-result-icon.correct {
-    color: var(--color-success);
-  }
-
-  .scale-result-icon.incorrect {
-    color: var(--color-error);
-  }
-
+  /* アクションボタン */
   .action-buttons {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
-  .loading-info {
+  /* エラー表示 */
+  .error-content {
     text-align: center;
-    margin: var(--space-3) 0 0 0;
+    padding: 2rem 1rem;
   }
-
-  .loading-message {
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
-    margin: var(--space-2) 0;
-    animation: pulse 2s infinite;
+  
+  .error-icon, .loading-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
   }
-
-  .error-message {
-    font-size: var(--text-sm);
-    color: var(--color-error);
-    margin: var(--space-2) 0;
+  
+  .error-content h3 {
+    font-size: 1.25rem;
     font-weight: 600;
+    color: hsl(222.2 84% 4.9%);
+    margin-bottom: 0.5rem;
   }
-
-  .fallback-options {
-    margin: var(--space-3) 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    align-items: center;
+  
+  .error-content p {
+    color: hsl(215.4 16.3% 46.9%);
+    margin-bottom: 1rem;
   }
-
-  .retry-message {
-    font-size: var(--text-xs);
-    color: var(--color-gray-500);
+  
+  .recommendation {
+    background: hsl(210 40% 98%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .recommendation p {
     margin: 0;
+    font-size: 0.875rem;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  /* レスポンシブ対応 */
+  @media (min-width: 768px) {
+    .scale-guide {
+      grid-template-columns: repeat(8, 1fr);
+    }
+    
+    .page-title {
+      font-size: 2.5rem;
+    }
+    
+    .results-summary {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
-
-  @media (max-width: 767px) {
-    .scale-guide,
-    .scale-results {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .display-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .mode-header {
+  
+  @media (max-width: 640px) {
+    .status-content {
       flex-direction: column;
-      text-align: center;
+      gap: 0.5rem;
     }
-
-    .score-display {
+    
+    .action-buttons {
       flex-direction: column;
-      text-align: center;
     }
-
-    .grade-info {
-      text-align: center;
-    }
-
-    .note-frequency {
-      display: none;
+    
+    :global(.primary-button), :global(.secondary-button) {
+      min-width: 100% !important;
     }
   }
 </style>

@@ -2,10 +2,13 @@
   export let variant = 'default';
   export let padding = 'md';
   export let interactive = false;
+  
+  let className = '';
+  export { className as class };
 </script>
 
 <div 
-  class="card"
+  class="card {className}"
   class:card-default={variant === 'default'}
   class:card-primary={variant === 'primary'}
   class:card-success={variant === 'success'}

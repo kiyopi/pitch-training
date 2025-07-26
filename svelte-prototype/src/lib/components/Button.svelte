@@ -4,13 +4,16 @@
   export let disabled = false;
   export let fullWidth = false;
   export let href = undefined;
+  
+  let className = '';
+  export { className as class };
 </script>
 
 {#if href}
   <a 
     {href}
     data-sveltekit-preload-data="hover"
-    class="btn"
+    class="btn {className}"
     class:btn-primary={variant === 'primary'}
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
@@ -30,7 +33,7 @@
   <button 
     type="button"
     {disabled}
-    class="btn"
+    class="btn {className}"
     class:btn-primary={variant === 'primary'}
     class:btn-secondary={variant === 'secondary'}
     class:btn-ghost={variant === 'ghost'}
