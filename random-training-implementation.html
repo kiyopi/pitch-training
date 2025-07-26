@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ランダム基音トレーニング - 相対音感トレーニングアプリ v3.0.0</title>
+    <style>
+        /* CSS Variables (shadcn/ui準拠) */
+        :root {
+            --color-primary: hsl(222.2, 84%, 4.9%);
+            --color-secondary: hsl(210, 40%, 96%);
+            --color-success: hsl(142.1, 76.2%, 36.3%);
+            --color-warning: hsl(47.9, 95.8%, 53.1%);
+            --color-destructive: hsl(0, 84.2%, 60.2%);
+            --color-background: hsl(0, 0%, 100%);
+            --color-foreground: hsl(222.2, 84%, 4.9%);
+            --color-muted: hsl(210, 40%, 96%);
+            --color-border: hsl(214.3, 31.8%, 91.4%);
+            --border-radius: 0.5rem;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-foreground);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--color-background);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .version-badge {
+            background-color: var(--color-muted);
+            color: var(--color-foreground);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--border-radius);
+            font-size: 0.75rem;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background-color: var(--color-muted);
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .status-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .mic-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: var(--color-destructive);
+            transition: background-color 0.3s ease;
+        }
+
+        .status-indicator.active {
+            background-color: var(--color-success);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        /* Card Component */
+        .card {
+            background-color: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-content {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        /* Button Component (固定幅) */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            width: 200px; /* 固定幅 */
+            height: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: hsl(222.2, 84%, 10%);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-secondary);
+            color: var(--color-foreground);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background-color: hsl(210, 40%, 90%);
+        }
+
+        .btn-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: hsl(142.1, 76.2%, 30%);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Base Tone Section */
+        .base-tone-section {
+            text-align: center;
+        }
+
+        .current-base-note {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 1rem 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Scale Guide */
+        .scale-guide {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .scale-step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .scale-step.inactive {
+            background-color: var(--color-muted);
+            color: hsl(0, 0%, 60%);
+        }
+
+        .scale-step.active {
+            background-color: var(--color-primary);
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .scale-step.correct {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .scale-step.incorrect {
+            background-color: var(--color-destructive);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* Detection Display */
+        .detection-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .detection-item {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+        }
+
+        .detection-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .detection-label {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            width: 100%;
+            height: 0.75rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-success);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .volume-fill {
+            background-color: hsl(200, 100%, 50%);
+        }
+
+        /* Results Section */
+        .results-section {
+            text-align: center;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 1rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+        }
+
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .btn-share {
+            width: 120px;
+            height: 2rem;
+            font-size: 0.75rem;
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .scale-guide {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.25rem;
+            }
+
+            .scale-step {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            .detection-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detection-value {
+                font-size: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>🎵 ランダム基音トレーニング</h1>
+                <span class="version-badge">v3.0.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Bar -->
+    <section class="status-bar">
+        <div class="container">
+            <div class="status-content">
+                <div class="mic-status">
+                    <div class="status-indicator" id="micIndicator"></div>
+                    <span id="micStatus">マイク: 未接続</span>
+                </div>
+                <div class="progress-info">
+                    <span id="progressInfo">進行状況: 0/8 音階完了</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Base Tone Section -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎲 基音再生</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="base-tone-info">
+                            <p>ランダムに選ばれた基音を再生します</p>
+                            <div class="current-base-note" id="currentBaseNote">基音: 未選択</div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="playBaseButton">🎵 基音を再生</button>
+                            <button class="btn btn-secondary" id="newBaseButton">🔄 新しい基音</button>
+                        </div>
+                        <div style="margin-top: 0.5rem;">
+                            <button class="btn btn-success" id="startDetectionButton" disabled>🎤 検出開始</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scale Guide -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎼 ドレミファソラシド ガイド</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="scale-guide" id="scaleGuide">
+                            <div class="scale-step inactive">ド</div>
+                            <div class="scale-step inactive">レ</div>
+                            <div class="scale-step inactive">ミ</div>
+                            <div class="scale-step inactive">ファ</div>
+                            <div class="scale-step inactive">ソ</div>
+                            <div class="scale-step inactive">ラ</div>
+                            <div class="scale-step inactive">シ</div>
+                            <div class="scale-step inactive">ド</div>
+                        </div>
+                        <p style="text-align: center; margin-top: 1rem; font-size: 0.875rem; color: hsl(0, 0%, 60%);">
+                            基音から始めて、ドレミファソラシドを順番に歌ってください
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detection Section -->
+            <section class="section" id="detectionSection" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎤 リアルタイム音程検出</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="detection-grid">
+                            <div class="detection-item">
+                                <div class="detection-value" id="frequencyValue">---</div>
+                                <div class="detection-label">検出周波数 (Hz)</div>
+                            </div>
+                            <div class="detection-item">
+                                <div class="detection-value" id="noteValue">---</div>
+                                <div class="detection-label">検出音階</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="detection-label">音程精度</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="accuracyBar"></div>
+                            </div>
+                            <div style="text-align: center;">
+                                <span id="accuracyValue">0%</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detection-label">音量レベル</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill volume-fill" id="volumeBar"></div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <div class="button-group">
+                                <button class="btn btn-success" id="correctButton" disabled>✅ 正解記録</button>
+                                <button class="btn btn-secondary" id="nextScaleButton" disabled>⏭️ 次の音階</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="section results-section" id="resultsSection">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎯 トレーニング結果</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="score-display" id="finalScore">0/100</div>
+                        <p style="text-align: center; margin-bottom: 1.5rem;">総合スコア</p>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="avgAccuracy">0%</div>
+                                <div class="stat-label">平均精度</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="avgResponseTime">0s</div>
+                                <div class="stat-label">平均反応時間</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="completedScales">0/8</div>
+                                <div class="stat-label">完了音階</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="correctStreak">0</div>
+                                <div class="stat-label">連続正解</div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin: 1.5rem 0;">
+                            <button class="btn btn-primary" id="restartButton">🔄 もう一度トレーニング</button>
+                        </div>
+
+                        <div class="share-buttons">
+                            <button class="btn btn-secondary btn-share" id="shareTwitter">🐦 Twitter</button>
+                            <button class="btn btn-secondary btn-share" id="shareClipboard">📋 コピー</button>
+                            <button class="btn btn-secondary btn-share" id="shareLine">📱 LINE</button>
+                            <button class="btn btn-secondary btn-share" id="shareFacebook">📘 Facebook</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 外部ライブラリ読み込み -->
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+    <script src="https://unpkg.com/pitchy@4.0.5/lib/umd/index.js"></script>
+
+    <script>
+        // グローバル変数
+        let audioContext = null;
+        let sampler = null;
+        let microphone = null;
+        let analyser = null;
+        let pitchDetector = null;
+        let animationId = null;
+        
+        // 状態管理
+        let trainingState = {
+            isActive: false,
+            currentPhase: 'setup', // setup, listening, detecting, results
+            currentBaseNote: '',
+            currentBaseFrequency: 0,
+            currentScaleIndex: 0,
+            completedScales: 0,
+            sessionResults: [],
+            sessionScore: 0,
+            isDetecting: false
+        };
+
+        // 基音システム（10種類）
+        const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
+        const baseNoteNames = {
+            'C4': 'ド（低）', 'D4': 'レ（低）', 'E4': 'ミ（低）', 'F4': 'ファ（低）', 'G4': 'ソ（低）',
+            'A4': 'ラ（中）', 'B4': 'シ（中）', 'C5': 'ド（高）', 'D5': 'レ（高）', 'E5': 'ミ（高）'
+        };
+
+        // 基音周波数マップ（A4=440Hz基準）
+        const baseNoteFrequencies = {
+            'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00,
+            'A4': 440.00, 'B4': 493.88, 'C5': 523.25, 'D5': 587.33, 'E5': 659.25
+        };
+
+        // 音階システム
+        const scaleNames = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
+        const scaleRatios = [1.0, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2.0]; // 純正律
+
+        // DOM要素の取得
+        const elements = {
+            micIndicator: document.getElementById('micIndicator'),
+            micStatus: document.getElementById('micStatus'),
+            progressInfo: document.getElementById('progressInfo'),
+            currentBaseNote: document.getElementById('currentBaseNote'),
+            playBaseButton: document.getElementById('playBaseButton'),
+            newBaseButton: document.getElementById('newBaseButton'),
+            startDetectionButton: document.getElementById('startDetectionButton'),
+            scaleGuide: document.getElementById('scaleGuide'),
+            detectionSection: document.getElementById('detectionSection'),
+            frequencyValue: document.getElementById('frequencyValue'),
+            noteValue: document.getElementById('noteValue'),
+            accuracyBar: document.getElementById('accuracyBar'),
+            accuracyValue: document.getElementById('accuracyValue'),
+            volumeBar: document.getElementById('volumeBar'),
+            correctButton: document.getElementById('correctButton'),
+            nextScaleButton: document.getElementById('nextScaleButton'),
+            resultsSection: document.getElementById('resultsSection'),
+            finalScore: document.getElementById('finalScore'),
+            avgAccuracy: document.getElementById('avgAccuracy'),
+            avgResponseTime: document.getElementById('avgResponseTime'),
+            completedScales: document.getElementById('completedScales'),
+            correctStreak: document.getElementById('correctStreak'),
+            restartButton: document.getElementById('restartButton'),
+            shareTwitter: document.getElementById('shareTwitter'),
+            shareClipboard: document.getElementById('shareClipboard'),
+            shareLine: document.getElementById('shareLine'),
+            shareFacebook: document.getElementById('shareFacebook')
+        };
+
+        // 初期化
+        async function initialize() {
+            console.log('🎵 ランダム基音トレーニング初期化開始');
+            
+            try {
+                // AudioContext初期化
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                    console.log('✅ AudioContext開始');
+                }
+
+                // サンプラー初期化
+                await initializeSampler();
+                
+                // マイク初期化
+                await initializeMicrophone();
+                
+                // イベントリスナー設定
+                setupEventListeners();
+                
+                // 最初の基音選択
+                selectRandomBaseNote();
+                
+                console.log('🎯 初期化完了');
+                
+            } catch (error) {
+                console.error('❌ 初期化エラー:', error);
+                updateMicStatus('初期化エラー', false);
+            }
+        }
+
+        // サンプラー初期化
+        async function initializeSampler() {
+            console.log('🎹 サンプラー初期化中...');
+            
+            const urls = {};
+            baseNotes.forEach(note => {
+                urls[note] = `${note}.mp3`;
+            });
+
+            sampler = new Tone.Sampler({
+                urls: urls,
+                baseUrl: "/audio/piano/",
+                release: 1.5,
+                onload: () => {
+                    console.log('✅ サンプラー読み込み完了');
+                }
+            }).toDestination();
+
+            return new Promise((resolve) => {
+                const checkLoaded = () => {
+                    if (sampler.loaded) {
+                        resolve();
+                    } else {
+                        setTimeout(checkLoaded, 100);
+                    }
+                };
+                checkLoaded();
+            });
+        }
+
+        // マイク初期化
+        async function initializeMicrophone() {
+            console.log('🎤 マイク初期化中...');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    } 
+                });
+
+                audioContext = Tone.context;
+                microphone = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                
+                analyser.fftSize = 4096;
+                analyser.smoothingTimeConstant = 0.3;
+                
+                microphone.connect(analyser);
+                
+                // Pitchy初期化
+                const buffer = new Float32Array(analyser.fftSize);
+                pitchDetector = Pitchy.PitchDetector.forFloat32Array(analyser.fftSize);
+                
+                updateMicStatus('接続済み', true);
+                console.log('✅ マイク初期化完了');
+                
+            } catch (error) {
+                console.error('❌ マイク初期化エラー:', error);
+                updateMicStatus('アクセス拒否', false);
+                throw error;
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            elements.playBaseButton.addEventListener('click', playBaseNote);
+            elements.newBaseButton.addEventListener('click', selectRandomBaseNote);
+            elements.startDetectionButton.addEventListener('click', startDetection);
+            elements.correctButton.addEventListener('click', recordCorrect);
+            elements.nextScaleButton.addEventListener('click', nextScale);
+            elements.restartButton.addEventListener('click', restartTraining);
+            
+            // SNS共有
+            elements.shareTwitter.addEventListener('click', shareToTwitter);
+            elements.shareClipboard.addEventListener('click', shareToClipboard);
+            elements.shareLine.addEventListener('click', shareToLine);
+            elements.shareFacebook.addEventListener('click', shareToFacebook);
+        }
+
+        // ランダム基音選択
+        function selectRandomBaseNote() {
+            const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
+            trainingState.currentBaseNote = randomNote;
+            trainingState.currentBaseFrequency = baseNoteFrequencies[randomNote];
+            
+            elements.currentBaseNote.textContent = `基音: ${baseNoteNames[randomNote]}`;
+            elements.startDetectionButton.disabled = false;
+            
+            console.log(`🎲 基音選択: ${randomNote} (${trainingState.currentBaseFrequency}Hz)`);
+        }
+
+        // 基音再生
+        async function playBaseNote() {
+            if (!trainingState.currentBaseNote || !sampler.loaded) {
+                console.warn('⚠️ 基音未選択またはサンプラー未読み込み');
+                return;
+            }
+
+            elements.playBaseButton.disabled = true;
+            elements.playBaseButton.textContent = '🎵 再生中...';
+
+            try {
+                sampler.triggerAttackRelease(trainingState.currentBaseNote, '2n');
+                console.log(`🎵 基音再生: ${trainingState.currentBaseNote}`);
+                
+                setTimeout(() => {
+                    elements.playBaseButton.disabled = false;
+                    elements.playBaseButton.textContent = '🎵 基音を再生';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ 基音再生エラー:', error);
+                elements.playBaseButton.disabled = false;
+                elements.playBaseButton.textContent = '🎵 基音を再生';
+            }
+        }
+
+        // 検出開始
+        function startDetection() {
+            if (!pitchDetector) {
+                console.error('❌ 音程検出器未初期化');
+                return;
+            }
+
+            trainingState.isDetecting = true;
+            trainingState.currentPhase = 'detecting';
+            trainingState.currentScaleIndex = 0;
+            
+            // UI更新
+            elements.detectionSection.style.display = 'block';
+            elements.startDetectionButton.disabled = true;
+            elements.correctButton.disabled = false;
+            elements.nextScaleButton.disabled = false;
+            
+            // スケールガイド初期化
+            updateScaleGuide();
+            
+            // リアルタイム検出開始
+            startPitchDetection();
+            
+            console.log('🎤 音程検出開始');
+        }
+
+        // リアルタイム音程検出
+        function startPitchDetection() {
+            if (!trainingState.isDetecting) return;
+
+            const buffer = new Float32Array(analyser.fftSize);
+            
+            const detect = () => {
+                if (!trainingState.isDetecting) return;
+
+                analyser.getFloatTimeDomainData(buffer);
+                
+                // 音程検出
+                const [frequency, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
+                
+                if (frequency && clarity > 0.5) {
+                    // 音程表示更新
+                    elements.frequencyValue.textContent = frequency.toFixed(1);
+                    
+                    // 音階判定
+                    const detectedNote = frequencyToNote(frequency);
+                    elements.noteValue.textContent = detectedNote;
+                    
+                    // 精度計算
+                    const accuracy = calculateAccuracy(frequency, getCurrentTargetFrequency());
+                    elements.accuracyValue.textContent = `${accuracy}%`;
+                    elements.accuracyBar.style.width = `${accuracy}%`;
+                }
+
+                // 音量レベル
+                const volume = Math.max(...buffer.map(Math.abs)) * 100;
+                elements.volumeBar.style.width = `${Math.min(volume, 100)}%`;
+
+                animationId = requestAnimationFrame(detect);
+            };
+
+            detect();
+        }
+
+        // 周波数から音階名を取得
+        function frequencyToNote(frequency) {
+            const A4 = 440;
+            const semitone = Math.round(12 * Math.log2(frequency / A4));
+            const noteNames = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
+            const octave = Math.floor((semitone + 9) / 12) + 4;
+            const note = noteNames[(semitone + 9) % 12];
+            return `${note}${octave}`;
+        }
+
+        // 現在のターゲット周波数取得
+        function getCurrentTargetFrequency() {
+            if (!trainingState.currentBaseFrequency) return 0;
+            return trainingState.currentBaseFrequency * scaleRatios[trainingState.currentScaleIndex];
+        }
+
+        // 精度計算
+        function calculateAccuracy(detectedFreq, targetFreq) {
+            if (!targetFreq) return 0;
+            const freqDiff = Math.abs(detectedFreq - targetFreq);
+            const tolerance = targetFreq * 0.02; // 2%許容
+            return Math.max(0, Math.round(100 - (freqDiff / tolerance) * 100));
+        }
+
+        // スケールガイド更新
+        function updateScaleGuide() {
+            const steps = elements.scaleGuide.children;
+            
+            for (let i = 0; i < steps.length; i++) {
+                steps[i].className = 'scale-step';
+                if (i < trainingState.currentScaleIndex) {
+                    steps[i].classList.add('correct');
+                } else if (i === trainingState.currentScaleIndex) {
+                    steps[i].classList.add('active');
+                } else {
+                    steps[i].classList.add('inactive');
+                }
+            }
+        }
+
+        // 正解記録
+        function recordCorrect() {
+            const currentTargetFreq = getCurrentTargetFrequency();
+            const detectedFreq = parseFloat(elements.frequencyValue.textContent) || 0;
+            const accuracy = calculateAccuracy(detectedFreq, currentTargetFreq);
+            
+            // 結果記録
+            trainingState.sessionResults.push({
+                scaleStep: scaleNames[trainingState.currentScaleIndex],
+                targetFrequency: currentTargetFreq,
+                detectedFrequency: detectedFreq,
+                accuracy: accuracy,
+                responseTime: Date.now(), // 簡易実装
+                isCorrect: accuracy >= 70
+            });
+
+            // 次の音階へ
+            nextScale();
+        }
+
+        // 次の音階
+        function nextScale() {
+            trainingState.currentScaleIndex++;
+            trainingState.completedScales++;
+            
+            updateProgressInfo();
+            
+            if (trainingState.currentScaleIndex >= 8) {
+                // 完了
+                finishTraining();
+            } else {
+                updateScaleGuide();
+            }
+        }
+
+        // トレーニング完了
+        function finishTraining() {
+            trainingState.isDetecting = false;
+            trainingState.currentPhase = 'results';
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            // 結果計算
+            calculateFinalResults();
+            
+            // UI更新
+            elements.detectionSection.style.display = 'none';
+            elements.resultsSection.classList.add('show');
+            
+            console.log('🎯 トレーニング完了');
+        }
+
+        // 最終結果計算
+        function calculateFinalResults() {
+            if (trainingState.sessionResults.length === 0) return;
+            
+            const results = trainingState.sessionResults;
+            const correctCount = results.filter(r => r.isCorrect).length;
+            const avgAccuracy = Math.round(results.reduce((sum, r) => sum + r.accuracy, 0) / results.length);
+            const avgResponseTime = 1.5; // 簡易実装
+            
+            trainingState.sessionScore = Math.round((correctCount / 8) * 100);
+            
+            // UI更新
+            elements.finalScore.textContent = `${trainingState.sessionScore}/100`;
+            elements.avgAccuracy.textContent = `${avgAccuracy}%`;
+            elements.avgResponseTime.textContent = `${avgResponseTime}s`;
+            elements.completedScales.textContent = `${trainingState.completedScales}/8`;
+            elements.correctStreak.textContent = `${correctCount}`;
+        }
+
+        // 進行状況更新
+        function updateProgressInfo() {
+            elements.progressInfo.textContent = `進行状況: ${trainingState.completedScales}/8 音階完了`;
+        }
+
+        // マイク状態更新
+        function updateMicStatus(status, isActive) {
+            elements.micStatus.textContent = `マイク: ${status}`;
+            elements.micIndicator.classList.toggle('active', isActive);
+        }
+
+        // トレーニング再開
+        function restartTraining() {
+            // 状態リセット
+            trainingState = {
+                isActive: false,
+                currentPhase: 'setup',
+                currentBaseNote: '',
+                currentBaseFrequency: 0,
+                currentScaleIndex: 0,
+                completedScales: 0,
+                sessionResults: [],
+                sessionScore: 0,
+                isDetecting: false
+            };
+            
+            // UI リセット
+            elements.resultsSection.classList.remove('show');
+            elements.detectionSection.style.display = 'none';
+            elements.startDetectionButton.disabled = true;
+            elements.currentBaseNote.textContent = '基音: 未選択';
+            elements.progressInfo.textContent = '進行状況: 0/8 音階完了';
+            
+            // 新しい基音選択
+            selectRandomBaseNote();
+            
+            console.log('🔄 トレーニング再開');
+        }
+
+        // SNS共有機能
+        function generateShareText() {
+            return `🎵 相対音感トレーニング結果 🎵
+
+モード: ランダム基音
+スコア: ${trainingState.sessionScore}/100
+精度: ${elements.avgAccuracy.textContent}
+平均反応時間: ${elements.avgResponseTime.textContent}
+完了音階: ${elements.completedScales.textContent}
+
+#相対音感 #音楽訓練 #PitchTraining
+https://kiyopi.github.io/pitch-training/random-training-implementation.html`;
+        }
+
+        function shareToTwitter() {
+            const text = generateShareText();
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        async function shareToClipboard() {
+            try {
+                await navigator.clipboard.writeText(generateShareText());
+                alert('結果をクリップボードにコピーしました！');
+            } catch (error) {
+                console.error('クリップボードコピーエラー:', error);
+            }
+        }
+
+        function shareToLine() {
+            const text = generateShareText();
+            const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        function shareToFacebook() {
+            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
+            window.open(url, '_blank');
+        }
+
+        // ページ読み込み後に初期化
+        document.addEventListener('DOMContentLoaded', initialize);
+
+        console.log('🎵 ランダム基音トレーニング v3.0.0 読み込み完了');
+    </script>
+</body>
+</html>
