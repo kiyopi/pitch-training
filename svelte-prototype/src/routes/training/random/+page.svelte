@@ -13,6 +13,15 @@
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
   let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
   
+  // デバッグ情報
+  const buildVersion = "v1.3.1-fix";
+  const buildTimestamp = new Date().toLocaleString('ja-JP', { 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
   // 基音関連
   let currentBaseNote = '';
   let currentBaseFrequency = 0;
@@ -458,6 +467,9 @@
   <div class="header-section">
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
+    <div class="debug-info">
+      📱 {buildVersion} | {buildTimestamp}
+    </div>
   </div>
 
   <!-- Status Bar -->
@@ -749,6 +761,20 @@
     :global(.half-width) {
       width: 100%;
     }
+  }
+
+  /* デバッグ情報 */
+  .debug-info {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: hsl(220 13% 91%);
+    color: hsl(220 13% 46%);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', monospace;
+    z-index: 100;
   }
 
   /* 基音情報 */
