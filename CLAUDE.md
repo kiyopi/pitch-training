@@ -155,6 +155,71 @@ elementRef.current.style.width = `${value}%`;
 
 ---
 
+## 🎉 SvelteKit開発成功事例（2025-07-26）
+
+### **shadcn/ui CSS専用実装成功**
+
+#### **問題**: 
+- Next.jsではshadcn/uiが本番環境で動作不良
+- Reactコンポーネントと音響処理の相性問題
+
+#### **解決**: 
+```svelte
+<!-- CSS専用shadcn/ui風デザイン -->
+<style>
+  :global(.main-card) {
+    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
+    background: hsl(0 0% 100%) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1) !important;
+  }
+</style>
+```
+
+#### **成果**:
+- 既存コンポーネントとの競合回避
+- チューニング済みVolumeBarの保護
+- shadcn/uiのデザイン品質維持
+
+### **コンポーネントclass propサポート**
+
+```svelte
+<script>
+  // class propの適切な実装
+  let className = '';
+  export { className as class };
+</script>
+
+<div class="card {className}">
+  <slot />
+</div>
+```
+
+### **サイドバイサイドレイアウト成功**
+
+```svelte
+<div class="side-by-side-container">
+  <Card class="main-card half-width">[基音再生]</Card>
+  <Card class="main-card half-width">[リアルタイム検出]</Card>
+</div>
+
+<style>
+  @media (max-width: 768px) {
+    .side-by-side-container {
+      flex-direction: column;
+    }
+  }
+</style>
+```
+
+### **SvelteKit開発の利点**
+- ✅ DOM直接操作が自然に実装可能
+- ✅ 音響処理との親和性が高い
+- ✅ shadcn/uiデザインをCSSで実現可能
+- ✅ パフォーマンス優位
+
+---
+
 ## 🎯 使い捨てブランチ運用（スマートロールバック対応）
 
 ### 基本概念
