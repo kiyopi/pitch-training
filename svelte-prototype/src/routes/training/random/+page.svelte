@@ -251,9 +251,15 @@
 
   // ステータスメッセージ取得
   function getStatusMessage() {
+    console.log('🔄 ステータス確認 - trainingPhase:', trainingPhase, 'isLoading:', isLoading, 'sampler:', !!sampler);
+    
     switch (trainingPhase) {
       case 'setup':
-        return isLoading ? '🎵 音源読み込み中...' : '🎤 マイク準備完了 - トレーニング開始可能';
+        if (isLoading || !sampler) {
+          return '🎵 音源読み込み中...';
+        } else {
+          return '🎤 マイク準備完了 - トレーニング開始可能';
+        }
       case 'listening':
         return '🎵 基音再生中...';
       case 'waiting':
@@ -295,6 +301,8 @@
         onload: () => {
           console.log('Salamander Grand Piano C4音源読み込み完了 - ピッチシフト対応');
           isLoading = false;
+          // 強制的に反応性を trigger
+          console.log('🎹 音源読み込み完了 - isLoading:', isLoading);
         },
         onerror: (error) => {
           console.error('Salamander Piano音源読み込みエラー:', error);
@@ -469,17 +477,6 @@
     </div>
   </div>
 
-  <!-- Status Bar -->
-  <Card variant="primary" class="status-card">
-    <div class="status-content">
-      <div class="status-message">{getStatusMessage()}</div>
-      {#if trainingPhase === 'guiding'}
-        <div class="progress-indicator">
-          進行状況: {currentScaleIndex}/8
-        </div>
-      {/if}
-    </div>
-  </Card>
 
   {#if microphoneState === 'granted'}
     <!-- メイントレーニングインターフェース -->
