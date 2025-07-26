@@ -7,6 +7,7 @@
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
+  import { autoCorrelate } from 'pitchy';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'detecting' | 'completed'
@@ -48,6 +49,13 @@
   // Tone.jsサンプラー
   let sampler = null;
   let isLoading = true;
+  
+  // 音程検出用Web Audio API
+  let audioContext = null;
+  let mediaStream = null;
+  let analyser = null;
+  let animationFrame = null;
+  let isDetecting = false;
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
@@ -122,6 +130,9 @@
         isPlaying = false;
         trainingPhase = 'detecting';
         scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
+        
+        // 音程検出開始
+        startPitchDetection();
       }, 2000);
     } catch (error) {
       console.error('基音再生エラー:', error);
@@ -206,8 +217,102 @@
     initializeSampler();
   });
   
+  // 音程検出開始
+  async function startPitchDetection() {
+    try {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      if (!mediaStream) {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      
+      const source = audioContext.createMediaStreamSource(mediaStream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+      
+      isDetecting = true;
+      detectPitch();
+      console.log('音程検出開始');
+      
+    } catch (error) {
+      console.error('音程検出開始エラー:', error);
+    }
+  }
+  
+  // 音程検出停止
+  function stopPitchDetection() {
+    isDetecting = false;
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+    }
+    console.log('音程検出停止');
+  }
+  
+  // リアルタイム音程検出
+  function detectPitch() {
+    if (!isDetecting || !analyser) return;
+    
+    const bufferLength = analyser.fftSize;
+    const buffer = new Float32Array(bufferLength);
+    analyser.getFloatTimeDomainData(buffer);
+    
+    // 音量計算
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      sum += buffer[i] * buffer[i];
+    }
+    currentVolume = Math.sqrt(sum / bufferLength) * 100;
+    
+    // 音程検出（Pitchy使用）
+    const pitch = autoCorrelate(buffer, audioContext.sampleRate);
+    
+    if (pitch !== -1 && currentVolume > 1) {
+      currentFrequency = pitch;
+      detectedNote = frequencyToNote(pitch);
+      
+      // 基音との相対音程を計算
+      if (currentBaseFrequency > 0) {
+        pitchDifference = Math.round(1200 * Math.log2(pitch / currentBaseFrequency));
+      }
+    } else {
+      detectedNote = 'ーー';
+      currentFrequency = 0;
+      pitchDifference = 0;
+    }
+    
+    animationFrame = requestAnimationFrame(detectPitch);
+  }
+  
+  // 周波数から音程名に変換
+  function frequencyToNote(frequency) {
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const A4 = 440;
+    const semitoneRatio = Math.pow(2, 1/12);
+    
+    if (frequency <= 0) return 'ーー';
+    
+    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+    const noteIndex = (semitonesFromA4 + 9 + 120) % 12;
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    
+    return noteNames[noteIndex] + octave;
+  }
+  
   // クリーンアップ
   onDestroy(() => {
+    stopPitchDetection();
+    
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+    }
+    
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close();
+    }
+    
     if (sampler) {
       sampler.dispose();
       sampler = null;
