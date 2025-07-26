@@ -265,17 +265,20 @@
     const buffer = new Float32Array(bufferLength);
     analyser.getFloatTimeDomainData(buffer);
     
-    // 音量計算
+    // 音量計算（感度向上版）
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
-      sum += buffer[i] * buffer[i];
+      sum += Math.abs(buffer[i]);
     }
-    currentVolume = Math.sqrt(sum / bufferLength) * 100;
+    // RMS計算とログスケール調整で通常の声に適した音量レベルに
+    const rms = Math.sqrt(sum / bufferLength);
+    const logVolume = Math.log10(rms + 0.001) * 50 + 100; // ログスケール
+    currentVolume = Math.max(0, Math.min(100, logVolume)); // 0-100%に正規化
     
     // 音程検出（PitchDetector使用）
     const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    if (pitch && clarity > 0.8 && currentVolume > 1) {
+    if (pitch && clarity > 0.6 && currentVolume > 5) {
       currentFrequency = pitch;
       detectedNote = frequencyToNote(pitch);
       
