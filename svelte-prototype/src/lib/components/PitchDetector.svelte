@@ -378,28 +378,14 @@
 
 <div class="pitch-detector {className}">
   <div class="detection-display">
-    <div class="detected-info">
-      <span class="detected-label">検出中:</span>
-      <div class="frequency-container">
-        <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
-        <span class="hz-suffix">Hz</span>
-      </div>
-      <div class="note-container">
-        <span class="detected-note">({detectedNote})</span>
-      </div>
-      <span class="clarity">品質: {Math.round(pitchClarity * 100)}%</span>
+    <div class="detection-card">
+      <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
+      <span class="hz-suffix">Hz</span>
+      <span class="divider">|</span>
+      <span class="detected-note">{detectedNote}</span>
     </div>
     
-    <div class="volume-section">
-      <div class="volume-label">音量レベル: {Math.round(currentFrequency > 0 ? rawVolume : 0)}%</div>
-      <VolumeBar volume={currentFrequency > 0 ? rawVolume : 0} className="volume-bar" />
-      
-      {#if rawVolume > 0 && currentVolume > 0}
-        <div class="noise-reduction-info">
-          <span class="noise-label">フィルター後音量: {Math.round(currentVolume)}%</span>
-        </div>
-      {/if}
-    </div>
+    <VolumeBar volume={currentFrequency > 0 ? rawVolume : 0} className="volume-bar" />
   </div>
 </div>
 
@@ -411,79 +397,56 @@
   .detection-display {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
   }
   
-  .detected-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-  }
-  
-  .detected-label {
-    color: hsl(215.4 16.3% 46.9%);
-  }
-  
-  .frequency-container {
+  .detection-card {
     display: inline-flex;
     align-items: baseline;
-    margin-right: 0.5rem;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 8px;
+    width: fit-content;
   }
 
   .detected-frequency {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 2rem;
     color: hsl(222.2 84% 4.9%);
-    /* 等幅フォントで数字の幅を統一 */
-    font-family: 'Courier New', Courier, monospace;
-    /* 最小幅を設定（4桁分の幅を確保） */
-    min-width: 4.5ch;
-    /* テキストを右寄せ */
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    min-width: 4ch;
     text-align: right;
-    /* インラインブロックで幅を保持 */
     display: inline-block;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .hz-suffix {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 2rem;
     color: hsl(222.2 84% 4.9%);
-    margin-left: 0.25rem;
   }
 
-  .note-container {
-    display: inline-flex;
-    align-items: baseline;
-    margin-right: 0.5rem;
+  .divider {
+    color: hsl(214.3 31.8% 70%);
+    font-size: 1.5rem;
+    margin: 0 0.25rem;
+    font-weight: 300;
   }
   
   .detected-note {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 2rem;
     color: hsl(215.4 16.3% 46.9%);
-  }
-
-  .clarity {
-    color: hsl(142.1 76.2% 36.3%);
-    font-weight: 500;
-    font-size: 0.75rem;
-  }
-  
-  .volume-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .volume-label {
-    font-size: 0.875rem;
-    color: hsl(215.4 16.3% 46.9%);
-  }
-
-  .noise-reduction-info {
-    font-size: 0.75rem;
-    color: hsl(142.1 76.2% 36.3%);
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    min-width: 3ch;
+    display: inline-block;
+    text-align: center;
   }
 
   :global(.volume-bar) {
