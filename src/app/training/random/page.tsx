@@ -198,128 +198,71 @@ export default function RandomTrainingPage() {
   );
 
   const renderMicrophoneError = () => (
-    <div style={{
-      maxWidth: '600px',
-      margin: '0 auto',
-      padding: '32px',
-      backgroundColor: '#ffffff',
-      borderRadius: '16px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      textAlign: 'center'
-    }}>
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          color: '#dc2626',
-          marginBottom: '16px'
-        }}>
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-destructive flex items-center gap-2">
           🔇 マイクアクセスに問題があります
-        </div>
-        <div style={{
-          fontSize: '16px',
-          color: '#6b7280',
-          lineHeight: '1.5'
-        }}>
+        </CardTitle>
+        <CardDescription className="text-base">
           考えられる原因:<br />
           • マイク許可が取り消された<br />
           • マイクデバイスが利用できない<br />
           • ブラウザの設定変更<br />
           {micError && <><br />エラー詳細: {micError}</>}
-        </div>
-      </div>
+        </CardDescription>
+      </CardHeader>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-        <Link 
-          href="/microphone-test"
-          style={{
-            display: 'inline-block',
-            padding: '12px 32px',
-            backgroundColor: '#059669',
-            color: '#ffffff',
-            textDecoration: 'none',
-            borderRadius: '8px',
-            fontWeight: '600',
-            fontSize: '16px',
-            transition: 'background-color 0.2s',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-        >
-          マイクテストページで確認
-        </Link>
+      <CardContent className="flex flex-col gap-4 items-center">
+        <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+          <Link href="/microphone-test">
+            マイクテストページで確認
+          </Link>
+        </Button>
         
-        <button 
+        <Button 
+          variant="outline"
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
-          style={{
-            padding: '12px 32px',
-            backgroundColor: '#ffffff',
-            color: '#059669',
-            border: '2px solid #059669',
-            borderRadius: '8px',
-            fontWeight: '600',
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#f0fdf4';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-          }}
+          className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
         >
           再度マイク許可を取得
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 
   const renderLoadingState = () => (
-    <div style={{
-      maxWidth: '600px',
-      margin: '0 auto',
-      padding: '32px',
-      backgroundColor: '#ffffff',
-      borderRadius: '16px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      textAlign: 'center'
-    }}>
-      <div style={{
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: '#1f2937'
-      }}>
-        🔍 マイク状態を確認中...
-      </div>
-    </div>
+    <Card className="max-w-2xl mx-auto">
+      <CardContent className="p-8 text-center">
+        <div className="text-2xl font-bold text-gray-800">
+          🔍 マイク状態を確認中...
+        </div>
+      </CardContent>
+    </Card>
   );
 
   // マイク状態に応じた表示分岐
   if (micState === 'checking') {
     return (
-      <div style={{ width: '100%', margin: 0, padding: 0, minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ borderBottom: '1px solid #e5e7eb', padding: '24px 0' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', justifyContent: 'flex-start' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', transition: 'color 0.3s', fontWeight: '500' }}>
-                <ArrowLeft style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+      <div className="w-full min-h-screen bg-white flex flex-col">
+        <header className="border-b border-gray-200 py-6">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="flex items-center text-gray-500 hover:text-gray-700 transition-colors font-medium">
+                <ArrowLeft className="w-5 h-5 mr-2" />
                 ホーム
               </Link>
-              <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+              <h1 className="text-xl font-bold text-gray-800">
                 ランダム基音トレーニング
               </h1>
             </div>
           </div>
         </header>
         
-        <main style={{ flex: 1, padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 16px' }}>
+        <main className="flex-1 py-8 flex items-center justify-center">
+          <div className="max-w-3xl mx-auto px-4">
             {renderLoadingState()}
           </div>
         </main>
@@ -329,23 +272,23 @@ export default function RandomTrainingPage() {
 
   if (micState === 'denied' || micState === 'prompt') {
     return (
-      <div style={{ width: '100%', margin: 0, padding: 0, minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ borderBottom: '1px solid #e5e7eb', padding: '24px 0' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', justifyContent: 'flex-start' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', transition: 'color 0.3s', fontWeight: '500' }}>
-                <ArrowLeft style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+      <div className="w-full min-h-screen bg-white flex flex-col">
+        <header className="border-b border-gray-200 py-6">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="flex items-center text-gray-500 hover:text-gray-700 transition-colors font-medium">
+                <ArrowLeft className="w-5 h-5 mr-2" />
                 ホーム
               </Link>
-              <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+              <h1 className="text-xl font-bold text-gray-800">
                 ランダム基音トレーニング
               </h1>
             </div>
           </div>
         </header>
         
-        <main style={{ flex: 1, padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 16px' }}>
+        <main className="flex-1 py-8 flex items-center justify-center">
+          <div className="max-w-3xl mx-auto px-4">
             {renderMicrophonePermissionRequired()}
           </div>
         </main>
@@ -355,23 +298,23 @@ export default function RandomTrainingPage() {
 
   if (micState === 'error') {
     return (
-      <div style={{ width: '100%', margin: 0, padding: 0, minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ borderBottom: '1px solid #e5e7eb', padding: '24px 0' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', justifyContent: 'flex-start' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', transition: 'color 0.3s', fontWeight: '500' }}>
-                <ArrowLeft style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+      <div className="w-full min-h-screen bg-white flex flex-col">
+        <header className="border-b border-gray-200 py-6">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="flex items-center text-gray-500 hover:text-gray-700 transition-colors font-medium">
+                <ArrowLeft className="w-5 h-5 mr-2" />
                 ホーム
               </Link>
-              <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+              <h1 className="text-xl font-bold text-gray-800">
                 ランダム基音トレーニング
               </h1>
             </div>
           </div>
         </header>
         
-        <main style={{ flex: 1, padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 16px' }}>
+        <main className="flex-1 py-8 flex items-center justify-center">
+          <div className="max-w-3xl mx-auto px-4">
             {renderMicrophoneError()}
           </div>
         </main>
