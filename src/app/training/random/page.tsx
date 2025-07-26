@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as Tone from "tone";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // === 型定義 ===
 type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
@@ -163,84 +165,37 @@ export default function RandomTrainingPage() {
   };
   // === レンダリング関数 ===
   const renderMicrophonePermissionRequired = () => (
-    <div style={{
-      maxWidth: '600px',
-      margin: '0 auto',
-      padding: '32px',
-      backgroundColor: '#ffffff',
-      borderRadius: '16px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      textAlign: 'center'
-    }}>
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          color: '#dc2626',
-          marginBottom: '16px'
-        }}>
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-destructive flex items-center gap-2">
           ⚠️ マイクアクセスが必要です
-        </div>
-        <div style={{
-          fontSize: '16px',
-          color: '#6b7280',
-          lineHeight: '1.5'
-        }}>
+        </CardTitle>
+        <CardDescription className="text-base">
           このトレーニングには音声入力が必要です。<br />
           マイクテストページで音量・周波数を事前確認し、<br />
           ご自身の声の特性を把握してからトレーニングにお進みください。
-        </div>
-      </div>
+        </CardDescription>
+      </CardHeader>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-        <Link 
-          href="/microphone-test"
-          style={{
-            display: 'inline-block',
-            padding: '12px 32px',
-            backgroundColor: '#059669',
-            color: '#ffffff',
-            textDecoration: 'none',
-            borderRadius: '8px',
-            fontWeight: '600',
-            fontSize: '16px',
-            transition: 'background-color 0.2s',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-        >
-          マイクテストページに移動
-        </Link>
+      <CardContent className="flex flex-col gap-4 items-center">
+        <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+          <Link href="/microphone-test">
+            マイクテストページに移動
+          </Link>
+        </Button>
         
-        <button 
+        <Button 
+          variant="outline"
           onClick={async () => {
             const state = await checkMicrophonePermission();
             setMicState(state);
           }}
-          style={{
-            padding: '12px 32px',
-            backgroundColor: '#ffffff',
-            color: '#059669',
-            border: '2px solid #059669',
-            borderRadius: '8px',
-            fontWeight: '600',
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#f0fdf4';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-          }}
+          className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
         >
           直接マイク許可を取得
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 
   const renderMicrophoneError = () => (
@@ -492,148 +447,68 @@ export default function RandomTrainingPage() {
           </div>
 
           {/* 基音再生セクション - PC/Mobile レスポンシブ対応 */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            marginBottom: '32px'
-          }}>
-            <button 
+          <div className="flex flex-col items-center mb-8">
+            <Button 
               onClick={handleRandomBasePlay}
               disabled={isPlaying || isLoading}
-              style={{
-                width: '100%',
-                maxWidth: '320px',
-                backgroundColor: isPlaying || isLoading ? '#9ca3af' : '#059669',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '20px 32px',
-                fontSize: '18px',
-                fontWeight: '700',
-                cursor: isPlaying || isLoading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px',
-                transition: 'all 0.2s',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                marginBottom: '24px',
-                opacity: isPlaying || isLoading ? 0.7 : 1
-              }}
-              onMouseOver={(e) => {
-                if (!isPlaying && !isLoading) {
-                  e.currentTarget.style.backgroundColor = '#047857';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (!isPlaying && !isLoading) {
-                  e.currentTarget.style.backgroundColor = '#059669';
-                }
-              }}
+              size="lg"
+              className="w-full max-w-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-lg font-bold py-6 mb-6 shadow-lg"
             >
               {isLoading ? '🔄 初期化中...' : isPlaying ? '🎵 再生中...' : '🎲 ランダム基音再生'}
-            </button>
+            </Button>
             
             {/* 現在の基音表示 */}
             {currentBaseNote && (
-              <div style={{
-                padding: '12px 24px',
-                backgroundColor: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                borderRadius: '8px',
-                color: '#166534',
-                fontSize: '16px',
-                fontWeight: '600',
-                textAlign: 'center'
-              }}>
-                🎵 現在の基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
-              </div>
+              <Card className="bg-emerald-50 border-emerald-200">
+                <CardContent className="p-4 text-center">
+                  <span className="text-emerald-700 font-semibold">
+                    🎵 現在の基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
+                  </span>
+                </CardContent>
+              </Card>
             )}
           </div>
 
           {/* ドレミファソラシドガイドセクション - アニメーション表示エリア */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            marginBottom: '32px',
-            minHeight: '140px'
-          }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', textAlign: 'center' }}>
-              🎵 ガイドアニメーション
-            </h3>
-            
-            {/* レスポンシブ対応: PC横並び / Mobile縦並び */}
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: window.innerWidth > 768 ? 'repeat(8, 1fr)' : 'repeat(4, 1fr)',
-              gap: window.innerWidth > 768 ? '12px' : '8px',
-              justifyContent: 'center',
-              maxWidth: window.innerWidth > 768 ? '600px' : '300px',
-              margin: '0 auto'
-            }}>
-              {['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'].map((note, index) => (
-                <div
-                  key={`${note}-${index}`}
-                  style={{
-                    width: window.innerWidth > 768 ? '56px' : '48px',
-                    height: window.innerWidth > 768 ? '56px' : '48px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: window.innerWidth > 768 ? '16px' : '14px',
-                    fontWeight: 'bold',
-                    borderRadius: '8px',
-                    border: '2px solid #d1d5db',
-                    backgroundColor: '#f9fafb',
-                    color: '#6b7280',
-                    transform: 'scale(1)',
-                    transition: 'all 0.3s ease-in-out'
-                  }}
-                >
-                  {note}
-                </div>
-              ))}
-            </div>
-          </div>
+          <Card className="mb-8 min-h-[140px]">
+            <CardHeader>
+              <CardTitle className="text-center text-lg">
+                🎵 ガイドアニメーション
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* レスポンシブ対応: PC横並び / Mobile縦並び */}
+              <div className="grid grid-cols-4 md:grid-cols-8 gap-2 md:gap-3 justify-center max-w-sm md:max-w-2xl mx-auto">
+                {['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'].map((note, index) => (
+                  <div
+                    key={`${note}-${index}`}
+                    className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-sm md:text-base font-bold rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-500 transform scale-100 transition-all duration-300 ease-in-out"
+                  >
+                    {note}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* 音程検出・採点表示エリア - 固定高さ */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            textAlign: 'center',
-            minHeight: '120px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', lineHeight: '1.5' }}>
-              🎵 音程を検出中...
-            </div>
-            
-            {/* 採点結果表示エリア（非表示状態） */}
-            <div style={{ 
-              display: 'none', // トレーニング時は非表示
-              marginTop: '16px',
-              padding: '16px',
-              backgroundColor: '#f0fdf4',
-              borderRadius: '8px',
-              border: '1px solid #bbf7d0'
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#166534', marginBottom: '8px' }}>
-                🎯 採点結果
+          <Card className="min-h-[120px]">
+            <CardContent className="flex flex-col justify-center items-center p-6">
+              <div className="text-base font-semibold text-gray-800">
+                🎵 音程を検出中...
               </div>
-              <div style={{ fontSize: '14px', color: '#166534' }}>
-                精度: 95% • 音程: ド → レ
+              
+              {/* 採点結果表示エリア（非表示状態） */}
+              <div className="hidden mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <div className="text-lg font-bold text-emerald-700 mb-2">
+                  🎯 採点結果
+                </div>
+                <div className="text-sm text-emerald-600">
+                  精度: 95% • 音程: ド → レ
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
