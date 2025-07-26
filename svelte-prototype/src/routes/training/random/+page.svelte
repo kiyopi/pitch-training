@@ -498,15 +498,21 @@
         guideAnimationTimer = null;
       }
       
-      if (pitchDetectorComponent) {
+      if (pitchDetectorComponent && pitchDetectorComponent.stopDetection) {
         pitchDetectorComponent.stopDetection();
       }
       
       // 2. セッション状態をリセット（前回結果は保持）
       resetSessionState();
       
-      // 3. コンポーネント状態確認・修復
-      await ensureComponentsReady();
+      // 3. コンポーネント状態確認・修復（エラー時は単純化）
+      try {
+        await ensureComponentsReady();
+      } catch (componentError) {
+        console.warn('⚠️ コンポーネント確認でエラー - 単純再開:', componentError.message);
+        // エラーが発生した場合は単純に待機してセットアップモードに移行
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       
       // 4. 新セッション開始準備完了
       trainingPhase = 'setup';
@@ -515,7 +521,10 @@
       
     } catch (error) {
       console.error('❌ セッション再開始エラー:', error);
-      await recordAndRecover(error, 'session-restart');
+      // 無限ループを防ぐため、エラー回復は呼ばずに直接セットアップモードに
+      trainingPhase = 'setup';
+      isGuideAnimationActive = false;
+      console.log('🔧 強制セットアップモード移行');
     } finally {
       isRestarting = false;
     }
@@ -538,7 +547,7 @@
     console.log('✅ セッション状態リセット完了');
   }
   
-  // コンポーネント状態確認・修復（新規追加）
+  // コンポーネント状態確認・修復（改訂版）
   async function ensureComponentsReady() {
     console.log('🔍 コンポーネント状態確認開始');
     
@@ -550,22 +559,32 @@
         microphoneState = 'granted';
       }
       
-      // 2. PitchDetector状態確認
-      if (!pitchDetectorComponent || !pitchDetectorComponent.getIsInitialized()) {
-        console.log('🎙️ PitchDetector再初期化が必要');
-        pitchDetectorState = 'initializing';
-        
-        // コンポーネントが存在しない場合は少し待機
-        if (!pitchDetectorComponent) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        if (pitchDetectorComponent) {
-          await pitchDetectorComponent.reinitialize(mediaStream);
-          pitchDetectorState = 'ready';
+      // 2. PitchDetectorコンポーネント存在確認（DOM要素の再構築を待つ）
+      let retryCount = 0;
+      const maxRetries = 10;
+      
+      while (retryCount < maxRetries) {
+        if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized) {
+          // コンポーネントが存在し、初期化されているかチェック
+          if (!pitchDetectorComponent.getIsInitialized()) {
+            console.log('🎙️ PitchDetector再初期化が必要');
+            pitchDetectorState = 'initializing';
+            await pitchDetectorComponent.reinitialize(mediaStream);
+            pitchDetectorState = 'ready';
+          }
+          break;
         } else {
-          throw new Error('PitchDetectorコンポーネントが見つかりません');
+          // コンポーネント参照が無効な場合、再取得を試行
+          console.log(`🔄 PitchDetectorコンポーネント再取得試行 ${retryCount + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retryCount++;
         }
+      }
+      
+      if (retryCount >= maxRetries) {
+        console.warn('⚠️ PitchDetectorコンポーネント取得タイムアウト - DOM再構築を待機');
+        // DOM再構築のための追加待機
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
       
       // 3. 音源状態確認
@@ -684,9 +703,13 @@
     }
   }
 
-  // 状態一貫性チェック機能（新規追加）
+  // 状態一貫性チェック機能（改訂版）
+  let lastAutoRepairTime = 0;
+  const AUTO_REPAIR_COOLDOWN = 30000; // 30秒のクールダウン
+  
   function validateSystemState() {
     const issues = [];
+    const now = Date.now();
     
     if (trainingPhase === 'guiding' && pitchDetectorState !== 'detecting') {
       issues.push('Training in guiding phase but PitchDetector not detecting');
@@ -694,26 +717,30 @@
     
     if (microphoneState === 'granted' && (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live'))) {
       issues.push('Microphone granted but MediaStream invalid');
-      // 自動修復を試行
-      setTimeout(async () => {
-        try {
-          console.log('🔧 MediaStream自動修復開始');
-          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          if (pitchDetectorComponent) {
-            await pitchDetectorComponent.reinitialize(mediaStream);
+      
+      // 自動修復のクールダウンチェック
+      if (now - lastAutoRepairTime > AUTO_REPAIR_COOLDOWN && !isRestarting) {
+        lastAutoRepairTime = now;
+        setTimeout(async () => {
+          try {
+            console.log('🔧 MediaStream自動修復開始');
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (pitchDetectorComponent && pitchDetectorComponent.reinitialize) {
+              await pitchDetectorComponent.reinitialize(mediaStream);
+            }
+            console.log('✅ MediaStream自動修復完了');
+          } catch (error) {
+            console.error('❌ MediaStream自動修復失敗:', error);
           }
-          console.log('✅ MediaStream自動修復完了');
-        } catch (error) {
-          console.error('❌ MediaStream自動修復失敗:', error);
-        }
-      }, 1000);
+        }, 1000);
+      }
     }
     
     if (audioEngineState === 'ready' && (!sampler || isLoading)) {
       issues.push('Audio engine ready but sampler not available');
     }
     
-    if (pitchDetectorState === 'ready' && !pitchDetectorComponent?.getIsInitialized()) {
+    if (pitchDetectorState === 'ready' && pitchDetectorComponent?.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
       issues.push('PitchDetector ready but not initialized');
     }
     
