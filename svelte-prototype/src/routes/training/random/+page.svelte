@@ -163,7 +163,7 @@
       await new Promise((resolve, reject) => {
         sampler = new Tone.Sampler({
           urls: localPianoUrls,
-          baseUrl: "/audio/piano/",  // ローカルパス
+          baseUrl: `${import.meta.env.BASE_URL}audio/piano/`,
           release: 1.5,
           onload: () => {
             console.log('✅ ローカル Salamander Grand Piano音源読み込み完了');
