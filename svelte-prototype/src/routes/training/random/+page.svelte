@@ -171,15 +171,8 @@
     try {
       isLoading = true;
       
-      // AudioContextを事前起動
-      if (Tone.context.state !== 'running') {
-        try {
-          await Tone.start();
-          console.log('AudioContext事前起動完了');
-        } catch (error) {
-          console.log('AudioContext事前起動スキップ（ユーザー操作待ち）');
-        }
-      }
+      // AudioContextは初回再生時に起動（安全なアプローチ）
+      console.log('AudioContext状態:', Tone.context.state);
       
       // Salamander Grand Piano C4音源からピッチシフト（最適化設定）
       sampler = new Tone.Sampler({
@@ -190,11 +183,6 @@
         release: 1.5, // リリース時間最適化
         onload: () => {
           console.log('Salamander Grand Piano C4音源読み込み完了 - ピッチシフト対応');
-          
-          // プリウォーミング: 無音でサンプルをロード
-          sampler.triggerAttackRelease('C4', 0.01, undefined, 0);
-          console.log('音源プリウォーミング完了');
-          
           isLoading = false;
         },
         onerror: (error) => {
