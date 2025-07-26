@@ -167,23 +167,14 @@
     try {
       isLoading = true;
       
-      // ローカルSalamander Grand Piano音源を使用
+      // Salamander Grand Piano C4音源からピッチシフト
       sampler = new Tone.Sampler({
         urls: {
           'C4': 'C4.mp3',
-          'Db4': 'Db4.mp3',
-          'D4': 'D4.mp3',
-          'Eb4': 'Eb4.mp3',
-          'E4': 'E4.mp3',
-          'F4': 'F4.mp3',
-          'Gb4': 'Gb4.mp3',
-          'Ab4': 'Ab4.mp3',
-          'Bb3': 'Bb3.mp3',
-          'B3': 'B3.mp3',
         },
         baseUrl: `${base}/audio/piano/`,
         onload: () => {
-          console.log('Salamander Grand Piano音源読み込み完了');
+          console.log('Salamander Grand Piano C4音源読み込み完了 - ピッチシフト対応');
           isLoading = false;
         },
         onerror: (error) => {
