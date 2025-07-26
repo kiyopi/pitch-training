@@ -218,12 +218,17 @@
       }
     }
     
+    // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
+    const displayVolume = currentFrequency > 0 ? rawVolume : 0;
+    
     // デバッグログ（初回と大きな変化時のみ）
     if (!window.pitchDetectorLastLog || 
         Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
-        Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20) {
+        Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20 ||
+        Math.abs(window.pitchDetectorLastLog.displayVolume - displayVolume) > 5) {
       console.log('PitchDetector:', {
         rawVolume: Math.round(rawVolume),
+        displayVolume: Math.round(displayVolume),
         filteredVolume: Math.round(currentVolume), 
         frequency: currentFrequency,
         note: detectedNote,
@@ -231,12 +236,10 @@
         isValidRange: isValidVocalRange,
         rawPitch: pitch ? Math.round(pitch) : 0
       });
-      window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency };
+      window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency, displayVolume };
     }
     
     // 親コンポーネントにデータを送信
-    // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
-    const displayVolume = currentFrequency > 0 ? rawVolume : 0;
     
     dispatch('pitchUpdate', {
       frequency: currentFrequency,
