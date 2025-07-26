@@ -107,11 +107,10 @@
         await Tone.start();
       }
       
-      // 選択された基音を再生
-      const note = baseNotes.find(n => n.name === currentBaseNote).note;
-      sampler.triggerAttackRelease(note, '2n');
+      // 選択された基音を再生（周波数で直接指定）
+      sampler.triggerAttackRelease(currentBaseFrequency, '2n');
       
-      console.log('基音再生:', currentBaseNote, note);
+      console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz');
       
       // 2秒後に検出フェーズに移行
       setTimeout(() => {
@@ -162,41 +161,32 @@
     window.location.href = '/';
   }
 
-  // Tone.jsサンプラー初期化
+  // Tone.jsサンプラー初期化（Oscillatorベース）
   async function initializeSampler() {
     try {
       isLoading = true;
       
-      // サンプラーを作成（実際に存在するファイルのみ使用）
-      sampler = new Tone.Sampler({
-        urls: {
-          'C4': 'C4.mp3',
-          'Db4': 'Db4.mp3',
-          'D4': 'D4.mp3',
-          'Eb4': 'Eb4.mp3',
-          'E4': 'E4.mp3',
-          'F4': 'F4.mp3',
-          'Gb4': 'Gb4.mp3',
-          'Ab4': 'Ab4.mp3',
-          'Bb3': 'Bb3.mp3',
-          'B3': 'B3.mp3',
+      // オシレーターベースのシンセサイザーを作成（外部ファイル不要）
+      sampler = new Tone.Synth({
+        oscillator: {
+          type: 'sine'
         },
-        baseUrl: `${base}/audio/piano/`,
-        onload: () => {
-          console.log('ピアノ音源読み込み完了');
-          isLoading = false;
-        },
-        onerror: (error) => {
-          console.error('ピアノ音源読み込みエラー:', error);
-          isLoading = false;
+        envelope: {
+          attack: 0.1,
+          decay: 0.3,
+          sustain: 0.3,
+          release: 1
         }
       }).toDestination();
       
       // 音量調整
-      sampler.volume.value = -6; // デフォルトより少し下げる
+      sampler.volume.value = -12; // オシレーターは音が大きいため下げる
+      
+      console.log('オシレーター音源初期化完了');
+      isLoading = false;
       
     } catch (error) {
-      console.error('サンプラー初期化エラー:', error);
+      console.error('音源初期化エラー:', error);
       isLoading = false;
     }
   }
