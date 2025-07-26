@@ -1,28 +1,31 @@
 # CLAUDE.md - 作業ルール・ガイドライン
 
-## 🚨🚨🚨 重要: フレームワーク移行検討中 🚨🚨🚨
+## ✅✅✅ SvelteKit本格開発移行決定 ✅✅✅
 
-### **現在の状況（2025-01-25更新）**
-**Next.js/Reactの制約により、Svelte/SvelteKitへの移行を検討中**
+### **✅ SvelteKit本格開発移行決定（2025-07-26）**
+**Next.js/Reactの制約により、SvelteKitへの完全移行を決定**
 
-#### **移行検討の理由**
-1. 音響処理とReactの相性が悪い（DOM直接操作が必須）
-2. shadcn/uiが本番環境で動作しない
-3. インラインスタイル化を余儀なくされた
+#### **移行決定の理由**
+1. **実装の容易さ**: SvelteKitでの開発がNext.jsよりもはるかに実装しやすい
+2. **音響処理最適化**: DOM直接操作がSvelteで自然に実装可能
+3. **パフォーマンス優位**: リアルタイム音声処理での性能向上
+4. **shadcn/ui問題解決**: CSS-in-JSの制約から解放
 
-#### **現在の作業**
-- 移行判断のための文書作成中
-- SVELTE_MIGRATION_CHARTER.md、SVELTE_MIGRATION_PLAN.md等を参照
-- **新規開発は一時停止**
+#### **移行完了作業**
+- ✅ SvelteKitプロトタイプでの技術検証完了
+- ✅ Tone.js + Salamander Grand Piano統合成功
+- ✅ GitHub Pages デプロイ環境構築完了
+- ✅ 音響処理パフォーマンス検証完了
 
-#### **重要**: 
-**このCLAUDE.mdの下記Next.js指示は、移行決定まで保留**
-移行の判断が出るまで、新規機能開発は行わないこと
+#### **現在の開発方針**: 
+**SvelteKit本格開発に完全移行**
+Next.js関連の開発は終了し、SvelteKitでの機能実装を推進
 
-### **必ず確認すべき文書**
-1. **SVELTE_DEVELOPMENT_STATUS.md** - 最新の開発状態
-2. **SVELTE_MIGRATION_PLAN.md** - 移行計画と判断基準
-3. **SVELTE_DESIGN_SYSTEM_SPEC.md** - デザインシステム仕様
+### **SvelteKit開発 - 必須確認文書**
+1. **WORK_LOG_UPDATE.md** - 最新のSvelteKit開発状況
+2. **RANDOM_TRAINING_UNIFIED_SPECIFICATION.md** - ランダムトレーニング仕様
+3. **TRAINING_MODES_COMMON_SPECIFICATION.md** - 3モード共通設計
+4. **PITCHY_SPECS.md** - 音程検出技術仕様
 
 ---
 
@@ -33,24 +36,24 @@
 #### **現在の開発環境（絶対確認）**
 **GitHubリポジトリ**: `https://github.com/kiyopi/pitch-training.git`  
 **GitHub Pages URL**: `https://kiyopi.github.io/pitch-training/`  
-**現在のブランチ**: `pitch-training-nextjs-v2-impl-001`
-**開発技術**: **Next.js 15.4.1 + TypeScript + React**
-**作業ディレクトリ**: `/Users/isao/Documents/pitch_app` 
+**現在のブランチ**: `random-training-tonejs-fixed-001`
+**開発技術**: **SvelteKit + TypeScript + Tone.js**
+**作業ディレクトリ**: `/Users/isao/Documents/pitch-training` 
 
 ⚠️ **重要**: URLは必ず `pitch-training` リポジトリを使用すること
 
 #### **🚨 環境認識エラー防止ルール**
-1. **仕様書は古いプロトタイプ時代のもの**: 参考情報として活用のみ
-2. **実際の開発は Next.js**: 新規ページ作成は `/src/app/` 以下
-3. **デプロイはGitHub Actions**: 必ず `npm run build` + GitHub Pages
+1. **SvelteKit完全移行**: Next.js関連の開発は完全終了
+2. **実際の開発は SvelteKit**: 新規ページ作成は `/svelte-prototype/src/routes/` 以下
+3. **デプロイはGitHub Actions**: 必ず `npm run build` + GitHub Pages (SvelteKit)
 4. **テスト確認は2段階**: GitHub Pages + ローカル開発サーバー
-5. **プロトタイプ手法禁止**: HTML直接作成・手動デプロイは一切禁止
+5. **Next.js手法禁止**: Next.js関連の実装は一切禁止
 
 #### **必須確認プロトコル**
 ```
 仕様書確認時に必ず宣言:
-"この仕様書は参考情報です。実際の開発は Next.js で実行します。"
-"新規作成は /src/app/ 以下に作成し、GitHub Actions でデプロイします。"
+"SvelteKit本格開発に完全移行済みです。実際の開発は SvelteKit で実行します。"
+"新規作成は /svelte-prototype/src/routes/ 以下に作成し、GitHub Actions でデプロイします。"
 ```
 
 ### アプリケーションの目的
@@ -310,7 +313,7 @@ Step 4: GitHub Actions確認
 - GitHub Actions: ✅ 実行中/成功 / ❌ 失敗
 
 ### **確認パス（必須）**
-**ローカル確認**: `http://localhost:3000/[ページパス]`  
+**ローカル確認**: `http://localhost:5173/[ページパス]`  
 **GitHub Pages確認**: `https://kiyopi.github.io/pitch-training/[ページパス]`
 
 ---
@@ -536,12 +539,14 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 - useAudioEngine, TrainingLayout等の高度統合実装
 - 技術債務蓄積の開始（型不整合、依存関係複雑化）
 
-### 現在の状況 (2025-07-22)
-- **安定版**: 1e44e2e (v1.2.0 OutlierPenalty-Enhanced)
-- **作業ブランチ**: clean-homepage-v1-impl-001 (作業中)
-- **対象ファイル**: /src/app/page.tsx (トップページのみ作り直し)
-- **次期作業**: Step B1（新トップページ作成）
-- **技術債務状況**: Phase 1統合ファイルの段階的解消中（Step A2完了）
+### 現在の状況（2025-07-26移行決定後更新）
+- **安定版**: 1e44e2e (v1.2.0 OutlierPenalty-Enhanced) 
+- **現在のブランチ**: random-training-tonejs-fixed-001
+- **開発環境**: SvelteKit本格開発（/svelte-prototype → メイン開発）
+- **対象ファイル**: /src/routes/training/random/+page.svelte
+- **技術スタック**: SvelteKit + Tone.js + Salamander Grand Piano
+- **デプロイ状況**: GitHub Pages (https://kiyopi.github.io/pitch-training/training/random)
+- **開発ステータス**: ✅ SvelteKit本格開発に完全移行
 
 ---
 
