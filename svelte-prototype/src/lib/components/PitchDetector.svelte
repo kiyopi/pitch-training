@@ -380,8 +380,13 @@
   <div class="detection-display">
     <div class="detected-info">
       <span class="detected-label">検出中:</span>
-      <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) + 'Hz' : '---Hz'}</span>
-      <span class="detected-note">({detectedNote})</span>
+      <div class="frequency-container">
+        <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
+        <span class="hz-suffix">Hz</span>
+      </div>
+      <div class="note-container">
+        <span class="detected-note">({detectedNote})</span>
+      </div>
       <span class="clarity">品質: {Math.round(pitchClarity * 100)}%</span>
     </div>
     
@@ -420,18 +425,43 @@
     color: hsl(215.4 16.3% 46.9%);
   }
   
+  .frequency-container {
+    display: inline-flex;
+    align-items: baseline;
+    margin-right: 0.5rem;
+  }
+
   .detected-frequency {
     font-weight: 700;
     font-size: 2rem;
     color: hsl(222.2 84% 4.9%);
+    /* 等幅フォントで数字の幅を統一 */
+    font-family: 'Courier New', Courier, monospace;
+    /* 最小幅を設定（4桁分の幅を確保） */
+    min-width: 4.5ch;
+    /* テキストを右寄せ */
+    text-align: right;
+    /* インラインブロックで幅を保持 */
+    display: inline-block;
+  }
+
+  .hz-suffix {
+    font-weight: 700;
+    font-size: 2rem;
+    color: hsl(222.2 84% 4.9%);
+    margin-left: 0.25rem;
+  }
+
+  .note-container {
+    display: inline-flex;
+    align-items: baseline;
     margin-right: 0.5rem;
   }
   
   .detected-note {
-    font-weight: 500;
-    font-size: 0.875rem;
+    font-weight: 700;
+    font-size: 2rem;
     color: hsl(215.4 16.3% 46.9%);
-    margin-right: 0.25rem;
   }
 
   .clarity {
