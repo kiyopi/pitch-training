@@ -21,9 +21,7 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    # environment設定を削除して作業ブランチからの直接デプロイを可能にする
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
