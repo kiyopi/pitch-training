@@ -1,5 +1,6 @@
-# GitHub Pages用の静的サイトデプロイワークフロー（最適化版）
-name: Deploy to GitHub Pages
+# GitHub Pages用の統合デプロイワークフロー（単一プロセス版）
+# これが唯一のGitHub Pagesデプロイワークフローです
+name: Deploy to GitHub Pages (Unified)
 
 on:
   push:
@@ -8,6 +9,8 @@ on:
       - "deployment-*"     # デプロイ専用ブランチパターン
       - "feature-*"        # 機能開発ブランチパターン
       - "random-training-*" # ランダムトレーニング関連ブランチ
+      - "test-*"           # テストブランチパターン
+      - "bugfix-*"         # バグ修正ブランチパターン
   workflow_dispatch: # 手動実行可能
 
 permissions:
