@@ -13,14 +13,10 @@
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
   let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
   
-  // デバッグ情報
-  const buildVersion = "v1.3.1-fix";
-  const buildTimestamp = new Date().toLocaleString('ja-JP', { 
-    month: '2-digit', 
-    day: '2-digit', 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
+  // デバッグ情報（強制更新）
+  const buildVersion = "v1.3.2-FORCE";
+  const buildTimestamp = "07/27 02:20";
+  const updateStatus = "🔥 ROSE色修正・音源削除・評価改善";
   
   // 基音関連
   let currentBaseNote = '';
@@ -468,7 +464,8 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     <div class="debug-info">
-      📱 {buildVersion} | {buildTimestamp}
+      📱 {buildVersion} | {buildTimestamp}<br/>
+      <small style="font-size: 0.6rem;">{updateStatus}</small>
     </div>
   </div>
 
@@ -856,12 +853,13 @@
   
   .scale-item.active {
     background: hsl(343.8 79.7% 53.7%) !important;
-    color: hsl(210 40% 98%) !important;
-    border: 1px solid hsla(343.8 79.7% 53.7% / 0.5) !important;
+    color: white !important;
+    border: 2px solid hsla(343.8 79.7% 53.7% / 0.5) !important;
     transform: scale(1.2);
     font-size: 1.125rem;
     font-weight: 700;
     animation: pulse 2s infinite;
+    box-shadow: 0 0 0 2px hsla(343.8 79.7% 53.7% / 0.3) !important;
   }
   
   .scale-item.correct {
