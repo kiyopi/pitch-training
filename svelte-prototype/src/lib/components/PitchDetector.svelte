@@ -310,7 +310,7 @@
     </div>
     
     <div class="volume-section">
-      <div class="volume-label">音量レベル: {Math.round(rawVolume)}%</div>
+      <div class="volume-label">音量レベル: {Math.round(currentFrequency > 0 ? rawVolume : 0)}%</div>
       <VolumeBar volume={currentFrequency > 0 ? rawVolume : 0} className="volume-bar" />
       
       {#if rawVolume > 0 && currentVolume > 0}
