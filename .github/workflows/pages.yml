@@ -1,0 +1,63 @@
+# GitHub Pages用の静的サイトデプロイワークフロー
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: 
+      - main
+      - random-training-clean-mockup-001
+      - random-training-tonejs-fixed-001
+      # 任意のブランチからGitHub Pagesにデプロイ可能
+  workflow_dispatch: # 手動実行も可能
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # プロジェクトルート全体をアップロード
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ログ出力用ジョブ
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Display deployment info
+        run: |
+          echo "🚀 GitHub Pages デプロイ情報"
+          echo "ブランチ: ${{ github.ref_name }}"
+          echo "コミット: ${{ github.sha }}"
+          echo "📁 デプロイファイル一覧:"
+          find . -name "*.html" -type f | head -10
+          echo ""
+          echo "📱 確認URL (デプロイ完了後):"
+          echo "https://kiyopi.github.io/pitch-training/"
+          echo "https://kiyopi.github.io/pitch-training/random-training-mockup.html"
+          echo "https://kiyopi.github.io/pitch-training/full-scale-training.html"
