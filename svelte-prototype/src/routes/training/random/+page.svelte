@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { base } from '$app/paths';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
@@ -180,7 +181,7 @@
           'Bb3': 'Bb3.mp3',
           'B3': 'B3.mp3',
         },
-        baseUrl: '/audio/piano/',
+        baseUrl: `${base}/audio/piano/`,
         onload: () => {
           console.log('ピアノ音源読み込み完了');
           isLoading = false;
