@@ -382,38 +382,62 @@ CLAUDE.mdの実装前承認（厳守）の項目をすべて読み上げます�
 
 ## 📱 GitHub Pages確認フロー
 
-### ⚠️ 重要: Next.jsプロジェクトでのGitHub Pages確認
+### 🔴 **超重要: 作業ブランチデプロイで時間を無駄にしないために**
 
-#### **事前必須チェック**
-```bash
-# 1. ローカルビルドテスト（必須）
-npm run build
-# エラーがないことを確認してからプッシュ
+#### **必読文書（これを読まないと何十時間も無駄にする）**
+1. **`BRANCH_DEPLOYMENT_COMPLETE_GUIDE.md`** - 完全手順書
+2. **`QUICK_BRANCH_DEPLOY_CHECKLIST.md`** - 5秒確認チェックリスト
 
-# 2. GitHub Actionsワークフロー設定確認
-# .github/workflows/nextjs.yml のトリガーブランチ設定
-# branches: ["main", "作業ブランチ名"]
+#### **2025-07-26 根本解決済み設定**
+```yaml
+# .github/workflows/pages.yml（統合ワークフロー）
+# environment設定削除済み - 作業ブランチから直接デプロイ可能
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # environment設定なし
 ```
 
-### iPhone確認手順
+#### **作業ブランチ命名規則（必須）**
+```bash
+# ✅ 正しいパターン
+feature-xxx-001
+deployment-xxx-001
+random-training-xxx-001
+test-xxx-001
+bugfix-xxx-001
+
+# ❌ NGパターン（デプロイされない）
+my-feature
+feature_xxx_001
+Feature-xxx-001
+```
+
+### 作業ブランチからの確認手順（2025-07-26解決済み）
 
 ```bash
-# 1. 実装完了後プッシュ
-git add . && git commit -m "実装完了"
-git push origin microphone-v2-impl-001
+# 1. ブランチ作成（命名規則厳守）
+git switch -c feature-awesome-feature-001
 
-# 2. Next.jsの場合（重要）
-# GitHub → Settings → Pages → Source は「GitHub Actions」を選択
-# （「Deploy from a branch」ではない）
+# 2. 実装完了後プッシュ
+git add . && git commit -m "実装完了"
+git push -u origin feature-awesome-feature-001
 
 # 3. GitHub Actions実行確認
 # https://github.com/kiyopi/pitch-training/actions
-# 緑のチェックマーク ✅ を確認
+# "Deploy to GitHub Pages (Unified)" が緑のチェックマーク ✅
 
-# 4. iPhone確認
+# 4. エラーチェック
+# "environment protection rules" エラーが出ていないこと確認
+
+# 5. GitHub Pages確認
 # https://kiyopi.github.io/pitch-training/
-# 右上タイムスタンプで更新確認（📱 HH:MM:SS）
+# 作業ブランチの変更が直接反映される
 ```
+
+### ⚠️ 絶対に忘れてはいけないこと
+- **environment設定は削除済み** - 追加してはいけない
+- **ブランチ命名規則を厳守** - パターン外は動作しない
+- **pages.yml以外は無効化済み** - 再度有効化しない
 
 ### 更新確認デバッグ機能
 
