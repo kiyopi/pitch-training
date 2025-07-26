@@ -35,6 +35,10 @@
   let volumeHistory = [];
   let stableFrequency = 0;
   let stableVolume = 0;
+  
+  // 倍音補正用
+  let previousFrequency = 0;
+  let harmonicHistory = [];
 
   // 初期化
   export async function initialize(stream) {
@@ -176,46 +180,44 @@
     const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
     if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
-      // 周波数の安定化（3フレーム移動平均）
-      frequencyHistory.push(pitch);
-      if (frequencyHistory.length > 3) {
-        frequencyHistory.shift();
-      }
+      // 倍音補正システム適用
+      const correctedFreq = correctHarmonicFrequency(pitch, previousFrequency);
       
-      // 平均周波数計算
-      const avgFreq = frequencyHistory.reduce((sum, f) => sum + f, 0) / frequencyHistory.length;
-      
-      // 仕様書準拠: 急激な変化抑制（精度重視）
-      if (stableFrequency > 0) {
-        const changeRatio = Math.abs(avgFreq - stableFrequency) / stableFrequency;
-        if (changeRatio > 0.1) { // 10%以内に制限（より厳格）
-          // 段階的に近づける（15%ずつ）
-          stableFrequency = stableFrequency + (avgFreq - stableFrequency) * 0.15;
-        } else {
-          stableFrequency = avgFreq;
-        }
-      } else {
-        stableFrequency = avgFreq;
-      }
+      // 基音安定化システム適用
+      const stabilizedFreq = stabilizeFrequency(correctedFreq);
       
       // 周波数表示を更新
-      currentFrequency = Math.round(stableFrequency);
+      currentFrequency = Math.round(stabilizedFreq);
       detectedNote = frequencyToNote(currentFrequency);
       pitchClarity = clarity;
-    } else {
-      // 信号が弱い場合は徐々にフェードアウト
-      if (stableFrequency > 0) {
-        stableFrequency *= 0.95; // 5%ずつ減衰
-        if (stableFrequency < 10) {
-          stableFrequency = 0;
-          currentFrequency = 0;
-          detectedNote = 'ーー';
-          pitchClarity = 0;
-        } else {
-          currentFrequency = Math.round(stableFrequency);
-          detectedNote = frequencyToNote(currentFrequency);
-        }
+      
+      // 次回比較用に保存
+      previousFrequency = currentFrequency;
+      
+      // デバッグログ（倍音補正効果確認）
+      if (Math.abs(pitch - correctedFreq) > 10) {
+        console.log('倍音補正:', {
+          original: Math.round(pitch),
+          corrected: Math.round(correctedFreq),
+          stabilized: Math.round(stabilizedFreq),
+          note: detectedNote
+        });
       }
+    } else {
+      // 信号が弱い場合は倍音履歴をクリア
+      if (harmonicHistory.length > 0) {
+        harmonicHistory = [];
+      }
+      
+      // 音程がない場合は前回周波数をリセット
+      if (currentFrequency === 0) {
+        previousFrequency = 0;
+      }
+      
+      // 周波数表示をクリア
+      currentFrequency = 0;
+      detectedNote = 'ーー';
+      pitchClarity = 0;
     }
     
     // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
@@ -250,6 +252,80 @@
     });
     
     animationFrame = requestAnimationFrame(detectPitch);
+  }
+
+  // 音楽的妥当性評価
+  function calculateMusicalScore(frequency) {
+    const C4 = 261.63; // Middle C
+    
+    // 最も近い半音階音名への距離を計算
+    const semitonesFromC4 = Math.log2(frequency / C4) * 12;
+    const nearestSemitone = Math.round(semitonesFromC4);
+    const distanceFromSemitone = Math.abs(semitonesFromC4 - nearestSemitone);
+    
+    // 半音階に近いほど高スコア（±50セント以内で最高点）
+    return Math.max(0, 1.0 - (distanceFromSemitone / 0.5));
+  }
+
+  // 倍音補正システム
+  function correctHarmonicFrequency(detectedFreq, previousFreq) {
+    // 基音候補生成（オクターブ違いを考慮）
+    const fundamentalCandidates = [
+      detectedFreq,          // そのまま（基音の可能性）
+      detectedFreq / 2.0,    // 1オクターブ下（2倍音 → 基音）
+      detectedFreq / 3.0,    // 3倍音 → 基音
+      detectedFreq / 4.0,    // 4倍音 → 基音
+      detectedFreq * 2.0,    // 1オクターブ上（低く歌った場合）
+    ];
+    
+    // 人間音域範囲（C3-C6）
+    const vocalRangeMin = 130.81;
+    const vocalRangeMax = 1046.50;
+    
+    // 各候補の妥当性評価
+    const evaluateFundamental = (freq) => {
+      // 人間音域範囲内チェック（40%重み）
+      const inVocalRange = freq >= vocalRangeMin && freq <= vocalRangeMax;
+      const vocalRangeScore = inVocalRange ? 1.0 : 0.0;
+      
+      // 前回検出との連続性評価（40%重み）
+      const continuityScore = previousFreq > 0
+        ? 1.0 - Math.min(Math.abs(freq - previousFreq) / previousFreq, 1.0)
+        : 0.5;
+      
+      // 音楽的妥当性評価（20%重み）
+      const musicalScore = calculateMusicalScore(freq);
+      
+      const totalScore = (vocalRangeScore * 0.4) + (continuityScore * 0.4) + (musicalScore * 0.2);
+      return { freq, score: totalScore };
+    };
+    
+    // 最高スコア候補を基音として採用
+    const evaluatedCandidates = fundamentalCandidates.map(evaluateFundamental);
+    const bestCandidate = evaluatedCandidates.reduce((best, current) => 
+      current.score > best.score ? current : best
+    );
+    
+    return bestCandidate.freq;
+  }
+
+  // 基音安定化システム
+  function stabilizeFrequency(currentFreq, stabilityThreshold = 0.1) {
+    // 履歴バッファに追加（最大5フレーム保持）
+    harmonicHistory.push(currentFreq);
+    if (harmonicHistory.length > 5) harmonicHistory.shift();
+    
+    // 中央値ベースの安定化（外れ値除去）
+    const sorted = [...harmonicHistory].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    
+    // 急激な変化を抑制（段階的変化）
+    const maxChange = median * stabilityThreshold;
+    const stabilized = Math.abs(currentFreq - median) > maxChange 
+      ? median + Math.sign(currentFreq - median) * maxChange
+      : currentFreq;
+      
+    return stabilized;
   }
 
   // 周波数から音程名に変換
