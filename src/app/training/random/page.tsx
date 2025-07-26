@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import * as Tone from "tone";
 
 // === 型定義 ===
 type MicrophoneState = 'checking' | 'granted' | 'denied' | 'prompt' | 'error';
@@ -16,6 +18,8 @@ export default function RandomTrainingPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [currentBaseNote, setCurrentBaseNote] = useState<string>('');
+  const [sampler, setSampler] = useState<Tone.Sampler | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // 10種類の基音候補
   const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
@@ -73,6 +77,90 @@ export default function RandomTrainingPage() {
     console.log(message);
     setDebugLog(prev => [...prev.slice(-4), message]);
   };
+
+  // === ピアノ音源初期化 ===
+  const initializeSampler = useCallback(async () => {
+    if (sampler) return sampler;
+
+    try {
+      addLog('🎵 ピアノ音源初期化開始');
+      
+      // AudioContext開始
+      if (Tone.getContext().state !== 'running') {
+        await Tone.start();
+        addLog('AudioContext開始完了');
+      }
+      
+      // ピアノ音源作成
+      const newSampler = new Tone.Sampler({
+        urls: {
+          "C4": "C4.mp3",
+          "D4": "D4.mp3", 
+          "E4": "E4.mp3",
+          "F4": "F4.mp3",
+          "G4": "G4.mp3",
+          "A4": "A4.mp3",
+          "B4": "B4.mp3",
+          "C5": "C5.mp3",
+          "D5": "D5.mp3",
+          "E5": "E5.mp3"
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5
+      }).toDestination();
+      
+      // 音源読み込み待機
+      addLog('音源読み込み中...');
+      await Tone.loaded();
+      addLog('✅ ピアノ音源初期化完了');
+      
+      setSampler(newSampler);
+      return newSampler;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`❌ ピアノ音源初期化エラー: ${errorMessage}`);
+      throw error;
+    }
+  }, [sampler]);
+
+  // === ランダム基音再生ハンドラー ===
+  const handleRandomBasePlay = async () => {
+    if (isPlaying || isLoading) return;
+
+    try {
+      setIsLoading(true);
+      setIsPlaying(true);
+      
+      addLog('🎲 ランダム基音再生開始');
+      
+      // サンプラー初期化
+      const samplerInstance = await initializeSampler();
+      
+      // ランダム基音選択
+      const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
+      setCurrentBaseNote(randomNote);
+      
+      addLog(`選択された基音: ${baseNoteNames[randomNote as keyof typeof baseNoteNames]} (${randomNote})`);
+      
+      // 音声再生（2秒間）
+      samplerInstance.triggerAttackRelease(randomNote, "2n");
+      addLog('🎵 ピアノ音再生中...');
+      
+      // 2.5秒後に完了
+      setTimeout(() => {
+        setIsPlaying(false);
+        addLog('✅ ランダム基音再生完了');
+      }, 2500);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`❌ ランダム基音再生エラー: ${errorMessage}`);
+      setIsPlaying(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // === レンダリング関数 ===
   const renderMicrophonePermissionRequired = () => (
     <div style={{
@@ -99,7 +187,8 @@ export default function RandomTrainingPage() {
           lineHeight: '1.5'
         }}>
           このトレーニングには音声入力が必要です。<br />
-          推奨: マイクテストページで音声確認後ご利用ください。
+          マイクテストページで音量・周波数を事前確認し、<br />
+          ご自身の声の特性を把握してからトレーニングにお進みください。
         </div>
       </div>
       
@@ -402,7 +491,68 @@ export default function RandomTrainingPage() {
             </p>
           </div>
 
-          {/* 基音再生セクション */}
+          {/* 基音再生セクション - PC/Mobile レスポンシブ対応 */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '32px'
+          }}>
+            <button 
+              onClick={handleRandomBasePlay}
+              disabled={isPlaying || isLoading}
+              style={{
+                width: '100%',
+                maxWidth: '320px',
+                backgroundColor: isPlaying || isLoading ? '#9ca3af' : '#059669',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '20px 32px',
+                fontSize: '18px',
+                fontWeight: '700',
+                cursor: isPlaying || isLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                marginBottom: '24px',
+                opacity: isPlaying || isLoading ? 0.7 : 1
+              }}
+              onMouseOver={(e) => {
+                if (!isPlaying && !isLoading) {
+                  e.currentTarget.style.backgroundColor = '#047857';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!isPlaying && !isLoading) {
+                  e.currentTarget.style.backgroundColor = '#059669';
+                }
+              }}
+            >
+              {isLoading ? '🔄 初期化中...' : isPlaying ? '🎵 再生中...' : '🎲 ランダム基音再生'}
+            </button>
+            
+            {/* 現在の基音表示 */}
+            {currentBaseNote && (
+              <div style={{
+                padding: '12px 24px',
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px',
+                color: '#166534',
+                fontSize: '16px',
+                fontWeight: '600',
+                textAlign: 'center'
+              }}>
+                🎵 現在の基音: {baseNoteNames[currentBaseNote as keyof typeof baseNoteNames]}
+              </div>
+            )}
+          </div>
+
+          {/* ドレミファソラシドガイドセクション - アニメーション表示エリア */}
           <div style={{
             backgroundColor: '#ffffff',
             border: '1px solid #e5e7eb',
@@ -410,91 +560,78 @@ export default function RandomTrainingPage() {
             padding: '24px',
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
             marginBottom: '32px',
-            textAlign: 'center'
+            minHeight: '140px'
           }}>
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '24px' }}>
-              🎲 ランダム基音再生
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', textAlign: 'center' }}>
+              🎵 ガイドアニメーション
             </h3>
-            <button 
-              onClick={() => {
-                // Phase 2で実装予定
-                console.log('基音再生機能は Phase 2 で実装予定');
-              }}
-              style={{
-                width: '100%',
-                maxWidth: '400px',
-                backgroundColor: '#059669',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '16px 24px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-            >
-              🎲 ランダム基音再生
-            </button>
-          </div>
-
-          {/* ドレミファソラシドガイドセクション */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            marginBottom: '32px'
-          }}>
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '24px', textAlign: 'center' }}>
-              🎵 ドレミファソラシド ガイド
-            </h3>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '12px', width: '100%', maxWidth: '600px' }}>
-                {['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'].map((note, index) => (
-                  <div
-                    key={note}
-                    style={{
-                      width: '56px',
-                      height: '56px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      borderRadius: '8px',
-                      border: '2px solid #d1d5db',
-                      backgroundColor: '#f9fafb',
-                      color: '#6b7280',
-                      transform: 'scale(1)',
-                      transition: 'all 0.3s ease-in-out'
-                    }}
-                  >
-                    {note}
-                  </div>
-                ))}
-              </div>
+            
+            {/* レスポンシブ対応: PC横並び / Mobile縦並び */}
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: window.innerWidth > 768 ? 'repeat(8, 1fr)' : 'repeat(4, 1fr)',
+              gap: window.innerWidth > 768 ? '12px' : '8px',
+              justifyContent: 'center',
+              maxWidth: window.innerWidth > 768 ? '600px' : '300px',
+              margin: '0 auto'
+            }}>
+              {['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'].map((note, index) => (
+                <div
+                  key={`${note}-${index}`}
+                  style={{
+                    width: window.innerWidth > 768 ? '56px' : '48px',
+                    height: window.innerWidth > 768 ? '56px' : '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: window.innerWidth > 768 ? '16px' : '14px',
+                    fontWeight: 'bold',
+                    borderRadius: '8px',
+                    border: '2px solid #d1d5db',
+                    backgroundColor: '#f9fafb',
+                    color: '#6b7280',
+                    transform: 'scale(1)',
+                    transition: 'all 0.3s ease-in-out'
+                  }}
+                >
+                  {note}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 相対音程表示セクション */}
+          {/* 音程検出・採点表示エリア - 固定高さ */}
           <div style={{
             backgroundColor: '#ffffff',
             border: '1px solid #e5e7eb',
             borderRadius: '12px',
             padding: '24px',
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            textAlign: 'center'
+            textAlign: 'center',
+            minHeight: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
           }}>
             <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', lineHeight: '1.5' }}>
               🎵 音程を検出中...
+            </div>
+            
+            {/* 採点結果表示エリア（非表示状態） */}
+            <div style={{ 
+              display: 'none', // トレーニング時は非表示
+              marginTop: '16px',
+              padding: '16px',
+              backgroundColor: '#f0fdf4',
+              borderRadius: '8px',
+              border: '1px solid #bbf7d0'
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#166534', marginBottom: '8px' }}>
+                🎯 採点結果
+              </div>
+              <div style={{ fontSize: '14px', color: '#166534' }}>
+                精度: 95% • 音程: ド → レ
+              </div>
             </div>
           </div>
         </div>
