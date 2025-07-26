@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ランダム基音トレーニング - 相対音感トレーニングアプリ</title>
+    <style>
+        /* CSS Variables (shadcn/ui準拠) */
+        :root {
+            --color-primary: hsl(222.2, 84%, 4.9%);
+            --color-secondary: hsl(210, 40%, 96%);
+            --color-success: hsl(142.1, 76.2%, 36.3%);
+            --color-warning: hsl(47.9, 95.8%, 53.1%);
+            --color-destructive: hsl(0, 84.2%, 60.2%);
+            --color-background: hsl(0, 0%, 100%);
+            --color-foreground: hsl(222.2, 84%, 4.9%);
+            --color-muted: hsl(210, 40%, 96%);
+            --color-border: hsl(214.3, 31.8%, 91.4%);
+            --border-radius: 0.5rem;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-foreground);
+            line-height: 1.5;
+        }
+
+        /* レイアウト構造 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Header (固定) */
+        .header {
+            background-color: var(--color-background);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .version-badge {
+            background-color: var(--color-muted);
+            color: var(--color-foreground);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--border-radius);
+            font-size: 0.75rem;
+        }
+
+        /* Status Bar (マイク状態・進行) */
+        .status-bar {
+            background-color: var(--color-muted);
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .status-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .mic-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: var(--color-success);
+        }
+
+        .progress-info {
+            font-size: 0.875rem;
+            color: var(--color-foreground);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 0;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        /* Card Component (shadcn/ui準拠) */
+        .card {
+            background-color: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-content {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        /* Button Component (shadcn/ui準拠・固定幅) */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            width: 200px; /* 固定幅 */
+            height: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: hsl(222.2, 84%, 10%);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-secondary);
+            color: var(--color-foreground);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background-color: hsl(210, 40%, 90%);
+        }
+
+        .btn-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .btn-destructive {
+            background-color: var(--color-destructive);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Base Tone Section (基音再生) */
+        .base-tone-section {
+            text-align: center;
+        }
+
+        .base-tone-info {
+            margin: 1rem 0;
+            font-size: 1.125rem;
+        }
+
+        .current-base-note {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0.5rem 0;
+        }
+
+        /* Scale Guide (ドレミガイド) */
+        .scale-guide {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .scale-step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .scale-step.inactive {
+            background-color: var(--color-muted);
+            color: hsl(0, 0%, 60%);
+        }
+
+        .scale-step.active {
+            background-color: var(--color-primary);
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .scale-step.correct {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .scale-step.incorrect {
+            background-color: var(--color-destructive);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* Detection Section (音程検出) */
+        .detection-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .frequency-display {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+        }
+
+        .frequency-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .frequency-label {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+        }
+
+        .accuracy-meter {
+            padding: 1rem;
+        }
+
+        .accuracy-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-success);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Volume Bar */
+        .volume-bar {
+            margin: 1rem 0;
+        }
+
+        .volume-bar-fill {
+            height: 0.75rem;
+            background-color: hsl(200, 100%, 50%);
+            border-radius: var(--border-radius);
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        /* Results Section (結果・SNS) */
+        .results-section {
+            text-align: center;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 1rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--color-muted);
+            border-radius: var(--border-radius);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: hsl(0, 0%, 60%);
+        }
+
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .btn-share {
+            width: 120px;
+            height: 2rem;
+            font-size: 0.75rem;
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .scale-guide {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.25rem;
+            }
+
+            .scale-step {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            .detection-display {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .frequency-value {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .share-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-share {
+                width: 200px;
+            }
+        }
+
+        /* 状態管理用のクラス */
+        .phase-setup .detection-section,
+        .phase-setup .results-section { display: none; }
+
+        .phase-listening .results-section { display: none; }
+
+        .phase-detecting .results-section { display: none; }
+
+        .phase-results .base-tone-section,
+        .phase-results .detection-section { opacity: 0.5; }
+    </style>
+</head>
+<body class="phase-setup">
+    <!-- Header (固定) -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>🎵 ランダム基音トレーニング</h1>
+                <span class="version-badge">v3.0.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Bar (マイク状態・進行) -->
+    <section class="status-bar">
+        <div class="container">
+            <div class="status-content">
+                <div class="mic-status">
+                    <div class="status-indicator"></div>
+                    <span>マイク: 接続済み</span>
+                </div>
+                <div class="progress-info">
+                    <span>進行状況: 0/8 音階完了</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Base Tone Section (基音再生) -->
+            <section class="section base-tone-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎲 基音再生</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="base-tone-info">
+                            <p>ランダムに選ばれた基音を再生します</p>
+                            <div class="current-base-note">現在の基音: ド（C4）</div>
+                        </div>
+                        <button class="btn btn-primary">🎵 基音を再生</button>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-secondary">🔄 新しい基音</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scale Guide (ドレミガイド) -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎼 ドレミファソラシド ガイド</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="scale-guide">
+                            <div class="scale-step inactive">ド</div>
+                            <div class="scale-step active">レ</div>
+                            <div class="scale-step inactive">ミ</div>
+                            <div class="scale-step inactive">ファ</div>
+                            <div class="scale-step inactive">ソ</div>
+                            <div class="scale-step inactive">ラ</div>
+                            <div class="scale-step inactive">シ</div>
+                            <div class="scale-step inactive">ド</div>
+                        </div>
+                        <p style="text-align: center; margin-top: 1rem; font-size: 0.875rem; color: hsl(0, 0%, 60%);">
+                            基音から始めて、ドレミファソラシドを順番に歌ってください
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detection Section (音程検出) -->
+            <section class="section detection-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎤 リアルタイム音程検出</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="detection-display">
+                            <div class="frequency-display">
+                                <div class="frequency-value">293.7</div>
+                                <div class="frequency-label">検出周波数 (Hz)</div>
+                            </div>
+                            <div class="accuracy-meter">
+                                <div class="accuracy-value">85%</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 85%;"></div>
+                                </div>
+                                <div class="frequency-label">音程精度</div>
+                            </div>
+                        </div>
+                        
+                        <div class="volume-bar">
+                            <div class="frequency-label" style="margin-bottom: 0.5rem;">音量レベル</div>
+                            <div class="progress-bar">
+                                <div class="volume-bar-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button class="btn btn-success">✅ 正解として記録</button>
+                            <button class="btn btn-secondary" style="margin-left: 0.5rem;">⏭️ 次の音階へ</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section (結果・SNS) -->
+            <section class="section results-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🎯 トレーニング結果</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="score-display">85/100</div>
+                        <p style="text-align: center; margin-bottom: 1.5rem;">総合スコア</p>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">92%</div>
+                                <div class="stat-label">平均精度</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">1.2s</div>
+                                <div class="stat-label">平均反応時間</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">8/8</div>
+                                <div class="stat-label">完了音階</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">6</div>
+                                <div class="stat-label">連続正解</div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin: 1.5rem 0;">
+                            <button class="btn btn-primary">🔄 もう一度トレーニング</button>
+                        </div>
+
+                        <div class="share-buttons">
+                            <button class="btn btn-secondary btn-share">🐦 Twitter</button>
+                            <button class="btn btn-secondary btn-share">📋 クリップボード</button>
+                            <button class="btn btn-secondary btn-share">📱 LINE</button>
+                            <button class="btn btn-secondary btn-share">📘 Facebook</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // モックアップ用のインタラクティブ機能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎵 ランダム基音トレーニング モックアップ読み込み完了');
+            
+            // 基音再生ボタン
+            const playBaseButton = document.querySelector('.base-tone-section .btn-primary');
+            if (playBaseButton) {
+                playBaseButton.addEventListener('click', function() {
+                    console.log('🎵 基音再生ボタンクリック（モック）');
+                    this.textContent = '🎵 再生中...';
+                    this.disabled = true;
+                    
+                    setTimeout(() => {
+                        this.textContent = '🎵 基音を再生';
+                        this.disabled = false;
+                        // 検出セクションを表示
+                        document.querySelector('.detection-section').style.display = 'block';
+                        document.body.className = 'phase-detecting';
+                    }, 2000);
+                });
+            }
+
+            // 正解記録ボタン
+            const correctButton = document.querySelector('.btn-success');
+            if (correctButton) {
+                correctButton.addEventListener('click', function() {
+                    console.log('✅ 正解記録ボタンクリック（モック）');
+                    
+                    // 音階ガイドの更新（例：レ→ミ）
+                    const activeStep = document.querySelector('.scale-step.active');
+                    if (activeStep) {
+                        activeStep.classList.remove('active');
+                        activeStep.classList.add('correct');
+                        
+                        const nextStep = activeStep.nextElementSibling;
+                        if (nextStep && nextStep.classList.contains('scale-step')) {
+                            nextStep.classList.add('active');
+                        } else {
+                            // 全完了時
+                            document.body.className = 'phase-results';
+                            document.querySelector('.results-section').classList.add('show');
+                        }
+                    }
+                    
+                    // 進行状況更新
+                    const progressInfo = document.querySelector('.progress-info span');
+                    const current = parseInt(progressInfo.textContent.match(/\d+/)[0]) + 1;
+                    progressInfo.textContent = `進行状況: ${current}/8 音階完了`;
+                });
+            }
+
+            // 新しい基音ボタン
+            const newBaseButton = document.querySelector('.btn-secondary');
+            if (newBaseButton) {
+                newBaseButton.addEventListener('click', function() {
+                    console.log('🔄 新しい基音ボタンクリック（モック）');
+                    const baseNotes = ['ド（C4）', 'レ（D4）', 'ミ（E4）', 'ファ（F4）', 'ソ（G4）', 'ラ（A4）', 'シ（B4）', 'ド（C5）'];
+                    const randomNote = baseNotes[Math.floor(Math.random() * baseNotes.length)];
+                    document.querySelector('.current-base-note').textContent = `現在の基音: ${randomNote}`;
+                });
+            }
+
+            // リアルタイム音程値の更新（モック）
+            setInterval(() => {
+                const frequencyDisplay = document.querySelector('.frequency-value');
+                const accuracyValue = document.querySelector('.accuracy-value');
+                const progressFill = document.querySelector('.progress-fill');
+                const volumeFill = document.querySelector('.volume-bar-fill');
+                
+                if (document.body.className === 'phase-detecting') {
+                    // 模擬的な値の変動
+                    const frequency = (280 + Math.random() * 40).toFixed(1);
+                    const accuracy = Math.floor(70 + Math.random() * 30);
+                    const volume = Math.floor(30 + Math.random() * 70);
+                    
+                    if (frequencyDisplay) frequencyDisplay.textContent = frequency;
+                    if (accuracyValue) accuracyValue.textContent = accuracy + '%';
+                    if (progressFill) progressFill.style.width = accuracy + '%';
+                    if (volumeFill) volumeFill.style.width = volume + '%';
+                }
+            }, 200);
+
+            console.log('🎯 モックアップ機能初期化完了');
+        });
+    </script>
+</body>
+</html>
