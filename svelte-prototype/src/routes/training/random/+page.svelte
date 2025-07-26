@@ -297,7 +297,7 @@
         </div>
         
         <div class="action-buttons">
-          <Button variant="primary" on:click={goToMicrophoneTest}
+          <Button variant="primary" on:click={goToMicrophoneTest}>
             🎤 マイクテストページへ移動
           </Button>
           <Button variant="secondary" on:click={goHome}>
