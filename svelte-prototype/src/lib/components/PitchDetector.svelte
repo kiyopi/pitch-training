@@ -9,6 +9,11 @@
   export let isActive = false;
   export let className = '';
 
+  // 状態管理（改訂版）
+  let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
+  let lastError = null;
+  let isInitialized = false;
+
   // 音程検出状態
   let audioContext = null;
   let mediaStream = null;
@@ -40,9 +45,16 @@
   let previousFrequency = 0;
   let harmonicHistory = [];
 
-  // 初期化
+  // 初期化（改訂版）
   export async function initialize(stream) {
     try {
+      componentState = 'initializing';
+      lastError = null;
+      
+      if (!stream) {
+        throw new Error('MediaStream is required');
+      }
+      
       mediaStream = stream;
       
       if (!audioContext) {
@@ -98,38 +110,73 @@
       // PitchDetector初期化
       pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
       
-      console.log('PitchDetectorコンポーネント初期化完了 - 3段階ノイズリダクション有効');
+      // 初期化完了
+      componentState = 'ready';
+      isInitialized = true;
+      
+      // 状態変更を通知
+      dispatch('stateChange', { state: componentState });
+      
+      console.log('✅ PitchDetectorコンポーネント初期化完了 - 3段階ノイズリダクション有効');
       
     } catch (error) {
-      console.error('PitchDetector初期化エラー:', error);
+      componentState = 'error';
+      lastError = error;
+      isInitialized = false;
+      
+      // エラーを通知
+      dispatch('error', { error, context: 'initialization' });
+      
+      console.error('❌ PitchDetector初期化エラー:', error);
       throw error;
     }
   }
 
-  // 検出開始
+  // 検出開始（改訂版）
   export function startDetection() {
+    if (componentState !== 'ready') {
+      const error = new Error(`Cannot start detection: component state is ${componentState}`);
+      dispatch('error', { error, context: 'start-detection' });
+      console.error('❌ 検出開始エラー:', error.message);
+      return false;
+    }
+    
     if (!analyser || !pitchDetector || !audioContext) {
-      console.error('PitchDetector未初期化 - 必要なコンポーネント:', {
+      const error = new Error('Required components not available');
+      componentState = 'error';
+      dispatch('error', { error, context: 'start-detection' });
+      console.error('❌ PitchDetector未初期化 - 必要なコンポーネント:', {
         analyser: !!analyser,
         pitchDetector: !!pitchDetector,
         audioContext: !!audioContext,
         mediaStream: !!mediaStream
       });
-      return;
+      return false;
     }
     
+    componentState = 'detecting';
     isDetecting = true;
+    dispatch('stateChange', { state: componentState });
     detectPitch();
-    console.log('音程検出開始');
+    console.log('✅ 音程検出開始');
+    return true;
   }
 
-  // 検出停止
+  // 検出停止（改訂版）
   export function stopDetection() {
     isDetecting = false;
     if (animationFrame) {
       cancelAnimationFrame(animationFrame);
+      animationFrame = null;
     }
-    console.log('音程検出停止');
+    
+    // 状態を ready に戻す（初期化済みの場合）
+    if (componentState === 'detecting' && isInitialized) {
+      componentState = 'ready';
+      dispatch('stateChange', { state: componentState });
+    }
+    
+    console.log('✅ 音程検出停止');
   }
 
   // リアルタイム音程検出
@@ -342,9 +389,45 @@
     return noteNames[noteIndex] + octave;
   }
 
-  // クリーンアップ
+  // 状態確認API（新規追加）
+  export function getIsInitialized() {
+    return isInitialized && componentState === 'ready';
+  }
+  
+  export function getState() {
+    return {
+      componentState,
+      isInitialized,
+      isDetecting,
+      lastError,
+      hasRequiredComponents: !!(analyser && pitchDetector && audioContext && mediaStream)
+    };
+  }
+  
+  // 再初期化API（新規追加）
+  export async function reinitialize(stream) {
+    console.log('🔄 PitchDetector再初期化開始');
+    
+    // 現在の状態をクリーンアップ
+    cleanup();
+    
+    // 短い待機でリソース解放を確実に
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 再初期化実行
+    await initialize(stream);
+    
+    console.log('✅ PitchDetector再初期化完了');
+  }
+
+  // クリーンアップ（改訂版）
   export function cleanup() {
     stopDetection();
+    
+    // 状態をリセット
+    componentState = 'uninitialized';
+    isInitialized = false;
+    lastError = null;
     
     if (mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
@@ -362,6 +445,13 @@
     highpassFilter = null;
     lowpassFilter = null;
     notchFilter = null;
+    
+    // 履歴クリア
+    frequencyHistory = [];
+    volumeHistory = [];
+    harmonicHistory = [];
+    
+    console.log('✅ PitchDetectorクリーンアップ完了');
   }
 
   // isActiveの変更を監視

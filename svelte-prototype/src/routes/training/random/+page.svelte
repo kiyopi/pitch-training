@@ -13,6 +13,12 @@
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
   let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
   
+  // コンポーネント状態管理（改訂版）
+  let audioEngineState = 'initializing'; // 'initializing' | 'ready' | 'error'
+  let pitchDetectorState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
+  let isRestarting = false; // 再挑戦処理中フラグ
+  let systemErrors = []; // エラー履歴
+  
   // デバッグ情報（強制更新）
   const buildVersion = "v1.3.2-FORCE";
   const buildTimestamp = "07/27 02:20";
@@ -166,16 +172,29 @@
     }
   }
 
-  // ガイドアニメーション開始
+  // ガイドアニメーション開始（改訂版）
   function startGuideAnimation() {
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
     isGuideAnimationActive = true;
     scaleEvaluations = [];
     
-    // 音程検出開始
-    if (pitchDetectorComponent && mediaStream) {
-      pitchDetectorComponent.startDetection();
+    // 音程検出開始（状態確認強化）
+    if (pitchDetectorComponent && mediaStream && pitchDetectorState === 'ready') {
+      const success = pitchDetectorComponent.startDetection();
+      if (!success) {
+        console.error('❌ 音程検出開始失敗 - ガイドアニメーション中止');
+        trainingPhase = 'setup';
+        return;
+      }
+    } else {
+      console.error('❌ 音程検出開始失敗 - コンポーネント未準備:', {
+        hasComponent: !!pitchDetectorComponent,
+        hasMediaStream: !!mediaStream,
+        pitchDetectorState
+      });
+      trainingPhase = 'setup';
+      return;
     }
     
     console.log('🎵 ガイドアニメーション開始');
@@ -320,14 +339,14 @@
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
         onload: () => {
-          console.log('Salamander Grand Piano C4音源読み込み完了 - ピッチシフト対応');
+          console.log('✅ Salamander Grand Piano C4音源読み込み完了');
           isLoading = false;
-          // 強制的に反応性を trigger
-          console.log('🎹 音源読み込み完了 - isLoading:', isLoading);
+          audioEngineState = 'ready';
         },
         onerror: (error) => {
-          console.error('Salamander Piano音源読み込みエラー:', error);
+          console.error('❌ Salamander Piano音源読み込みエラー:', error);
           isLoading = false;
+          audioEngineState = 'error';
         }
       }).toDestination();
       
@@ -342,7 +361,17 @@
   
   // 初期化
   onMount(async () => {
+    // 状態一貫性チェック開始
+    stateCheckInterval = setInterval(() => {
+      const issues = validateSystemState();
+      if (issues.length > 0) {
+        console.warn('⚠️ 状態一貫性問題:', issues);
+      }
+    }, 5000);
+    
+    // 音源初期化
     initializeSampler();
+    
     // コンポーネントマウント完了を少し待ってからマイク許可チェック
     await new Promise(resolve => setTimeout(resolve, 100));
     checkMicrophonePermission();
@@ -437,18 +466,51 @@
     console.log('🎉 セッション完了!', sessionResults);
   }
   
-  // セッション再開始
-  function restartSession() {
-    // タイマークリア
-    if (guideAnimationTimer) {
-      clearTimeout(guideAnimationTimer);
-      guideAnimationTimer = null;
+  // セッション再開始（改訂版）
+  async function restartSession() {
+    if (isRestarting) {
+      console.log('⚠️ 既に再開始処理中です');
+      return;
     }
     
-    // 状態リセット
-    trainingPhase = 'setup';
+    try {
+      isRestarting = true;
+      console.log('🔄 セッション再開始処理開始');
+      
+      // 1. 現在のセッションを安全に停止
+      if (guideAnimationTimer) {
+        clearTimeout(guideAnimationTimer);
+        guideAnimationTimer = null;
+      }
+      
+      if (pitchDetectorComponent) {
+        pitchDetectorComponent.stopDetection();
+      }
+      
+      // 2. セッション状態をリセット（前回結果は保持）
+      resetSessionState();
+      
+      // 3. コンポーネント状態確認・修復
+      await ensureComponentsReady();
+      
+      // 4. 新セッション開始準備完了
+      trainingPhase = 'setup';
+      
+      console.log('✅ セッション再開始準備完了');
+      
+    } catch (error) {
+      console.error('❌ セッション再開始エラー:', error);
+      await recordAndRecover(error, 'session-restart');
+    } finally {
+      isRestarting = false;
+    }
+  }
+  
+  // セッション状態リセット
+  function resetSessionState() {
     currentScaleIndex = 0;
     isGuideAnimationActive = false;
+    scaleEvaluations = []; // 現在のセッション評価はクリア
     // previousEvaluations は保持（前回の結果を残す）
     
     // スケールガイドリセット
@@ -458,16 +520,216 @@
       completed: false
     }));
     
-    // 音程検出停止
-    if (pitchDetectorComponent) {
-      pitchDetectorComponent.stopDetection();
-    }
-    
-    console.log('🔄 セッション再開始');
+    console.log('✅ セッション状態リセット完了');
   }
   
+  // コンポーネント状態確認・修復（新規追加）
+  async function ensureComponentsReady() {
+    console.log('🔍 コンポーネント状態確認開始');
+    
+    try {
+      // 1. マイク状態確認
+      if (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live')) {
+        console.log('🎤 マイク再初期化が必要');
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphoneState = 'granted';
+      }
+      
+      // 2. PitchDetector状態確認
+      if (!pitchDetectorComponent || !pitchDetectorComponent.getIsInitialized()) {
+        console.log('🎙️ PitchDetector再初期化が必要');
+        pitchDetectorState = 'initializing';
+        
+        // コンポーネントが存在しない場合は少し待機
+        if (!pitchDetectorComponent) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        if (pitchDetectorComponent) {
+          await pitchDetectorComponent.reinitialize(mediaStream);
+          pitchDetectorState = 'ready';
+        } else {
+          throw new Error('PitchDetectorコンポーネントが見つかりません');
+        }
+      }
+      
+      // 3. 音源状態確認
+      if (!sampler || isLoading) {
+        console.log('🎹 音源再初期化が必要');
+        audioEngineState = 'initializing';
+        await initializeSampler();
+        audioEngineState = 'ready';
+      }
+      
+      console.log('✅ 全コンポーネント正常確認完了');
+      
+    } catch (error) {
+      console.error('❌ コンポーネント確認・修復エラー:', error);
+      throw error;
+    }
+  }
+  
+  // エラー記録・回復機能（新規追加）
+  async function recordAndRecover(error, context) {
+    const systemError = {
+      type: classifyError(error),
+      message: error.message,
+      context,
+      timestamp: Date.now(),
+      recoverable: true,
+      recovered: false
+    };
+    
+    systemErrors.push(systemError);
+    console.error(`🚨 システムエラー [${context}]:`, error);
+    
+    try {
+      // エラー種別による回復戦略
+      switch (systemError.type) {
+        case 'microphone-lost':
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          await pitchDetectorComponent?.reinitialize(mediaStream);
+          break;
+          
+        case 'pitchdetector-failed':
+          await pitchDetectorComponent?.cleanup();
+          await pitchDetectorComponent?.reinitialize(mediaStream);
+          break;
+          
+        case 'audio-context-suspended':
+          if (audioContext && audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+          break;
+          
+        case 'sampler-error':
+          sampler?.dispose();
+          await initializeSampler();
+          break;
+          
+        default:
+          // 完全再初期化
+          await fullReinitialize();
+          break;
+      }
+      
+      systemError.recovered = true;
+      console.log('✅ エラー回復成功');
+      
+    } catch (recoveryError) {
+      systemError.recoverable = false;
+      console.error('❌ エラー回復失敗:', recoveryError);
+      await fullReinitialize();
+    }
+  }
+  
+  // エラー分類
+  function classifyError(error) {
+    if (error.message.includes('MediaStream') || error.message.includes('microphone')) {
+      return 'microphone-lost';
+    } else if (error.message.includes('PitchDetector') || error.message.includes('detection')) {
+      return 'pitchdetector-failed';
+    } else if (error.message.includes('AudioContext') || error.message.includes('suspended')) {
+      return 'audio-context-suspended';
+    } else if (error.message.includes('sampler') || error.message.includes('audio')) {
+      return 'sampler-error';
+    }
+    return 'unknown';
+  }
+  
+  // 完全再初期化（最終手段）
+  async function fullReinitialize() {
+    console.log('🔄 完全再初期化開始');
+    
+    try {
+      // 全リソースクリーンアップ
+      if (pitchDetectorComponent) {
+        pitchDetectorComponent.cleanup();
+      }
+      if (sampler) {
+        sampler.dispose();
+        sampler = null;
+      }
+      
+      // 状態リセット
+      microphoneState = 'checking';
+      audioEngineState = 'initializing';
+      pitchDetectorState = 'uninitialized';
+      
+      // 再初期化実行
+      await checkMicrophonePermission();
+      
+      console.log('✅ 完全再初期化完了');
+      
+    } catch (error) {
+      console.error('❌ 完全再初期化失敗:', error);
+      microphoneState = 'error';
+      audioEngineState = 'error';
+      pitchDetectorState = 'error';
+    }
+  }
+
+  // 状態一貫性チェック機能（新規追加）
+  function validateSystemState() {
+    const issues = [];
+    
+    if (trainingPhase === 'guiding' && pitchDetectorState !== 'detecting') {
+      issues.push('Training in guiding phase but PitchDetector not detecting');
+    }
+    
+    if (microphoneState === 'granted' && (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live'))) {
+      issues.push('Microphone granted but MediaStream invalid');
+    }
+    
+    if (audioEngineState === 'ready' && (!sampler || isLoading)) {
+      issues.push('Audio engine ready but sampler not available');
+    }
+    
+    if (pitchDetectorState === 'ready' && !pitchDetectorComponent?.getIsInitialized()) {
+      issues.push('PitchDetector ready but not initialized');
+    }
+    
+    return issues;
+  }
+  
+  // Svelteリアクティブシステムによる状態同期
+  $: canStartTraining = microphoneState === 'granted' && 
+                       audioEngineState === 'ready' && 
+                       pitchDetectorState === 'ready' && 
+                       !isRestarting;
+
+  $: canRestartSession = trainingPhase === 'results' && !isRestarting;
+
+  // 定期的な状態一貫性チェック
+  let stateCheckInterval;
+
+  // PitchDetectorイベントハンドラー（新規追加）
+  function handlePitchDetectorStateChange(event) {
+    pitchDetectorState = event.detail.state;
+    console.log(`🔄 PitchDetector状態変更: ${pitchDetectorState}`);
+    
+    // 状態変更後の一貫性チェック
+    setTimeout(() => {
+      const issues = validateSystemState();
+      if (issues.length > 0) {
+        console.warn('⚠️ 状態変更後の一貫性問題:', issues);
+      }
+    }, 100);
+  }
+  
+  function handlePitchDetectorError(event) {
+    console.error('❌ PitchDetectorエラー:', event.detail);
+    recordAndRecover(event.detail.error, event.detail.context);
+  }
+
   // クリーンアップ
   onDestroy(() => {
+    // 状態チェック停止
+    if (stateCheckInterval) {
+      clearInterval(stateCheckInterval);
+    }
+    
+    // コンポーネントクリーンアップ
     if (pitchDetectorComponent) {
       pitchDetectorComponent.cleanup();
     }
@@ -536,6 +798,8 @@
                 bind:this={pitchDetectorComponent}
                 isActive={trainingPhase === 'guiding'}
                 on:pitchUpdate={handlePitchUpdate}
+                on:stateChange={handlePitchDetectorStateChange}
+                on:error={handlePitchDetectorError}
                 className="pitch-detector-content"
               />
             {:else}
@@ -619,8 +883,16 @@
           </div>
           
           <div class="action-buttons">
-            <Button class="primary-button" on:click={restartSession}>
-              🔄 再挑戦
+            <Button 
+              class="primary-button" 
+              disabled={!canRestartSession}
+              on:click={restartSession}
+            >
+              {#if isRestarting}
+                🔄 準備中...
+              {:else}
+                🔄 再挑戦
+              {/if}
             </Button>
             <Button class="secondary-button">
               🎊 SNS共有
