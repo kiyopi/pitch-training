@@ -71,7 +71,7 @@
     { note: 'B3', name: 'シ（低）', frequency: 246.94 }
   ];
 
-  // マイクロフォン許可チェック
+  // マイクロフォン許可チェック（ストリーム保持版）
   async function checkMicrophonePermission() {
     microphoneState = 'checking';
     
@@ -81,11 +81,11 @@
         return;
       }
       
-      // 簡単な許可チェック
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      // マイクストリームを取得して保持
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       microphoneState = 'granted';
       trainingPhase = 'setup';
+      console.log('マイク許可取得成功 - ストリーム保持');
     } catch (error) {
       console.error('マイク許可エラー:', error);
       microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
@@ -217,14 +217,16 @@
     initializeSampler();
   });
   
-  // 音程検出開始
+  // 音程検出開始（既存ストリーム使用）
   async function startPitchDetection() {
     try {
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
       
+      // 既存のマイクストリームを使用（checkMicrophonePermissionで取得済み）
       if (!mediaStream) {
+        console.error('マイクストリームが存在しません。許可を再取得します。');
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
@@ -235,7 +237,7 @@
       
       isDetecting = true;
       detectPitch();
-      console.log('音程検出開始');
+      console.log('音程検出開始 - 既存ストリーム使用');
       
     } catch (error) {
       console.error('音程検出開始エラー:', error);
@@ -474,6 +476,9 @@
         <div class="action-buttons">
           <Button variant="primary" on:click={goToMicrophoneTest}>
             🎤 マイクテストページへ移動
+          </Button>
+          <Button variant="secondary" on:click={checkMicrophonePermission}>
+            🎙️ 直接マイク許可を取得
           </Button>
           <Button variant="secondary" on:click={goHome}>
             🏠 ホームに戻る
