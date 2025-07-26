@@ -81,23 +81,19 @@
       // マイクストリームを取得
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // PitchDetectorコンポーネントを初期化（参照確認後）
-      let retries = 0;
-      while (!pitchDetectorComponent && retries < 10) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        retries++;
-      }
-      
-      if (pitchDetectorComponent) {
-        await pitchDetectorComponent.initialize(mediaStream);
-        console.log('PitchDetectorコンポーネント初期化完了');
-      } else {
-        console.error('PitchDetectorコンポーネントが見つかりません (再試行 ' + retries + ' 回)');
-      }
-      
       microphoneState = 'granted';
       trainingPhase = 'setup';
       console.log('マイク許可取得成功');
+      
+      // PitchDetectorコンポーネントがマウントされるまで待機してから初期化
+      setTimeout(async () => {
+        if (pitchDetectorComponent) {
+          await pitchDetectorComponent.initialize(mediaStream);
+          console.log('PitchDetectorコンポーネント初期化完了');
+        } else {
+          console.error('PitchDetectorコンポーネントが見つかりません');
+        }
+      }, 200);
     } catch (error) {
       console.error('マイク許可エラー:', error);
       microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
@@ -333,12 +329,18 @@
           <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
         </div>
         <div class="card-content">
-          <PitchDetector
-            bind:this={pitchDetectorComponent}
-            isActive={trainingPhase === 'detecting'}
-            on:pitchUpdate={handlePitchUpdate}
-            className="pitch-detector-content"
-          />
+          {#if mediaStream}
+            <PitchDetector
+              bind:this={pitchDetectorComponent}
+              isActive={trainingPhase === 'detecting'}
+              on:pitchUpdate={handlePitchUpdate}
+              className="pitch-detector-content"
+            />
+          {:else}
+            <div class="pitch-detector-placeholder">
+              マイク許可待ち...
+            </div>
+          {/if}
           
           {#if currentBaseFrequency > 0}
             <div class="relative-pitch-info">
@@ -601,6 +603,13 @@
     font-weight: 700;
     color: hsl(215.4 16.3% 46.9%);
     line-height: 1;
+  }
+  
+  .pitch-detector-placeholder {
+    text-align: center;
+    padding: 2rem;
+    color: hsl(215.4 16.3% 46.9%);
+    font-style: italic;
   }
 
   /* スケールガイド */
