@@ -81,12 +81,18 @@
       // マイクストリームを取得
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // PitchDetectorコンポーネントを初期化
+      // PitchDetectorコンポーネントを初期化（参照確認後）
+      let retries = 0;
+      while (!pitchDetectorComponent && retries < 10) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        retries++;
+      }
+      
       if (pitchDetectorComponent) {
         await pitchDetectorComponent.initialize(mediaStream);
         console.log('PitchDetectorコンポーネント初期化完了');
       } else {
-        console.error('PitchDetectorコンポーネントが見つかりません');
+        console.error('PitchDetectorコンポーネントが見つかりません (再試行 ' + retries + ' 回)');
       }
       
       microphoneState = 'granted';
@@ -222,9 +228,11 @@
   }
   
   // 初期化
-  onMount(() => {
-    checkMicrophonePermission();
+  onMount(async () => {
     initializeSampler();
+    // コンポーネントマウント完了を少し待ってからマイク許可チェック
+    await new Promise(resolve => setTimeout(resolve, 100));
+    checkMicrophonePermission();
   });
   
   // PitchDetectorコンポーネントからのイベントハンドラー
