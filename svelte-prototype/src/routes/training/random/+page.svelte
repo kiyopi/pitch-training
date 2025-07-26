@@ -390,6 +390,7 @@
             <div class="detected-info">
               <span class="detected-label">検出中:</span>
               <span class="detected-note">{detectedNote}</span>
+              <span class="detected-frequency">({currentFrequency > 0 ? Math.round(currentFrequency) + 'Hz' : '---'})</span>
               <span class="pitch-diff">({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
             </div>
             
@@ -684,9 +685,16 @@
     color: hsl(222.2 84% 4.9%);
   }
   
+  .detected-frequency {
+    color: hsl(215.4 16.3% 46.9%);
+    font-size: 0.875rem;
+    margin-left: 0.25rem;
+  }
+  
   .pitch-diff {
     color: hsl(47.9 95.8% 40%);
     font-weight: 500;
+    margin-left: 0.25rem;
   }
   
   .volume-section {
