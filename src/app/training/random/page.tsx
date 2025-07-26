@@ -106,7 +106,7 @@ export default function RandomTrainingPage() {
           "Ab4": "Ab4.mp3",
           "Bb3": "Bb3.mp3"
         },
-        baseUrl: "/audio/piano/",
+        baseUrl: "/pitch-training/audio/piano/",
         release: 1.5
       }).toDestination();
       
