@@ -168,8 +168,13 @@
     // 音程検出（PitchDetector使用）
     const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    // ノイズ除去（調整された閾値）
-    if (pitch && clarity > 0.75 && currentVolume > 8) {
+    // 人間音域フィルタリング + ノイズ除去（仕様書準拠）
+    // 人間の声域: 80Hz-2000Hz（ベースからシャウトまで）
+    // 特に相対音感トレーニング対象: C2-C6 (65Hz-1047Hz)
+    const isHumanVocalRange = pitch >= 80 && pitch <= 2000;
+    const isTrainingRange = pitch >= 65 && pitch <= 1047;
+    
+    if (pitch && clarity > 0.6 && currentVolume > 10 && isHumanVocalRange && isTrainingRange) {
       // 周波数の安定化（3フレーム移動平均）
       frequencyHistory.push(pitch);
       if (frequencyHistory.length > 3) {
@@ -179,12 +184,12 @@
       // 平均周波数計算
       const avgFreq = frequencyHistory.reduce((sum, f) => sum + f, 0) / frequencyHistory.length;
       
-      // 急激な変化を抑制（±15%以内の変化に制限）
+      // 仕様書準拠: 急激な変化抑制（精度重視）
       if (stableFrequency > 0) {
         const changeRatio = Math.abs(avgFreq - stableFrequency) / stableFrequency;
-        if (changeRatio > 0.15) {
-          // 段階的に近づける（20%ずつ）
-          stableFrequency = stableFrequency + (avgFreq - stableFrequency) * 0.2;
+        if (changeRatio > 0.1) { // 10%以内に制限（より厳格）
+          // 段階的に近づける（15%ずつ）
+          stableFrequency = stableFrequency + (avgFreq - stableFrequency) * 0.15;
         } else {
           stableFrequency = avgFreq;
         }
@@ -192,9 +197,12 @@
         stableFrequency = avgFreq;
       }
       
-      currentFrequency = Math.round(stableFrequency);
-      detectedNote = frequencyToNote(currentFrequency);
-      pitchClarity = clarity;
+      // 人間音域内でのみ更新
+      if (stableFrequency >= 80 && stableFrequency <= 2000) {
+        currentFrequency = Math.round(stableFrequency);
+        detectedNote = frequencyToNote(currentFrequency);
+        pitchClarity = clarity;
+      }
     } else {
       // 信号が弱い場合は徐々にフェードアウト
       if (stableFrequency > 0) {
@@ -215,12 +223,15 @@
     if (!window.pitchDetectorLastLog || 
         Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
         Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20) {
+      const isInRange = pitch >= 80 && pitch <= 2000;
       console.log('PitchDetector:', {
         rawVolume: Math.round(rawVolume),
         filteredVolume: Math.round(currentVolume), 
         frequency: currentFrequency,
         note: detectedNote,
-        clarity: Math.round(clarity * 100)
+        clarity: Math.round(clarity * 100),
+        inHumanRange: isInRange,
+        rawPitch: pitch ? Math.round(pitch) : 0
       });
       window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency };
     }
