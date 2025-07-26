@@ -235,11 +235,14 @@
     }
     
     // 親コンポーネントにデータを送信
+    // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
+    const displayVolume = currentFrequency > 0 ? rawVolume : 0;
+    
     dispatch('pitchUpdate', {
       frequency: currentFrequency,
       note: detectedNote,
       volume: currentVolume,
-      rawVolume: rawVolume,
+      rawVolume: displayVolume,
       clarity: pitchClarity
     });
     
