@@ -107,8 +107,9 @@
         await Tone.start();
       }
       
-      // 選択された基音を再生（周波数で直接指定）
-      sampler.triggerAttackRelease(currentBaseFrequency, '2n');
+      // 選択された基音を再生（C4から相対音程で計算）
+      const note = baseNotes.find(n => n.name === currentBaseNote).note;
+      sampler.triggerAttackRelease(note, '2n');
       
       console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz');
       
@@ -161,32 +162,32 @@
     window.location.href = '/';
   }
 
-  // Tone.jsサンプラー初期化（Oscillatorベース）
+  // Tone.jsサンプラー初期化（Salamander Grand Piano）
   async function initializeSampler() {
     try {
       isLoading = true;
       
-      // オシレーターベースのシンセサイザーを作成（外部ファイル不要）
-      sampler = new Tone.Synth({
-        oscillator: {
-          type: 'sine'
+      // 公式Salamander Grand Piano音源を使用
+      sampler = new Tone.Sampler({
+        urls: {
+          'C4': 'C4.mp3',
         },
-        envelope: {
-          attack: 0.1,
-          decay: 0.3,
-          sustain: 0.3,
-          release: 1
+        baseUrl: 'https://tonejs.github.io/audio/salamander/',
+        onload: () => {
+          console.log('Salamander Grand Piano音源読み込み完了');
+          isLoading = false;
+        },
+        onerror: (error) => {
+          console.error('Salamander Piano音源読み込みエラー:', error);
+          isLoading = false;
         }
       }).toDestination();
       
       // 音量調整
-      sampler.volume.value = -12; // オシレーターは音が大きいため下げる
-      
-      console.log('オシレーター音源初期化完了');
-      isLoading = false;
+      sampler.volume.value = -6; // デフォルトより少し下げる
       
     } catch (error) {
-      console.error('音源初期化エラー:', error);
+      console.error('サンプラー初期化エラー:', error);
       isLoading = false;
     }
   }
