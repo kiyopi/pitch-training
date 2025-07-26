@@ -50,7 +50,7 @@
   async function initializeTone() {
     try {
       loadingStatus = 'Tone.js CDN読み込み中...';
-      console.log('🔄 Tone.js初期化開始');
+      console.log('🔄 Tone.js初期化開始（ピアノ音源必須モード）');
       
       // Tone.js CDNから読み込み（Promise化）
       if (typeof window !== 'undefined' && !window.Tone) {
@@ -223,18 +223,21 @@
           await setupSampler();
         } catch (retryError) {
           console.error('❌ 再試行も失敗:', retryError);
-          console.log('🔧 最終的にフォールバックモードに切り替え');
+          console.log('🚨 ピアノ音源必須モード - フォールバック無効');
           
-          useSimpleAudio = true;
-          isToneLoaded = true;
-          toneLoadingError = `音源エラー: ${retryError.message}（シンプル音源使用）`;
-          loadingStatus = 'シンプル音源で開始';
+          toneLoadingError = `❌ ピアノ音源読み込み失敗: ${retryError.message}`;
+          loadingStatus = 'ピアノ音源読み込み失敗 - ページを再読み込みしてください';
+          
+          // フォールバックは使用しない
+          useSimpleAudio = false;
+          isToneLoaded = false;
         }
       }, 3000);
     }
   }
   
   onMount(() => {
+    console.log('🚀 onMount実行 - Tone.js強制初期化開始');
     initializeTone();
   });
   
@@ -284,30 +287,16 @@
     playBaseNote(baseNote);
   }
 
-  // 基音再生（実装）
+  // 基音再生（Tone.js必須モード）
   async function playBaseNote(note) {
     isPlaying = true;
-    console.log(`基音再生: ${note} (フォールバック: ${useSimpleAudio})`);
+    console.log(`🎹 ピアノ基音再生: ${note} (Tone.js読み込み状態: ${isToneLoaded})`);
     
     try {
-      if (useSimpleAudio) {
-        // シンプル音源フォールバック
-        playSimpleBeep(getBaseNoteFrequency(note));
-        setTimeout(() => {
-          isPlaying = false;
-          startDetection();
-        }, 2500);
-        return;
-      }
-      
       if (!isToneLoaded || !sampler) {
-        console.warn('Tone.js または Sampler が未初期化 - フォールバックに切り替え');
-        useSimpleAudio = true;
-        playSimpleBeep(getBaseNoteFrequency(note));
-        setTimeout(() => {
-          isPlaying = false;
-          startDetection();
-        }, 2500);
+        console.error('❌ Tone.js または Sampler が未初期化 - 再生不可');
+        alert('ピアノ音源が読み込まれていません。ページを再読み込みしてください。');
+        isPlaying = false;
         return;
       }
       
@@ -327,14 +316,9 @@
       }, 2500);
       
     } catch (error) {
-      console.error('基音再生エラー:', error);
-      // エラー時はシンプル音源にフォールバック
-      useSimpleAudio = true;
-      playSimpleBeep(getBaseNoteFrequency(note));
-      setTimeout(() => {
-        isPlaying = false;
-        startDetection();
-      }, 2500);
+      console.error('❌ ピアノ音源再生エラー:', error);
+      alert(`ピアノ音源再生に失敗しました: ${error.message}`);
+      isPlaying = false;
     }
   }
   
