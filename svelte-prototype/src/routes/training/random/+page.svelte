@@ -537,7 +537,6 @@
           {#each scaleSteps as step, index}
             <div 
               class="scale-item {step.state}"
-              class:current={index === currentScaleIndex}
             >
               {step.name}
             </div>
@@ -812,7 +811,7 @@
     border-radius: 6px;
     font-weight: 500;
     font-size: 0.875rem;
-    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border: 1px solid hsl(215.4 16.3% 46.9%);
     background: hsl(0 0% 100%);
     color: hsl(215.4 16.3% 46.9%);
     transition: all 0.3s ease;
@@ -821,11 +820,10 @@
   .scale-item.active {
     background: hsl(330 81% 60%);
     color: hsl(210 40% 98%);
-    border: 2px solid hsla(330 81% 60% / 0.5);
+    border: 1px solid hsla(330 81% 60% / 0.5);
     transform: scale(1.2);
     font-size: 1.125rem;
     font-weight: 700;
-    box-shadow: 0 0 0 3px hsla(330 81% 60% / 0.5);
     animation: pulse 2s infinite;
   }
   
@@ -860,9 +858,7 @@
     75% { transform: translateX(5px); }
   }
   
-  .scale-item.current {
-    box-shadow: 0 0 0 2px hsl(222.2 84% 4.9%);
-  }
+  /* currentクラスは削除（使用していない） */
   
   .guide-instruction {
     text-align: center;
