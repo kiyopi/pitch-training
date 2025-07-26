@@ -250,10 +250,118 @@
     checkScaleProgression(frequency, note);
   }
   
-  // スケール進行チェック（プレースホルダー）
+  // スケール進行チェックロジック（実装版）
   function checkScaleProgression(frequency, note) {
-    // TODO: ドレミファソラシドの進行チェックロジック
-    // 現在はプレースホルダー
+    if (!frequency || frequency <= 0 || !currentBaseFrequency) {
+      return;
+    }
+    
+    // 現在のステップ情報
+    const currentStep = scaleSteps[currentScaleIndex];
+    if (!currentStep || currentStep.state !== 'active') {
+      return;
+    }
+    
+    // 期待される周波数を計算（基音からの相対音程）
+    const scaleIntervals = [0, 2, 4, 5, 7, 9, 11, 12]; // ドレミファソラシド（セント）
+    const expectedInterval = scaleIntervals[currentScaleIndex] * 100; // セント
+    const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 1200);
+    
+    // 音程差を計算（セント）
+    const centDifference = Math.round(1200 * Math.log2(frequency / expectedFrequency));
+    
+    // 判定基準（±50セント以内で正解）
+    const tolerance = 50;
+    const isCorrect = Math.abs(centDifference) <= tolerance;
+    
+    // 最低音量基準（ノイズ除外）
+    const minVolumeForDetection = 15;
+    const hasEnoughVolume = currentVolume >= minVolumeForDetection;
+    
+    if (hasEnoughVolume) {
+      if (isCorrect) {
+        // 正解時の処理
+        scaleSteps[currentScaleIndex].state = 'correct';
+        scaleSteps[currentScaleIndex].completed = true;
+        sessionResults.correctCount++;
+        
+        console.log(`✅ 正解: ${currentStep.name} (${Math.round(frequency)}Hz, ${centDifference >= 0 ? '+' : ''}${centDifference}セント)`);
+        
+        // 次のステップへ自動進行
+        setTimeout(() => {
+          if (currentScaleIndex < scaleSteps.length - 1) {
+            currentScaleIndex++;
+            scaleSteps[currentScaleIndex].state = 'active';
+            console.log(`🎵 次のステップ: ${scaleSteps[currentScaleIndex].name}`);
+          } else {
+            // 全ステップ完了
+            completeSession();
+          }
+        }, 1000);
+        
+      } else if (Math.abs(centDifference) > tolerance * 2) {
+        // 大きく外れている場合は不正解表示（一時的）
+        if (scaleSteps[currentScaleIndex].state !== 'incorrect') {
+          scaleSteps[currentScaleIndex].state = 'incorrect';
+          console.log(`❌ 不正解: ${currentStep.name} (${Math.round(frequency)}Hz, ${centDifference >= 0 ? '+' : ''}${centDifference}セント)`);
+          
+          // 1秒後にactiveに戻す
+          setTimeout(() => {
+            if (scaleSteps[currentScaleIndex].state === 'incorrect') {
+              scaleSteps[currentScaleIndex].state = 'active';
+            }
+          }, 1000);
+        }
+      }
+    }
+    
+    // デバッグ情報更新
+    window.scaleGuideDebug = {
+      currentStep: currentStep.name,
+      expectedFreq: Math.round(expectedFrequency),
+      detectedFreq: Math.round(frequency),
+      centDiff: centDifference,
+      isCorrect,
+      hasEnoughVolume,
+      volume: Math.round(currentVolume)
+    };
+  }
+  
+  // セッション完了処理
+  function completeSession() {
+    trainingPhase = 'completed';
+    sessionResults.isCompleted = true;
+    sessionResults.averageAccuracy = Math.round((sessionResults.correctCount / sessionResults.totalCount) * 100);
+    
+    // 音程検出停止
+    if (pitchDetectorComponent) {
+      pitchDetectorComponent.stopDetection();
+    }
+    
+    console.log('🎉 セッション完了!', sessionResults);
+  }
+  
+  // セッション再開始
+  function restartSession() {
+    // 状態リセット
+    trainingPhase = 'setup';
+    currentScaleIndex = 0;
+    sessionResults = {
+      correctCount: 0,
+      totalCount: 8,
+      averageAccuracy: 0,
+      averageTime: 0,
+      isCompleted: false
+    };
+    
+    // スケールガイドリセット
+    scaleSteps = scaleSteps.map(step => ({
+      ...step,
+      state: 'inactive',
+      completed: false
+    }));
+    
+    console.log('🔄 セッション再開始');
   }
   
   // クリーンアップ
@@ -365,6 +473,21 @@
         {#if trainingPhase === 'detecting'}
           <div class="guide-instruction">
             現在: <strong>{scaleSteps[currentScaleIndex].name}</strong> を歌ってください
+            {#if currentFrequency > 0 && currentBaseFrequency > 0}
+              <div class="guide-feedback">
+                <span class="feedback-label">音程差:</span>
+                <span class="feedback-value" class:accurate={Math.abs(pitchDifference) <= 50} class:close={Math.abs(pitchDifference) > 50 && Math.abs(pitchDifference) <= 100}>
+                  {pitchDifference > 0 ? '+' : ''}{pitchDifference}セント
+                </span>
+                {#if Math.abs(pitchDifference) <= 50}
+                  <span class="feedback-status success">🎯 正確!</span>
+                {:else if Math.abs(pitchDifference) <= 100}
+                  <span class="feedback-status close">📏 近い</span>
+                {:else}
+                  <span class="feedback-status">🎵 調整してください</span>
+                {/if}
+              </div>
+            {/if}
           </div>
         {/if}
       </div>
@@ -394,7 +517,7 @@
           </div>
           
           <div class="action-buttons">
-            <Button class="primary-button" on:click={() => window.location.reload()}>
+            <Button class="primary-button" on:click={restartSession}>
               🔄 再挑戦
             </Button>
             <Button class="secondary-button">
@@ -628,12 +751,38 @@
     border-color: hsl(47.9 95.8% 53.1%);
     transform: scale(1.05);
     box-shadow: 0 4px 8px 0 rgb(245 158 11 / 0.3);
+    animation: pulse 2s infinite;
   }
   
   .scale-item.correct {
     background: hsl(142.1 76.2% 36.3%);
     color: hsl(210 40% 98%);
     border-color: hsl(142.1 76.2% 36.3%);
+    animation: correctFlash 0.5s ease-out;
+  }
+  
+  .scale-item.incorrect {
+    background: hsl(0 84.2% 60.2%);
+    color: hsl(210 40% 98%);
+    border-color: hsl(0 84.2% 60.2%);
+    animation: shake 0.5s ease-in-out;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  @keyframes correctFlash {
+    0% { transform: scale(1); background: hsl(47.9 95.8% 53.1%); }
+    50% { transform: scale(1.1); background: hsl(142.1 76.2% 36.3%); }
+    100% { transform: scale(1); background: hsl(142.1 76.2% 36.3%); }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
   }
   
   .scale-item.current {
@@ -647,6 +796,54 @@
     padding: 0.75rem;
     background: hsl(210 40% 98%);
     border-radius: 6px;
+  }
+  
+  .guide-feedback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .feedback-label {
+    color: hsl(215.4 16.3% 46.9%);
+    font-weight: 500;
+  }
+  
+  .feedback-value {
+    font-weight: 700;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', monospace;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    background: hsl(214.3 31.8% 91.4%);
+    color: hsl(222.2 84% 4.9%);
+    min-width: 4ch;
+    text-align: center;
+  }
+  
+  .feedback-value.accurate {
+    background: hsl(142.1 76.2% 90%);
+    color: hsl(142.1 76.2% 30%);
+  }
+  
+  .feedback-value.close {
+    background: hsl(47.9 95.8% 90%);
+    color: hsl(47.9 95.8% 30%);
+  }
+  
+  .feedback-status {
+    font-weight: 500;
+    font-size: 0.75rem;
+  }
+  
+  .feedback-status.success {
+    color: hsl(142.1 76.2% 36.3%);
+  }
+  
+  .feedback-status.close {
+    color: hsl(47.9 95.8% 45%);
   }
 
   /* 検出表示 */
