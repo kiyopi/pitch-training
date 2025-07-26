@@ -22,11 +22,11 @@ export default function RandomTrainingPage() {
   const [sampler, setSampler] = useState<Tone.Sampler | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // 10種類の基音候補
-  const baseNotes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
+  // 利用可能な基音候補（ローカル音源ファイルに基づく）
+  const baseNotes = ['B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4', 'Bb3'];
   const baseNoteNames = {
-    'C4': 'ド（低）', 'D4': 'レ（低）', 'E4': 'ミ（低）', 'F4': 'ファ（低）', 'G4': 'ソ（低）',
-    'A4': 'ラ（中）', 'B4': 'シ（中）', 'C5': 'ド（高）', 'D5': 'レ（高）', 'E5': 'ミ（高）'
+    'B3': 'シ（低）', 'C4': 'ド（中）', 'Db4': 'レ♭（中）', 'D4': 'レ（中）', 'Eb4': 'ミ♭（中）',
+    'E4': 'ミ（中）', 'F4': 'ファ（中）', 'Gb4': 'ソ♭（中）', 'Ab4': 'ラ♭（中）', 'Bb3': 'シ♭（低）'
   };
   
   // === マイク許可チェック関数 ===
@@ -92,21 +92,21 @@ export default function RandomTrainingPage() {
         addLog('AudioContext開始完了');
       }
       
-      // ピアノ音源作成
+      // ピアノ音源作成（ローカルファイル使用）
       const newSampler = new Tone.Sampler({
         urls: {
+          "B3": "B3.mp3",
           "C4": "C4.mp3",
-          "D4": "D4.mp3", 
+          "Db4": "Db4.mp3", 
+          "D4": "D4.mp3",
+          "Eb4": "Eb4.mp3",
           "E4": "E4.mp3",
           "F4": "F4.mp3",
-          "G4": "G4.mp3",
-          "A4": "A4.mp3",
-          "B4": "B4.mp3",
-          "C5": "C5.mp3",
-          "D5": "D5.mp3",
-          "E5": "E5.mp3"
+          "Gb4": "Gb4.mp3",
+          "Ab4": "Ab4.mp3",
+          "Bb3": "Bb3.mp3"
         },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        baseUrl: "/audio/piano/",
         release: 1.5
       }).toDestination();
       
