@@ -161,9 +161,16 @@
       
       // Promise化されたサンプラー読み込み
       await new Promise((resolve, reject) => {
+        console.log('🔍 BASE_URL確認:', import.meta.env.BASE_URL);
+        console.log('🔍 完全baseUrl:', `${import.meta.env.BASE_URL}audio/piano/`);
+        
+        // 本番環境での明示的パス設定
+        const pianoBaseUrl = import.meta.env.PROD ? '/pitch-training/audio/piano/' : '/audio/piano/';
+        console.log('🔍 最終pianoBaseUrl:', pianoBaseUrl);
+        
         sampler = new Tone.Sampler({
           urls: localPianoUrls,
-          baseUrl: `${import.meta.env.BASE_URL}audio/piano/`,
+          baseUrl: pianoBaseUrl,
           release: 1.5,
           onload: () => {
             console.log('✅ ローカル Salamander Grand Piano音源読み込み完了');
