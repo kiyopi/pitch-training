@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
 import * as Tone from "tone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -382,34 +381,21 @@ export default function RandomTrainingPage() {
 
   // マイク許可済み: メイントレーニング画面
   return (
-    <div style={{ width: '100%', margin: 0, padding: 0, minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="w-full min-h-screen bg-white flex flex-col">
       {/* タイムスタンプ表示 */}
-      <div style={{
-        position: 'fixed',
-        top: '24px',
-        right: '24px',
-        background: 'linear-gradient(to right, #059669, #16a34a)',
-        color: 'white',
-        padding: '8px 16px',
-        borderRadius: '9999px',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        zIndex: 50,
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(4px)'
-      }}>
+      <div className="fixed top-6 right-6 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold z-50 shadow-lg backdrop-blur-sm">
         📱 {new Date().toLocaleTimeString('ja-JP')}
       </div>
 
       {/* Header */}
-      <header style={{ borderBottom: '1px solid #e5e7eb', padding: '24px 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', justifyContent: 'flex-start' }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none', transition: 'color 0.3s', fontWeight: '500' }}>
-              <ArrowLeft style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+      <header className="border-b border-gray-200 py-6">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center text-gray-500 hover:text-gray-700 transition-colors font-medium">
+              <ArrowLeft className="w-5 h-5 mr-2" />
               ホーム
             </Link>
-            <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+            <h1 className="text-xl font-bold text-gray-800">
               ランダム基音トレーニング
             </h1>
           </div>
@@ -417,31 +403,26 @@ export default function RandomTrainingPage() {
       </header>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '32px 0' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 16px' }}>
+      <main className="flex-1 py-8">
+        <div className="max-w-3xl mx-auto px-4">
           {/* マイク準備完了表示 */}
-          <div style={{
-            backgroundColor: '#f0fdf4',
-            color: '#166534',
-            border: '1px solid #bbf7d0',
-            borderRadius: '8px',
-            padding: '12px 16px',
-            marginBottom: '24px',
-            textAlign: 'center',
-            fontWeight: '600'
-          }}>
-            🎤 マイク準備完了
-          </div>
+          <Card className="bg-emerald-50 border-emerald-200 mb-6">
+            <CardContent className="p-3 text-center">
+              <span className="text-emerald-700 font-semibold">
+                🎤 マイク準備完了
+              </span>
+            </CardContent>
+          </Card>
 
           {/* ヘッダー */}
-          <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', marginBottom: '24px' }}>
-              <span style={{ fontSize: '96px' }}>🎲</span>
+          <div className="mb-12 text-center">
+            <div className="inline-block mb-6">
+              <span className="text-8xl">🎲</span>
             </div>
-            <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
               ランダム基音トレーニング
             </h2>
-            <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '0' }}>
+            <p className="text-base text-gray-500">
               10種類の基音からランダムに選択してトレーニング
             </p>
           </div>
@@ -513,13 +494,13 @@ export default function RandomTrainingPage() {
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid #e5e7eb', padding: '24px 0', marginTop: '48px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>
+      <footer className="border-t border-gray-200 py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-sm text-gray-500 text-center">
               © 2024 相対音感トレーニング. All rights reserved.
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>Version 3.0</span>
               <span>•</span>
               <span>Powered by Next.js</span>
