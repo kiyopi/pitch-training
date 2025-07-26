@@ -168,13 +168,14 @@
     // 音程検出（PitchDetector使用）
     const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    // 人間音域フィルタリング + ノイズ除去（仕様書準拠）
-    // 人間の声域: 80Hz-2000Hz（ベースからシャウトまで）
-    // 特に相対音感トレーニング対象: C2-C6 (65Hz-1047Hz)
-    const isHumanVocalRange = pitch >= 80 && pitch <= 2000;
-    const isTrainingRange = pitch >= 65 && pitch <= 1047;
+    // 人間音域フィルタリング（実用調整）
+    // 実際の人間の声域に最適化:
+    // - 低域: 65Hz以上（C2以上、男性最低音域考慮）  
+    // - 高域: 1200Hz以下（実用的な歌唱範囲）
+    // - 極低音域ノイズ（G-1等）は確実に除外
+    const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
-    if (pitch && clarity > 0.6 && currentVolume > 10 && isHumanVocalRange && isTrainingRange) {
+    if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
       // 周波数の安定化（3フレーム移動平均）
       frequencyHistory.push(pitch);
       if (frequencyHistory.length > 3) {
@@ -197,12 +198,10 @@
         stableFrequency = avgFreq;
       }
       
-      // 人間音域内でのみ更新
-      if (stableFrequency >= 80 && stableFrequency <= 2000) {
-        currentFrequency = Math.round(stableFrequency);
-        detectedNote = frequencyToNote(currentFrequency);
-        pitchClarity = clarity;
-      }
+      // 周波数表示を更新
+      currentFrequency = Math.round(stableFrequency);
+      detectedNote = frequencyToNote(currentFrequency);
+      pitchClarity = clarity;
     } else {
       // 信号が弱い場合は徐々にフェードアウト
       if (stableFrequency > 0) {
@@ -223,14 +222,13 @@
     if (!window.pitchDetectorLastLog || 
         Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
         Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20) {
-      const isInRange = pitch >= 80 && pitch <= 2000;
       console.log('PitchDetector:', {
         rawVolume: Math.round(rawVolume),
         filteredVolume: Math.round(currentVolume), 
         frequency: currentFrequency,
         note: detectedNote,
         clarity: Math.round(clarity * 100),
-        inHumanRange: isInRange,
+        isValidRange: isValidVocalRange,
         rawPitch: pitch ? Math.round(pitch) : 0
       });
       window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency };
