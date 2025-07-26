@@ -84,11 +84,14 @@
       // PitchDetectorコンポーネントを初期化
       if (pitchDetectorComponent) {
         await pitchDetectorComponent.initialize(mediaStream);
+        console.log('PitchDetectorコンポーネント初期化完了');
+      } else {
+        console.error('PitchDetectorコンポーネントが見つかりません');
       }
       
       microphoneState = 'granted';
       trainingPhase = 'setup';
-      console.log('マイク許可取得成功 - PitchDetectorコンポーネント初期化完了');
+      console.log('マイク許可取得成功');
     } catch (error) {
       console.error('マイク許可エラー:', error);
       microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
@@ -134,9 +137,11 @@
         trainingPhase = 'detecting';
         scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
         
-        // PitchDetectorコンポーネントで検出開始
-        if (pitchDetectorComponent) {
+        // PitchDetectorコンポーネントで検出開始（初期化確認付き）
+        if (pitchDetectorComponent && mediaStream) {
           pitchDetectorComponent.startDetection();
+        } else {
+          console.error('PitchDetector または MediaStream が準備されていません');
         }
       }, 2000);
     } catch (error) {

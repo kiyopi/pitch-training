@@ -104,8 +104,13 @@
 
   // 検出開始
   export function startDetection() {
-    if (!analyser || !pitchDetector) {
-      console.error('PitchDetector未初期化');
+    if (!analyser || !pitchDetector || !audioContext) {
+      console.error('PitchDetector未初期化 - 必要なコンポーネント:', {
+        analyser: !!analyser,
+        pitchDetector: !!pitchDetector,
+        audioContext: !!audioContext,
+        mediaStream: !!mediaStream
+      });
       return;
     }
     
