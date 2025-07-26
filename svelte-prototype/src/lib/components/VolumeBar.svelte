@@ -8,10 +8,15 @@
   
   let barElement;
   
-  // 音量レベルに応じた色の計算（テーマ青一色統一）
+  // 音量レベルに応じた色の計算（青透過グラデーション）
   function getVolumeColor(volume) {
-    if (volume < threshold) return '#94a3b8'; // グレー - 低音量
-    return '#2563eb'; // テーマ青一色 - 全レベル統一
+    if (volume < threshold) {
+      // 低音量時: 透過率高い青
+      const alpha = Math.max(0.2, volume / threshold * 0.8);
+      return `rgba(37, 99, 235, ${alpha})`;
+    }
+    // 高音量時: 透過率0（完全な青）
+    return '#2563eb';
   }
   
   // 音量バーの更新（DOM直接操作）

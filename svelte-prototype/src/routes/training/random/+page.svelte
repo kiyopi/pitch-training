@@ -342,18 +342,6 @@
             </div>
           {/if}
           
-          {#if currentBaseFrequency > 0}
-            <div class="relative-pitch-info">
-              <div class="frequency-display-large">
-                {#if currentFrequency > 0}
-                  <span class="large-hz">{Math.round(currentFrequency)}Hz</span>
-                  <span class="note-with-cents">（{detectedNote}）({pitchDifference > 0 ? '+' : ''}{pitchDifference}セント)</span>
-                {:else}
-                  <span class="no-signal">---Hz</span>
-                {/if}
-              </div>
-            </div>
-          {/if}
         </div>
       </Card>
     </div>

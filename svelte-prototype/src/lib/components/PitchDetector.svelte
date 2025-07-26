@@ -168,8 +168,8 @@
     // 音程検出（PitchDetector使用）
     const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    // より厳しい閾値でノイズを除去
-    if (pitch && clarity > 0.8 && currentVolume > 10) {
+    // 細かいノイズを完全除去（より厳しい閾値）
+    if (pitch && clarity > 0.85 && currentVolume > 15) {
       // 周波数の安定化（3フレーム移動平均）
       frequencyHistory.push(pitch);
       if (frequencyHistory.length > 3) {
@@ -317,7 +317,7 @@
   
   .detected-frequency {
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 2rem;
     color: hsl(222.2 84% 4.9%);
     margin-right: 0.5rem;
   }
