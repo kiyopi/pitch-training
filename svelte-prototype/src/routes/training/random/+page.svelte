@@ -424,19 +424,14 @@
       guideAnimationTimer = null;
     }
     
-    // 状態リセット
+    // 状態リセット（採点結果は保持）
     trainingPhase = 'setup';
     currentScaleIndex = 0;
     isGuideAnimationActive = false;
-    scaleEvaluations = []; // 新しいセッション用にリセット
+    // scaleEvaluations は保持（前回の採点結果を残す）
     
-    sessionResults = {
-      correctCount: 0,
-      totalCount: 8,
-      averageAccuracy: 0,
-      averageTime: 0,
-      isCompleted: false
-    };
+    // sessionResultsもリセットしない（前回結果を表示）
+    sessionResults.isCompleted = false; // 完了フラグだけリセット
     
     // スケールガイドリセット
     scaleSteps = scaleSteps.map(step => ({
@@ -450,7 +445,7 @@
       pitchDetectorComponent.stopDetection();
     }
     
-    console.log('🔄 セッション再開始');
+    console.log('🔄 セッション再開始 - 前回結果保持');
   }
   
   // クリーンアップ
