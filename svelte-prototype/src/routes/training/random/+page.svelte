@@ -107,9 +107,9 @@
         await Tone.start();
       }
       
-      // 選択された基音を再生（C4から相対音程で計算）
+      // 選択された基音を再生（2秒間で自動カット）
       const note = baseNotes.find(n => n.name === currentBaseNote).note;
-      sampler.triggerAttackRelease(note, '2n');
+      sampler.triggerAttackRelease(note, 2);
       
       console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz');
       
@@ -167,12 +167,21 @@
     try {
       isLoading = true;
       
-      // 公式Salamander Grand Piano音源を使用
+      // ローカルSalamander Grand Piano音源を使用
       sampler = new Tone.Sampler({
         urls: {
           'C4': 'C4.mp3',
+          'Db4': 'Db4.mp3',
+          'D4': 'D4.mp3',
+          'Eb4': 'Eb4.mp3',
+          'E4': 'E4.mp3',
+          'F4': 'F4.mp3',
+          'Gb4': 'Gb4.mp3',
+          'Ab4': 'Ab4.mp3',
+          'Bb3': 'Bb3.mp3',
+          'B3': 'B3.mp3',
         },
-        baseUrl: 'https://tonejs.github.io/audio/salamander/',
+        baseUrl: `${base}/audio/piano/`,
         onload: () => {
           console.log('Salamander Grand Piano音源読み込み完了');
           isLoading = false;
