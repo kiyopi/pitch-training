@@ -43,9 +43,8 @@
   // 裏での評価蓄積
   let scaleEvaluations = [];
   
-  // セッション履歴管理（2回目以降の結果表示用）
-  let sessionHistory = [];
-  let currentSessionIndex = 0;
+  // 前回の結果保持（再挑戦時表示用）
+  let previousEvaluations = [];
   
   // 音程検出
   let currentVolume = 0;
@@ -172,16 +171,11 @@
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
     isGuideAnimationActive = true;
-    scaleEvaluations = []; // 新しいセッションの評価データ用にクリア
+    scaleEvaluations = [];
     
-    // 音程検出開始（マイク状態確認強化）
-    if (pitchDetectorComponent && mediaStream && mediaStream.active) {
+    // 音程検出開始
+    if (pitchDetectorComponent && mediaStream) {
       pitchDetectorComponent.startDetection();
-      console.log('🎙️ 音程検出開始 - マイク状態: アクティブ');
-    } else {
-      console.warn('⚠️ マイク状態異常 - 再初期化が必要');
-      // マイク再初期化を試行
-      checkMicrophonePermission();
     }
     
     console.log('🎵 ガイドアニメーション開始');
@@ -255,18 +249,12 @@
       isCompleted: true
     };
     
-    // セッション履歴に保存（2回目以降の結果表示用）
-    const sessionData = {
-      sessionIndex: currentSessionIndex + 1,
-      results: { ...sessionResults },
-      evaluations: [...scaleEvaluations],
-      timestamp: new Date().toLocaleTimeString()
-    };
-    sessionHistory.push(sessionData);
-    currentSessionIndex++;
+    // 前回の結果として保存（再挑戦時表示用）
+    if (scaleEvaluations.length > 0) {
+      previousEvaluations = [...scaleEvaluations];
+    }
     
     console.log('📊 最終採点結果:', sessionResults);
-    console.log('📚 セッション履歴保存:', sessionData);
   }
 
   // ステータスメッセージ取得
@@ -293,15 +281,15 @@
     }
   }
 
-  // 表示用の評価データを取得（現在のセッションまたは最新履歴）
+  // 表示用の評価データを取得
   function getDisplayEvaluations() {
     // 現在のセッションに評価データがある場合は現在のデータを表示
     if (scaleEvaluations.length > 0) {
       return scaleEvaluations;
     }
-    // 現在のセッションにデータがない場合は最新の履歴を表示
-    if (sessionHistory.length > 0) {
-      return sessionHistory[sessionHistory.length - 1].evaluations;
+    // 現在のセッションにデータがない場合は前回の結果を表示
+    if (previousEvaluations.length > 0) {
+      return previousEvaluations;
     }
     return [];
   }
@@ -457,14 +445,11 @@
       guideAnimationTimer = null;
     }
     
-    // 状態リセット（採点結果は保持）
+    // 状態リセット
     trainingPhase = 'setup';
     currentScaleIndex = 0;
     isGuideAnimationActive = false;
-    // scaleEvaluations は保持（前回の採点結果を残す）
-    
-    // sessionResultsもリセットしない（前回結果を表示）
-    sessionResults.isCompleted = false; // 完了フラグだけリセット
+    // previousEvaluations は保持（前回の結果を残す）
     
     // スケールガイドリセット
     scaleSteps = scaleSteps.map(step => ({
@@ -478,7 +463,7 @@
       pitchDetectorComponent.stopDetection();
     }
     
-    console.log('🔄 セッション再開始 - 前回結果保持');
+    console.log('🔄 セッション再開始');
   }
   
   // クリーンアップ
