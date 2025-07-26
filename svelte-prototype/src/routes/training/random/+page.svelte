@@ -93,7 +93,7 @@
     console.log('選択された基音:', currentBaseNote, currentBaseFrequency + 'Hz');
   }
 
-  // 基音再生
+  // 基音再生（最適化版）
   async function playBaseNote() {
     if (isPlaying || !sampler || isLoading) return;
     
@@ -102,16 +102,20 @@
     selectRandomBaseNote();
     
     try {
-      // Tone.jsのコンテキストを開始
+      // Tone.jsのコンテキストを確実に開始
       if (Tone.context.state !== 'running') {
         await Tone.start();
+        console.log('AudioContext起動完了');
       }
       
-      // 選択された基音を再生（2秒間で自動カット）
+      // 選択された基音を即座再生（最適化設定）
       const note = baseNotes.find(n => n.name === currentBaseNote).note;
-      sampler.triggerAttackRelease(note, 2);
       
-      console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz');
+      // 即座再生のための最適化
+      const now = Tone.now();
+      sampler.triggerAttackRelease(note, 2, now, 0.7); // 音量0.7で即座再生
+      
+      console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz', '音程:', note);
       
       // 2秒後に検出フェーズに移行
       setTimeout(() => {
@@ -162,19 +166,35 @@
     window.location.href = '/';
   }
 
-  // Tone.jsサンプラー初期化（Salamander Grand Piano）
+  // Tone.jsサンプラー初期化（Salamander Grand Piano - 最適化版）
   async function initializeSampler() {
     try {
       isLoading = true;
       
-      // Salamander Grand Piano C4音源からピッチシフト
+      // AudioContextを事前起動
+      if (Tone.context.state !== 'running') {
+        try {
+          await Tone.start();
+          console.log('AudioContext事前起動完了');
+        } catch (error) {
+          console.log('AudioContext事前起動スキップ（ユーザー操作待ち）');
+        }
+      }
+      
+      // Salamander Grand Piano C4音源からピッチシフト（最適化設定）
       sampler = new Tone.Sampler({
         urls: {
           'C4': 'C4.mp3',
         },
         baseUrl: `${base}/audio/piano/`,
+        release: 1.5, // リリース時間最適化
         onload: () => {
           console.log('Salamander Grand Piano C4音源読み込み完了 - ピッチシフト対応');
+          
+          // プリウォーミング: 無音でサンプルをロード
+          sampler.triggerAttackRelease('C4', 0.01, undefined, 0);
+          console.log('音源プリウォーミング完了');
+          
           isLoading = false;
         },
         onerror: (error) => {
