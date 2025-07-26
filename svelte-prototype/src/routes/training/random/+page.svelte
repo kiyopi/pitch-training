@@ -7,7 +7,7 @@
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
-  import { autoCorrelate } from 'pitchy';
+  import { PitchDetector } from 'pitchy';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'detecting' | 'completed'
@@ -56,6 +56,7 @@
   let analyser = null;
   let animationFrame = null;
   let isDetecting = false;
+  let pitchDetector = null;
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
@@ -235,9 +236,12 @@
       analyser.fftSize = 2048;
       source.connect(analyser);
       
+      // PitchDetector初期化
+      pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
+      
       isDetecting = true;
       detectPitch();
-      console.log('音程検出開始 - 既存ストリーム使用');
+      console.log('音程検出開始 - PitchDetector使用');
       
     } catch (error) {
       console.error('音程検出開始エラー:', error);
@@ -255,7 +259,7 @@
   
   // リアルタイム音程検出
   function detectPitch() {
-    if (!isDetecting || !analyser) return;
+    if (!isDetecting || !analyser || !pitchDetector) return;
     
     const bufferLength = analyser.fftSize;
     const buffer = new Float32Array(bufferLength);
@@ -268,10 +272,10 @@
     }
     currentVolume = Math.sqrt(sum / bufferLength) * 100;
     
-    // 音程検出（Pitchy使用）
-    const pitch = autoCorrelate(buffer, audioContext.sampleRate);
+    // 音程検出（PitchDetector使用）
+    const [pitch, clarity] = pitchDetector.findPitch(buffer, audioContext.sampleRate);
     
-    if (pitch !== -1 && currentVolume > 1) {
+    if (pitch && clarity > 0.8 && currentVolume > 1) {
       currentFrequency = pitch;
       detectedNote = frequencyToNote(pitch);
       

@@ -22,4 +22,4 @@ export type Pathname = "/" | "/microphone-test-simple" | "/microphone-test" | "/
 
 export type ResolvedPathname = `${"" | `/${string}`}${Pathname}`;
 
-export type Asset = "/audio/piano/Ab4.mp3" | "/audio/piano/B3.mp3" | "/audio/piano/Bb3.mp3" | "/audio/piano/C4.mp3" | "/audio/piano/D4.mp3" | "/audio/piano/Db4.mp3" | "/audio/piano/E4.mp3" | "/audio/piano/Eb4.mp3" | "/audio/piano/F4.mp3" | "/audio/piano/Gb4.mp3";
+export type Asset = "/audio/piano/C4.mp3";
