@@ -223,6 +223,9 @@
     let correctCount = 0;
     let totalAccuracy = 0;
     
+    console.log('📊 評価データ数:', scaleEvaluations.length);
+    console.log('📊 評価データ詳細:', scaleEvaluations);
+    
     scaleEvaluations.forEach(evaluation => {
       if (evaluation.isCorrect) {
         correctCount++;
@@ -233,7 +236,7 @@
     sessionResults = {
       correctCount: correctCount,
       totalCount: scaleSteps.length,
-      averageAccuracy: Math.round(totalAccuracy / scaleSteps.length),
+      averageAccuracy: scaleEvaluations.length > 0 ? Math.round(totalAccuracy / scaleEvaluations.length) : 0,
       averageTime: 0, // 今回は時間測定なし
       isCompleted: true
     };
@@ -412,7 +415,7 @@
     trainingPhase = 'setup';
     currentScaleIndex = 0;
     isGuideAnimationActive = false;
-    scaleEvaluations = [];
+    scaleEvaluations = []; // 新しいセッション用にリセット
     
     sessionResults = {
       correctCount: 0,
@@ -483,12 +486,10 @@
           <div class="card-content">
             <Button 
               variant="primary"
-              disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting' || isLoading}
+              disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting'}
               on:click={playBaseNote}
             >
-              {#if isLoading}
-                🎵 音源読み込み中...
-              {:else if isPlaying}
+              {#if isPlaying}
                 🎵 再生中...
               {:else if trainingPhase === 'setup'}
                 🎹 ランダム基音再生
@@ -580,16 +581,22 @@
           <!-- 詳細結果 -->
           <div class="detailed-results">
             <h4 class="detailed-title">音階別結果</h4>
-            <div class="scale-results">
-              {#each scaleEvaluations as evaluation, index}
-                <div class="scale-result-item" class:correct={evaluation.isCorrect} class:incorrect={!evaluation.isCorrect}>
-                  <span class="scale-name">{evaluation.stepName}</span>
-                  <span class="scale-accuracy">{evaluation.accuracy}%</span>
-                  <span class="scale-cents">{evaluation.centDifference >= 0 ? '+' : ''}{evaluation.centDifference}¢</span>
-                  <span class="scale-status">{evaluation.isCorrect ? '✅' : '❌'}</span>
-                </div>
-              {/each}
-            </div>
+            {#if scaleEvaluations.length > 0}
+              <div class="scale-results">
+                {#each scaleEvaluations as evaluation, index}
+                  <div class="scale-result-item" class:correct={evaluation.isCorrect} class:incorrect={!evaluation.isCorrect}>
+                    <span class="scale-name">{evaluation.stepName}</span>
+                    <span class="scale-accuracy">{evaluation.accuracy}%</span>
+                    <span class="scale-cents">{evaluation.centDifference >= 0 ? '+' : ''}{evaluation.centDifference}¢</span>
+                    <span class="scale-status">{evaluation.isCorrect ? '✅' : '❌'}</span>
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <div class="no-evaluation-data">
+                <p>評価データがありません。トレーニング中にマイクから十分な音声が検出されませんでした。</p>
+              </div>
+            {/if}
           </div>
           
           <div class="action-buttons">
@@ -822,9 +829,9 @@
   }
   
   .scale-item.active {
-    background: hsl(343.8 79.7% 53.7%);
-    color: hsl(210 40% 98%);
-    border: 1px solid hsla(343.8 79.7% 53.7% / 0.5);
+    background: hsl(343.8 79.7% 53.7%) !important;
+    color: hsl(210 40% 98%) !important;
+    border: 1px solid hsla(343.8 79.7% 53.7% / 0.5) !important;
     transform: scale(1.2);
     font-size: 1.125rem;
     font-weight: 700;
