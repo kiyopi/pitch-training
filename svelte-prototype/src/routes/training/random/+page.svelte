@@ -118,6 +118,13 @@
   // Salamander Grand Piano サンプラー設定（ローカル音源版）
   async function setupSampler() {
     try {
+      // Tone変数の再確認（リアクティブ更新のため）
+      if (!window.Tone) {
+        console.error('❌ window.Tone が利用できません');
+        throw new Error('Tone.js未読み込み');
+      }
+      Tone = window.Tone;
+      
       if (!Tone) {
         console.error('❌ Tone.js未初期化');
         throw new Error('Tone.js未初期化');
@@ -126,17 +133,13 @@
       console.log('🎹 サンプラー設定開始');
       loadingStatus = 'AudioContext初期化中...';
       
-      // AudioContext状態確認と開始
+      // AudioContext状態確認
       console.log(`📊 AudioContext状態: ${Tone.context.state}`);
       if (Tone.context.state !== 'running') {
         console.log('🔊 AudioContext開始中...');
-        try {
-          await Tone.start();
-          console.log('✅ AudioContext開始完了');
-        } catch (contextError) {
-          console.error('❌ AudioContext開始失敗:', contextError);
-          throw contextError;
-        }
+        // ユーザーインタラクションが必要なため、手動開始を待つ
+        loadingStatus = 'AudioContext手動開始が必要です';
+        return; // ここで処理を停止
       }
       
       loadingStatus = 'ローカルピアノ音源読み込み中...';
@@ -257,6 +260,22 @@
     const baseFreq = baseNoteFrequencies[baseNote];
     if (!baseFreq) return 0;
     return Math.round(baseFreq * scaleRatios[scaleIndex]);
+  }
+  
+  // 手動AudioContext開始
+  async function handleManualAudioStart() {
+    console.log('🔊 手動AudioContext開始実行');
+    try {
+      if (Tone && Tone.context && Tone.context.state === 'suspended') {
+        await Tone.start();
+        console.log('✅ AudioContext手動開始完了');
+        // AudioContextが開始されたら、サンプラー設定を続行
+        await setupSampler();
+      }
+    } catch (error) {
+      console.error('❌ 手動AudioContext開始失敗:', error);
+      toneLoadingError = `AudioContext開始失敗: ${error.message}`;
+    }
   }
   
   // 強制的にシンプル音源モードに切り替え
@@ -484,33 +503,45 @@
               </div>
             </div>
 
-            <Button variant="success" size="lg" fullWidth on:click={startTraining} disabled={!isToneLoaded}>
-              {#if !isToneLoaded}
-                {loadingStatus}
-              {:else}
-                トレーニング開始
-              {/if}
-            </Button>
-            
-            {#if !isToneLoaded}
+            <!-- AudioContext が suspended の場合の手動開始ボタン -->
+            {#if !isToneLoaded && Tone && Tone.context && Tone.context.state === 'suspended'}
+              <Button variant="primary" size="lg" fullWidth on:click={handleManualAudioStart}>
+                🔊 音声を有効化（クリックしてください）
+              </Button>
               <div class="loading-info">
                 <p class="loading-message">
-                  {loadingStatus}
+                  ブラウザの制限により、音声を使用するには手動での有効化が必要です
                 </p>
-                {#if toneLoadingError}
-                  <p class="error-message">
-                    ❌ {toneLoadingError}
-                  </p>
-                  <div class="fallback-options">
-                    <Button variant="secondary" size="sm" on:click={forceSimpleAudio}>
-                      シンプル音源で開始
-                    </Button>
-                    <p class="retry-message">
-                      または、ページを再読み込みしてみてください
-                    </p>
-                  </div>
-                {/if}
               </div>
+            {:else}
+              <Button variant="success" size="lg" fullWidth on:click={startTraining} disabled={!isToneLoaded}>
+                {#if !isToneLoaded}
+                  {loadingStatus}
+                {:else}
+                  トレーニング開始
+                {/if}
+              </Button>
+              
+              {#if !isToneLoaded}
+                <div class="loading-info">
+                  <p class="loading-message">
+                    {loadingStatus}
+                  </p>
+                  {#if toneLoadingError}
+                    <p class="error-message">
+                      ❌ {toneLoadingError}
+                    </p>
+                    <div class="fallback-options">
+                      <Button variant="secondary" size="sm" on:click={forceSimpleAudio}>
+                        シンプル音源で開始
+                      </Button>
+                      <p class="retry-message">
+                        または、ページを再読み込みしてみてください
+                      </p>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             {/if}
           </div>
         </Card>
