@@ -241,7 +241,7 @@
       
       isDetecting = true;
       detectPitch();
-      console.log('音程検出開始 - PitchDetector使用');
+      console.log('音程検出開始 - PitchDetector使用・ビルド成功版');
       
     } catch (error) {
       console.error('音程検出開始エラー:', error);
