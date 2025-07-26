@@ -5,6 +5,7 @@
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import * as Tone from 'tone';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'detecting' | 'completed'
@@ -42,19 +43,23 @@
     averageTime: 0,
     isCompleted: false
   };
+  
+  // Tone.jsサンプラー
+  let sampler = null;
+  let isLoading = true;
 
-  // 基音候補（10種類）
+  // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
-    { note: 'C4', name: 'ド（低）', frequency: 261.63 },
-    { note: 'D4', name: 'レ（低）', frequency: 293.66 },
-    { note: 'E4', name: 'ミ（低）', frequency: 329.63 },
-    { note: 'F4', name: 'ファ（低）', frequency: 349.23 },
-    { note: 'G4', name: 'ソ（低）', frequency: 392.00 },
-    { note: 'A4', name: 'ラ（中）', frequency: 440.00 },
-    { note: 'B4', name: 'シ（中）', frequency: 493.88 },
-    { note: 'C5', name: 'ド（高）', frequency: 523.25 },
-    { note: 'D5', name: 'レ（高）', frequency: 587.33 },
-    { note: 'E5', name: 'ミ（高）', frequency: 659.25 }
+    { note: 'C4', name: 'ド（中）', frequency: 261.63 },
+    { note: 'Db4', name: 'ド#（中）', frequency: 277.18 },
+    { note: 'D4', name: 'レ（中）', frequency: 293.66 },
+    { note: 'Eb4', name: 'レ#（中）', frequency: 311.13 },
+    { note: 'E4', name: 'ミ（中）', frequency: 329.63 },
+    { note: 'F4', name: 'ファ（中）', frequency: 349.23 },
+    { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99 },
+    { note: 'Ab4', name: 'ラb（中）', frequency: 415.30 },
+    { note: 'Bb3', name: 'シb（低）', frequency: 233.08 },
+    { note: 'B3', name: 'シ（低）', frequency: 246.94 }
   ];
 
   // マイクロフォン許可チェック
@@ -87,22 +92,37 @@
     console.log('選択された基音:', currentBaseNote, currentBaseFrequency + 'Hz');
   }
 
-  // 基音再生（プレースホルダー）
+  // 基音再生
   async function playBaseNote() {
-    if (isPlaying) return;
+    if (isPlaying || !sampler || isLoading) return;
     
     isPlaying = true;
+    trainingPhase = 'listening';
     selectRandomBaseNote();
     
-    // TODO: Tone.js実装
-    console.log('基音再生:', currentBaseNote);
-    
-    // 3秒後に検出フェーズに移行
-    setTimeout(() => {
+    try {
+      // Tone.jsのコンテキストを開始
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+      
+      // 選択された基音を再生
+      const note = baseNotes.find(n => n.name === currentBaseNote).note;
+      sampler.triggerAttackRelease(note, '2n');
+      
+      console.log('基音再生:', currentBaseNote, note);
+      
+      // 2秒後に検出フェーズに移行
+      setTimeout(() => {
+        isPlaying = false;
+        trainingPhase = 'detecting';
+        scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
+      }, 2000);
+    } catch (error) {
+      console.error('基音再生エラー:', error);
       isPlaying = false;
-      trainingPhase = 'detecting';
-      scaleSteps[0].state = 'active'; // 最初の「ド」をアクティブに
-    }, 3000);
+      trainingPhase = 'setup';
+    }
   }
 
   // スケールガイドの状態取得
@@ -119,7 +139,7 @@
   function getStatusMessage() {
     switch (trainingPhase) {
       case 'setup':
-        return '🎤 マイク準備完了 - トレーニング開始可能';
+        return isLoading ? '🎵 音源読み込み中...' : '🎤 マイク準備完了 - トレーニング開始可能';
       case 'listening':
         return '🎵 基音再生中...';
       case 'detecting':
@@ -141,9 +161,57 @@
     window.location.href = '/';
   }
 
+  // Tone.jsサンプラー初期化
+  async function initializeSampler() {
+    try {
+      isLoading = true;
+      
+      // サンプラーを作成（実際に存在するファイルのみ使用）
+      sampler = new Tone.Sampler({
+        urls: {
+          'C4': 'C4.mp3',
+          'Db4': 'Db4.mp3',
+          'D4': 'D4.mp3',
+          'Eb4': 'Eb4.mp3',
+          'E4': 'E4.mp3',
+          'F4': 'F4.mp3',
+          'Gb4': 'Gb4.mp3',
+          'Ab4': 'Ab4.mp3',
+          'Bb3': 'Bb3.mp3',
+          'B3': 'B3.mp3',
+        },
+        baseUrl: '/audio/piano/',
+        onload: () => {
+          console.log('ピアノ音源読み込み完了');
+          isLoading = false;
+        },
+        onerror: (error) => {
+          console.error('ピアノ音源読み込みエラー:', error);
+          isLoading = false;
+        }
+      }).toDestination();
+      
+      // 音量調整
+      sampler.volume.value = -6; // デフォルトより少し下げる
+      
+    } catch (error) {
+      console.error('サンプラー初期化エラー:', error);
+      isLoading = false;
+    }
+  }
+  
   // 初期化
   onMount(() => {
     checkMicrophonePermission();
+    initializeSampler();
+  });
+  
+  // クリーンアップ
+  onDestroy(() => {
+    if (sampler) {
+      sampler.dispose();
+      sampler = null;
+    }
   });
 </script>
 
@@ -179,10 +247,12 @@
         <div class="card-content">
           <Button 
             variant="primary"
-            disabled={isPlaying || trainingPhase === 'detecting'}
+            disabled={isPlaying || trainingPhase === 'detecting' || isLoading}
             on:click={playBaseNote}
           >
-            {#if isPlaying}
+            {#if isLoading}
+              🎵 音源読み込み中...
+            {:else if isPlaying}
               🎵 再生中...
             {:else if trainingPhase === 'setup'}
               🎹 ランダム基音再生
