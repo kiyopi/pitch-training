@@ -179,15 +179,8 @@
     isGuideAnimationActive = true;
     scaleEvaluations = [];
     
-    // 音程検出開始（状態確認強化）
-    if (pitchDetectorComponent && mediaStream && pitchDetectorState === 'ready') {
-      const success = pitchDetectorComponent.startDetection();
-      if (!success) {
-        console.error('❌ 音程検出開始失敗 - ガイドアニメーション中止');
-        trainingPhase = 'setup';
-        return;
-      }
-    } else {
+    // コンポーネント状態確認（手動startDetectionは削除）
+    if (!pitchDetectorComponent || !mediaStream || pitchDetectorState !== 'ready') {
       console.error('❌ 音程検出開始失敗 - コンポーネント未準備:', {
         hasComponent: !!pitchDetectorComponent,
         hasMediaStream: !!mediaStream,
@@ -197,7 +190,7 @@
       return;
     }
     
-    console.log('🎵 ガイドアニメーション開始');
+    console.log('🎵 ガイドアニメーション開始 - isActiveによる自動検出開始');
     
     // 各ステップを順次ハイライト（1秒間隔）
     function animateNextStep() {
@@ -701,6 +694,19 @@
     
     if (microphoneState === 'granted' && (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live'))) {
       issues.push('Microphone granted but MediaStream invalid');
+      // 自動修復を試行
+      setTimeout(async () => {
+        try {
+          console.log('🔧 MediaStream自動修復開始');
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          if (pitchDetectorComponent) {
+            await pitchDetectorComponent.reinitialize(mediaStream);
+          }
+          console.log('✅ MediaStream自動修復完了');
+        } catch (error) {
+          console.error('❌ MediaStream自動修復失敗:', error);
+        }
+      }, 1000);
     }
     
     if (audioEngineState === 'ready' && (!sampler || isLoading)) {

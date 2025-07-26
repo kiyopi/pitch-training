@@ -454,10 +454,10 @@
     console.log('✅ PitchDetectorクリーンアップ完了');
   }
 
-  // isActiveの変更を監視
-  $: if (isActive && analyser) {
+  // isActiveの変更を監視（改善版）
+  $: if (isActive && componentState === 'ready' && analyser && !isDetecting) {
     startDetection();
-  } else if (!isActive) {
+  } else if (!isActive && isDetecting) {
     stopDetection();
   }
 
