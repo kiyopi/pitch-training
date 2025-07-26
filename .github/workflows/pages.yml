@@ -1,14 +1,14 @@
-# GitHub Pages用の静的サイトデプロイワークフロー
+# GitHub Pages用の静的サイトデプロイワークフロー（最適化版）
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: 
       - main
-      - random-training-clean-mockup-001
-      - random-training-tonejs-fixed-001
-      # 任意のブランチからGitHub Pagesにデプロイ可能
-  workflow_dispatch: # 手動実行も可能
+      - "deployment-*"     # デプロイ専用ブランチパターン
+      - "feature-*"        # 機能開発ブランチパターン
+      - "random-training-*" # ランダムトレーニング関連ブランチ
+  workflow_dispatch: # 手動実行可能
 
 permissions:
   contents: read
@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true  # 重複実行を防止
 
 jobs:
   deploy:
@@ -29,35 +29,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
+      - name: デプロイ情報表示
+        run: |
+          echo "🚀 GitHub Pages デプロイ開始"
+          echo "ブランチ: ${{ github.ref_name }}"
+          echo "コミット: ${{ github.sha }}"
+          echo "📁 HTMLファイル一覧:"
+          find . -name "*.html" -type f | head -10
+        
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # プロジェクトルート全体をアップロード
           path: '.'
           
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  # ログ出力用ジョブ
-  info:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
         
-      - name: Display deployment info
+      - name: デプロイ完了通知
         run: |
-          echo "🚀 GitHub Pages デプロイ情報"
-          echo "ブランチ: ${{ github.ref_name }}"
-          echo "コミット: ${{ github.sha }}"
-          echo "📁 デプロイファイル一覧:"
-          find . -name "*.html" -type f | head -10
-          echo ""
-          echo "📱 確認URL (デプロイ完了後):"
-          echo "https://kiyopi.github.io/pitch-training/"
-          echo "https://kiyopi.github.io/pitch-training/random-training-mockup.html"
-          echo "https://kiyopi.github.io/pitch-training/full-scale-training.html"
+          echo "✅ デプロイ完了"
+          echo "📱 確認URL:"
+          echo "- メインページ: https://kiyopi.github.io/pitch-training/"
+          echo "- 実装版: https://kiyopi.github.io/pitch-training/random-training-implementation.html"
+          echo "- フルスケール版: https://kiyopi.github.io/pitch-training/full-scale-training.html"
