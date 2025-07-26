@@ -359,6 +359,28 @@
     }
   }
   
+  // マイク許可状態確認（取得はしない）
+  async function checkExistingMicrophonePermission() {
+    try {
+      // Permissions API でマイク許可状態を確認（ダイアログは出ない）
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+      
+      if (permissionStatus.state === 'granted') {
+        // 既に許可済みの場合のみストリーム取得
+        console.log('✅ マイク許可済み - ストリーム取得');
+        await checkMicrophonePermission();
+      } else {
+        // 未許可の場合はエラー画面表示
+        console.log('❌ マイク未許可 - エラー画面表示');
+        microphoneState = 'denied';
+      }
+    } catch (error) {
+      // Permissions API 未対応の場合は従来の方法
+      console.log('⚠️ Permissions API未対応 - エラー画面表示');
+      microphoneState = 'denied';
+    }
+  }
+
   // 初期化
   onMount(async () => {
     // 状態一貫性チェック開始
@@ -372,9 +394,9 @@
     // 音源初期化
     initializeSampler();
     
-    // コンポーネントマウント完了を少し待ってからマイク許可チェック
+    // コンポーネントマウント完了を少し待ってからマイク許可状態確認
     await new Promise(resolve => setTimeout(resolve, 100));
-    checkMicrophonePermission();
+    checkExistingMicrophonePermission();
   });
   
   // PitchDetectorコンポーネントからのイベントハンドラー
