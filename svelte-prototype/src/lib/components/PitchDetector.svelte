@@ -195,6 +195,9 @@
       // 状態変更を通知
       dispatch('stateChange', { state: componentState });
       
+      // MediaStreamの健康状態監視を開始
+      setupMediaStreamMonitoring();
+      
       console.log('✅ [PitchDetector] 初期化完了');
       
     } catch (error) {
@@ -495,6 +498,55 @@
     harmonicHistory = [];
     
     console.log('✅ [PitchDetector] クリーンアップ完了');
+  }
+
+  /**
+   * MediaStreamの健康状態監視セットアップ
+   * Safari環境でのMediaStreamTrack終了検出
+   */
+  function setupMediaStreamMonitoring() {
+    if (!mediaStream) return;
+    
+    const tracks = mediaStream.getTracks();
+    tracks.forEach(track => {
+      // トラック終了イベントの監視
+      track.addEventListener('ended', () => {
+        console.error('🚨 [PitchDetector] MediaStreamTrack終了検出:', track.kind);
+        componentState = 'error';
+        lastError = new Error(`MediaStreamTrack (${track.kind}) ended`);
+        
+        // エラー状態を通知
+        dispatch('error', { 
+          error: lastError, 
+          reason: 'mediastream_ended',
+          recovery: 'restart_required'
+        });
+        
+        // 検出停止
+        if (isDetecting) {
+          stopDetection();
+        }
+      });
+      
+      // トラックの無効化検出
+      track.addEventListener('mute', () => {
+        console.warn('⚠️ [PitchDetector] MediaStreamTrack muted:', track.kind);
+        dispatch('warning', { 
+          reason: 'track_muted', 
+          track: track.kind 
+        });
+      });
+      
+      track.addEventListener('unmute', () => {
+        console.log('✅ [PitchDetector] MediaStreamTrack unmuted:', track.kind);
+        dispatch('info', { 
+          reason: 'track_unmuted', 
+          track: track.kind 
+        });
+      });
+    });
+    
+    console.log('🔍 [PitchDetector] MediaStream監視開始:', tracks.length + ' tracks');
   }
 
   // isActiveの変更を監視（改善版）

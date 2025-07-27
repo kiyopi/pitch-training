@@ -137,6 +137,33 @@
     }
   }
   
+  // PitchDetectorエラーハンドラー
+  function handlePitchDetectorError(event) {
+    const { error, reason, recovery } = event.detail;
+    console.error('🚨 [MicTest] PitchDetectorエラー:', { error, reason, recovery });
+    
+    if (reason === 'mediastream_ended') {
+      console.error('🚨 [MicTest] MediaStream終了 - マイク許可をリセット');
+      micPermission = 'denied';
+      isListening = false;
+      volumeDetected = false;
+      frequencyDetected = false;
+      audioConfirmationComplete = false;
+      
+      // ユーザーに再試行を促す
+      alert('マイクアクセスが中断されました。マイクテストを再開してください。');
+    }
+  }
+  
+  // PitchDetector警告ハンドラー
+  function handlePitchDetectorWarning(event) {
+    const { reason, track } = event.detail;
+    console.warn('⚠️ [MicTest] PitchDetector警告:', { reason, track });
+    
+    if (reason === 'track_muted') {
+      console.warn('⚠️ [MicTest] マイクがミュート状態です');
+    }
+  }
   
   // リスニング停止（PitchDetector対応版）
   function stopListening() {
@@ -174,6 +201,8 @@
       bind:this={pitchDetectorComponent}
       isActive={micPermission === 'granted'}
       on:pitchUpdate={handlePitchUpdate}
+      on:error={handlePitchDetectorError}
+      on:warning={handlePitchDetectorWarning}
       debugMode={true}
     />
   </div>
