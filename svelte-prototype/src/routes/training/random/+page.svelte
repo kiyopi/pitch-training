@@ -16,6 +16,8 @@
   let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
   
   // シンプルな状態管理
+  let microphoneHealthy = true; // マイク健康状態
+  let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
   const buildVersion = "v1.3.2-FORCE";
@@ -476,7 +478,12 @@
       guideAnimationTimer = null;
     }
     
-    // 4. セッション状態リセット（基音は保持）
+    // 4. PitchDetectorの表示状態をリセット
+    if (pitchDetectorComponent && pitchDetectorComponent.resetDisplayState) {
+      pitchDetectorComponent.resetDisplayState();
+    }
+    
+    // 5. セッション状態リセット（基音は保持）
     resetSessionState();
     // 注意: currentBaseNote と currentBaseFrequency は保持される
   }
@@ -499,7 +506,12 @@
     currentBaseNote = '';
     currentBaseFrequency = 0;
     
-    // 5. セッション状態リセット
+    // 5. PitchDetectorの表示状態をリセット
+    if (pitchDetectorComponent && pitchDetectorComponent.resetDisplayState) {
+      pitchDetectorComponent.resetDisplayState();
+    }
+    
+    // 6. セッション状態リセット
     resetSessionState();
   }
   
@@ -563,7 +575,7 @@
 
   
   // リアクティブシステム
-  $: canStartTraining = microphoneState === 'granted' && !isLoading && sampler;
+  $: canStartTraining = microphoneState === 'granted' && !isLoading && sampler && microphoneHealthy;
   $: canRestartSession = trainingPhase === 'results';
   
   // 状態変化時の自動スクロール（ダイレクトアクセス、マイク許可後の画面遷移時）
@@ -579,6 +591,22 @@
   
   function handlePitchDetectorError(event) {
     console.error('❌ PitchDetectorエラー:', event.detail);
+  }
+  
+  // マイク健康状態変化ハンドラー
+  function handleMicrophoneHealthChange(event) {
+    const { healthy, errors, details } = event.detail;
+    microphoneHealthy = healthy;
+    microphoneErrors = errors;
+    
+    if (!healthy) {
+      console.warn('⚠️ マイクの健康状態が悪化:', errors);
+      // 深刻な問題の場合はトレーニングを停止
+      if (trainingPhase === 'guiding') {
+        trainingPhase = 'setup';
+        console.warn('🛑 マイク問題によりトレーニングを停止');
+      }
+    }
   }
 
   // クリーンアップ
@@ -614,6 +642,7 @@
         on:pitchUpdate={handlePitchUpdate}
         on:stateChange={handlePitchDetectorStateChange}
         on:error={handlePitchDetectorError}
+        on:microphoneHealthChange={handleMicrophoneHealthChange}
         className="pitch-detector-content"
         debugMode={true}
       />
@@ -623,6 +652,26 @@
     
     {#if trainingPhase !== 'results'}
       <!-- Base Tone and Detection Side by Side -->
+      <!-- マイク健康状態警告（問題がある場合のみ表示） -->
+      {#if !microphoneHealthy && microphoneErrors.length > 0}
+        <Card class="warning-card">
+          <div class="card-header">
+            <h3 class="section-title">⚠️ マイク接続に問題があります</h3>
+          </div>
+          <div class="card-content">
+            <p class="warning-message">マイクが正常に動作していません。以下の問題が検出されました：</p>
+            <ul class="error-list">
+              {#each microphoneErrors as error}
+                <li>{error}</li>
+              {/each}
+            </ul>
+            <p class="fix-instruction">
+              <strong>解決方法:</strong> ページを再読み込みしてマイク許可を再度取得してください。
+            </p>
+          </div>
+        </Card>
+      {/if}
+
       <div class="side-by-side-container">
         <!-- Base Tone Section -->
         <Card class="main-card half-width">
@@ -1400,5 +1449,38 @@
     :global(.primary-button), :global(.secondary-button) {
       min-width: 100% !important;
     }
+  }
+
+  /* マイク警告カード */
+  :global(.warning-card) {
+    border: 2px solid #fbbf24 !important;
+    background: #fef3c7 !important;
+    margin-bottom: 24px !important;
+  }
+
+  .warning-message {
+    color: #92400e;
+    margin-bottom: 12px;
+  }
+
+  .error-list {
+    color: #dc2626;
+    margin: 12px 0;
+    padding-left: 20px;
+  }
+
+  .error-list li {
+    margin-bottom: 4px;
+    font-family: monospace;
+    font-size: 14px;
+  }
+
+  .fix-instruction {
+    color: #059669;
+    margin-top: 12px;
+    padding: 8px;
+    background: #d1fae5;
+    border-radius: 4px;
+    border-left: 4px solid #059669;
   }
 </style>

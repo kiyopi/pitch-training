@@ -49,6 +49,27 @@
   // デバッグ用
   let debugInterval = null;
   
+  // 表示状態リセット関数（外部から呼び出し可能）
+  export function resetDisplayState() {
+    currentVolume = 0;
+    rawVolume = 0;
+    currentFrequency = 0;
+    detectedNote = 'ーー';
+    pitchClarity = 0;
+    stableFrequency = 0;
+    stableVolume = 0;
+    previousFrequency = 0;
+    
+    // バッファクリア
+    frequencyHistory = [];
+    volumeHistory = [];
+    harmonicHistory = [];
+    
+    if (debugMode) {
+      console.log('🔄 [PitchDetector] Display state reset');
+    }
+  }
+  
   // マイク状態チェック関数（デバッグ用）
   function checkMicrophoneStatus() {
     if (!debugMode) return;
@@ -76,14 +97,22 @@
     
     console.log(`🎤 [PitchDetector] ${timestamp}:`, status);
     
+    // マイク状態の異常を検知して親に通知
+    let microphoneHealthy = true;
+    let errorDetails = [];
+    
     // MediaStreamの状態が異常な場合は警告
     if (mediaStream && !mediaStream.active) {
       console.warn(`⚠️ [PitchDetector] MediaStream is inactive!`, mediaStream);
+      microphoneHealthy = false;
+      errorDetails.push('MediaStream inactive');
     }
     
     // AudioContextの状態が異常な場合は警告
     if (audioContext && audioContext.state === 'suspended') {
       console.warn(`⚠️ [PitchDetector] AudioContext is suspended!`, audioContext);
+      microphoneHealthy = false;
+      errorDetails.push('AudioContext suspended');
     }
     
     // トラックの状態をチェック
@@ -91,9 +120,18 @@
       mediaStream.getTracks().forEach((track, index) => {
         if (track.readyState === 'ended') {
           console.error(`❌ [PitchDetector] Track ${index} has ended!`, track);
+          microphoneHealthy = false;
+          errorDetails.push(`Track ${index} ended`);
         }
       });
     }
+    
+    // マイク状態変化を親に通知
+    dispatch('microphoneHealthChange', {
+      healthy: microphoneHealthy,
+      errors: errorDetails,
+      details: status
+    });
   }
   
   // デバッグモードの監視
