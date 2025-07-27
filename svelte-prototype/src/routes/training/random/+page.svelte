@@ -413,6 +413,14 @@
   
   // セッション再開始（簡素版）
   function restartSession() {
+    console.log('🔄 再挑戦開始 - PitchDetector状態確認前');
+    
+    // 再挑戦前のPitchDetector状態確認
+    if (pitchDetectorComponent) {
+      const stateBefore = pitchDetectorComponent.getState();
+      console.log('📊 再挑戦前状態:', stateBefore);
+    }
+    
     // 1. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
@@ -424,6 +432,18 @@
     
     // 3. セッション状態リセット
     resetSessionState();
+    
+    // 再挑戦後のPitchDetector状態確認（少し待ってから）
+    setTimeout(() => {
+      if (pitchDetectorComponent) {
+        const stateAfter = pitchDetectorComponent.getState();
+        console.log('📊 再挑戦後状態:', stateAfter);
+        
+        if (!stateAfter.isInitialized) {
+          console.log('⚠️ PitchDetectorが初期化されていません - 再初期化が必要');
+        }
+      }
+    }, 100);
   }
   
   // セッション状態リセット
