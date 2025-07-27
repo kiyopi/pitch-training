@@ -2,6 +2,7 @@
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { PitchDetector } from 'pitchy';
   import VolumeBar from './VolumeBar.svelte';
+  import { audioManager } from '$lib/audio/AudioManager.js';
 
   const dispatch = createEventDispatcher();
 
@@ -15,19 +16,18 @@
   let lastError = null;
   let isInitialized = false;
 
-  // 音程検出状態
-  let audioContext = null;
-  let mediaStream = null;
-  let analyser = null;
-  let rawAnalyser = null;
+  // 音程検出状態（外部AudioContext対応）
+  let audioContext = null;        // AudioManagerから取得
+  let mediaStream = null;         // AudioManagerから取得
+  let sourceNode = null;          // AudioManagerから取得
+  let analyser = null;            // AudioManagerから取得
+  let rawAnalyser = null;         // AudioManagerから取得
   let pitchDetector = null;
   let animationFrame = null;
   let isDetecting = false;
 
-  // フィルター
-  let highpassFilter = null;
-  let lowpassFilter = null;
-  let notchFilter = null;
+  // AudioManager関連
+  let analyserIds = [];           // 作成したAnalyserのID管理
 
   // 検出データ
   let currentVolume = 0;
@@ -145,67 +145,45 @@
     debugInterval = null;
   }
 
-  // 初期化（改訂版）
-  export async function initialize(stream) {
+  // 初期化（AudioManager対応版）
+  export async function initialize() {
     try {
       componentState = 'initializing';
       lastError = null;
       
-      if (!stream) {
-        throw new Error('MediaStream is required');
-      }
+      console.log('🎙️ [PitchDetector] AudioManager経由で初期化開始');
       
-      mediaStream = stream;
+      // AudioManagerから共有リソースを取得
+      const resources = await audioManager.initialize();
+      audioContext = resources.audioContext;
+      mediaStream = resources.mediaStream;
+      sourceNode = resources.sourceNode;
       
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
+      console.log('✅ [PitchDetector] AudioManager リソース取得完了');
       
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-
-      // 3段階ノイズリダクション実装
-      const source = audioContext.createMediaStreamSource(mediaStream);
+      // 専用のAnalyserを作成（フィルター付き）
+      const filteredAnalyserId = `pitch-detector-filtered-${Date.now()}`;
+      analyser = audioManager.createAnalyser(filteredAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: true
+      });
+      analyserIds.push(filteredAnalyserId);
       
-      // フィルター前の信号解析用（比較用）
-      rawAnalyser = audioContext.createAnalyser();
-      rawAnalyser.fftSize = 2048;
-      rawAnalyser.smoothingTimeConstant = 0.8;
-      rawAnalyser.minDecibels = -90;
-      rawAnalyser.maxDecibels = -10;
-      source.connect(rawAnalyser);
+      // 生信号用Analyser（比較用）
+      const rawAnalyserId = `pitch-detector-raw-${Date.now()}`;
+      rawAnalyser = audioManager.createAnalyser(rawAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: false
+      });
+      analyserIds.push(rawAnalyserId);
       
-      // 1. ハイパスフィルター（低周波ノイズ除去: 80Hz以下カット）
-      highpassFilter = audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
-      highpassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
-      highpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      // 2. ローパスフィルター（高周波ノイズ除去: 800Hz以上カット）
-      lowpassFilter = audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.setValueAtTime(800, audioContext.currentTime);
-      lowpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      // 3. ノッチフィルター（電源ノイズ除去: 50Hz/60Hz）
-      notchFilter = audioContext.createBiquadFilter();
-      notchFilter.type = 'notch';
-      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
-      notchFilter.Q.setValueAtTime(10, audioContext.currentTime);
-      
-      // フィルター後の信号解析用（メイン）
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      
-      // フィルターチェーン接続: source → highpass → lowpass → notch → analyser
-      source.connect(highpassFilter);
-      highpassFilter.connect(lowpassFilter);
-      lowpassFilter.connect(notchFilter);
-      notchFilter.connect(analyser);
+      console.log('✅ [PitchDetector] Analyser作成完了:', analyserIds);
       
       // PitchDetector初期化
       pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
@@ -217,8 +195,10 @@
       // 状態変更を通知
       dispatch('stateChange', { state: componentState });
       
+      console.log('✅ [PitchDetector] 初期化完了');
       
     } catch (error) {
+      console.error('❌ [PitchDetector] 初期化エラー:', error);
       componentState = 'error';
       lastError = error;
       isInitialized = false;
@@ -467,8 +447,9 @@
     };
   }
   
-  // 再初期化API（新規追加）
-  export async function reinitialize(stream) {
+  // 再初期化API（AudioManager対応版）
+  export async function reinitialize() {
+    console.log('🔄 [PitchDetector] 再初期化開始');
     
     // 現在の状態をクリーンアップ
     cleanup();
@@ -477,41 +458,43 @@
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // 再初期化実行
-    await initialize(stream);
+    await initialize();
     
+    console.log('✅ [PitchDetector] 再初期化完了');
   }
 
-  // クリーンアップ（改訂版）
+  // クリーンアップ（AudioManager対応版）
   export function cleanup() {
+    console.log('🧹 [PitchDetector] クリーンアップ開始');
+    
     stopDetection();
+    
+    // AudioManagerに作成したAnalyserを解放通知
+    if (analyserIds.length > 0) {
+      audioManager.release(analyserIds);
+      console.log('📤 [PitchDetector] AudioManagerにAnalyser解放通知:', analyserIds);
+      analyserIds = [];
+    }
     
     // 状態をリセット
     componentState = 'uninitialized';
     isInitialized = false;
     lastError = null;
     
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
-    }
-    
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close();
-      audioContext = null;
-    }
-    
+    // 参照をクリア（実際のリソースはAudioManagerが管理）
+    audioContext = null;
+    mediaStream = null;
+    sourceNode = null;
     analyser = null;
     rawAnalyser = null;
     pitchDetector = null;
-    highpassFilter = null;
-    lowpassFilter = null;
-    notchFilter = null;
     
     // 履歴クリア
     frequencyHistory = [];
     volumeHistory = [];
     harmonicHistory = [];
     
+    console.log('✅ [PitchDetector] クリーンアップ完了');
   }
 
   // isActiveの変更を監視（改善版）
@@ -527,8 +510,11 @@
       clearInterval(debugInterval);
       debugInterval = null;
     }
-    // 使い回し設計のためcleanupしない
-    // MediaStreamとAudioContextをセッション間で保持
+    
+    // AudioManager使用時は自動クリーンアップしない
+    // （他のコンポーネントが使用中の可能性があるため）
+    // 明示的なcleanup()呼び出しが必要
+    console.log('🔄 [PitchDetector] onDestroy - AudioManagerリソースは保持');
   });
 </script>
 

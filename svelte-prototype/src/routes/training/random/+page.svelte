@@ -10,6 +10,7 @@
   import PitchDetector from '$lib/components/PitchDetector.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
+  import { audioManager } from '$lib/audio/AudioManager.js';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
@@ -87,7 +88,11 @@
   
   // 音程検出コンポーネント
   let pitchDetectorComponent = null;
-  let mediaStream = null;
+  
+  // AudioManager対応変数
+  let mediaStream = null;   // AudioManagerから取得
+  let audioContext = null;  // AudioManagerから取得
+  let sourceNode = null;    // AudioManagerから取得
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
@@ -103,29 +108,40 @@
     { note: 'B3', name: 'シ（低）', frequency: 246.94 }
   ];
 
-  // マイク許可確認（簡素版）
+  // マイク許可確認（AudioManager対応版）
   async function checkMicrophonePermission() {
     microphoneState = 'checking';
     
     try {
+      console.log('🎤 [RandomTraining] AudioManager経由でマイク許可確認開始');
+      
       if (!navigator.mediaDevices?.getUserMedia) {
         microphoneState = 'error';
         return;
       }
       
-      // マイクストリーム取得（一度のみ）
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // AudioManagerから共有リソースを取得（重複取得は安全）
+      const resources = await audioManager.initialize();
+      audioContext = resources.audioContext;
+      mediaStream = resources.mediaStream;
+      sourceNode = resources.sourceNode;
+      
+      console.log('✅ [RandomTraining] AudioManager リソース取得完了');
+      
       microphoneState = 'granted';
       trainingPhase = 'setup';
       
-      // PitchDetector初期化（一度のみ）
+      // PitchDetector初期化（外部AudioContext方式）
       setTimeout(async () => {
-        if (pitchDetectorComponent && mediaStream) {
-          await pitchDetectorComponent.initialize(mediaStream);
+        if (pitchDetectorComponent) {
+          console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
+          await pitchDetectorComponent.initialize();
+          console.log('✅ [RandomTraining] PitchDetector初期化完了');
         }
       }, 200);
+      
     } catch (error) {
-      console.error('❌ マイク許可エラー:', error);
+      console.error('❌ [RandomTraining] マイク許可エラー:', error);
       microphoneState = (error?.name === 'NotAllowedError') ? 'denied' : 'error';
     }
   }
@@ -154,17 +170,17 @@
       }
     }
     
-    // マイクストリームが初期化されていない場合のみ初期化
+    // AudioManagerリソースが初期化されていない場合のみ初期化
     if (!mediaStream && microphoneState === 'granted') {
-      console.log('🎤 [RandomTraining] マイクストリーム未初期化のため取得します');
+      console.log('🎤 [RandomTraining] AudioManagerリソース未初期化のため取得します');
       try {
         await checkMicrophonePermission();
       } catch (error) {
-        console.error('❌ マイク初期化エラー:', error);
+        console.error('❌ AudioManagerリソース初期化エラー:', error);
         return;
       }
     } else if (mediaStream) {
-      console.log('🎤 [RandomTraining] マイクストリーム既存のため再利用');
+      console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
     }
     
     // 即座に状態変更
@@ -200,17 +216,17 @@
       }
     }
     
-    // マイクストリームが初期化されていない場合のみ初期化
+    // AudioManagerリソースが初期化されていない場合のみ初期化
     if (!mediaStream && microphoneState === 'granted') {
-      console.log('🎤 [RandomTraining] マイクストリーム未初期化のため取得します');
+      console.log('🎤 [RandomTraining] AudioManagerリソース未初期化のため取得します');
       try {
         await checkMicrophonePermission();
       } catch (error) {
-        console.error('❌ マイク初期化エラー:', error);
+        console.error('❌ AudioManagerリソース初期化エラー:', error);
         return;
       }
     } else if (mediaStream) {
-      console.log('🎤 [RandomTraining] マイクストリーム既存のため再利用');
+      console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
     }
     
     // 即座に状態変更
@@ -433,15 +449,15 @@
       trainingPhase = 'setup';
       console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
       
-      // マイクストリームの事前取得（スムーズな再生のため）
+      // AudioManagerリソースの事前取得（スムーズな再生のため）
       setTimeout(async () => {
         if (!mediaStream) {
-          console.log('🎤 [RandomTraining] 事前マイクストリーム取得開始');
+          console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得開始');
           try {
             await checkMicrophonePermission();
-            console.log('🎤 [RandomTraining] 事前マイクストリーム取得完了');
+            console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得完了');
           } catch (error) {
-            console.warn('⚠️ 事前マイクストリーム取得失敗（後で再試行）:', error);
+            console.warn('⚠️ 事前AudioManagerリソース取得失敗（後で再試行）:', error);
           }
         }
       }, 100);
@@ -686,8 +702,10 @@
 
   // クリーンアップ
   onDestroy(() => {
+    console.log('🔄 [RandomTraining] onDestroy - AudioManagerリソースは保持');
+    
     // PitchDetectorは使い回しのためcleanupしない
-    // セッション間でMediaStreamとAudioContextを保持
+    // AudioManagerがリソースを管理するため、ここでは解放しない
     
     if (sampler) {
       sampler.dispose();

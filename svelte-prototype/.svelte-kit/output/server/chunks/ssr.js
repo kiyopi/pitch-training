@@ -27,6 +27,9 @@ function subscribe(store, ...callbacks) {
   const unsub = store.subscribe(...callbacks);
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
+function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
+  return new CustomEvent(type, { detail, bubbles, cancelable });
+}
 let current_component;
 function set_current_component(component) {
   current_component = component;
@@ -37,6 +40,25 @@ function get_current_component() {
 }
 function onDestroy(fn) {
   get_current_component().$$.on_destroy.push(fn);
+}
+function createEventDispatcher() {
+  const component = get_current_component();
+  return (type, detail, { cancelable = false } = {}) => {
+    const callbacks = component.$$.callbacks[type];
+    if (callbacks) {
+      const event = custom_event(
+        /** @type {string} */
+        type,
+        detail,
+        { cancelable }
+      );
+      callbacks.slice().forEach((fn) => {
+        fn.call(component, event);
+      });
+      return !event.defaultPrevented;
+    }
+    return true;
+  };
 }
 function setContext(key, context) {
   get_current_component().$$.context.set(key, context);
@@ -133,8 +155,9 @@ export {
   subscribe as d,
   escape as e,
   each as f,
-  getContext as g,
-  add_attribute as h,
+  add_attribute as g,
+  createEventDispatcher as h,
+  getContext as i,
   missing_component as m,
   noop as n,
   onDestroy as o,

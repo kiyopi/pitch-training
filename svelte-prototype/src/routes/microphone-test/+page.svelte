@@ -6,6 +6,7 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import { audioManager } from '$lib/audio/AudioManager.js';
   
   // URL パラメータから mode を取得
   let mode = 'random';
@@ -30,13 +31,15 @@
   let rawVolume = 0;        // フィルター前の音量
   let filteredVolume = 0;   // フィルター後の音量
   let noiseReduction = 0;   // ノイズ削減率（%）
-  let rawAnalyser = null;   // フィルター前のアナライザー
   
-  // Web Audio API変数
-  let audioContext = null;
-  let mediaStream = null;
-  let analyser = null;
+  // AudioManager対応変数
+  let audioContext = null;  // AudioManagerから取得
+  let mediaStream = null;   // AudioManagerから取得
+  let sourceNode = null;    // AudioManagerから取得
+  let analyser = null;      // AudioManagerから取得
+  let rawAnalyser = null;   // AudioManagerから取得
   let animationFrame = null;
+  let analyserIds = [];     // 作成したAnalyserのID管理
 
   // トレーニングモード設定
   const trainingModes = {
@@ -70,69 +73,53 @@
     }
   }
   
-  // マイク許可リクエスト（ノイズリダクション対応）
+  // マイク許可リクエスト（AudioManager対応）
   async function requestMicrophone() {
     micPermission = 'pending';
     
     try {
-      // シンプルな設定でマイクアクセス
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('🎤 [MicTest] AudioManager経由でマイク許可リクエスト開始');
+      
+      // AudioManagerから共有リソースを取得
+      const resources = await audioManager.initialize();
+      audioContext = resources.audioContext;
+      mediaStream = resources.mediaStream;
+      sourceNode = resources.sourceNode;
+      
+      console.log('✅ [MicTest] AudioManager リソース取得完了');
+      
+      // 専用のAnalyserを作成（フィルター付き）
+      const filteredAnalyserId = `mic-test-filtered-${Date.now()}`;
+      analyser = audioManager.createAnalyser(filteredAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: true
+      });
+      analyserIds.push(filteredAnalyserId);
+      
+      // 生信号用Analyser（比較用）
+      const rawAnalyserId = `mic-test-raw-${Date.now()}`;
+      rawAnalyser = audioManager.createAnalyser(rawAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: false
+      });
+      analyserIds.push(rawAnalyserId);
+      
+      console.log('✅ [MicTest] Analyser作成完了:', analyserIds);
+      
       micPermission = 'granted';
-      
-      // AudioContextをユーザーアクション内で作成
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // AudioContextがsuspendedの場合は再開
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-      
-      // 3段階ノイズリダクション実装
-      const source = audioContext.createMediaStreamSource(mediaStream);
-      
-      // フィルター前の信号解析用（比較用）
-      rawAnalyser = audioContext.createAnalyser();
-      rawAnalyser.fftSize = 2048;
-      rawAnalyser.smoothingTimeConstant = 0.8;
-      rawAnalyser.minDecibels = -90;
-      rawAnalyser.maxDecibels = -10;
-      source.connect(rawAnalyser); // 生信号を直接アナライザーに接続
-      
-      // 1. ハイパスフィルター（低周波ノイズ除去: 80Hz以下カット）
-      const highpassFilter = audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
-      highpassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
-      highpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      // 2. ローパスフィルター（高周波ノイズ除去: 800Hz以上カット）
-      const lowpassFilter = audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.setValueAtTime(800, audioContext.currentTime);
-      lowpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
-      
-      // 3. ノッチフィルター（電源ノイズ除去: 50Hz/60Hz）
-      const notchFilter = audioContext.createBiquadFilter();
-      notchFilter.type = 'notch';
-      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime); // 60Hz電源ノイズ
-      notchFilter.Q.setValueAtTime(10, audioContext.currentTime); // 狭帯域除去
-      
-      // フィルター後の信号解析用（メイン）
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      
-      // フィルターチェーン接続: source → highpass → lowpass → notch → analyser
-      source.connect(highpassFilter);
-      highpassFilter.connect(lowpassFilter);
-      lowpassFilter.connect(notchFilter);
-      notchFilter.connect(analyser);
-      
       isListening = true;
       analyzeAudio();
       
+      console.log('✅ [MicTest] マイク許可とリスニング開始完了');
+      
     } catch (error) {
+      console.error('❌ [MicTest] マイク許可エラー:', error);
       micPermission = 'denied';
     }
   }
@@ -248,8 +235,10 @@
     return `${note}${octave}（${noteNamesJa[note]}${octave}）`;
   }
   
-  // リスニング停止
+  // リスニング停止（AudioManager対応）
   function stopListening() {
+    console.log('🛑 [MicTest] リスニング停止開始');
+    
     isListening = false;
     
     if (animationFrame) {
@@ -257,18 +246,27 @@
       animationFrame = null;
     }
     
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
+    // AudioManagerに作成したAnalyserを解放通知
+    if (analyserIds.length > 0) {
+      audioManager.release(analyserIds);
+      console.log('📤 [MicTest] AudioManagerにAnalyser解放通知:', analyserIds);
+      analyserIds = [];
     }
     
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close();
-      audioContext = null;
-    }
-    
+    // 参照をクリア（実際のリソースはAudioManagerが管理）
+    audioContext = null;
+    mediaStream = null;
+    sourceNode = null;
     analyser = null;
     rawAnalyser = null;
+    
+    console.log('✅ [MicTest] リスニング停止完了');
+  }
+  
+  // トレーニング開始関数
+  function startTraining() {
+    console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
+    goto(`${base}/training/random?from=microphone-test`);
   }
   
   // ページ離脱時のクリーンアップ
@@ -337,7 +335,7 @@
             <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
             
             <div class="training-start-button-area">
-              <button class="training-start-button enabled" on:click={() => goto(`${base}${selectedMode.path}?from=microphone-test`)}>
+              <button class="training-start-button enabled" on:click={startTraining}>
                 トレーニング開始
               </button>
             </div>
