@@ -989,42 +989,43 @@
     width: fit-content;
   }
 
-  .detected-frequency {
-    font-weight: 600;
+  /* PitchDetector表示の最強制スタイリング */
+  :global(.detected-frequency) {
+    font-weight: 600 !important;
     font-size: 2rem !important;
     color: hsl(222.2 84% 4.9%) !important;
     font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
                  'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
-    min-width: 4ch;
-    text-align: right;
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    min-width: 4ch !important;
+    text-align: right !important;
+    display: inline-block !important;
+    font-variant-numeric: tabular-nums !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
   }
 
-  .hz-suffix {
-    font-weight: 600;
+  :global(.hz-suffix) {
+    font-weight: 600 !important;
     font-size: 2rem !important;
     color: hsl(222.2 84% 4.9%) !important;
   }
 
-  .divider {
+  :global(.divider) {
     color: hsl(214.3 31.8% 70%) !important;
     font-size: 1.5rem !important;
-    margin: 0 0.25rem;
-    font-weight: 300;
+    margin: 0 0.25rem !important;
+    font-weight: 300 !important;
   }
   
-  .detected-note {
-    font-weight: 600;
+  :global(.detected-note) {
+    font-weight: 600 !important;
     font-size: 2rem !important;
     color: hsl(215.4 16.3% 46.9%) !important;
     font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
                  'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
-    min-width: 3ch;
-    display: inline-block;
-    text-align: center;
+    min-width: 3ch !important;
+    display: inline-block !important;
+    text-align: center !important;
   }
 
   :global(.volume-bar) {
