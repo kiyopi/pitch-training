@@ -28,6 +28,7 @@
 
   // AudioManager関連
   let analyserIds = [];           // 作成したAnalyserのID管理
+  let mediaStreamListeners = new Map(); // MediaStreamイベントリスナー管理
 
   // 検出データ
   let currentVolume = 0;
@@ -472,6 +473,17 @@
     
     stopDetection();
     
+    // MediaStreamイベントリスナーをクリーンアップ
+    if (mediaStreamListeners.size > 0) {
+      mediaStreamListeners.forEach((handlers, track) => {
+        track.removeEventListener('ended', handlers.endedHandler);
+        track.removeEventListener('mute', handlers.muteHandler);
+        track.removeEventListener('unmute', handlers.unmuteHandler);
+      });
+      mediaStreamListeners.clear();
+      console.log('🔄 [PitchDetector] MediaStreamイベントリスナー削除');
+    }
+    
     // AudioManagerに作成したAnalyserを解放通知
     if (analyserIds.length > 0) {
       audioManager.release(analyserIds);
@@ -510,7 +522,7 @@
     const tracks = mediaStream.getTracks();
     tracks.forEach(track => {
       // トラック終了イベントの監視
-      track.addEventListener('ended', () => {
+      const endedHandler = () => {
         console.error('🚨 [PitchDetector] MediaStreamTrack終了検出:', track.kind);
         componentState = 'error';
         lastError = new Error(`MediaStreamTrack (${track.kind}) ended`);
@@ -526,24 +538,32 @@
         if (isDetecting) {
           stopDetection();
         }
-      });
+      };
       
       // トラックの無効化検出
-      track.addEventListener('mute', () => {
+      const muteHandler = () => {
         console.warn('⚠️ [PitchDetector] MediaStreamTrack muted:', track.kind);
         dispatch('warning', { 
           reason: 'track_muted', 
           track: track.kind 
         });
-      });
+      };
       
-      track.addEventListener('unmute', () => {
+      const unmuteHandler = () => {
         console.log('✅ [PitchDetector] MediaStreamTrack unmuted:', track.kind);
         dispatch('info', { 
           reason: 'track_unmuted', 
           track: track.kind 
         });
-      });
+      };
+      
+      // イベントリスナーを追加
+      track.addEventListener('ended', endedHandler);
+      track.addEventListener('mute', muteHandler);
+      track.addEventListener('unmute', unmuteHandler);
+      
+      // リスナー参照を保存（後で削除するため）
+      mediaStreamListeners.set(track, { endedHandler, muteHandler, unmuteHandler });
     });
     
     console.log('🔍 [PitchDetector] MediaStream監視開始:', tracks.length + ' tracks');

@@ -8,6 +8,10 @@
       "_internal.js"
     ]
   },
+  "_AudioManager.js": {
+    "file": "chunks/AudioManager.js",
+    "name": "AudioManager"
+  },
   "_Button.js": {
     "file": "chunks/Button.js",
     "name": "Button",
@@ -24,16 +28,6 @@
     ],
     "css": [
       "_app/immutable/assets/PageLayout.Cz8yIb7J.css"
-    ]
-  },
-  "_PitchDetector.js": {
-    "file": "chunks/PitchDetector.js",
-    "name": "PitchDetector",
-    "imports": [
-      "_ssr.js"
-    ],
-    "css": [
-      "_app/immutable/assets/PitchDetector.Bj9rbx_g.css"
     ]
   },
   "_exports.js": {
@@ -139,10 +133,10 @@
       "_ssr.js",
       "_stores.js",
       "_PageLayout.js",
-      "_PitchDetector.js"
+      "_AudioManager.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Bj4LjpZd.css"
+      "_app/immutable/assets/_page.V4tGObsf.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -183,10 +177,10 @@
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",
-      "_PitchDetector.js"
+      "_AudioManager.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.B0VAUGJI.css"
+      "_app/immutable/assets/_page.dfp1aMOo.css"
     ]
   }
 }
