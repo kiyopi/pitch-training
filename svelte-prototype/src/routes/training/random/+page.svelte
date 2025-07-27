@@ -287,7 +287,7 @@
 
   // マイクテストページへの誘導
   function goToMicrophoneTest() {
-    window.location.href = '/microphone-test?mode=random';
+    window.location.href = '/microphone-test';
   }
 
   // ホームページに戻る
