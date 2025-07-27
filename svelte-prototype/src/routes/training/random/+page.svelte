@@ -991,10 +991,10 @@
 
   .detected-frequency {
     font-weight: 600;
-    font-size: 2rem;
-    color: hsl(222.2 84% 4.9%);
+    font-size: 2rem !important;
+    color: hsl(222.2 84% 4.9%) !important;
     font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
-                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
     min-width: 4ch;
     text-align: right;
     display: inline-block;
@@ -1005,23 +1005,23 @@
 
   .hz-suffix {
     font-weight: 600;
-    font-size: 2rem;
-    color: hsl(222.2 84% 4.9%);
+    font-size: 2rem !important;
+    color: hsl(222.2 84% 4.9%) !important;
   }
 
   .divider {
-    color: hsl(214.3 31.8% 70%);
-    font-size: 1.5rem;
+    color: hsl(214.3 31.8% 70%) !important;
+    font-size: 1.5rem !important;
     margin: 0 0.25rem;
     font-weight: 300;
   }
   
   .detected-note {
     font-weight: 600;
-    font-size: 2rem;
-    color: hsl(215.4 16.3% 46.9%);
+    font-size: 2rem !important;
+    color: hsl(215.4 16.3% 46.9%) !important;
     font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
-                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
     min-width: 3ch;
     display: inline-block;
     text-align: center;
