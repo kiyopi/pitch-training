@@ -353,10 +353,22 @@
     // 音源初期化
     initializeSampler();
     
-    // マイクテストページから来た場合は直接granted状態に設定
+    // マイクテストページから来た場合でも、実際の許可状態を確認
     if ($page.url.searchParams.get('from') === 'microphone-test') {
-      microphoneState = 'granted';
-      return;
+      // URLパラメータを削除（お気に入り登録時の問題回避）
+      const url = new URL(window.location);
+      url.searchParams.delete('from');
+      window.history.replaceState({}, '', url);
+      
+      // 実際のマイク許可状態を確認
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop()); // すぐに停止
+        microphoneState = 'granted';
+        return;
+      } catch (error) {
+        // マイク許可がない場合は通常のチェックに進む
+      }
     }
     
     // コンポーネントマウント完了を少し待ってからマイク許可状態確認
