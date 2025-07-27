@@ -288,12 +288,12 @@
 
   // マイクテストページへの誘導（SvelteKit goto使用）
   function goToMicrophoneTest() {
-    goto('/microphone-test');
+    goto(`${base}/microphone-test`);
   }
 
   // ホームページに戻る（SvelteKit goto使用）
   function goHome() {
-    goto('/');
+    goto(`${base}/`);
   }
 
   // Tone.jsサンプラー初期化（Salamander Grand Piano - 最適化版）
