@@ -151,6 +151,17 @@
   function startGuideAnimation() {
     console.log('🎵 ガイドアニメーション開始');
     
+    // PitchDetectorの状態確認（デバッグ）
+    if (pitchDetectorComponent) {
+      const state = pitchDetectorComponent.getState();
+      console.log('🔍 ガイド開始時のPitchDetector状態:', {
+        componentState: state.componentState,
+        isInitialized: state.isInitialized,
+        isDetecting: state.isDetecting,
+        hasRequiredComponents: state.hasRequiredComponents
+      });
+    }
+    
     // シンプルな状態変更のみ
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
@@ -454,6 +465,19 @@
     
     // 3. セッション状態リセット
     resetSessionState();
+    
+    // 4. PitchDetectorの状態確認（デバッグ用）
+    setTimeout(() => {
+      if (pitchDetectorComponent) {
+        const state = pitchDetectorComponent.getState();
+        console.log('🔍 PitchDetector状態確認:', {
+          componentState: state.componentState,
+          isInitialized: state.isInitialized,
+          isDetecting: state.isDetecting,
+          hasRequiredComponents: state.hasRequiredComponents
+        });
+      }
+    }, 200);
     
     console.log('✅ セッション再開始完了 - マイク制御・基音設定は各ボタンで実行');
   }
