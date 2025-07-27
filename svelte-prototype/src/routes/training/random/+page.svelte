@@ -770,6 +770,23 @@
     
     if (pitchDetectorState === 'ready' && pitchDetectorComponent?.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
       issues.push('PitchDetector ready but not initialized');
+      
+      // 自動修復: 未初期化のPitchDetectorを再初期化
+      if (now - lastAutoRepairTime > AUTO_REPAIR_COOLDOWN && !isRestarting && mediaStream) {
+        lastAutoRepairTime = now;
+        setTimeout(async () => {
+          try {
+            console.log('🔧 PitchDetector自動再初期化開始');
+            pitchDetectorState = 'initializing';
+            await pitchDetectorComponent.reinitialize(mediaStream);
+            pitchDetectorState = 'ready';
+            console.log('✅ PitchDetector自動再初期化完了');
+          } catch (error) {
+            console.error('❌ PitchDetector自動再初期化失敗:', error);
+            pitchDetectorState = 'error';
+          }
+        }, 500);
+      }
     }
     
     return issues;
