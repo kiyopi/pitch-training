@@ -615,6 +615,7 @@
         on:stateChange={handlePitchDetectorStateChange}
         on:error={handlePitchDetectorError}
         className="pitch-detector-content"
+        debugMode={true}
       />
     </div>
 

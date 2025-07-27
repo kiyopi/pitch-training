@@ -8,6 +8,7 @@
   // Props
   export let isActive = false;
   export let className = '';
+  export let debugMode = false; // デバッグモード
 
   // 状態管理（改訂版）
   let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
@@ -44,6 +45,67 @@
   // 倍音補正用
   let previousFrequency = 0;
   let harmonicHistory = [];
+  
+  // デバッグ用
+  let debugInterval = null;
+  
+  // マイク状態チェック関数（デバッグ用）
+  function checkMicrophoneStatus() {
+    if (!debugMode) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const status = {
+      timestamp,
+      componentState,
+      isActive,
+      isDetecting,
+      isInitialized,
+      mediaStreamActive: mediaStream ? mediaStream.active : null,
+      mediaStreamTracks: mediaStream ? mediaStream.getTracks().length : 0,
+      trackStates: mediaStream ? mediaStream.getTracks().map(track => ({
+        kind: track.kind,
+        enabled: track.enabled,
+        readyState: track.readyState,
+        muted: track.muted
+      })) : [],
+      audioContextState: audioContext ? audioContext.state : null,
+      hasAnalyser: !!analyser,
+      currentVolume,
+      currentFrequency
+    };
+    
+    console.log(`🎤 [PitchDetector] ${timestamp}:`, status);
+    
+    // MediaStreamの状態が異常な場合は警告
+    if (mediaStream && !mediaStream.active) {
+      console.warn(`⚠️ [PitchDetector] MediaStream is inactive!`, mediaStream);
+    }
+    
+    // AudioContextの状態が異常な場合は警告
+    if (audioContext && audioContext.state === 'suspended') {
+      console.warn(`⚠️ [PitchDetector] AudioContext is suspended!`, audioContext);
+    }
+    
+    // トラックの状態をチェック
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track, index) => {
+        if (track.readyState === 'ended') {
+          console.error(`❌ [PitchDetector] Track ${index} has ended!`, track);
+        }
+      });
+    }
+  }
+  
+  // デバッグモードの監視
+  $: if (debugMode && !debugInterval) {
+    console.log('🔍 [PitchDetector] Debug mode enabled - starting status monitoring');
+    debugInterval = setInterval(checkMicrophoneStatus, 3000); // 3秒間隔
+    checkMicrophoneStatus(); // 即座に1回実行
+  } else if (!debugMode && debugInterval) {
+    console.log('🔍 [PitchDetector] Debug mode disabled - stopping status monitoring');
+    clearInterval(debugInterval);
+    debugInterval = null;
+  }
 
   // 初期化（改訂版）
   export async function initialize(stream) {
@@ -422,6 +484,11 @@
   }
 
   onDestroy(() => {
+    // デバッグインターバルのクリア
+    if (debugInterval) {
+      clearInterval(debugInterval);
+      debugInterval = null;
+    }
     // 使い回し設計のためcleanupしない
     // MediaStreamとAudioContextをセッション間で保持
   });
