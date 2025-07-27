@@ -494,11 +494,8 @@
 
   // クリーンアップ
   onDestroy(() => {
-    
-    // コンポーネントクリーンアップ
-    if (pitchDetectorComponent) {
-      pitchDetectorComponent.cleanup();
-    }
+    // PitchDetectorは使い回しのためcleanupしない
+    // セッション間でMediaStreamとAudioContextを保持
     
     if (sampler) {
       sampler.dispose();
