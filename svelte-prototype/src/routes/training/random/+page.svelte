@@ -348,11 +348,13 @@
 
   // 初期化
   onMount(async () => {
+    // 1. ダイレクトアクセス時のページトップスクロール
+    scrollToTop();
     
-    // 音源初期化
+    // 2. 音源初期化
     initializeSampler();
     
-    // コンポーネントマウント完了を少し待ってからマイク許可状態確認
+    // 3. コンポーネントマウント完了を少し待ってからマイク許可状態確認
     await new Promise(resolve => setTimeout(resolve, 100));
     checkExistingMicrophonePermission();
   });
