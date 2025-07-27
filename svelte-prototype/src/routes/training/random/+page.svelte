@@ -13,10 +13,7 @@
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
   let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
   
-  // コンポーネント状態管理（改訂版）
-  let audioEngineState = 'initializing'; // 'initializing' | 'ready' | 'error'
-  let pitchDetectorState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
-  let systemErrors = []; // エラー履歴
+  // シンプルな状態管理
   
   // デバッグ情報（強制更新）
   const buildVersion = "v1.3.2-FORCE";
@@ -88,7 +85,7 @@
     { note: 'B3', name: 'シ（低）', frequency: 246.94 }
   ];
 
-  // マイクロフォン許可チェック（コンポーネント統合版）
+  // マイク許可確認（簡素版）
   async function checkMicrophonePermission() {
     microphoneState = 'checking';
     
@@ -98,25 +95,23 @@
         return;
       }
       
-      // マイクストリームを取得
+      // マイクストリーム取得（一度のみ）
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
       microphoneState = 'granted';
       trainingPhase = 'setup';
-      console.log('マイク許可取得成功');
       
-      // PitchDetectorコンポーネントがマウントされるまで待機してから初期化
+      console.log('✅ マイク許可取得完了');
+      
+      // PitchDetector初期化（一度のみ）
       setTimeout(async () => {
-        if (pitchDetectorComponent) {
+        if (pitchDetectorComponent && mediaStream) {
           await pitchDetectorComponent.initialize(mediaStream);
-          console.log('PitchDetectorコンポーネント初期化完了');
-        } else {
-          console.error('PitchDetectorコンポーネントが見つかりません');
+          console.log('✅ PitchDetector初期化完了');
         }
       }, 200);
     } catch (error) {
-      console.error('マイク許可エラー:', error);
-      microphoneState = (error && error.name === 'NotAllowedError') ? 'denied' : 'error';
+      console.error('❌ マイク許可エラー:', error);
+      microphoneState = (error?.name === 'NotAllowedError') ? 'denied' : 'error';
     }
   }
 
@@ -129,85 +124,40 @@
     console.log('選択された基音:', currentBaseNote, currentBaseFrequency + 'Hz');
   }
 
-  // 基音再生（即座画面遷移版）
+  // 基音再生（簡素版）
   function playBaseNote() {
     if (isPlaying || !sampler || isLoading) return;
     
-    // 1. 即座に画面状態変更（ユーザー体験最優先）
+    // 即座に状態変更
     isPlaying = true;
     trainingPhase = 'listening';
     selectRandomBaseNote();
     
-    console.log('🎵 基音再生開始 - 即座画面遷移');
+    console.log('🎵 基音再生開始');
     
-    // 2. 非同期で音声処理（画面に影響させない）
-    (async () => {
-      try {
-        // Tone.jsのコンテキストを確実に開始（非阻止）
-        if (Tone.context.state !== 'running') {
-          await Tone.start();
-          console.log('AudioContext起動完了');
-        }
-        
-        // 選択された基音を即座再生（最適化設定）
-        const note = baseNotes.find(n => n.name === currentBaseNote).note;
-        
-        // 即座再生のための最適化
-        const now = Tone.now();
-        sampler.triggerAttackRelease(note, 2, now, 0.7); // 音量0.7で即座再生
-        
-        console.log('基音再生:', currentBaseNote, currentBaseFrequency + 'Hz', '音程:', note);
-        
-        // 2秒後に0.5秒待機してからガイドアニメーション開始
-        setTimeout(() => {
-          isPlaying = false;
-          trainingPhase = 'waiting';
-          console.log('基音再生完了 - 0.5秒待機中...');
-          
-          // 0.5秒後にガイドアニメーション開始
-          setTimeout(() => {
-            startGuideAnimation();
-          }, 500);
-        }, 2000);
-      } catch (error) {
-        console.error('基音再生エラー:', error);
-        isPlaying = false;
-        trainingPhase = 'setup';
-      }
-    })();
+    // 音声再生
+    const note = baseNotes.find(n => n.name === currentBaseNote).note;
+    sampler.triggerAttackRelease(note, 2, Tone.now(), 0.7);
+    
+    // 2.5秒後にガイドアニメーション開始
+    setTimeout(() => {
+      isPlaying = false;
+      trainingPhase = 'waiting';
+      setTimeout(() => startGuideAnimation(), 500);
+    }, 2000);
   }
 
-  // ガイドアニメーション開始（3回目周波数表示確実化版）
+  // ガイドアニメーション開始（簡素版）
   function startGuideAnimation() {
-    console.log('🎵 ガイドアニメーション開始準備');
+    console.log('🎵 ガイドアニメーション開始');
     
-    // 1. 即座に画面状態変更
+    // シンプルな状態変更のみ
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
     isGuideAnimationActive = true;
     scaleEvaluations = [];
     
-    // 2. コンポーネント状態確認と強制修復（3回目対策）
-    if (!pitchDetectorComponent || !mediaStream || pitchDetectorState !== 'ready') {
-      console.error('❌ 音程検出開始失敗 - コンポーネント未準備:', {
-        hasComponent: !!pitchDetectorComponent,
-        hasMediaStream: !!mediaStream,
-        pitchDetectorState
-      });
-      trainingPhase = 'setup';
-      return;
-    }
-    
-    // 3. PitchDetector初期化状態強制確認（3回目の遅延対策）
-    if (pitchDetectorComponent.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
-      console.log('⚠️ PitchDetector未初期化検出 - ガイド開始前強制再初期化');
-      pitchDetectorComponent.reinitialize(mediaStream).catch(error => {
-        console.warn('⚠️ ガイド開始前再初期化失敗:', error.message);
-        // エラーでも続行 - リアクティブシステムに任せる
-      });
-    }
-    
-    console.log('✅ ガイドアニメーション開始 - isActiveによる自動検出開始');
+    console.log('✅ ガイドアニメーション開始 - isActiveによる自動検出');
     
     // 各ステップを順次ハイライト（1秒間隔）
     function animateNextStep() {
@@ -351,12 +301,10 @@
         onload: () => {
           console.log('✅ Salamander Grand Piano C4音源読み込み完了');
           isLoading = false;
-          audioEngineState = 'ready';
         },
         onerror: (error) => {
           console.error('❌ Salamander Piano音源読み込みエラー:', error);
           isLoading = false;
-          audioEngineState = 'error';
         }
       }).toDestination();
       
@@ -393,16 +341,6 @@
 
   // 初期化
   onMount(async () => {
-    // 状態一貫性チェック開始（軽量化）
-    stateCheckInterval = setInterval(() => {
-      // トレーニング中のみ定期チェック実行（負荷軽減）
-      if (trainingPhase === 'guiding' || trainingPhase === 'listening') {
-        const issues = validateSystemState();
-        if (issues.length > 0) {
-          console.warn('⚠️ 状態一貫性問題:', issues);
-        }
-      }
-    }, 5000);
     
     // 音源初期化
     initializeSampler();
@@ -501,33 +439,23 @@
     console.log('🎉 セッション完了!', sessionResults);
   }
   
-  // セッション再開始（即座画面遷移版）
+  // セッション再開始（簡素版）
   function restartSession() {
-    console.log('🔄 セッション再開始 - 即座画面遷移');
+    console.log('🔄 セッション再開始 - 簡素実装');
     
-    // 1. 即座に画面遷移（ユーザー体験最優先）
+    // 1. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
-    // 2. 現在のセッションを安全に停止
+    // 2. 最小限のクリーンアップ
     if (guideAnimationTimer) {
       clearTimeout(guideAnimationTimer);
       guideAnimationTimer = null;
     }
     
-    if (pitchDetectorComponent && pitchDetectorComponent.stopDetection) {
-      pitchDetectorComponent.stopDetection();
-    }
-    
-    // 3. セッション状態をリセット（前回結果は保持）
+    // 3. セッション状態リセット
     resetSessionState();
     
-    // 4. バックグラウンドで軽量準備（非阻止）
-    quickComponentCheck().catch(error => {
-      console.warn('⚠️ バックグラウンド準備エラー:', error.message);
-      // エラーが発生してもユーザー体験には影響しない
-    });
-    
-    console.log('✅ セッション再開始完了 - 準備はバックグラウンドで継続');
+    console.log('✅ セッション再開始完了 - マイク制御・基音設定は各ボタンで実行');
   }
   
   // セッション状態リセット
@@ -547,250 +475,25 @@
     console.log('✅ セッション状態リセット完了');
   }
   
-  // 軽量コンポーネントチェック（リトライなし）
-  async function quickComponentCheck() {
-    console.log('🔍 軽量コンポーネントチェック開始');
-    
-    try {
-      // 1. MediaStream確認（最重要）
-      if (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live')) {
-        console.log('🎤 MediaStream再取得');
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        microphoneState = 'granted';
-      }
-      
-      // 2. PitchDetectorコンポーネント状態確認（リトライなし）
-      if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized) {
-        if (!pitchDetectorComponent.getIsInitialized()) {
-          console.log('🎙️ PitchDetector事前再初期化');
-          pitchDetectorState = 'initializing';
-          try {
-            await pitchDetectorComponent.reinitialize(mediaStream);
-            pitchDetectorState = 'ready';
-            console.log('✅ PitchDetector事前再初期化完了');
-          } catch (reinitError) {
-            console.warn('⚠️ 事前再初期化失敗 - セッション開始時に自動修復:', reinitError.message);
-            // エラーでも続行 - セッション開始時の自動修復に任せる
-            pitchDetectorState = 'ready'; // 状態を進める
-          }
-        }
-      } else {
-        console.log('ℹ️ PitchDetectorコンポーネント参照無効 - セッション開始時に修復');
-        // リトライせずに続行 - セッション開始時の自動修復に任せる
-      }
-      
-      // 3. 音源状態確認
-      if (!sampler || isLoading) {
-        console.log('🎹 音源状態確認');
-        audioEngineState = 'initializing';
-        await initializeSampler();
-        audioEngineState = 'ready';
-      }
-      
-      console.log('✅ 軽量チェック完了');
-      
-    } catch (error) {
-      console.warn('⚠️ 軽量チェックエラー:', error.message);
-      // エラーでも続行 - より重要なのは高速な画面遷移
-    }
-  }
   
-  // エラー記録・回復機能（新規追加）
-  async function recordAndRecover(error, context) {
-    const systemError = {
-      type: classifyError(error),
-      message: error.message,
-      context,
-      timestamp: Date.now(),
-      recoverable: true,
-      recovered: false
-    };
-    
-    systemErrors.push(systemError);
-    console.error(`🚨 システムエラー [${context}]:`, error);
-    
-    try {
-      // エラー種別による回復戦略
-      switch (systemError.type) {
-        case 'microphone-lost':
-          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          await pitchDetectorComponent?.reinitialize(mediaStream);
-          break;
-          
-        case 'pitchdetector-failed':
-          await pitchDetectorComponent?.cleanup();
-          await pitchDetectorComponent?.reinitialize(mediaStream);
-          break;
-          
-        case 'audio-context-suspended':
-          if (audioContext && audioContext.state === 'suspended') {
-            await audioContext.resume();
-          }
-          break;
-          
-        case 'sampler-error':
-          sampler?.dispose();
-          await initializeSampler();
-          break;
-          
-        default:
-          // 完全再初期化
-          await fullReinitialize();
-          break;
-      }
-      
-      systemError.recovered = true;
-      console.log('✅ エラー回復成功');
-      
-    } catch (recoveryError) {
-      systemError.recoverable = false;
-      console.error('❌ エラー回復失敗:', recoveryError);
-      await fullReinitialize();
-    }
-  }
-  
-  // エラー分類
-  function classifyError(error) {
-    if (error.message.includes('MediaStream') || error.message.includes('microphone')) {
-      return 'microphone-lost';
-    } else if (error.message.includes('PitchDetector') || error.message.includes('detection')) {
-      return 'pitchdetector-failed';
-    } else if (error.message.includes('AudioContext') || error.message.includes('suspended')) {
-      return 'audio-context-suspended';
-    } else if (error.message.includes('sampler') || error.message.includes('audio')) {
-      return 'sampler-error';
-    }
-    return 'unknown';
-  }
-  
-  // 完全再初期化（最終手段）
-  async function fullReinitialize() {
-    console.log('🔄 完全再初期化開始');
-    
-    try {
-      // 全リソースクリーンアップ
-      if (pitchDetectorComponent) {
-        pitchDetectorComponent.cleanup();
-      }
-      if (sampler) {
-        sampler.dispose();
-        sampler = null;
-      }
-      
-      // 状態リセット
-      microphoneState = 'checking';
-      audioEngineState = 'initializing';
-      pitchDetectorState = 'uninitialized';
-      
-      // 再初期化実行
-      await checkMicrophonePermission();
-      
-      console.log('✅ 完全再初期化完了');
-      
-    } catch (error) {
-      console.error('❌ 完全再初期化失敗:', error);
-      microphoneState = 'error';
-      audioEngineState = 'error';
-      pitchDetectorState = 'error';
-    }
-  }
 
-  // 状態一貫性チェック機能（改訂版）
-  let lastAutoRepairTime = 0;
-  const AUTO_REPAIR_COOLDOWN = 30000; // 30秒のクールダウン
   
-  function validateSystemState() {
-    const issues = [];
-    const now = Date.now();
-    
-    if (trainingPhase === 'guiding' && pitchDetectorState !== 'detecting') {
-      issues.push('Training in guiding phase but PitchDetector not detecting');
-    }
-    
-    if (microphoneState === 'granted' && (!mediaStream || mediaStream.getTracks().some(track => track.readyState !== 'live'))) {
-      issues.push('Microphone granted but MediaStream invalid');
-      
-      // 自動修復のクールダウンチェック
-      if (now - lastAutoRepairTime > AUTO_REPAIR_COOLDOWN) {
-        lastAutoRepairTime = now;
-        setTimeout(async () => {
-          try {
-            console.log('🔧 MediaStream自動修復開始');
-            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            if (pitchDetectorComponent && pitchDetectorComponent.reinitialize) {
-              await pitchDetectorComponent.reinitialize(mediaStream);
-            }
-            console.log('✅ MediaStream自動修復完了');
-          } catch (error) {
-            console.error('❌ MediaStream自動修復失敗:', error);
-          }
-        }, 1000);
-      }
-    }
-    
-    if (audioEngineState === 'ready' && (!sampler || isLoading)) {
-      issues.push('Audio engine ready but sampler not available');
-    }
-    
-    if (pitchDetectorState === 'ready' && pitchDetectorComponent?.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
-      issues.push('PitchDetector ready but not initialized');
-      
-      // 自動修復: ガイドアニメーション中は無効化（周波数表示遅延防止）
-      if (now - lastAutoRepairTime > AUTO_REPAIR_COOLDOWN && mediaStream && trainingPhase !== 'guiding') {
-        lastAutoRepairTime = now;
-        setTimeout(async () => {
-          try {
-            console.log('🔧 PitchDetector自動再初期化開始');
-            pitchDetectorState = 'initializing';
-            await pitchDetectorComponent.reinitialize(mediaStream);
-            pitchDetectorState = 'ready';
-            console.log('✅ PitchDetector自動再初期化完了');
-          } catch (error) {
-            console.error('❌ PitchDetector自動再初期化失敗:', error);
-            pitchDetectorState = 'error';
-          }
-        }, 500);
-      }
-    }
-    
-    return issues;
-  }
-  
-  // Svelteリアクティブシステムによる状態同期
-  $: canStartTraining = microphoneState === 'granted' && 
-                       audioEngineState === 'ready' && 
-                       pitchDetectorState === 'ready';
-
+  // シンプルなリアクティブシステム
+  $: canStartTraining = microphoneState === 'granted' && !isLoading && sampler;
   $: canRestartSession = trainingPhase === 'results';
 
-  // 定期的な状態一貫性チェック
-  let stateCheckInterval;
 
-  // PitchDetectorイベントハンドラー（新規追加）
+  // PitchDetectorイベントハンドラー（簡素版）
   function handlePitchDetectorStateChange(event) {
-    pitchDetectorState = event.detail.state;
-    console.log(`🔄 PitchDetector状態変更: ${pitchDetectorState}`);
-    
-    // 状態変更後の一貫性チェック
-    setTimeout(() => {
-      const issues = validateSystemState();
-      if (issues.length > 0) {
-        console.warn('⚠️ 状態変更後の一貫性問題:', issues);
-      }
-    }, 100);
+    console.log(`🔄 PitchDetector状態変更: ${event.detail.state}`);
   }
   
   function handlePitchDetectorError(event) {
     console.error('❌ PitchDetectorエラー:', event.detail);
-    recordAndRecover(event.detail.error, event.detail.context);
   }
 
   // クリーンアップ
   onDestroy(() => {
-    // 状態チェック停止
-    if (stateCheckInterval) {
-      clearInterval(stateCheckInterval);
-    }
     
     // コンポーネントクリーンアップ
     if (pitchDetectorComponent) {
