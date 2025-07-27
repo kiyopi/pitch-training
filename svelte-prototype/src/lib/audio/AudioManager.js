@@ -95,6 +95,16 @@ class AudioManager {
       if (!this.sourceNode) {
         this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
         console.log('✅ [AudioManager] SourceNode作成完了');
+        
+        // MediaStreamの状態確認
+        const tracks = this.mediaStream.getTracks();
+        console.log('🎤 [AudioManager] MediaStream tracks:', tracks.map(t => ({
+          kind: t.kind,
+          label: t.label,
+          enabled: t.enabled,
+          readyState: t.readyState,
+          muted: t.muted
+        })));
       }
 
       this.isInitialized = true;
@@ -168,6 +178,9 @@ class AudioManager {
       this.sourceNode.connect(analyser);
       console.log(`🔧 [AudioManager] 生信号Analyser作成: ${id}`);
     }
+    
+    // 重要: Analyserは音声を通過させるだけで、destinationには接続しない
+    // （マイクのフィードバック防止のため）
 
     this.analysers.set(id, analyser);
     return analyser;

@@ -6,6 +6,7 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import PitchDetector from '$lib/components/PitchDetector.svelte';
   import { audioManager } from '$lib/audio/AudioManager.js';
   
   // URL パラメータから mode を取得
@@ -17,29 +18,26 @@
     }
   });
 
-  // マイクテスト状態管理（シンプル版）
+  // マイクテスト状態管理（PitchDetector対応版）
   let micPermission = 'initial'; // 'initial' | 'pending' | 'granted' | 'denied'
-  let isListening = false;
+  let isListening = false;       // PitchDetectorが動作中かどうか
   let volumeDetected = false;
   let frequencyDetected = false;
   let audioConfirmationComplete = false;
+  
+  // PitchDetectorから取得するデータ
   let currentVolume = 0;
   let currentFrequency = 0;
   let currentNote = 'ーー';
+  let pitchClarity = 0;
   
   // ノイズリダクション効果確認用
-  let rawVolume = 0;        // フィルター前の音量
-  let filteredVolume = 0;   // フィルター後の音量
+  let rawVolume = 0;        // フィルター前の音量（PitchDetectorから取得）
+  let filteredVolume = 0;   // フィルター後の音量（PitchDetectorから取得）
   let noiseReduction = 0;   // ノイズ削減率（%）
   
-  // AudioManager対応変数
-  let audioContext = null;  // AudioManagerから取得
-  let mediaStream = null;   // AudioManagerから取得
-  let sourceNode = null;    // AudioManagerから取得
-  let analyser = null;      // AudioManagerから取得
-  let rawAnalyser = null;   // AudioManagerから取得
-  let animationFrame = null;
-  let analyserIds = [];     // 作成したAnalyserのID管理
+  // PitchDetectorコンポーネント参照
+  let pitchDetectorComponent = null;
 
   // トレーニングモード設定
   const trainingModes = {
@@ -73,50 +71,22 @@
     }
   }
   
-  // マイク許可リクエスト（AudioManager対応）
+  // マイク許可リクエスト（PitchDetector対応版）
   async function requestMicrophone() {
     micPermission = 'pending';
     
     try {
-      console.log('🎤 [MicTest] AudioManager経由でマイク許可リクエスト開始');
+      console.log('🎤 [MicTest] PitchDetector経由でマイク許可リクエスト開始');
       
-      // AudioManagerから共有リソースを取得
-      const resources = await audioManager.initialize();
-      audioContext = resources.audioContext;
-      mediaStream = resources.mediaStream;
-      sourceNode = resources.sourceNode;
-      
-      console.log('✅ [MicTest] AudioManager リソース取得完了');
-      
-      // 専用のAnalyserを作成（フィルター付き）
-      const filteredAnalyserId = `mic-test-filtered-${Date.now()}`;
-      analyser = audioManager.createAnalyser(filteredAnalyserId, {
-        fftSize: 2048,
-        smoothingTimeConstant: 0.8,
-        minDecibels: -90,
-        maxDecibels: -10,
-        useFilters: true
-      });
-      analyserIds.push(filteredAnalyserId);
-      
-      // 生信号用Analyser（比較用）
-      const rawAnalyserId = `mic-test-raw-${Date.now()}`;
-      rawAnalyser = audioManager.createAnalyser(rawAnalyserId, {
-        fftSize: 2048,
-        smoothingTimeConstant: 0.8,
-        minDecibels: -90,
-        maxDecibels: -10,
-        useFilters: false
-      });
-      analyserIds.push(rawAnalyserId);
-      
-      console.log('✅ [MicTest] Analyser作成完了:', analyserIds);
+      // PitchDetectorを初期化（AudioManager統合済み）
+      if (pitchDetectorComponent) {
+        await pitchDetectorComponent.initialize();
+        console.log('✅ [MicTest] PitchDetector初期化完了');
+      }
       
       micPermission = 'granted';
-      isListening = true;
-      analyzeAudio();
-      
-      console.log('✅ [MicTest] マイク許可とリスニング開始完了');
+      isListening = true;  // PitchDetectorがアクティブになる
+      console.log('✅ [MicTest] マイク許可完了');
       
     } catch (error) {
       console.error('❌ [MicTest] マイク許可エラー:', error);
@@ -124,34 +94,19 @@
     }
   }
   
-  // 音声解析ループ（ノイズリダクション効果測定対応）
-  function analyzeAudio() {
-    if (!isListening || !analyser || !rawAnalyser) return;
+  // PitchDetectorからの音程更新イベントハンドラー
+  function handlePitchUpdate(event) {
+    const { frequency, note, volume, rawVolume: rawVol, clarity } = event.detail;
     
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    const rawDataArray = new Uint8Array(rawAnalyser.frequencyBinCount);
+    // データを更新
+    currentFrequency = frequency;
+    currentNote = note;
+    currentVolume = volume;
+    pitchClarity = clarity;
     
-    // フィルター前後の周波数データ取得
-    analyser.getByteFrequencyData(dataArray);
-    rawAnalyser.getByteFrequencyData(rawDataArray);
-    
-    // フィルター前の音量計算（生信号）
-    let rawSum = 0;
-    for (let i = 0; i < rawDataArray.length; i++) {
-      rawSum += rawDataArray[i] * rawDataArray[i];
-    }
-    const rawRms = Math.sqrt(rawSum / rawDataArray.length);
-    rawVolume = Math.min(100, (rawRms / 30) * 100); // 感度調整: 25 → 30
-    
-    // フィルター後の音量計算（感度最適化）
-    let filteredSum = 0;
-    for (let i = 0; i < dataArray.length; i++) {
-      filteredSum += dataArray[i] * dataArray[i];
-    }
-    const filteredRms = Math.sqrt(filteredSum / dataArray.length);
-    filteredVolume = Math.min(100, (filteredRms / 30) * 100); // 感度調整: 25 → 30（「ドー」で60-70%）
-    currentVolume = filteredVolume;
+    // ノイズリダクション効果の表示用
+    rawVolume = rawVol;
+    filteredVolume = volume;
     
     // ノイズ削減率計算（フィルター前後の差分）
     if (rawVolume > 0) {
@@ -160,105 +115,38 @@
       noiseReduction = 0;
     }
     
-    if (currentVolume > 15) {
+    // 検出判定
+    if (currentVolume > 5) {  // 閾値を下げて感度を上げる
       volumeDetected = true;
     }
     
-    // 時間領域データ取得（フィルター後）
-    const timeDataArray = new Float32Array(analyser.fftSize);
-    analyser.getFloatTimeDomainData(timeDataArray);
-    
-    // 音程検出
-    const frequency = detectPitch(timeDataArray, audioContext.sampleRate);
     if (frequency > 80 && frequency < 800) {
-      currentFrequency = frequency;
-      currentNote = frequencyToNote(frequency);
       frequencyDetected = true;
-    } else {
-      currentFrequency = 0;
-      currentNote = 'ーー';
     }
     
-    animationFrame = requestAnimationFrame(analyzeAudio);
-  }
-  
-  // シンプルな音程検出（最適化済み）
-  function detectPitch(buffer, sampleRate) {
-    // 音量チェック
-    let rms = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      rms += buffer[i] * buffer[i];
+    // デバッグログ（最初の数回のみ）
+    if (!window.micTestDebugCount) window.micTestDebugCount = 0;
+    if (window.micTestDebugCount < 5) {
+      window.micTestDebugCount++;
+      console.log(`🎙️ [MicTest] PitchUpdate ${window.micTestDebugCount}:`, {
+        frequency: frequency.toFixed(1),
+        volume: volume.toFixed(1),
+        rawVolume: rawVol.toFixed(1),
+        note
+      });
     }
-    rms = Math.sqrt(rms / buffer.length);
-    if (rms < 0.005) return 0;
-    
-    // 自己相関関数
-    const minPeriod = Math.floor(sampleRate / 800);
-    const maxPeriod = Math.floor(sampleRate / 80);
-    
-    let bestCorrelation = 0;
-    let bestPeriod = 0;
-    
-    for (let period = minPeriod; period <= maxPeriod; period++) {
-      let correlation = 0;
-      let normalizer = 0;
-      
-      for (let i = 0; i < buffer.length - period; i++) {
-        correlation += buffer[i] * buffer[i + period];
-        normalizer += buffer[i] * buffer[i];
-      }
-      
-      if (normalizer > 0) {
-        correlation = correlation / Math.sqrt(normalizer);
-        if (correlation > bestCorrelation) {
-          bestCorrelation = correlation;
-          bestPeriod = period;
-        }
-      }
-    }
-    
-    return bestCorrelation > 0.25 ? sampleRate / bestPeriod : 0;
   }
   
-  // 周波数から音名へ変換
-  function frequencyToNote(frequency) {
-    const A4 = 440;
-    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const noteIndex = ((semitonesFromA4 + 9) % 12 + 12) % 12;
-    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
-    const note = noteNames[noteIndex];
-    const noteNamesJa = {
-      'C': 'ド', 'C#': 'ド#', 'D': 'レ', 'D#': 'レ#', 'E': 'ミ', 'F': 'ファ',
-      'F#': 'ファ#', 'G': 'ソ', 'G#': 'ソ#', 'A': 'ラ', 'A#': 'ラ#', 'B': 'シ'
-    };
-    return `${note}${octave}（${noteNamesJa[note]}${octave}）`;
-  }
   
-  // リスニング停止（AudioManager対応）
+  // リスニング停止（PitchDetector対応版）
   function stopListening() {
     console.log('🛑 [MicTest] リスニング停止開始');
     
-    isListening = false;
-    
-    if (animationFrame) {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = null;
+    // PitchDetectorの検出を停止
+    if (pitchDetectorComponent) {
+      pitchDetectorComponent.stopDetection();
+      console.log('✅ [MicTest] PitchDetector検出停止');
     }
-    
-    // AudioManagerに作成したAnalyserを解放通知
-    if (analyserIds.length > 0) {
-      audioManager.release(analyserIds);
-      console.log('📤 [MicTest] AudioManagerにAnalyser解放通知:', analyserIds);
-      analyserIds = [];
-    }
-    
-    // 参照をクリア（実際のリソースはAudioManagerが管理）
-    audioContext = null;
-    mediaStream = null;
-    sourceNode = null;
-    analyser = null;
-    rawAnalyser = null;
     
     console.log('✅ [MicTest] リスニング停止完了');
   }
@@ -280,6 +168,16 @@
 </svelte:head>
 
 <PageLayout showBackButton={true}>
+  <!-- PitchDetectorコンポーネント（非表示で音声処理のみ） -->
+  <div style="display: none;">
+    <PitchDetector
+      bind:this={pitchDetectorComponent}
+      isActive={micPermission === 'granted'}
+      on:pitchUpdate={handlePitchUpdate}
+      debugMode={true}
+    />
+  </div>
+
   <div class="microphone-test">
     <!-- ヘッダー -->
     <div class="header">
