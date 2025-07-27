@@ -1,6 +1,8 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
@@ -335,7 +337,7 @@
             <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
             
             <div class="training-start-button-area">
-              <button class="training-start-button enabled" on:click={() => window.location.href = selectedMode.path}>
+              <button class="training-start-button enabled" on:click={() => goto(`${base}${selectedMode.path}`)}>
                 トレーニング開始
               </button>
             </div>
