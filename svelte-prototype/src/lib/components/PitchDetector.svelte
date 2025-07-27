@@ -2,9 +2,9 @@
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { PitchDetector } from 'pitchy';
   import VolumeBar from './VolumeBar.svelte';
-  import { ErrorManager } from '../error/ErrorManager.js';
-  import ErrorDisplay from './ErrorDisplay.svelte';
-  import RecoveryGuide from './RecoveryGuide.svelte';
+  // import { ErrorManager } from '../error/ErrorManager.js';
+  // import ErrorDisplay from './ErrorDisplay.svelte';
+  // import RecoveryGuide from './RecoveryGuide.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -156,7 +156,7 @@
           // Critical: 即座にエラーダイアログ表示
           showErrorDialog = true;
           componentState = 'error';
-          stopDetection();
+          // stopDetection(); // 音程検出は継続
           break;
           
         case ErrorManager.ERROR_LEVELS.WARNING:
@@ -291,7 +291,7 @@
   }
   
   function handleEmergencyReset() {
-    window.location.href = '/microphone-test';
+    window.location.href = '/pitch-training/microphone-test';
   }
   
   // デバッグモードの監視
@@ -383,8 +383,8 @@
       lastError = error;
       isInitialized = false;
       
-      // ErrorManagerを使用してエラーを処理
-      handleError(error, 'Initialization');
+      // ErrorManagerを使用してエラーを処理（一時的にコメントアウト）
+      // handleError(error, 'Initialization');
       
       // エラーを通知（後方互換性のため）
       dispatch('error', { error, context: 'initialization' });
@@ -397,7 +397,7 @@
   export function startDetection() {
     if (componentState !== 'ready') {
       const error = new Error(`Cannot start detection: component state is ${componentState}`);
-      handleError(error, 'StartDetection');
+      // handleError(error, 'StartDetection');
       dispatch('error', { error, context: 'start-detection' });
       return false;
     }
@@ -405,7 +405,7 @@
     if (!analyser || !pitchDetector || !audioContext) {
       const error = new Error('Required components not available');
       componentState = 'error';
-      handleError(error, 'StartDetection');
+      // handleError(error, 'StartDetection');
       dispatch('error', { error, context: 'start-detection' });
       return false;
     }
@@ -710,16 +710,17 @@
   </div>
 </div>
 
-<!-- エラー表示システム -->
+<!-- エラー表示システム（一時的に無効化） -->
+<!-- {#if showErrorDialog && currentErrorClassification}
 <ErrorDisplay 
-  {currentErrorClassification}
-  bind:showDetail={showErrorDialog}
+  errorClassification={currentErrorClassification}
   on:dismiss={handleErrorDismiss}
   on:action={handleErrorAction}
 />
+{/if} -->
 
-<!-- 復旧ガイドシステム -->
-<RecoveryGuide 
+<!-- 復旧ガイドシステム（一時的に無効化） -->
+<!-- <RecoveryGuide 
   {currentErrorClassification}
   bind:visible={showRecoveryGuide}
   on:close={handleRecoveryClose}
@@ -729,7 +730,7 @@
   on:resumeAudioContext={handleResumeAudioContext}
   on:emergencyReload={handleEmergencyReload}
   on:emergencyReset={handleEmergencyReset}
-/>
+/> -->
 
 <style>
   .pitch-detector {

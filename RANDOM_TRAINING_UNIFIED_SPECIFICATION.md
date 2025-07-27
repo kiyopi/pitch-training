@@ -60,6 +60,39 @@
 - **Warning**: `hsl(47.9 95.8% 53.1%)` (イエロー)
 - **Destructive**: `hsl(0 84.2% 60.2%)` (レッド)
 
+#### **フォント仕様** (音程検出表示)
+- **周波数表示**: `font-size: 2rem`、等幅フォント
+- **音程表記**: `font-size: 2rem`、等幅フォント
+- **区切り文字**: `font-size: 1.5rem`
+- **Hz表示**: `font-size: 2rem`
+
+**⚠️ フォントスタイル修正手順**
+```scss
+// 修正対象ファイル: /src/routes/training/random/+page.svelte
+// 992-1029行目のグローバルスタイル
+
+:global(.detected-frequency) {
+  font-size: 2rem !important;  // 周波数数値のサイズ変更
+}
+
+:global(.hz-suffix) {
+  font-size: 2rem !important;  // Hz文字のサイズ変更
+}
+
+:global(.detected-note) {
+  font-size: 2rem !important;  // 音程表記(C4等)のサイズ変更
+}
+
+:global(.divider) {
+  font-size: 1.5rem !important;  // 区切り文字(|)のサイズ変更
+}
+```
+
+**注意事項**:
+- `!important` 修飾子が必須（PitchDetectorコンポーネントとのCSS競合回避）
+- `:global()` セレクタが必須（Svelteコンポーネント境界を超えた適用）
+- フォントファミリーの変更も同様の手順で可能
+
 ---
 
 ## 🎵 機能仕様
