@@ -348,13 +348,10 @@
 
   // 初期化
   onMount(async () => {
-    // 1. ダイレクトアクセス時のページトップスクロール
-    scrollToTop();
-    
-    // 2. 音源初期化
+    // 音源初期化
     initializeSampler();
     
-    // 3. コンポーネントマウント完了を少し待ってからマイク許可状態確認
+    // コンポーネントマウント完了を少し待ってからマイク許可状態確認
     await new Promise(resolve => setTimeout(resolve, 100));
     checkExistingMicrophonePermission();
   });
@@ -545,9 +542,14 @@
   
 
   
-  // シンプルなリアクティブシステム
+  // リアクティブシステム
   $: canStartTraining = microphoneState === 'granted' && !isLoading && sampler;
   $: canRestartSession = trainingPhase === 'results';
+  
+  // 状態変化時の自動スクロール（ダイレクトアクセス、マイク許可後の画面遷移時）
+  $: if (trainingPhase === 'setup' && microphoneState === 'granted') {
+    scrollToTop();
+  }
 
 
   // PitchDetectorイベントハンドラー（簡素版）
