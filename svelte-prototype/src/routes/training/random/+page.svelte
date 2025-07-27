@@ -21,6 +21,9 @@
       if (urlParams.get('from') === 'microphone-test') {
         console.log('🎤 [RandomTraining] 早期検出: マイクテストページからの遷移');
         return 'granted';
+      } else {
+        console.log('🎤 [RandomTraining] ダイレクトアクセスを検出');
+        return 'checking';
       }
     }
     return 'checking';
@@ -139,6 +142,18 @@
   async function playRandomBaseNote() {
     if (isPlaying || !sampler || isLoading) return;
     
+    // マイク許可が未取得の場合は先に許可を取得
+    if (microphoneState !== 'granted') {
+      console.log('🎤 [RandomTraining] マイク許可が必要です。許可取得を開始...');
+      try {
+        await checkMicrophonePermission();
+        console.log('🎤 [RandomTraining] マイク許可取得完了');
+      } catch (error) {
+        console.error('❌ マイク許可エラー:', error);
+        return;
+      }
+    }
+    
     // マイクストリームが初期化されていない場合は初期化
     if (!mediaStream && microphoneState === 'granted') {
       try {
@@ -169,6 +184,18 @@
   // 現在の基音再生（既存の基音を再利用）
   async function playCurrentBaseNote() {
     if (isPlaying || !sampler || isLoading || !currentBaseNote) return;
+    
+    // マイク許可が未取得の場合は先に許可を取得
+    if (microphoneState !== 'granted') {
+      console.log('🎤 [RandomTraining] マイク許可が必要です。許可取得を開始...');
+      try {
+        await checkMicrophonePermission();
+        console.log('🎤 [RandomTraining] マイク許可取得完了');
+      } catch (error) {
+        console.error('❌ マイク許可エラー:', error);
+        return;
+      }
+    }
     
     // マイクストリームが初期化されていない場合は初期化
     if (!mediaStream && microphoneState === 'granted') {
