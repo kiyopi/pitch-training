@@ -12,6 +12,11 @@ function run_all(fns) {
 function safe_not_equal(a, b) {
   return a != a ? b == b : a !== b || a && typeof a === "object" || typeof a === "function";
 }
+function validate_store(store, name) {
+  if (store != null && typeof store.subscribe !== "function") {
+    throw new Error(`'${name}' is not a store with a 'subscribe' method`);
+  }
+}
 function subscribe(store, ...callbacks) {
   if (store == null) {
     for (const callback of callbacks) {
@@ -123,12 +128,13 @@ function add_attribute(name, value, boolean) {
 }
 export {
   setContext as a,
-  subscribe as b,
+  validate_store as b,
   create_ssr_component as c,
-  each as d,
+  subscribe as d,
   escape as e,
-  add_attribute as f,
+  each as f,
   getContext as g,
+  add_attribute as h,
   missing_component as m,
   noop as n,
   onDestroy as o,

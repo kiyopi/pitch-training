@@ -2,6 +2,9 @@
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { PitchDetector } from 'pitchy';
   import VolumeBar from './VolumeBar.svelte';
+  import { ErrorManager } from '../error/ErrorManager.js';
+  import ErrorDisplay from './ErrorDisplay.svelte';
+  import RecoveryGuide from './RecoveryGuide.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -14,6 +17,11 @@
   let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
   let lastError = null;
   let isInitialized = false;
+  
+  // エラー管理状態
+  let currentErrorClassification = null;
+  let showErrorDialog = false;
+  let showRecoveryGuide = false;
 
   // 音程検出状態
   let audioContext = null;
@@ -134,6 +142,158 @@
     });
   }
   
+  /**
+   * エラーハンドリング統合関数
+   */
+  function handleError(error, context = 'PitchDetector') {
+    try {
+      // ErrorManagerでエラーを分類
+      currentErrorClassification = ErrorManager.classifyError(error, context);
+      
+      // エラーレベルに応じて処理
+      switch (currentErrorClassification.level) {
+        case ErrorManager.ERROR_LEVELS.CRITICAL:
+          // Critical: 即座にエラーダイアログ表示
+          showErrorDialog = true;
+          componentState = 'error';
+          stopDetection();
+          break;
+          
+        case ErrorManager.ERROR_LEVELS.WARNING:
+          // Warning: 復旧可能性を判断
+          if (currentErrorClassification.recovery === 'auto') {
+            attemptAutoRecovery(currentErrorClassification);
+          } else {
+            showErrorDialog = true;
+          }
+          break;
+          
+        case ErrorManager.ERROR_LEVELS.INFO:
+          // Info: ログのみ、処理継続
+          console.info('ℹ️ [PitchDetector] Info level error:', currentErrorClassification);
+          break;
+      }
+      
+      // 頻発エラーチェック
+      const frequency = ErrorManager.checkErrorFrequency(currentErrorClassification.code);
+      if (frequency.isFrequent) {
+        console.warn('⚠️ [PitchDetector] Frequent error detected:', frequency);
+        // 頻発エラーの場合は復旧ガイドを推奨
+        if (!showRecoveryGuide && currentErrorClassification.level !== ErrorManager.ERROR_LEVELS.INFO) {
+          showRecoveryGuide = true;
+        }
+      }
+      
+    } catch (handlingError) {
+      // エラーハンドリング自体でエラーが発生した場合
+      console.error('❌ [PitchDetector] Error in error handling:', handlingError);
+      showErrorDialog = true;
+      componentState = 'error';
+    }
+  }
+  
+  /**
+   * 自動復旧試行
+   */
+  async function attemptAutoRecovery(errorClassification) {
+    console.log('🔄 [PitchDetector] Attempting auto recovery for:', errorClassification.code);
+    
+    try {
+      switch (errorClassification.code) {
+        case ErrorManager.ERROR_CODES.AUDIOCONTEXT_SUSPENDED:
+          if (audioContext && audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('✅ [PitchDetector] AudioContext resumed successfully');
+          }
+          break;
+          
+        default:
+          console.warn('⚠️ [PitchDetector] No auto recovery available for:', errorClassification.code);
+          showErrorDialog = true;
+      }
+    } catch (recoveryError) {
+      console.error('❌ [PitchDetector] Auto recovery failed:', recoveryError);
+      handleError(recoveryError, 'AutoRecovery');
+    }
+  }
+  
+  /**
+   * エラーダイアログイベント処理
+   */
+  function handleErrorDismiss() {
+    showErrorDialog = false;
+    currentErrorClassification = null;
+  }
+  
+  function handleErrorAction(event) {
+    const { action, errorCode } = event.detail;
+    console.log('🔧 [PitchDetector] Error action requested:', action, 'for', errorCode);
+    
+    // アクションに応じて復旧ガイドを表示
+    if (action.includes('再設定') || action.includes('確認')) {
+      showRecoveryGuide = true;
+      showErrorDialog = false;
+    }
+  }
+  
+  /**
+   * 復旧ガイドイベント処理
+   */
+  function handleRecoveryClose() {
+    showRecoveryGuide = false;
+  }
+  
+  function handleRecoveryCompleted() {
+    showRecoveryGuide = false;
+    currentErrorClassification = null;
+    
+    // 復旧後に状態をリセット
+    if (componentState === 'error') {
+      componentState = isInitialized ? 'ready' : 'uninitialized';
+    }
+  }
+  
+  function handleMicrophoneReselected(event) {
+    const { stream } = event.detail;
+    console.log('🎤 [PitchDetector] Microphone reselected');
+    
+    // 新しいストリームで再初期化
+    initialize(stream).catch(error => {
+      handleError(error, 'MicrophoneReselection');
+    });
+  }
+  
+  function handleReinitializeAudio() {
+    console.log('🔄 [PitchDetector] Audio reinitialization requested');
+    
+    // AudioContextとストリームを再初期化
+    cleanup();
+    
+    if (mediaStream) {
+      initialize(mediaStream).catch(error => {
+        handleError(error, 'AudioReinitialization');
+      });
+    }
+  }
+  
+  function handleResumeAudioContext() {
+    console.log('▶️ [PitchDetector] AudioContext resume requested');
+    
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().catch(error => {
+        handleError(error, 'AudioContextResume');
+      });
+    }
+  }
+  
+  function handleEmergencyReload() {
+    window.location.reload();
+  }
+  
+  function handleEmergencyReset() {
+    window.location.href = '/microphone-test';
+  }
+  
   // デバッグモードの監視
   $: if (debugMode && !debugInterval) {
     console.log('🔍 [PitchDetector] Debug mode enabled - starting status monitoring');
@@ -223,7 +383,10 @@
       lastError = error;
       isInitialized = false;
       
-      // エラーを通知
+      // ErrorManagerを使用してエラーを処理
+      handleError(error, 'Initialization');
+      
+      // エラーを通知（後方互換性のため）
       dispatch('error', { error, context: 'initialization' });
       
       throw error;
@@ -234,6 +397,7 @@
   export function startDetection() {
     if (componentState !== 'ready') {
       const error = new Error(`Cannot start detection: component state is ${componentState}`);
+      handleError(error, 'StartDetection');
       dispatch('error', { error, context: 'start-detection' });
       return false;
     }
@@ -241,6 +405,7 @@
     if (!analyser || !pitchDetector || !audioContext) {
       const error = new Error('Required components not available');
       componentState = 'error';
+      handleError(error, 'StartDetection');
       dispatch('error', { error, context: 'start-detection' });
       return false;
     }
@@ -544,6 +709,27 @@
     <VolumeBar volume={currentFrequency > 0 ? rawVolume : 0} className="volume-bar" />
   </div>
 </div>
+
+<!-- エラー表示システム -->
+<ErrorDisplay 
+  {currentErrorClassification}
+  bind:showDetail={showErrorDialog}
+  on:dismiss={handleErrorDismiss}
+  on:action={handleErrorAction}
+/>
+
+<!-- 復旧ガイドシステム -->
+<RecoveryGuide 
+  {currentErrorClassification}
+  bind:visible={showRecoveryGuide}
+  on:close={handleRecoveryClose}
+  on:recovered={handleRecoveryCompleted}
+  on:microphoneReselected={handleMicrophoneReselected}
+  on:reinitializeAudio={handleReinitializeAudio}
+  on:resumeAudioContext={handleResumeAudioContext}
+  on:emergencyReload={handleEmergencyReload}
+  on:emergencyReset={handleEmergencyReset}
+/>
 
 <style>
   .pitch-detector {
