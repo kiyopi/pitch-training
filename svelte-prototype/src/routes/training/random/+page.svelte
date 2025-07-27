@@ -100,13 +100,10 @@
       microphoneState = 'granted';
       trainingPhase = 'setup';
       
-      console.log('✅ マイク許可取得完了');
-      
       // PitchDetector初期化（一度のみ）
       setTimeout(async () => {
         if (pitchDetectorComponent && mediaStream) {
           await pitchDetectorComponent.initialize(mediaStream);
-          console.log('✅ PitchDetector初期化完了');
         }
       }, 200);
     } catch (error) {
@@ -121,7 +118,6 @@
     const selectedNote = baseNotes[randomIndex];
     currentBaseNote = selectedNote.name;
     currentBaseFrequency = selectedNote.frequency;
-    console.log('選択された基音:', currentBaseNote, currentBaseFrequency + 'Hz');
   }
 
   // 基音再生（簡素版）
@@ -132,8 +128,6 @@
     isPlaying = true;
     trainingPhase = 'listening';
     selectRandomBaseNote();
-    
-    console.log('🎵 基音再生開始');
     
     // 音声再生
     const note = baseNotes.find(n => n.name === currentBaseNote).note;
@@ -149,26 +143,11 @@
 
   // ガイドアニメーション開始（簡素版）
   function startGuideAnimation() {
-    console.log('🎵 ガイドアニメーション開始');
-    
-    // PitchDetectorの状態確認（デバッグ）
-    if (pitchDetectorComponent) {
-      const state = pitchDetectorComponent.getState();
-      console.log('🔍 ガイド開始時のPitchDetector状態:', {
-        componentState: state.componentState,
-        isInitialized: state.isInitialized,
-        isDetecting: state.isDetecting,
-        hasRequiredComponents: state.hasRequiredComponents
-      });
-    }
-    
     // シンプルな状態変更のみ
     trainingPhase = 'guiding';
     currentScaleIndex = 0;
     isGuideAnimationActive = true;
     scaleEvaluations = [];
-    
-    console.log('✅ ガイドアニメーション開始 - isActiveによる自動検出');
     
     // 各ステップを順次ハイライト（1秒間隔）
     function animateNextStep() {
@@ -180,7 +159,6 @@
         
         // 現在のステップをアクティブに
         scaleSteps[currentScaleIndex].state = 'active';
-        console.log(`🎵 ${scaleSteps[currentScaleIndex].name} ハイライト中`);
         
         currentScaleIndex++;
         
@@ -212,17 +190,12 @@
     // 採点結果を計算して表示
     calculateFinalResults();
     trainingPhase = 'results';
-    
-    console.log('🎉 ガイドアニメーション完了 - 採点結果表示');
   }
   
   // 最終採点結果計算
   function calculateFinalResults() {
     let correctCount = 0;
     let totalAccuracy = 0;
-    
-    console.log('📊 評価データ数:', scaleEvaluations.length);
-    console.log('📊 評価データ詳細:', scaleEvaluations);
     
     scaleEvaluations.forEach(evaluation => {
       if (evaluation.isCorrect) {
@@ -243,14 +216,10 @@
     if (scaleEvaluations.length > 0) {
       previousEvaluations = [...scaleEvaluations];
     }
-    
-    console.log('📊 最終採点結果:', sessionResults);
   }
 
   // ステータスメッセージ取得
   function getStatusMessage() {
-    console.log('🔄 ステータス確認 - trainingPhase:', trainingPhase, 'isLoading:', isLoading, 'sampler:', !!sampler);
-    
     switch (trainingPhase) {
       case 'setup':
         if (isLoading || !sampler) {
@@ -300,7 +269,6 @@
       isLoading = true;
       
       // AudioContextは初回再生時に起動（安全なアプローチ）
-      console.log('AudioContext状態:', Tone.context.state);
       
       // Salamander Grand Piano C4音源からピッチシフト（最適化設定）
       sampler = new Tone.Sampler({
@@ -310,7 +278,6 @@
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
         onload: () => {
-          console.log('✅ Salamander Grand Piano C4音源読み込み完了');
           isLoading = false;
         },
         onerror: (error) => {
@@ -336,16 +303,13 @@
       
       if (permissionStatus.state === 'granted') {
         // 既に許可済みの場合のみストリーム取得
-        console.log('✅ マイク許可済み - ストリーム取得');
         await checkMicrophonePermission();
       } else {
         // 未許可の場合はエラー画面表示
-        console.log('❌ マイク未許可 - エラー画面表示');
         microphoneState = 'denied';
       }
     } catch (error) {
       // Permissions API 未対応の場合は従来の方法
-      console.log('⚠️ Permissions API未対応 - エラー画面表示');
       microphoneState = 'denied';
     }
   }
@@ -431,8 +395,7 @@
         scaleEvaluations.push(evaluation);
       }
       
-      // デバッグログ（サイレント蓄積）
-      console.log(`📊 評価蓄積: ${evaluation.stepName} (${evaluation.detectedFrequency}Hz, ${centDifference >= 0 ? '+' : ''}${centDifference}セント, 精度:${accuracy}%)`);
+      // デバッグログ削除（サイレント蓄積）
     }
   }
   
@@ -446,14 +409,10 @@
     if (pitchDetectorComponent) {
       pitchDetectorComponent.stopDetection();
     }
-    
-    console.log('🎉 セッション完了!', sessionResults);
   }
   
   // セッション再開始（簡素版）
   function restartSession() {
-    console.log('🔄 セッション再開始 - 簡素実装');
-    
     // 1. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
@@ -465,21 +424,6 @@
     
     // 3. セッション状態リセット
     resetSessionState();
-    
-    // 4. PitchDetectorの状態確認（デバッグ用）
-    setTimeout(() => {
-      if (pitchDetectorComponent) {
-        const state = pitchDetectorComponent.getState();
-        console.log('🔍 PitchDetector状態確認:', {
-          componentState: state.componentState,
-          isInitialized: state.isInitialized,
-          isDetecting: state.isDetecting,
-          hasRequiredComponents: state.hasRequiredComponents
-        });
-      }
-    }, 200);
-    
-    console.log('✅ セッション再開始完了 - マイク制御・基音設定は各ボタンで実行');
   }
   
   // セッション状態リセット
@@ -496,7 +440,6 @@
       completed: false
     }));
     
-    console.log('✅ セッション状態リセット完了');
   }
   
   
@@ -509,7 +452,7 @@
 
   // PitchDetectorイベントハンドラー（簡素版）
   function handlePitchDetectorStateChange(event) {
-    console.log(`🔄 PitchDetector状態変更: ${event.detail.state}`);
+    // ログ削除
   }
   
   function handlePitchDetectorError(event) {
