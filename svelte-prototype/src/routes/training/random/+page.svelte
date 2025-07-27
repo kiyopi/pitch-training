@@ -645,7 +645,7 @@
           
           <div class="action-buttons">
             <Button 
-              variant="outline"
+              variant="primary"
               class="restart-button" 
               disabled={!canRestartSession}
               on:click={restartSameBaseNote}
@@ -660,15 +660,21 @@
             >
               違う基音で開始
             </Button>
-            <Button class="secondary-button">
-              🎊 SNS共有
-            </Button>
-            <Button class="secondary-button" on:click={goHome}>
-              🏠 ホーム
-            </Button>
           </div>
         </div>
       </Card>
+    {/if}
+
+    <!-- 共通アクションボタン（採点結果エリア外） -->
+    {#if trainingPhase === 'results'}
+      <div class="common-actions">
+        <Button class="secondary-button">
+          🎊 SNS共有
+        </Button>
+        <Button class="secondary-button" on:click={goHome}>
+          🏠 ホーム
+        </Button>
+      </div>
     {/if}
 
   {:else}
@@ -1216,6 +1222,15 @@
   :global(.restart-button), :global(.new-base-button) {
     min-width: 160px !important;
     font-weight: 500 !important;
+  }
+  
+  /* 共通アクションボタン */
+  .common-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
   }
 
   /* エラー表示 */
