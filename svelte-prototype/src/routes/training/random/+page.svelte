@@ -13,7 +13,18 @@
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
-  let microphoneState = 'checking'; // 'checking' | 'granted' | 'denied' | 'error'
+  
+  // マイクテストページからの遷移を早期検出
+  let microphoneState = (() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('from') === 'microphone-test') {
+        console.log('🎤 [RandomTraining] 早期検出: マイクテストページからの遷移');
+        return 'granted';
+      }
+    }
+    return 'checking';
+  })(); // 'checking' | 'granted' | 'denied' | 'error'
   
   // シンプルな状態管理
   let microphoneHealthy = true; // マイク健康状態
@@ -377,6 +388,8 @@
     
     // マイクテストページから来た場合は許可済みとして扱う
     if ($page.url.searchParams.get('from') === 'microphone-test') {
+      console.log('🎤 [RandomTraining] マイクテストページからの遷移を検出');
+      
       // URLパラメータを削除（お気に入り登録時の問題回避）
       const url = new URL(window.location);
       url.searchParams.delete('from');
@@ -385,10 +398,11 @@
       // マイクテストページから来た場合は許可済みとして扱う
       microphoneState = 'granted';
       trainingPhase = 'setup';
+      console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
       return;
     }
     
-    // コンポーネントマウント完了を少し待ってからマイク許可状態確認
+    // ダイレクトアクセス時のみマイク許可状態確認
     await new Promise(resolve => setTimeout(resolve, 100));
     checkExistingMicrophonePermission();
   });
