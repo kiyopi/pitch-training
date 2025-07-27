@@ -580,20 +580,14 @@
             <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
           </div>
           <div class="card-content">
-            {#if mediaStream}
-              <PitchDetector
-                bind:this={pitchDetectorComponent}
-                isActive={trainingPhase === 'guiding'}
-                on:pitchUpdate={handlePitchUpdate}
-                on:stateChange={handlePitchDetectorStateChange}
-                on:error={handlePitchDetectorError}
-                className="pitch-detector-content"
-              />
-            {:else}
-              <div class="pitch-detector-placeholder">
-                マイク許可待ち...
-              </div>
-            {/if}
+            <PitchDetector
+              bind:this={pitchDetectorComponent}
+              isActive={trainingPhase === 'guiding'}
+              on:pitchUpdate={handlePitchUpdate}
+              on:stateChange={handlePitchDetectorStateChange}
+              on:error={handlePitchDetectorError}
+              className="pitch-detector-content"
+            />
             
           </div>
         </Card>
