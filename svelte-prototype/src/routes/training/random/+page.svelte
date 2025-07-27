@@ -445,8 +445,8 @@
   
   // 同じ基音で再挑戦
   function restartSameBaseNote() {
-    // 1. ページトップにスクロール
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 1. ページトップにスクロール（強化版）
+    scrollToTop();
     
     // 2. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
@@ -464,8 +464,8 @@
   
   // 違う基音で開始
   function restartDifferentBaseNote() {
-    // 1. ページトップにスクロール
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 1. ページトップにスクロール（強化版）
+    scrollToTop();
     
     // 2. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
@@ -484,6 +484,46 @@
     resetSessionState();
   }
   
+  // 強化版スクロール関数（ブラウザ互換性対応）
+  function scrollToTop() {
+    try {
+      // 方法 1: モダンブラウザのスムーススクロール
+      if ('scrollTo' in window && 'behavior' in document.documentElement.style) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // 方法 2: 古いブラウザの即座スクロール
+        window.scrollTo(0, 0);
+      }
+      
+      // 方法 3: document.body と documentElement のフォールバック
+      if (document.body) {
+        document.body.scrollTop = 0;
+      }
+      if (document.documentElement) {
+        document.documentElement.scrollTop = 0;
+      }
+      
+      // 方法 4: ページ内のスクロールコンテナ対応
+      const scrollContainers = document.querySelectorAll('[data-scroll-container], .scroll-container, main');
+      scrollContainers.forEach(container => {
+        if (container.scrollTo) {
+          container.scrollTo(0, 0);
+        } else {
+          container.scrollTop = 0;
+        }
+      });
+      
+    } catch (error) {
+      console.warn('スクロールエラー:', error);
+      // 最後の手段: 強制的なリロードを避けて基本的なスクロール
+      try {
+        window.scroll(0, 0);
+      } catch (fallbackError) {
+        console.error('スクロール完全失敗:', fallbackError);
+      }
+    }
+  }
+
   // セッション状態リセット
   function resetSessionState() {
     currentScaleIndex = 0;
