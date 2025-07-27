@@ -25,11 +25,7 @@
       const clampedVolume = Math.max(0, Math.min(100, newVolume));
       const color = getVolumeColor(clampedVolume);
       
-      // デバッグログ（初回と大きな変化時のみ）
-      if (!window.volumeBarLastUpdate || Math.abs(window.volumeBarLastUpdate - clampedVolume) > 10) {
-        console.log('VolumeBar更新:', clampedVolume.toFixed(1), '%', 'color:', color);
-        window.volumeBarLastUpdate = clampedVolume;
-      }
+      // ログ削除
       
       barElement.style.width = `${clampedVolume}%`;
       barElement.style.backgroundColor = color;

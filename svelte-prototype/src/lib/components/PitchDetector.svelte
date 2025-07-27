@@ -117,7 +117,6 @@
       // 状態変更を通知
       dispatch('stateChange', { state: componentState });
       
-      console.log('✅ PitchDetectorコンポーネント初期化完了 - 3段階ノイズリダクション有効');
       
     } catch (error) {
       componentState = 'error';
@@ -127,7 +126,6 @@
       // エラーを通知
       dispatch('error', { error, context: 'initialization' });
       
-      console.error('❌ PitchDetector初期化エラー:', error);
       throw error;
     }
   }
@@ -137,7 +135,6 @@
     if (componentState !== 'ready') {
       const error = new Error(`Cannot start detection: component state is ${componentState}`);
       dispatch('error', { error, context: 'start-detection' });
-      console.error('❌ 検出開始エラー:', error.message);
       return false;
     }
     
@@ -145,12 +142,6 @@
       const error = new Error('Required components not available');
       componentState = 'error';
       dispatch('error', { error, context: 'start-detection' });
-      console.error('❌ PitchDetector未初期化 - 必要なコンポーネント:', {
-        analyser: !!analyser,
-        pitchDetector: !!pitchDetector,
-        audioContext: !!audioContext,
-        mediaStream: !!mediaStream
-      });
       return false;
     }
     
@@ -158,7 +149,6 @@
     isDetecting = true;
     dispatch('stateChange', { state: componentState });
     detectPitch();
-    console.log('✅ 音程検出開始');
     return true;
   }
 
@@ -176,7 +166,6 @@
       dispatch('stateChange', { state: componentState });
     }
     
-    console.log('✅ 音程検出停止');
   }
 
   // リアルタイム音程検出
@@ -241,15 +230,6 @@
       // 次回比較用に保存
       previousFrequency = currentFrequency;
       
-      // デバッグログ（倍音補正効果確認）
-      if (Math.abs(pitch - correctedFreq) > 10) {
-        console.log('倍音補正:', {
-          original: Math.round(pitch),
-          corrected: Math.round(correctedFreq),
-          stabilized: Math.round(stabilizedFreq),
-          note: detectedNote
-        });
-      }
     } else {
       // 信号が弱い場合は倍音履歴をクリア
       if (harmonicHistory.length > 0) {
@@ -270,23 +250,6 @@
     // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
     const displayVolume = currentFrequency > 0 ? rawVolume : 0;
     
-    // デバッグログ（初回と大きな変化時のみ）
-    if (!window.pitchDetectorLastLog || 
-        Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
-        Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20 ||
-        Math.abs(window.pitchDetectorLastLog.displayVolume - displayVolume) > 5) {
-      console.log('PitchDetector:', {
-        rawVolume: Math.round(rawVolume),
-        displayVolume: Math.round(displayVolume),
-        filteredVolume: Math.round(currentVolume), 
-        frequency: currentFrequency,
-        note: detectedNote,
-        clarity: Math.round(clarity * 100),
-        isValidRange: isValidVocalRange,
-        rawPitch: pitch ? Math.round(pitch) : 0
-      });
-      window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency, displayVolume };
-    }
     
     // 親コンポーネントにデータを送信
     
@@ -406,7 +369,6 @@
   
   // 再初期化API（新規追加）
   export async function reinitialize(stream) {
-    console.log('🔄 PitchDetector再初期化開始');
     
     // 現在の状態をクリーンアップ
     cleanup();
@@ -417,7 +379,6 @@
     // 再初期化実行
     await initialize(stream);
     
-    console.log('✅ PitchDetector再初期化完了');
   }
 
   // クリーンアップ（改訂版）
@@ -451,7 +412,6 @@
     volumeHistory = [];
     harmonicHistory = [];
     
-    console.log('✅ PitchDetectorクリーンアップ完了');
   }
 
   // isActiveの変更を監視（改善版）
