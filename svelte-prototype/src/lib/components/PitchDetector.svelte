@@ -383,7 +383,6 @@
 
   // クリーンアップ（改訂版）
   export function cleanup() {
-    console.log('🚨 PitchDetector.cleanup() が呼ばれました！');
     stopDetection();
     
     // 状態をリセット

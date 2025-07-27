@@ -413,14 +413,6 @@
   
   // セッション再開始（簡素版）
   function restartSession() {
-    console.log('🔄 再挑戦開始 - PitchDetector状態確認前');
-    
-    // 再挑戦前のPitchDetector状態確認
-    if (pitchDetectorComponent) {
-      const stateBefore = pitchDetectorComponent.getState();
-      console.log('📊 再挑戦前状態:', stateBefore);
-    }
-    
     // 1. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
@@ -432,18 +424,6 @@
     
     // 3. セッション状態リセット
     resetSessionState();
-    
-    // 再挑戦後のPitchDetector状態確認（少し待ってから）
-    setTimeout(() => {
-      if (pitchDetectorComponent) {
-        const stateAfter = pitchDetectorComponent.getState();
-        console.log('📊 再挑戦後状態:', stateAfter);
-        
-        if (!stateAfter.isInitialized) {
-          console.log('⚠️ PitchDetectorが初期化されていません - 再初期化が必要');
-        }
-      }
-    }, 100);
   }
   
   // セッション状態リセット
@@ -504,6 +484,18 @@
 
 
   {#if microphoneState === 'granted'}
+    <!-- PitchDetector: 常に存在（セッション間で破棄されない） -->
+    <div style="display: none;">
+      <PitchDetector
+        bind:this={pitchDetectorComponent}
+        isActive={trainingPhase === 'guiding'}
+        on:pitchUpdate={handlePitchUpdate}
+        on:stateChange={handlePitchDetectorStateChange}
+        on:error={handlePitchDetectorError}
+        className="pitch-detector-content"
+      />
+    </div>
+
     <!-- メイントレーニングインターフェース -->
     
     {#if trainingPhase !== 'results'}
@@ -537,20 +529,25 @@
           </div>
         </Card>
 
-        <!-- Detection Section (Always Visible) -->
+        <!-- Detection Section (Display Only) -->
         <Card class="main-card half-width">
           <div class="card-header">
             <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
           </div>
           <div class="card-content">
-            <PitchDetector
-              bind:this={pitchDetectorComponent}
-              isActive={trainingPhase === 'guiding'}
-              on:pitchUpdate={handlePitchUpdate}
-              on:stateChange={handlePitchDetectorStateChange}
-              on:error={handlePitchDetectorError}
-              className="pitch-detector-content"
-            />
+            <!-- データ表示のみ（実際のPitchDetectorは上に隠して配置） -->
+            <div class="pitch-detector">
+              <div class="detection-display">
+                <div class="detection-card">
+                  <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
+                  <span class="hz-suffix">Hz</span>
+                  <span class="divider">|</span>
+                  <span class="detected-note">{detectedNote}</span>
+                </div>
+                
+                <VolumeBar volume={currentFrequency > 0 ? currentVolume : 0} className="volume-bar" />
+              </div>
+            </div>
             
           </div>
         </Card>
@@ -978,7 +975,60 @@
   .detection-display {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+  }
+  
+  .detection-card {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  .detected-frequency {
+    font-weight: 600;
+    font-size: 2rem;
+    color: hsl(222.2 84% 4.9%);
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    min-width: 4ch;
+    text-align: right;
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .hz-suffix {
+    font-weight: 600;
+    font-size: 2rem;
+    color: hsl(222.2 84% 4.9%);
+  }
+
+  .divider {
+    color: hsl(214.3 31.8% 70%);
+    font-size: 1.5rem;
+    margin: 0 0.25rem;
+    font-weight: 300;
+  }
+  
+  .detected-note {
+    font-weight: 600;
+    font-size: 2rem;
+    color: hsl(215.4 16.3% 46.9%);
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    min-width: 3ch;
+    display: inline-block;
+    text-align: center;
+  }
+
+  :global(.volume-bar) {
+    border-radius: 4px !important;
   }
   
   .detected-info {
