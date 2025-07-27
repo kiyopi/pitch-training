@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -285,14 +286,14 @@
     return [];
   }
 
-  // マイクテストページへの誘導
+  // マイクテストページへの誘導（SvelteKit goto使用）
   function goToMicrophoneTest() {
-    window.location.href = '/microphone-test';
+    goto('/microphone-test');
   }
 
-  // ホームページに戻る
+  // ホームページに戻る（SvelteKit goto使用）
   function goHome() {
-    window.location.href = '/';
+    goto('/');
   }
 
   // Tone.jsサンプラー初期化（Salamander Grand Piano - 最適化版）
