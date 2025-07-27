@@ -120,14 +120,14 @@
     currentBaseFrequency = selectedNote.frequency;
   }
 
-  // 基音再生（簡素版）
-  function playBaseNote() {
+  // ランダム基音再生（新しい基音を選択）
+  function playRandomBaseNote() {
     if (isPlaying || !sampler || isLoading) return;
     
     // 即座に状態変更
     isPlaying = true;
     trainingPhase = 'listening';
-    selectRandomBaseNote();
+    selectRandomBaseNote(); // 新しいランダム基音を選択
     
     // 音声再生
     const note = baseNotes.find(n => n.name === currentBaseNote).note;
@@ -139,6 +139,38 @@
       trainingPhase = 'waiting';
       setTimeout(() => startGuideAnimation(), 500);
     }, 2000);
+  }
+
+  // 現在の基音再生（既存の基音を再利用）
+  function playCurrentBaseNote() {
+    if (isPlaying || !sampler || isLoading || !currentBaseNote) return;
+    
+    // 即座に状態変更
+    isPlaying = true;
+    trainingPhase = 'listening';
+    // selectRandomBaseNote() は呼ばない - 既存の基音を保持
+    
+    // 音声再生
+    const note = baseNotes.find(n => n.name === currentBaseNote).note;
+    sampler.triggerAttackRelease(note, 2, Tone.now(), 0.7);
+    
+    // 2.5秒後にガイドアニメーション開始
+    setTimeout(() => {
+      isPlaying = false;
+      trainingPhase = 'waiting';
+      setTimeout(() => startGuideAnimation(), 500);
+    }, 2000);
+  }
+
+  // 基音再生（統合関数 - 状況に応じて適切な関数を呼び分け）
+  function playBaseNote() {
+    if (currentBaseNote && currentBaseFrequency > 0) {
+      // 既に基音が設定されている場合は既存の基音を再生
+      playCurrentBaseNote();
+    } else {
+      // 基音が未設定の場合は新しいランダム基音を選択
+      playRandomBaseNote();
+    }
   }
 
   // ガイドアニメーション開始（簡素版）
@@ -413,36 +445,42 @@
   
   // 同じ基音で再挑戦
   function restartSameBaseNote() {
-    // 1. UI状態のみ変更（即座画面遷移）
+    // 1. ページトップにスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // 2. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
-    // 2. 最小限のクリーンアップ
+    // 3. 最小限のクリーンアップ
     if (guideAnimationTimer) {
       clearTimeout(guideAnimationTimer);
       guideAnimationTimer = null;
     }
     
-    // 3. セッション状態リセット（基音は保持）
+    // 4. セッション状態リセット（基音は保持）
     resetSessionState();
     // 注意: currentBaseNote と currentBaseFrequency は保持される
   }
   
   // 違う基音で開始
   function restartDifferentBaseNote() {
-    // 1. UI状態のみ変更（即座画面遷移）
+    // 1. ページトップにスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // 2. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
-    // 2. 最小限のクリーンアップ
+    // 3. 最小限のクリーンアップ
     if (guideAnimationTimer) {
       clearTimeout(guideAnimationTimer);
       guideAnimationTimer = null;
     }
     
-    // 3. 基音情報もリセット
+    // 4. 基音情報もリセット
     currentBaseNote = '';
     currentBaseFrequency = 0;
     
-    // 4. セッション状態リセット
+    // 5. セッション状態リセット
     resetSessionState();
   }
   
@@ -534,10 +572,10 @@
             >
               {#if isPlaying}
                 🎵 再生中...
-              {:else if trainingPhase === 'setup'}
-                🎹 ランダム基音再生
+              {:else if currentBaseNote && currentBaseFrequency > 0}
+                🔄 {currentBaseNote} 再生
               {:else}
-                🔄 再生
+                🎹 ランダム基音再生
               {/if}
             </Button>
             
