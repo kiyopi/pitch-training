@@ -1,6 +1,6 @@
 import { c as create_ssr_component, a as setContext, v as validate_component, m as missing_component } from "./ssr.js";
 import { a as afterUpdate } from "./ssr2.js";
-let base = "";
+let base = "/pitch-training";
 let assets = base;
 const app_dir = "_app";
 const initial = { base, assets };
@@ -203,7 +203,7 @@ const options = {
 		<div class="error">
 			<span class="status">` + status + '</span>\n			<div class="message">\n				<h1>' + message + "</h1>\n			</div>\n		</div>\n	</body>\n</html>\n"
   },
-  version_hash: "x987z1"
+  version_hash: "s3itsk"
 };
 async function get_hooks() {
   let handle;

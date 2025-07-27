@@ -462,7 +462,8 @@
   }
 
   onDestroy(() => {
-    cleanup();
+    // 使い回し設計のためcleanupしない
+    // MediaStreamとAudioContextをセッション間で保持
   });
 </script>
 
