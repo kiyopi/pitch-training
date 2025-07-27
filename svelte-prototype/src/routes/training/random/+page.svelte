@@ -411,8 +411,8 @@
     }
   }
   
-  // セッション再開始（簡素版）
-  function restartSession() {
+  // 同じ基音で再挑戦
+  function restartSameBaseNote() {
     // 1. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
@@ -422,7 +422,27 @@
       guideAnimationTimer = null;
     }
     
-    // 3. セッション状態リセット
+    // 3. セッション状態リセット（基音は保持）
+    resetSessionState();
+    // 注意: currentBaseNote と currentBaseFrequency は保持される
+  }
+  
+  // 違う基音で開始
+  function restartDifferentBaseNote() {
+    // 1. UI状態のみ変更（即座画面遷移）
+    trainingPhase = 'setup';
+    
+    // 2. 最小限のクリーンアップ
+    if (guideAnimationTimer) {
+      clearTimeout(guideAnimationTimer);
+      guideAnimationTimer = null;
+    }
+    
+    // 3. 基音情報もリセット
+    currentBaseNote = '';
+    currentBaseFrequency = 0;
+    
+    // 4. セッション状態リセット
     resetSessionState();
   }
   
@@ -625,11 +645,20 @@
           
           <div class="action-buttons">
             <Button 
-              class="primary-button" 
+              variant="outline"
+              class="restart-button" 
               disabled={!canRestartSession}
-              on:click={restartSession}
+              on:click={restartSameBaseNote}
             >
-                🔄 再挑戦
+              同じ基音で再挑戦
+            </Button>
+            <Button 
+              variant="primary"
+              class="new-base-button" 
+              disabled={!canRestartSession}
+              on:click={restartDifferentBaseNote}
+            >
+              違う基音で開始
             </Button>
             <Button class="secondary-button">
               🎊 SNS共有
@@ -1181,6 +1210,12 @@
     gap: 0.75rem;
     justify-content: center;
     flex-wrap: wrap;
+  }
+  
+  /* 再挑戦系ボタンのスタイリング */
+  :global(.restart-button), :global(.new-base-button) {
+    min-width: 160px !important;
+    font-weight: 500 !important;
   }
 
   /* エラー表示 */
