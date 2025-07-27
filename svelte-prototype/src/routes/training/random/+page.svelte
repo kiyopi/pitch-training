@@ -154,14 +154,17 @@
       }
     }
     
-    // マイクストリームが初期化されていない場合は初期化
+    // マイクストリームが初期化されていない場合のみ初期化
     if (!mediaStream && microphoneState === 'granted') {
+      console.log('🎤 [RandomTraining] マイクストリーム未初期化のため取得します');
       try {
         await checkMicrophonePermission();
       } catch (error) {
         console.error('❌ マイク初期化エラー:', error);
         return;
       }
+    } else if (mediaStream) {
+      console.log('🎤 [RandomTraining] マイクストリーム既存のため再利用');
     }
     
     // 即座に状態変更
@@ -197,14 +200,17 @@
       }
     }
     
-    // マイクストリームが初期化されていない場合は初期化
+    // マイクストリームが初期化されていない場合のみ初期化
     if (!mediaStream && microphoneState === 'granted') {
+      console.log('🎤 [RandomTraining] マイクストリーム未初期化のため取得します');
       try {
         await checkMicrophonePermission();
       } catch (error) {
         console.error('❌ マイク初期化エラー:', error);
         return;
       }
+    } else if (mediaStream) {
+      console.log('🎤 [RandomTraining] マイクストリーム既存のため再利用');
     }
     
     // 即座に状態変更
@@ -422,10 +428,23 @@
       url.searchParams.delete('from');
       window.history.replaceState({}, '', url);
       
-      // マイクテストページから来た場合は許可済みとして扱う
+      // マイクテストページから来た場合は許可済みとして扱い、ストリームを準備
       microphoneState = 'granted';
       trainingPhase = 'setup';
       console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
+      
+      // マイクストリームの事前取得（スムーズな再生のため）
+      setTimeout(async () => {
+        if (!mediaStream) {
+          console.log('🎤 [RandomTraining] 事前マイクストリーム取得開始');
+          try {
+            await checkMicrophonePermission();
+            console.log('🎤 [RandomTraining] 事前マイクストリーム取得完了');
+          } catch (error) {
+            console.warn('⚠️ 事前マイクストリーム取得失敗（後で再試行）:', error);
+          }
+        }
+      }, 100);
       return;
     }
     
