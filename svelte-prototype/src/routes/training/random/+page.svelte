@@ -559,32 +559,60 @@
         microphoneState = 'granted';
       }
       
-      // 2. PitchDetectorコンポーネント存在確認（DOM要素の再構築を待つ）
+      // 2. PitchDetectorコンポーネント存在確認と再初期化
       let retryCount = 0;
-      const maxRetries = 10;
+      const maxRetries = 15; // リトライ回数を増加
+      let componentFound = false;
       
-      while (retryCount < maxRetries) {
+      while (retryCount < maxRetries && !componentFound) {
         if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized) {
-          // コンポーネントが存在し、初期化されているかチェック
+          console.log('✅ PitchDetectorコンポーネント発見');
+          componentFound = true;
+          
+          // 初期化状態をチェック
           if (!pitchDetectorComponent.getIsInitialized()) {
             console.log('🎙️ PitchDetector再初期化が必要');
             pitchDetectorState = 'initializing';
-            await pitchDetectorComponent.reinitialize(mediaStream);
-            pitchDetectorState = 'ready';
+            try {
+              await pitchDetectorComponent.reinitialize(mediaStream);
+              pitchDetectorState = 'ready';
+              console.log('✅ PitchDetector再初期化完了');
+            } catch (reinitError) {
+              console.error('❌ PitchDetector再初期化エラー:', reinitError);
+              pitchDetectorState = 'error';
+            }
+          } else {
+            console.log('✅ PitchDetector既に初期化済み');
           }
-          break;
         } else {
           // コンポーネント参照が無効な場合、再取得を試行
           console.log(`🔄 PitchDetectorコンポーネント再取得試行 ${retryCount + 1}/${maxRetries}`);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150)); // 待機時間を延長
           retryCount++;
         }
       }
       
-      if (retryCount >= maxRetries) {
+      if (!componentFound) {
         console.warn('⚠️ PitchDetectorコンポーネント取得タイムアウト - DOM再構築を待機');
-        // DOM再構築のための追加待機
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // DOM再構築のための長い待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 最後にもう一度確認
+        if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized) {
+          console.log('🔄 DOM再構築後にPitchDetectorコンポーネント発見');
+          if (!pitchDetectorComponent.getIsInitialized()) {
+            console.log('🎙️ 最終再初期化試行');
+            try {
+              pitchDetectorState = 'initializing';
+              await pitchDetectorComponent.reinitialize(mediaStream);
+              pitchDetectorState = 'ready';
+              console.log('✅ 最終再初期化完了');
+            } catch (error) {
+              console.error('❌ 最終再初期化失敗:', error);
+              pitchDetectorState = 'error';
+            }
+          }
+        }
       }
       
       // 3. 音源状態確認
