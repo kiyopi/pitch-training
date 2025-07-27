@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
+  import { page } from '$app/stores';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
@@ -351,6 +352,12 @@
   onMount(async () => {
     // 音源初期化
     initializeSampler();
+    
+    // マイクテストページから来た場合は直接granted状態に設定
+    if ($page.url.searchParams.get('from') === 'microphone-test') {
+      microphoneState = 'granted';
+      return;
+    }
     
     // コンポーネントマウント完了を少し待ってからマイク許可状態確認
     await new Promise(resolve => setTimeout(resolve, 100));

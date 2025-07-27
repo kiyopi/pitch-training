@@ -337,7 +337,7 @@
             <p class="ready-description">トレーニング開始ボタンを押してランダム基音モードへ進んでください</p>
             
             <div class="training-start-button-area">
-              <button class="training-start-button enabled" on:click={() => goto(`${base}${selectedMode.path}`)}>
+              <button class="training-start-button enabled" on:click={() => goto(`${base}${selectedMode.path}?from=microphone-test`)}>
                 トレーニング開始
               </button>
             </div>
