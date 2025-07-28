@@ -8,6 +8,7 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main", "clean-homepage-v1-impl-001", "random-training-v3-impl-002", "shadcn-ui-homepage-reference-001"]
+    # Note: random-training-tonejs-fixed-001 は svelte-prototype.yml で処理
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
