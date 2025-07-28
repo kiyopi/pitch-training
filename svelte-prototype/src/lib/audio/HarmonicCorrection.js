@@ -35,15 +35,19 @@ class HarmonicCorrection {
     this.previousFrequency = 0;
     this.maxHistoryLength = 5; // 最大5フレーム保持
     
+    // デバッグモード
+    this.debugMode = false;
+    
     console.log('🔧 [HarmonicCorrection] 統一倍音補正システム初期化完了');
   }
 
   /**
    * メイン倍音補正処理
    * @param {number} detectedFreq - 検出された周波数
+   * @param {boolean} enableDebugLog - デバッグログ有効化
    * @returns {number} - 補正後の基音周波数
    */
-  correctHarmonic(detectedFreq) {
+  correctHarmonic(detectedFreq, enableDebugLog = false) {
     if (!detectedFreq || detectedFreq <= 0) {
       return 0;
     }
@@ -71,10 +75,87 @@ class HarmonicCorrection {
     // 安定化処理適用
     const stabilizedFreq = this.stabilizeFrequency(bestCandidate.frequency);
 
+    // デバッグログ出力（明示的指定またはデバッグモード時）
+    if (enableDebugLog || this.debugMode) {
+      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq);
+    }
+
     // 次回比較用に保存
     this.previousFrequency = stabilizedFreq;
 
     return stabilizedFreq;
+  }
+
+  /**
+   * 倍音補正デバッグログ出力
+   * @param {number} originalFreq - 元の検出周波数
+   * @param {Array} candidates - 全候補とスコア
+   * @param {Object} bestCandidate - 選択された最適候補
+   * @param {number} finalFreq - 最終補正周波数
+   */
+  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq) {
+    console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
+    
+    // 検出周波数の音名表示
+    const originalNote = this.frequencyToNote(originalFreq);
+    const finalNote = this.frequencyToNote(finalFreq);
+    console.log(`📝 音程変換: ${originalNote} → ${finalNote}`);
+    
+    // 補正の種類を判定
+    const correctionType = this.getCorrectionType(bestCandidate.ratio);
+    console.log(`🎯 補正タイプ: ${correctionType}`);
+    
+    // 候補スコア一覧
+    console.table(candidates.map(c => ({
+      '倍率': `${c.ratio.toFixed(3)}x`,
+      '周波数': `${c.frequency.toFixed(1)}Hz`,
+      '音名': this.frequencyToNote(c.frequency),
+      '音域': c.vocalRangeScore.toFixed(2),
+      '連続性': c.continuityScore.toFixed(2),
+      '音楽性': c.musicalScore.toFixed(2),
+      '総合': c.totalScore.toFixed(3),
+      '選択': c === bestCandidate ? '✅' : ''
+    })));
+    
+    // 安定化情報
+    const stabilizationDiff = Math.abs(finalFreq - bestCandidate.frequency);
+    if (stabilizationDiff > 0.5) {
+      console.log(`🔄 安定化: ${bestCandidate.frequency.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz (${stabilizationDiff.toFixed(1)}Hz調整)`);
+    }
+    
+    console.groupEnd();
+  }
+
+  /**
+   * 補正タイプの判定
+   * @param {number} ratio - 適用された倍率
+   * @returns {string} - 補正タイプの説明
+   */
+  getCorrectionType(ratio) {
+    if (Math.abs(ratio - 1.0) < 0.01) return '補正なし（基音）';
+    if (Math.abs(ratio - 0.5) < 0.01) return '2倍音補正（1オクターブ下）';
+    if (Math.abs(ratio - 0.333) < 0.01) return '3倍音補正（1オクターブ+5度下）';
+    if (Math.abs(ratio - 0.25) < 0.01) return '4倍音補正（2オクターブ下）';
+    if (Math.abs(ratio - 2.0) < 0.01) return 'オクターブ上補正';
+    return `カスタム補正（${ratio.toFixed(3)}x）`;
+  }
+
+  /**
+   * 周波数から音名変換（デバッグ用）
+   * @param {number} frequency - 周波数
+   * @returns {string} - 音名
+   */
+  frequencyToNote(frequency) {
+    if (!frequency || frequency <= 0) return '---';
+    
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const A4 = 440;
+    
+    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+    const noteIndex = (semitonesFromA4 + 9 + 120) % 12;
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    
+    return noteNames[noteIndex] + octave;
   }
 
   /**
@@ -182,6 +263,24 @@ class HarmonicCorrection {
   updateConfig(newConfig) {
     Object.assign(this, newConfig);
     console.log('⚙️ [HarmonicCorrection] 設定更新:', newConfig);
+  }
+
+  /**
+   * デバッグモード有効化
+   * ブラウザコンソールから呼び出し可能
+   */
+  enableDebugLogging() {
+    this.debugMode = true;
+    console.log('🔍 [HarmonicCorrection] デバッグログ有効化 - 次回の補正から詳細ログを出力します');
+    console.log('無効化するには: harmonicCorrection.disableDebugLogging()');
+  }
+
+  /**
+   * デバッグモード無効化
+   */
+  disableDebugLogging() {
+    this.debugMode = false;
+    console.log('🔍 [HarmonicCorrection] デバッグログ無効化');
   }
 
   /**
