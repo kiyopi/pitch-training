@@ -548,7 +548,59 @@
     evaluateScaleStep(frequency, note);
   }
   
-  // 裏での評価蓄積（ガイドアニメーション中）
+  // 【プロトタイプ式】多段階オクターブ補正関数
+  function multiStageOctaveCorrection(detectedFreq, targetFreq) {
+    // 複数の補正候補を生成（プロトタイプと同じ係数）
+    const candidates = [
+      { factor: 3, freq: detectedFreq * 3, description: "1.5オクターブ上" },    // 1.5オクターブ上
+      { factor: 2, freq: detectedFreq * 2, description: "1オクターブ上" },      // 1オクターブ上
+      { factor: 1.5, freq: detectedFreq * 1.5, description: "0.5オクターブ上" }, // 0.5オクターブ上
+      { factor: 1, freq: detectedFreq, description: "補正なし" },              // 補正なし
+      { factor: 0.67, freq: detectedFreq * 0.67, description: "0.5オクターブ下" }, // 0.5オクターブ下
+      { factor: 0.5, freq: detectedFreq * 0.5, description: "1オクターブ下" },  // 1オクターブ下
+      { factor: 0.33, freq: detectedFreq * 0.33, description: "1.5オクターブ下" } // 1.5オクターブ下
+    ];
+    
+    // 目標周波数範囲の定義（±30%の範囲で妥当性をチェック）
+    const targetMin = targetFreq * 0.7;
+    const targetMax = targetFreq * 1.3;
+    
+    // 範囲内の候補のみフィルタリング
+    const validCandidates = candidates.filter(candidate => 
+      candidate.freq >= targetMin && candidate.freq <= targetMax
+    );
+    
+    // 有効な候補がない場合は補正なし
+    if (validCandidates.length === 0) {
+      return {
+        correctedFrequency: detectedFreq,
+        factor: 1,
+        description: "補正なし（有効候補なし）",
+        error: Math.abs(detectedFreq - targetFreq)
+      };
+    }
+    
+    // 最小誤差の候補を選択
+    let bestCandidate = validCandidates[0];
+    let minError = Math.abs(bestCandidate.freq - targetFreq);
+    
+    for (const candidate of validCandidates) {
+      const error = Math.abs(candidate.freq - targetFreq);
+      if (error < minError) {
+        minError = error;
+        bestCandidate = candidate;
+      }
+    }
+    
+    return {
+      correctedFrequency: bestCandidate.freq,
+      factor: bestCandidate.factor,
+      description: bestCandidate.description,
+      error: minError
+    };
+  }
+
+  // 裏での評価蓄積（ガイドアニメーション中）- プロトタイプ式多段階補正版
   function evaluateScaleStep(frequency, note) {
     if (!frequency || frequency <= 0 || !isGuideAnimationActive) {
       return;
@@ -599,40 +651,22 @@
       return;
     }
     
-    // 【オクターブ補正強化版】倍音誤検出の修正
-    let adjustedFrequency = frequency;
-    let octaveAdjustment = 0;
-    
-    // セント差による事前チェック（150¢以上の差で補正考慮）
-    const initialCentDiff = Math.abs(1200 * Math.log2(frequency / expectedFrequency));
-    
-    // 1オクターブ下を検出している場合の補正（条件緩和）
-    if (frequency < expectedFrequency * 0.89 || initialCentDiff > 150) { // 0.75 → 0.89に緩和
-      // 周波数が期待値の89%未満、または150¢以上の差の場合、オクターブ補正を試みる
-      while (adjustedFrequency < expectedFrequency * 0.89 && octaveAdjustment < 3) {
-        adjustedFrequency *= 2;
-        octaveAdjustment++;
-      }
-    }
-    // 1オクターブ上を検出している場合の補正（条件厳格化）
-    else if (frequency > expectedFrequency * 1.12) { // 1.5 → 1.12に厳格化
-      while (adjustedFrequency > expectedFrequency * 1.12 && octaveAdjustment > -3) {
-        adjustedFrequency /= 2;
-        octaveAdjustment--;
-      }
-    }
+    // 【プロトタイプ式】多段階オクターブ補正を適用
+    const correctionResult = multiStageOctaveCorrection(frequency, expectedFrequency);
+    const adjustedFrequency = correctionResult.correctedFrequency;
+    const correctionFactor = correctionResult.factor;
     
     // 音程差を計算（セント）
     const centDifference = Math.round(1200 * Math.log2(adjustedFrequency / expectedFrequency));
     
-    // 【デバッグ】異常なセント値の調査
-    if (Math.abs(centDifference) > 200) {
-      console.warn(`⚠️ [異常セント値検出] ${scaleSteps[activeStepIndex].name}:`);
+    // 【デバッグ】プロトタイプ式補正結果の詳細ログ
+    if (Math.abs(centDifference) > 200 || correctionFactor !== 1) {
+      console.warn(`🔧 [プロトタイプ式補正] ${scaleSteps[activeStepIndex].name}:`);
       console.warn(`   検出周波数: ${frequency.toFixed(1)}Hz`);
       console.warn(`   補正後周波数: ${adjustedFrequency.toFixed(1)}Hz`);
       console.warn(`   期待周波数: ${expectedFrequency.toFixed(1)}Hz`);
       console.warn(`   セント差: ${centDifference}¢`);
-      console.warn(`   オクターブ補正: ${octaveAdjustment}オクターブ`);
+      console.warn(`   補正係数: ${correctionFactor} (${correctionResult.description})`);
       console.warn(`   基音: ${currentBaseNote} (${currentBaseFrequency.toFixed(1)}Hz)`);
     }
     
@@ -668,7 +702,8 @@
         centDifference: centDifference,
         accuracy: accuracy,
         isCorrect: isCorrect,
-        octaveAdjustment: octaveAdjustment,
+        correctionFactor: correctionFactor,
+        correctionDescription: correctionResult.description,
         timestamp: Date.now()
       };
       
