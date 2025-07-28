@@ -8,6 +8,7 @@
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import PitchDisplay from '$lib/components/PitchDisplay.svelte';
   import PitchDetector from '$lib/components/PitchDetector.svelte';
+  import PitchDetectionDisplay from '$lib/components/PitchDetectionDisplay.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
   import { audioManager } from '$lib/audio/AudioManager.js';
@@ -795,27 +796,14 @@
         </Card>
 
         <!-- Detection Section (Display Only) -->
-        <Card class="main-card half-width">
-          <div class="card-header">
-            <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
-          </div>
-          <div class="card-content">
-            <!-- データ表示のみ（実際のPitchDetectorは上に隠して配置） -->
-            <div class="pitch-detector">
-              <div class="detection-display">
-                <div class="detection-card">
-                  <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
-                  <span class="hz-suffix">Hz</span>
-                  <span class="divider">|</span>
-                  <span class="detected-note">{detectedNote}</span>
-                </div>
-                
-                <VolumeBar volume={currentFrequency > 0 ? currentVolume : 0} className="volume-bar" />
-              </div>
-            </div>
-            
-          </div>
-        </Card>
+        <PitchDetectionDisplay
+          frequency={currentFrequency}
+          note={detectedNote}
+          volume={currentVolume}
+          isMuted={trainingPhase !== 'guiding'}
+          muteMessage="基音再生後に開始"
+          className="half-width"
+        />
       </div>
     {/if}
 
