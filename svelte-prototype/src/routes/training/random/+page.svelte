@@ -1145,6 +1145,18 @@
   <div class="header-section">
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
+    
+    <!-- 🧪 デバッグ用: テスト採点結果表示ボタン（ヘッダーに配置） -->
+    <div class="debug-section" style="margin-top: 1rem;">
+      <Button 
+        variant="secondary"
+        class="debug-button"
+        on:click={showTestScoring}
+      >
+        🧪 テスト採点結果を表示（デバッグ用）
+      </Button>
+    </div>
+    
     <div class="debug-info">
       📱 {buildVersion} | {buildTimestamp}<br/>
       <small style="font-size: 0.6rem;">{updateStatus}</small>
@@ -1218,15 +1230,6 @@
                 現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
               </div>
             {/if}
-            
-            <!-- デバッグ用: テスト採点結果表示ボタン -->
-            <Button 
-              variant="secondary"
-              class="mt-2 text-sm"
-              on:click={showTestScoring}
-            >
-              🧪 テスト採点結果を表示
-            </Button>
           </div>
         </Card>
 
