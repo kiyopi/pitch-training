@@ -37,14 +37,42 @@ class AudioManager {
       return this.initPromise;
     }
 
-    // 既に初期化済みの場合
+    // 既に初期化済みの場合 - ただしMediaStream健康チェック実行
     if (this.isInitialized && this.audioContext && this.mediaStream) {
-      this.refCount++;
-      return {
-        audioContext: this.audioContext,
-        mediaStream: this.mediaStream,
-        sourceNode: this.sourceNode
-      };
+      const healthCheck = this.checkMediaStreamHealth();
+      
+      if (healthCheck.healthy) {
+        this.refCount++;
+        return {
+          audioContext: this.audioContext,
+          mediaStream: this.mediaStream,
+          sourceNode: this.sourceNode
+        };
+      } else {
+        // MediaStreamが不健康な場合は強制再初期化
+        console.warn('⚠️ [AudioManager] MediaStream不健康検出 - 強制再初期化:', healthCheck.reason);
+        console.log('🔄 [AudioManager] 不健康なMediaStream詳細:', {
+          mediaStreamActive: this.mediaStream?.active,
+          trackCount: this.mediaStream?.getTracks().length,
+          trackStates: this.mediaStream?.getTracks().map(t => ({
+            kind: t.kind,
+            readyState: t.readyState,
+            enabled: t.enabled,
+            muted: t.muted
+          }))
+        });
+        
+        // 安全なクリーンアップ実行
+        this._cleanup();
+        this.isInitialized = false;
+        this.refCount = 0;
+        
+        // 短い待機時間でリソース解放を確実に
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('🔄 [AudioManager] クリーンアップ完了 - 再初期化開始');
+        // 再初期化のため次のブロックに進む
+      }
     }
 
     // 初期化実行
@@ -81,13 +109,30 @@ class AudioManager {
 
       // MediaStream取得（1つのみ）
       if (!this.mediaStream) {
-        this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        // Safari WebKit対応: 最大互換性音声設定
+        const audioConstraints = {
           audio: {
+            // 基本設定：Safari WebKit安定性重視
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false
+            autoGainControl: false,
+            
+            // Safari対応: 明示的品質設定
+            sampleRate: 44100,
+            channelCount: 1,
+            sampleSize: 16,
+            
+            // Safari WebKit追加安定化設定
+            latency: 0.1,  // 100ms遅延許容
+            volume: 1.0,   // 音量正規化
+            
+            // デバイス選択を柔軟に（Safari対応）
+            deviceId: { ideal: 'default' }
           }
-        });
+        };
+        
+        console.log('🎤 [AudioManager] Safari対応設定でMediaStream取得中:', audioConstraints);
+        this.mediaStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
         console.log('✅ [AudioManager] MediaStream取得完了');
       }
 
@@ -152,12 +197,14 @@ class AudioManager {
       useFilters = true
     } = options;
 
-    // Analyser作成
+    // Analyser作成（Safari WebKit最適化）
     const analyser = this.audioContext.createAnalyser();
-    analyser.fftSize = fftSize;
-    analyser.smoothingTimeConstant = smoothingTimeConstant;
-    analyser.minDecibels = minDecibels;
-    analyser.maxDecibels = maxDecibels;
+    
+    // Safari負荷軽減設定
+    analyser.fftSize = Math.min(fftSize, 2048); // Safari上限制限
+    analyser.smoothingTimeConstant = Math.max(smoothingTimeConstant, 0.7); // Safari安定化
+    analyser.minDecibels = Math.max(minDecibels, -80); // Safari範囲最適化
+    analyser.maxDecibels = Math.min(maxDecibels, -10);
 
     let finalNode = this.sourceNode;
 
@@ -261,24 +308,42 @@ class AudioManager {
    * 内部クリーンアップ処理
    */
   _cleanup() {
+    console.log('🧹 [AudioManager] クリーンアップ開始');
+    
     // 全Analyser削除
     for (const id of this.analysers.keys()) {
       this.removeAnalyser(id);
     }
 
-    // MediaStream停止
+    // MediaStream停止（健康チェック対応）
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => {
-        track.stop();
-        console.log('🛑 [AudioManager] MediaStreamTrack停止');
+      const tracks = this.mediaStream.getTracks();
+      console.log(`🛑 [AudioManager] MediaStream停止中: ${tracks.length} tracks`);
+      
+      tracks.forEach((track, index) => {
+        try {
+          if (track.readyState !== 'ended') {
+            track.stop();
+            console.log(`🛑 [AudioManager] Track ${index} 停止完了`);
+          } else {
+            console.log(`⚠️ [AudioManager] Track ${index} 既に終了済み`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ [AudioManager] Track ${index} 停止エラー:`, error);
+        }
       });
+      
       this.mediaStream = null;
     }
 
     // AudioContext閉じる
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close();
-      console.log('🛑 [AudioManager] AudioContext閉鎖');
+      try {
+        this.audioContext.close();
+        console.log('🛑 [AudioManager] AudioContext閉鎖完了');
+      } catch (error) {
+        console.warn('⚠️ [AudioManager] AudioContext閉鎖エラー:', error);
+      }
       this.audioContext = null;
     }
 
@@ -319,6 +384,11 @@ class AudioManager {
       return { healthy: false, reason: 'MediaStream not initialized' };
     }
 
+    // MediaStream自体の状態チェック（Safari対応強化）
+    if (!this.mediaStream.active) {
+      return { healthy: false, reason: 'MediaStream inactive' };
+    }
+
     const tracks = this.mediaStream.getTracks();
     if (tracks.length === 0) {
       return { healthy: false, reason: 'No tracks available' };
@@ -329,12 +399,23 @@ class AudioManager {
       return { healthy: false, reason: 'No audio track found' };
     }
 
+    // AudioTrackの詳細状態チェック（Safari WebKit対応）
     if (audioTrack.readyState === 'ended') {
       return { healthy: false, reason: 'Audio track ended' };
     }
 
     if (!audioTrack.enabled) {
       return { healthy: false, reason: 'Audio track disabled' };
+    }
+
+    // Safari特有のmuted状態チェック
+    if (audioTrack.muted) {
+      return { healthy: false, reason: 'Audio track muted' };
+    }
+
+    // 追加チェック: MediaStreamとTrackの整合性確認
+    if (this.mediaStream.active && audioTrack.readyState !== 'live') {
+      return { healthy: false, reason: 'Track state inconsistent with MediaStream' };
     }
 
     return { healthy: true, track: audioTrack };

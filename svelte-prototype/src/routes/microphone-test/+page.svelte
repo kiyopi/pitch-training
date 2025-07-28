@@ -82,13 +82,13 @@
             await pitchDetectorComponent.initialize();
             console.log('✅ [MicTest] PitchDetector初期化完了');
             
-            // 初期化完了後にさらに安全な待機時間を設けて検出開始
+            // 初期化完了後にSafari対応で十分な待機時間を設けて検出開始
             setTimeout(() => {
               if (pitchDetectorComponent) {
-                console.log('🎯 [MicTest] PitchDetector検出開始');
+                console.log('🎯 [MicTest] PitchDetector検出開始（Safari対応）');
                 pitchDetectorComponent.startDetection();
               }
-            }, 500);
+            }, 2000);
           }
         }, 1000);
       } else {
