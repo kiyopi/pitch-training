@@ -596,13 +596,18 @@
         componentScores: results.componentScores
       };
       
-      // 音程データ更新
-      intervalData = Object.entries(results.intervalAnalysis.masteryLevels).map(([type, mastery]) => ({
-        type,
-        mastery: Math.round(mastery),
-        attempts: results.intervalAnalysis.attemptCounts[type] || 0,
-        accuracy: results.intervalAnalysis.accuracyRates[type] || 0
-      }));
+      // 音程データ更新（安全な参照）
+      if (results.intervalAnalysis && results.intervalAnalysis.masteryLevels) {
+        intervalData = Object.entries(results.intervalAnalysis.masteryLevels).map(([type, mastery]) => ({
+          type,
+          mastery: Math.round(mastery),
+          attempts: results.intervalAnalysis.attemptCounts?.[type] || 0,
+          accuracy: results.intervalAnalysis.accuracyRates?.[type] || 0
+        }));
+      } else {
+        console.warn('⚠️ [RandomTraining] intervalAnalysis.masteryLevels が未定義です');
+        intervalData = [];
+      }
       
       // 一貫性データ更新
       consistencyData = results.consistencyHistory.map((score, index) => ({
