@@ -3,7 +3,7 @@ name: Deploy Svelte Prototype to Pages
 
 on:
   push:
-    branches: ["svelte-prototype-001", "random-training-tonejs-fixed-001"]
+    branches: ["svelte-prototype-001", "random-training-*", "enhanced-scoring-*"]
     paths: ["svelte-prototype/**"]
   workflow_dispatch:
 

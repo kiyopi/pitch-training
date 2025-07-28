@@ -6,11 +6,11 @@ function __memo(fn) {
 
 return {
 	appDir: "_app",
-	appPath: "pitch-training/_app",
+	appPath: "_app",
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.FJW7CpO2.js",app:"_app/immutable/entry/app.DBG1d6FH.js",imports:["_app/immutable/entry/start.FJW7CpO2.js","_app/immutable/chunks/lvLeo86A.js","_app/immutable/chunks/BaJCk71S.js","_app/immutable/entry/app.DBG1d6FH.js","_app/immutable/chunks/BaJCk71S.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.1DaEhhPF.js",app:"_app/immutable/entry/app.BuhqwVgG.js",imports:["_app/immutable/entry/start.1DaEhhPF.js","_app/immutable/chunks/UiuniD7Z.js","_app/immutable/chunks/DYrQga1O.js","_app/immutable/entry/app.BuhqwVgG.js","_app/immutable/chunks/DYrQga1O.js","_app/immutable/chunks/CHpRvnA3.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js'))
@@ -18,7 +18,7 @@ return {
 		routes: [
 			
 		],
-		prerendered_routes: new Set(["/pitch-training/","/pitch-training/microphone-test-simple","/pitch-training/microphone-test","/pitch-training/training/chromatic","/pitch-training/training/continuous","/pitch-training/training/random"]),
+		prerendered_routes: new Set(["/","/microphone-test-simple","/microphone-test","/scoring-test","/training/chromatic","/training/continuous","/training/random"]),
 		matchers: async () => {
 			
 			return {  };

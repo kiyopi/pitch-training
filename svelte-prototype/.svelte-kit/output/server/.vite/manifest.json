@@ -139,12 +139,23 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
-      "_exports.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.js"
     ],
     "css": [
       "_app/immutable/assets/_page.Dl6HdkQ7.css"
+    ]
+  },
+  "src/routes/scoring-test/+page.svelte": {
+    "file": "entries/pages/scoring-test/_page.svelte.js",
+    "name": "entries/pages/scoring-test/_page.svelte",
+    "src": "src/routes/scoring-test/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.BeR5LleT.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -182,7 +193,6 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_exports.js",
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",

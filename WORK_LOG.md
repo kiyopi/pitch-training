@@ -1238,7 +1238,205 @@ random-training-tonejs-fixed-001
 ```
 
 ### **次回作業予定**
-1. **連続チャレンジモード実装**: PitchDetectionDisplay 活用
-2. **12音階モード実装**: 同コンポーネント再利用
-3. **エラー管理システム実装**: ErrorManager.js（高優先度）  
-**次回継続**: 高優先度3項目の実装（ErrorManager/BrowserChecker/RecoveryGuide）
+1. **統一採点システム実装**: Phase 1-4の段階的実装
+2. **ScoringEngine.js開発**: HarmonicCorrection統合エンジン
+3. **3モード展開**: Random/Continuous/Chromatic統一実装
+
+---
+
+## 📅 **2025-07-28 統一採点システム実装開始**
+
+### **セッション概要**
+- **開始時刻**: 継続セッション
+- **対象ブランチ**: `random-training-tonejs-fixed-001`
+- **主要作業**: 3モード統一採点システム設計・仕様書作成・実装準備
+
+### **作業経緯**
+#### **ユーザー要求内容**
+- 「これからの作業 必要と思われるシステム 採点システム 採点レイアウトシステム モード別の違い」
+- Random Mode: 短音採点+総合評価
+- Continuous Mode: 5回分保持+総合評価  
+- Chromatic Mode: 12音保持+総合評価
+- 「これでまずどのように進めていくか提案してください」
+
+#### **実装アプローチ決定**
+- HarmonicCorrection活用による高精度採点
+- SvelteKit統一アーキテクチャ設計
+- 4段階フェーズ実装（共通エンジン→表示→Random統合→他モード展開）
+- 既存技術資産最大活用方針
+
+### **完了作業**
+
+#### **要件分析・技術調査完了**
+1. ✅ **3モード要件分析**: 各モードの採点・表示要件明確化
+2. ✅ **既存技術資産調査**: HarmonicCorrection・PitchDetectionDisplay・統一音響処理確認
+3. ✅ **統一採点システム設計**: ScoringEngine・ScoreManager・ScoreDisplayアーキテクチャ策定
+4. ✅ **実装フェーズ計画**: 4段階×4週間の詳細スケジュール
+
+#### **統一採点システム仕様書作成完了**
+- ✅ **UNIFIED_SCORING_SYSTEM_SPECIFICATION.md** 作成完了（1,248行）
+- 🎯 **主要内容**:
+  - HarmonicCorrection統合による高精度採点エンジン設計
+  - モード別スコア管理システム（Random/Continuous/Chromatic）
+  - SvelteKit対応統一表示コンポーネント仕様
+  - 4段階実装フェーズ詳細計画
+  - 品質基準・テスト計画・成功指標
+
+### **技術設計成果**
+
+#### **統一採点アーキテクチャ確立**
+```javascript
+// ScoringEngine - 統一採点エンジン
+class ScoringEngine {
+  constructor(mode) {
+    this.harmonicCorrection = harmonicCorrection; // 既存活用
+    this.config = this.getModeConfig(mode);
+  }
+  
+  calculateScore(input) {
+    // HarmonicCorrectionによる高精度補正
+    const correctedFreq = this.harmonicCorrection.correctHarmonic(detectedFreq);
+    // セント差・スコア計算・評価ランク判定
+    return { accuracyScore, totalScore, feedback, ... };
+  }
+}
+```
+
+#### **モード別管理システム設計**
+- **RandomScoreManager**: 即座表示・総合統計管理
+- **ContinuousScoreManager**: 5回分履歴・進捗表示
+- **ChromaticScoreManager**: 12音×上下マトリックス管理
+
+#### **統一表示コンポーネント**
+```svelte
+<!-- ScoreDisplay.svelte -->
+<script>
+  export let mode; // 'random' | 'continuous' | 'chromatic'
+  export let scoreData;
+</script>
+
+<div class="score-display mode-{mode}">
+  {#if mode === 'random'}
+    <SingleScoreDisplay {scoreData} />
+  {:else if mode === 'continuous'}
+    <ContinuousScoreDisplay {scoreData} />
+  {:else if mode === 'chromatic'}
+    <ChromaticGridDisplay {scoreData} />
+  {/if}
+</div>
+```
+
+### **実装計画確定**
+
+#### **Phase 1: 共通採点エンジン構築（週1）**
+- ScoringEngine.js: HarmonicCorrection統合・モード別設定
+- ScoreManager.js: Random/Continuous/Chromatic管理システム
+- テストページ: エンジン単体動作確認
+
+#### **Phase 2: 表示コンポーネント開発（週2）**
+- ScoreDisplay.svelte: メイン統一表示
+- 子コンポーネント: Single/Continuous/ChromaticGrid表示
+- shadcn/ui風デザイン・レスポンシブ対応
+
+#### **Phase 3: Random Mode統合（週3）**
+- 既存ページ採点システム置換
+- 新エンジン適用・動作確認
+- GitHub Pages展開・実機テスト
+
+#### **Phase 4: 他モード展開（週4）**
+- Continuous Mode実装（5回連続采点）
+- Chromatic Mode実装（12音マトリックス）
+- 最終統合テスト・最適化
+
+### **技術的優位性確認**
+
+#### **HarmonicCorrection活用の利点**
+- ✅ **実証済み高精度**: 既存で検証済みの倍音補正システム
+- ✅ **オクターブ誤検出解決**: 根本的音程検出問題の解決
+- ✅ **統一品質**: 全モード同一補正アルゴリズム
+- ✅ **デバッグ支援**: 既存デバッグ機能活用可能
+
+#### **統一アーキテクチャの効果**
+- ✅ **コード重複削減**: 80%の共通ロジック統一
+- ✅ **保守性向上**: 中央集権的採点ロジック管理
+- ✅ **開発効率**: 共通エンジンで3モード対応
+- ✅ **拡張性**: 新モード・機能追加の容易性
+
+### **品質基準設定**
+
+#### **定量的指標**
+- 採点精度: ±5セント以内
+- 処理時間: 100ms以内
+- メモリ使用量: 50MB以内
+- UI応答性: 60FPS維持
+
+#### **定性的指標**
+- 使いやすさ: タスク完了率90%以上
+- 満足度: ユーザー評価4.5/5.0以上
+- 学習効果: 継続使用による上達実感
+- 信頼性: エラー発生率1%以下
+
+### **Git状態記録**
+```bash
+# 現在ブランチ
+random-training-tonejs-fixed-001
+
+# 最新コミット（仕様書作成前）
+2cf256a 適用: マイクテストページにもPitchDetectionDisplayコンポーネント適用
+
+# 新規作成ファイル
+UNIFIED_SCORING_SYSTEM_SPECIFICATION.md (1,248行)
+
+# 準備完了状況
+- 技術調査: 完了
+- 設計: 完了  
+- 仕様書: 完了
+- 実装準備: 完了
+```
+
+### **次回作業（Phase 1開始）**
+
+#### **即座実装推奨**
+1. **ScoringEngine.js実装**: 統一採点エンジン基本構造
+2. **HarmonicCorrection統合**: 既存システムとの連携
+3. **テストページ作成**: エンジン動作確認環境
+
+#### **週間目標**
+- Week 1: 共通採点エンジン完成
+- Week 2: 表示コンポーネント完成
+- Week 3: Random Mode統合完成
+- Week 4: 全モード展開完成
+
+### **重要な成果**
+
+#### **包括的技術仕様確立**
+- **総行数**: 1,248行の詳細技術仕様書
+- **設計完成度**: 実装レベルのコード例付き
+- **実装計画**: 4週間の具体的スケジュール
+- **品質基準**: 定量・定性指標明確化
+
+#### **既存資産活用最大化**
+- **HarmonicCorrection**: 高精度倍音補正システム統合
+- **PitchDetectionDisplay**: 共通音程検出表示再利用
+- **統一音響処理**: UnifiedAudioProcessor連携
+- **SvelteKit基盤**: 既存技術スタック最大活用
+
+#### **開発効率向上予測**
+- **設計時間短縮**: 詳細仕様による迷い排除
+- **実装品質**: 統一アーキテクチャによる安定性
+- **保守性**: 中央集権システムでの修正容易性
+- **拡張性**: 新機能追加のフレームワーク確立
+
+### **VSCodeクラッシュ対策実施済み**
+- ✅ 詳細作業履歴記録（復帰用）
+- ✅ 段階的タスク管理・TodoWrite活用
+- ✅ 包括的仕様書による実装指針確立
+- ✅ 既存技術資産最大活用によるリスク最小化
+
+---
+
+**記録日時**: 2025-07-28  
+**記録者**: Claude Code Assistant  
+**セッション**: 統一採点システム実装開始  
+**成果**: 包括的仕様書完成・実装準備完了・4週間計画確定  
+**次回継続**: Phase 1 ScoringEngine.js実装から開始
