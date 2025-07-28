@@ -565,7 +565,7 @@
     }
     
     // 【音量チェック】環境音を除外
-    const minVolumeForScoring = 20; // 採点用の最低音量しきい値
+    const minVolumeForScoring = 25; // 採点用の最低音量しきい値（20→25に引き上げ）
     if (currentVolume < minVolumeForScoring) {
       // 音量不足の場合は採点をスキップ（環境音の可能性）
       return;
@@ -599,21 +599,24 @@
       return;
     }
     
-    // 【オクターブ補正】倍音誤検出の修正
+    // 【オクターブ補正強化版】倍音誤検出の修正
     let adjustedFrequency = frequency;
     let octaveAdjustment = 0;
     
-    // 1オクターブ下を検出している場合の補正
-    if (frequency < expectedFrequency * 0.75) {
-      // 周波数が期待値の75%未満の場合、オクターブ補正を試みる
-      while (adjustedFrequency < expectedFrequency * 0.75 && octaveAdjustment < 3) {
+    // セント差による事前チェック（150¢以上の差で補正考慮）
+    const initialCentDiff = Math.abs(1200 * Math.log2(frequency / expectedFrequency));
+    
+    // 1オクターブ下を検出している場合の補正（条件緩和）
+    if (frequency < expectedFrequency * 0.89 || initialCentDiff > 150) { // 0.75 → 0.89に緩和
+      // 周波数が期待値の89%未満、または150¢以上の差の場合、オクターブ補正を試みる
+      while (adjustedFrequency < expectedFrequency * 0.89 && octaveAdjustment < 3) {
         adjustedFrequency *= 2;
         octaveAdjustment++;
       }
     }
-    // 1オクターブ上を検出している場合の補正
-    else if (frequency > expectedFrequency * 1.5) {
-      while (adjustedFrequency > expectedFrequency * 1.5 && octaveAdjustment > -3) {
+    // 1オクターブ上を検出している場合の補正（条件厳格化）
+    else if (frequency > expectedFrequency * 1.12) { // 1.5 → 1.12に厳格化
+      while (adjustedFrequency > expectedFrequency * 1.12 && octaveAdjustment > -3) {
         adjustedFrequency /= 2;
         octaveAdjustment--;
       }
