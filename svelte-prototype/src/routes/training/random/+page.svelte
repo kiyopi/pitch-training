@@ -98,16 +98,16 @@
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
-    { note: 'C4', name: 'ド（中）', frequency: 261.63 },
-    { note: 'Db4', name: 'ド#（中）', frequency: 277.18 },
-    { note: 'D4', name: 'レ（中）', frequency: 293.66 },
-    { note: 'Eb4', name: 'レ#（中）', frequency: 311.13 },
-    { note: 'E4', name: 'ミ（中）', frequency: 329.63 },
-    { note: 'F4', name: 'ファ（中）', frequency: 349.23 },
-    { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99 },
-    { note: 'Ab4', name: 'ラb（中）', frequency: 415.30 },
-    { note: 'Bb3', name: 'シb（低）', frequency: 233.08 },
-    { note: 'B3', name: 'シ（低）', frequency: 246.94 }
+    { note: 'C4', name: 'ド（中）', frequency: 261.63, semitonesFromC: 0 },
+    { note: 'Db4', name: 'ド#（中）', frequency: 277.18, semitonesFromC: 1 },
+    { note: 'D4', name: 'レ（中）', frequency: 293.66, semitonesFromC: 2 },
+    { note: 'Eb4', name: 'レ#（中）', frequency: 311.13, semitonesFromC: 3 },
+    { note: 'E4', name: 'ミ（中）', frequency: 329.63, semitonesFromC: 4 },
+    { note: 'F4', name: 'ファ（中）', frequency: 349.23, semitonesFromC: 5 },
+    { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
+    { note: 'Ab4', name: 'ラb（中）', frequency: 415.30, semitonesFromC: 8 },
+    { note: 'Bb3', name: 'シb（低）', frequency: 233.08, semitonesFromC: -2 },
+    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 }
   ];
 
   // マイク許可確認（AudioManager対応版）
@@ -566,9 +566,29 @@
     }
     
     // 期待される周波数を計算（基音からの相対音程）
-    const scaleIntervals = [0, 2, 4, 5, 7, 9, 11, 12]; // ドレミファソラシド（半音）
-    const expectedInterval = scaleIntervals[activeStepIndex] * 100; // セント
+    // 【緊急修正】音階間隔を基音基準に計算
+    const baseNoteIndex = baseNotes.findIndex(note => note.name === currentBaseNote);
+    const baseNoteData = baseNotes[baseNoteIndex];
+    
+    // 基音から各音程への半音間隔（ドレミファソラシドの順序）
+    const scaleIntervalsFromBase = [
+      -baseNoteData.semitonesFromC,      // ド: 基音からドへの間隔
+      -baseNoteData.semitonesFromC + 2,  // レ: 基音からレへの間隔
+      -baseNoteData.semitonesFromC + 4,  // ミ: 基音からミへの間隔
+      -baseNoteData.semitonesFromC + 5,  // ファ: 基音からファへの間隔
+      -baseNoteData.semitonesFromC + 7,  // ソ: 基音からソへの間隔
+      -baseNoteData.semitonesFromC + 9,  // ラ: 基音からラへの間隔
+      -baseNoteData.semitonesFromC + 11, // シ: 基音からシへの間隔
+      -baseNoteData.semitonesFromC + 12  // ド（高）: 基音から高ドへの間隔
+    ];
+    
+    const expectedInterval = scaleIntervalsFromBase[activeStepIndex] * 100; // セント
     const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 1200);
+    
+    // 【デバッグ】音程計算の詳細ログ
+    if (activeStepIndex >= 0) { // 全音程でログ出力して修正確認
+      console.log(`🔢 [音程計算] ${scaleSteps[activeStepIndex].name}: 基音${currentBaseNote}(${baseNoteData.semitonesFromC}半音) → 間隔${scaleIntervalsFromBase[activeStepIndex]}半音 → ${expectedFrequency.toFixed(1)}Hz`);
+    }
     
     // 【緊急修正】期待周波数の有効性チェック
     if (!expectedFrequency || expectedFrequency <= 0 || !isFinite(expectedFrequency)) {
