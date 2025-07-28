@@ -38,6 +38,9 @@ class HarmonicCorrection {
     // デバッグモード
     this.debugMode = false;
     
+    // 現在のコンテキスト（音階情報）
+    this.currentContext = {};
+    
     console.log('🔧 [HarmonicCorrection] 統一倍音補正システム初期化完了');
   }
 
@@ -77,7 +80,7 @@ class HarmonicCorrection {
 
     // デバッグログ出力（明示的指定またはデバッグモード時）
     if (enableDebugLog || this.debugMode) {
-      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq);
+      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq, this.currentContext);
     }
 
     // 次回比較用に保存
@@ -92,8 +95,9 @@ class HarmonicCorrection {
    * @param {Array} candidates - 全候補とスコア
    * @param {Object} bestCandidate - 選択された最適候補
    * @param {number} finalFreq - 最終補正周波数
+   * @param {Object} context - 追加コンテキスト情報
    */
-  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq) {
+  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}) {
     console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
     
     // 検出周波数の音名表示
@@ -104,6 +108,25 @@ class HarmonicCorrection {
     // 補正の種類を判定
     const correctionType = this.getCorrectionType(bestCandidate.ratio);
     console.log(`🎯 補正タイプ: ${correctionType}`);
+
+    // ドレミファソラシド文脈情報の表示
+    if (context.baseFrequency && context.currentScale && context.targetFrequency) {
+      console.log(`🎵 音階コンテキスト:`);
+      console.log(`   基音: ${context.baseFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.baseFrequency)})`);
+      console.log(`   現在の音階: ${context.currentScale}`);
+      console.log(`   目標周波数: ${context.targetFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.targetFrequency)})`);
+      
+      // 目標との差分計算
+      const targetDiff = finalFreq - context.targetFrequency;
+      const targetDiffCents = 1200 * Math.log2(finalFreq / context.targetFrequency);
+      console.log(`   目標との差: ${targetDiff > 0 ? '+' : ''}${targetDiff.toFixed(1)}Hz (${targetDiffCents > 0 ? '+' : ''}${targetDiffCents.toFixed(0)}セント)`);
+      
+      // 精度評価
+      const accuracy = Math.abs(targetDiffCents) <= 50 ? '🎯 高精度' : 
+                      Math.abs(targetDiffCents) <= 100 ? '✅ 良好' : 
+                      Math.abs(targetDiffCents) <= 200 ? '⚠️ 要改善' : '❌ 不正確';
+      console.log(`   精度評価: ${accuracy} (${Math.abs(targetDiffCents).toFixed(0)}セント差)`);
+    }
     
     // 候補スコア一覧
     console.table(candidates.map(c => ({
@@ -282,6 +305,26 @@ class HarmonicCorrection {
   disableDebugLogging() {
     this.debugMode = false;
     console.log('🔍 [HarmonicCorrection] デバッグログ無効化');
+  }
+
+  /**
+   * 音階コンテキスト設定
+   * ランダム基音モードでの音階情報を設定
+   * @param {Object} context - 音階コンテキスト
+   */
+  setScaleContext(context) {
+    this.currentContext = {
+      baseFrequency: context.baseFrequency,
+      currentScale: context.currentScale,
+      targetFrequency: context.targetFrequency
+    };
+  }
+
+  /**
+   * コンテキストクリア
+   */
+  clearContext() {
+    this.currentContext = {};
   }
 
   /**

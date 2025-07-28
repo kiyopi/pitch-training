@@ -360,6 +360,7 @@ class HarmonicCorrection {
     this.previousFrequency = 0;
     this.maxHistoryLength = 5;
     this.debugMode = false;
+    this.currentContext = {};
     console.log("🔧 [HarmonicCorrection] 統一倍音補正システム初期化完了");
   }
   /**
@@ -388,7 +389,7 @@ class HarmonicCorrection {
     );
     const stabilizedFreq = this.stabilizeFrequency(bestCandidate.frequency);
     if (enableDebugLog || this.debugMode) {
-      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq);
+      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq, this.currentContext);
     }
     this.previousFrequency = stabilizedFreq;
     return stabilizedFreq;
@@ -399,14 +400,26 @@ class HarmonicCorrection {
    * @param {Array} candidates - 全候補とスコア
    * @param {Object} bestCandidate - 選択された最適候補
    * @param {number} finalFreq - 最終補正周波数
+   * @param {Object} context - 追加コンテキスト情報
    */
-  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq) {
+  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}) {
     console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
     const originalNote = this.frequencyToNote(originalFreq);
     const finalNote = this.frequencyToNote(finalFreq);
     console.log(`📝 音程変換: ${originalNote} → ${finalNote}`);
     const correctionType = this.getCorrectionType(bestCandidate.ratio);
     console.log(`🎯 補正タイプ: ${correctionType}`);
+    if (context.baseFrequency && context.currentScale && context.targetFrequency) {
+      console.log(`🎵 音階コンテキスト:`);
+      console.log(`   基音: ${context.baseFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.baseFrequency)})`);
+      console.log(`   現在の音階: ${context.currentScale}`);
+      console.log(`   目標周波数: ${context.targetFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.targetFrequency)})`);
+      const targetDiff = finalFreq - context.targetFrequency;
+      const targetDiffCents = 1200 * Math.log2(finalFreq / context.targetFrequency);
+      console.log(`   目標との差: ${targetDiff > 0 ? "+" : ""}${targetDiff.toFixed(1)}Hz (${targetDiffCents > 0 ? "+" : ""}${targetDiffCents.toFixed(0)}セント)`);
+      const accuracy = Math.abs(targetDiffCents) <= 50 ? "🎯 高精度" : Math.abs(targetDiffCents) <= 100 ? "✅ 良好" : Math.abs(targetDiffCents) <= 200 ? "⚠️ 要改善" : "❌ 不正確";
+      console.log(`   精度評価: ${accuracy} (${Math.abs(targetDiffCents).toFixed(0)}セント差)`);
+    }
     console.table(candidates.map((c) => ({
       "倍率": `${c.ratio.toFixed(3)}x`,
       "周波数": `${c.frequency.toFixed(1)}Hz`,
@@ -536,6 +549,24 @@ class HarmonicCorrection {
   disableDebugLogging() {
     this.debugMode = false;
     console.log("🔍 [HarmonicCorrection] デバッグログ無効化");
+  }
+  /**
+   * 音階コンテキスト設定
+   * ランダム基音モードでの音階情報を設定
+   * @param {Object} context - 音階コンテキスト
+   */
+  setScaleContext(context) {
+    this.currentContext = {
+      baseFrequency: context.baseFrequency,
+      currentScale: context.currentScale,
+      targetFrequency: context.targetFrequency
+    };
+  }
+  /**
+   * コンテキストクリア
+   */
+  clearContext() {
+    this.currentContext = {};
   }
   /**
    * 現在の状態取得（デバッグ用）

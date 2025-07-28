@@ -12,6 +12,7 @@
   import PageLayout from '$lib/components/PageLayout.svelte';
   import * as Tone from 'tone';
   import { audioManager } from '$lib/audio/AudioManager.js';
+  import { harmonicCorrection } from '$lib/audio/HarmonicCorrection.js';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
@@ -258,6 +259,14 @@
     }
   }
 
+  // 目標周波数計算（ドレミファソラシド）
+  function calculateTargetFrequency(baseFreq, scaleIndex) {
+    // 音階の半音階段数（ドレミファソラシド）
+    const semitonesFromBase = [0, 2, 4, 5, 7, 9, 11, 12];
+    const semitones = semitonesFromBase[scaleIndex];
+    return baseFreq * Math.pow(2, semitones / 12);
+  }
+
   // ガイドアニメーション開始（簡素版）
   function startGuideAnimation() {
     // シンプルな状態変更のみ
@@ -276,6 +285,14 @@
         
         // 現在のステップをアクティブに
         scaleSteps[currentScaleIndex].state = 'active';
+        
+        // 倍音補正モジュールに音階コンテキストを設定
+        const targetFreq = calculateTargetFrequency(currentBaseFrequency, currentScaleIndex);
+        harmonicCorrection.setScaleContext({
+          baseFrequency: currentBaseFrequency,
+          currentScale: scaleSteps[currentScaleIndex].name,
+          targetFrequency: targetFreq
+        });
         
         currentScaleIndex++;
         
@@ -303,6 +320,9 @@
     if (pitchDetectorComponent) {
       pitchDetectorComponent.stopDetection();
     }
+    
+    // 倍音補正モジュールのコンテキストをクリア
+    harmonicCorrection.clearContext();
     
     // 採点結果を計算して表示
     calculateFinalResults();
