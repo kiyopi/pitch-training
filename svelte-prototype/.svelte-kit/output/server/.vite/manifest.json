@@ -26,14 +26,15 @@
       "_app/immutable/assets/PageLayout.Cz8yIb7J.css"
     ]
   },
-  "_PitchDetector.js": {
-    "file": "chunks/PitchDetector.js",
-    "name": "PitchDetector",
+  "_PitchDetectionDisplay.js": {
+    "file": "chunks/PitchDetectionDisplay.js",
+    "name": "PitchDetectionDisplay",
     "imports": [
-      "_ssr.js"
+      "_ssr.js",
+      "_PageLayout.js"
     ],
     "css": [
-      "_app/immutable/assets/PitchDetector.Bj9rbx_g.css"
+      "_app/immutable/assets/PitchDetectionDisplay.D_00FytZ.css"
     ]
   },
   "_exports.js": {
@@ -139,10 +140,10 @@
       "_ssr.js",
       "_stores.js",
       "_PageLayout.js",
-      "_PitchDetector.js"
+      "_PitchDetectionDisplay.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.cT7iZ2wb.css"
+      "_app/immutable/assets/_page.Dl6HdkQ7.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -183,10 +184,10 @@
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",
-      "_PitchDetector.js"
+      "_PitchDetectionDisplay.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Do6uZE-C.css"
+      "_app/immutable/assets/_page.B0VAUGJI.css"
     ]
   }
 }

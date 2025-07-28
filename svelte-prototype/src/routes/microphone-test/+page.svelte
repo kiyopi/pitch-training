@@ -7,6 +7,7 @@
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import PitchDetector from '$lib/components/PitchDetector.svelte';
+  import PitchDetectionDisplay from '$lib/components/PitchDetectionDisplay.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
   import { audioManager } from '$lib/audio/AudioManager.js';
   
@@ -202,23 +203,26 @@
     </div>
 
     <!-- リアルタイム音程検出エリア（常時表示） -->
-    <Card class="main-card">
-      <div class="card-header">
-        <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
-      </div>
-      <div class="card-content">
-        <!-- PitchDetectorコンポーネントを直接表示（Safari対応） -->
-        <PitchDetector
-          bind:this={pitchDetectorComponent}
-          isActive={micPermission === 'granted'}
-          on:pitchUpdate={handlePitchUpdate}
-          on:stateChange={handlePitchDetectorStateChange}
-          on:error={handlePitchDetectorError}
-          className="pitch-detector-content"
-          debugMode={false}
-        />
-      </div>
-    </Card>
+    <PitchDetectionDisplay
+      frequency={currentFrequency}
+      note={detectedNote}
+      volume={currentVolume}
+      isMuted={micPermission !== 'granted'}
+      muteMessage="マイク許可後に開始"
+    />
+    
+    <!-- PitchDetectorコンポーネント（非表示・検出処理のみ） -->
+    <div style="display: none;">
+      <PitchDetector
+        bind:this={pitchDetectorComponent}
+        isActive={micPermission === 'granted'}
+        on:pitchUpdate={handlePitchUpdate}
+        on:stateChange={handlePitchDetectorStateChange}
+        on:error={handlePitchDetectorError}
+        className="pitch-detector-content"
+        debugMode={false}
+      />
+    </div>
 
   </div>
 </PageLayout>
@@ -528,8 +532,6 @@
     }
   }
 
-  /* === リアルタイム音程検出エリア === */
-  
   /* カードスタイル（shadcn/ui風） */
   :global(.main-card) {
     border: 1px solid hsl(214.3 31.8% 91.4%) !important;
@@ -538,27 +540,4 @@
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06) !important;
     margin-bottom: 1.5rem;
   }
-
-  /* カードヘッダー */
-  .card-header {
-    padding-bottom: 1rem;
-    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
-    margin-bottom: 1.5rem;
-  }
-  
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: hsl(222.2 84% 4.9%);
-    margin: 0;
-  }
-
-  /* カードコンテンツ */
-  .card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  /* PitchDetectorコンポーネント内に統合済み */
 </style>
