@@ -37,10 +37,6 @@
       "_app/immutable/assets/PitchDetectionDisplay.D_00FytZ.css"
     ]
   },
-  "_SessionStatistics.svelte_svelte_type_style_lang.js": {
-    "file": "_app/immutable/assets/SessionStatistics.CLC8DLhC.css",
-    "src": "_SessionStatistics.svelte_svelte_type_style_lang.js"
-  },
   "_exports.js": {
     "file": "chunks/exports.js",
     "name": "exports"
@@ -100,7 +96,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.C2zI3x1v.css"
+      "_app/immutable/assets/_layout.RVemWL3z.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -149,19 +145,6 @@
     ],
     "css": [
       "_app/immutable/assets/_page.Dl6HdkQ7.css"
-    ]
-  },
-  "src/routes/scoring-components-test/+page.svelte": {
-    "file": "entries/pages/scoring-components-test/_page.svelte.js",
-    "name": "entries/pages/scoring-components-test/_page.svelte",
-    "src": "src/routes/scoring-components-test/+page.svelte",
-    "isEntry": true,
-    "imports": [
-      "_ssr.js"
-    ],
-    "css": [
-      "_app/immutable/assets/_page.Dr2eeyM5.css",
-      "_app/immutable/assets/SessionStatistics.CLC8DLhC.css"
     ]
   },
   "src/routes/scoring-test/+page.svelte": {
@@ -218,8 +201,7 @@
       "_PitchDetectionDisplay.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.B0VAUGJI.css",
-      "_app/immutable/assets/SessionStatistics.CLC8DLhC.css"
+      "_app/immutable/assets/_page.BImssorv.css"
     ]
   }
 }

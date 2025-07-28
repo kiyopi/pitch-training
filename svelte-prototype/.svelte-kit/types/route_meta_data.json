@@ -9,9 +9,6 @@
 	"/microphone-test": [
 		"src/routes/+layout.ts"
 	],
-	"/scoring-components-test": [
-		"src/routes/+layout.ts"
-	],
 	"/scoring-test": [
 		"src/routes/+layout.ts"
 	],

@@ -50,9 +50,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v2.1.0-STABLE";
-  const buildTimestamp = "07/29 03:20";
-  const updateStatus = "🛡️ 全エラー修正完了・安定版リリース";
+  const buildVersion = "v2.2.0-STYLED";
+  const buildTimestamp = "07/29 03:30";
+  const updateStatus = "🎨 採点表示スタイル修正・タブUI改善";
   
   // 基音関連
   let currentBaseNote = '';
@@ -1309,34 +1309,25 @@
         {/if}
         
         <!-- 詳細統計（タブ形式） -->
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div class="flex gap-2 mb-4 overflow-x-auto">
+        <Card class="main-card">
+          <div class="scoring-tabs-container">
             <button 
-              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
-              class:bg-blue-500={activeTab === 'intervals'}
-              class:text-white={activeTab === 'intervals'}
-              class:bg-gray-200={activeTab !== 'intervals'}
-              class:text-gray-700={activeTab !== 'intervals'}
+              class="scoring-tab"
+              class:active={activeTab === 'intervals'}
               on:click={() => switchTab('intervals')}
             >
               音程別進捗
             </button>
             <button 
-              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
-              class:bg-blue-500={activeTab === 'consistency'}
-              class:text-white={activeTab === 'consistency'}
-              class:bg-gray-200={activeTab !== 'consistency'}
-              class:text-gray-700={activeTab !== 'consistency'}
+              class="scoring-tab"
+              class:active={activeTab === 'consistency'}
               on:click={() => switchTab('consistency')}
             >
               一貫性グラフ
             </button>
             <button 
-              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
-              class:bg-blue-500={activeTab === 'statistics'}
-              class:text-white={activeTab === 'statistics'}
-              class:bg-gray-200={activeTab !== 'statistics'}
-              class:text-gray-700={activeTab !== 'statistics'}
+              class="scoring-tab"
+              class:active={activeTab === 'statistics'}
               on:click={() => switchTab('statistics')}
             >
               セッション統計
@@ -1372,7 +1363,7 @@
               </div>
             {/if}
           </div>
-        </div>
+        </Card>
       {:else}
         <!-- 従来の結果表示（フォールバック） -->
         <Card class="main-card results-card">
@@ -2109,5 +2100,71 @@
     background: #d1fae5;
     border-radius: 4px;
     border-left: 4px solid #059669;
+  }
+
+  /* === 採点表示専用スタイル === */
+  
+  /* タブコンテナ */
+  .scoring-tabs-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
+    padding-bottom: 0.5rem;
+  }
+  
+  /* タブボタン */
+  .scoring-tab {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    background: hsl(0 0% 100%);
+    color: hsl(215.4 16.3% 46.9%);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  
+  .scoring-tab:hover {
+    background: hsl(210 40% 98%);
+    border-color: hsl(217.2 32.6% 17.5%);
+  }
+  
+  .scoring-tab.active {
+    background: hsl(217.2 91.2% 59.8%);
+    color: hsl(210 40% 98%);
+    border-color: hsl(217.2 91.2% 59.8%);
+    font-weight: 600;
+  }
+  
+  /* タブコンテンツ */
+  .tab-content {
+    margin-top: 1rem;
+    min-height: 200px;
+  }
+  
+  .tab-panel {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* モバイル対応 */
+  @media (max-width: 768px) {
+    .scoring-tabs-container {
+      flex-wrap: wrap;
+    }
+    
+    .scoring-tab {
+      flex: 1;
+      min-width: 120px;
+    }
   }
 </style>

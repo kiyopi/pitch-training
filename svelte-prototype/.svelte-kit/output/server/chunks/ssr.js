@@ -22,9 +22,6 @@ function subscribe(store, ...callbacks) {
   const unsub = store.subscribe(...callbacks);
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
-function null_to_empty(value) {
-  return value == null ? "" : value;
-}
 function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
   return new CustomEvent(type, { detail, bubbles, cancelable });
 }
@@ -153,9 +150,8 @@ export {
   each as d,
   escape as e,
   add_attribute as f,
-  null_to_empty as g,
-  createEventDispatcher as h,
-  getContext as i,
+  createEventDispatcher as g,
+  getContext as h,
   missing_component as m,
   noop as n,
   onDestroy as o,
