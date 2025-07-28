@@ -1130,4 +1130,115 @@ random-training-tonejs-fixed-001
 **記録者**: Claude Code Assistant  
 **セッション**: 包括的仕様書・分析書作成  
 **成果**: 5つの技術仕様書完成・実装ギャップ明確化・3週間実装計画策定  
+
+---
+
+## 2025-07-28（月）作業記録
+
+### **作業概要**
+**PitchDetector エラー修正 & リアルタイム音程検出コンポーネント化**
+
+### **実施内容**
+
+#### **1. MediaStreamTrack エラー根本修正**
+**問題**: Safari で「A MediaStreamTrack ended due to a capture failure」エラー発生
+
+**原因分析**:
+- PitchDetector の `isActive={false}` により検出が開始されない
+- リアクティブロジックが正しく動作しない状態
+- 手動の `startDetection()` 呼び出しとリアクティブロジックの競合
+
+**修正実装**:
+```svelte
+<!-- マイクテストページ -->
+<PitchDetector
+  isActive={micPermission === 'granted'}  // false → 動的値に修正
+  ...
+/>
+
+<!-- ランダム基音ページ -->
+<PitchDetector
+  isActive={microphoneState === 'granted'}  // trainingPhase条件 → マイク状態に修正
+  ...
+/>
+```
+
+**結果**: ✅ エラー完全解消・即座に音程検出開始
+
+#### **2. PitchDetectionDisplay コンポーネント作成**
+**目的**: リアルタイム音程検出表示の共通化・3モード対応準備
+
+**実装内容**:
+- `/src/lib/components/PitchDetectionDisplay.svelte` 新規作成
+- ミュート機能実装（`isMuted` prop）
+- 表示位置統一（中央寄せ）
+
+**主要機能**:
+```svelte
+<script>
+  export let frequency = 0;
+  export let note = 'ーー';
+  export let volume = 0;
+  export let isMuted = false;
+  export let muteMessage = '待機中...';
+  export let className = '';
+</script>
+```
+
+#### **3. 両ページへの適用**
+**ランダム基音ページ**:
+```svelte
+<PitchDetectionDisplay
+  frequency={currentFrequency}
+  note={detectedNote}
+  volume={currentVolume}
+  isMuted={trainingPhase !== 'guiding'}
+  muteMessage="基音再生後に開始"
+  className="half-width"
+/>
+```
+
+**マイクテストページ**:
+```svelte
+<PitchDetectionDisplay
+  frequency={currentFrequency}
+  note={detectedNote}
+  volume={currentVolume}
+  isMuted={micPermission !== 'granted'}
+  muteMessage="マイク許可後に開始"
+/>
+```
+
+### **ミュート機能仕様**
+- **setup/listening/waiting フェーズ**: ミュート表示（メッセージ表示）
+- **guiding フェーズ**: 実際の検出値表示
+- **results フェーズ**: コンポーネント自体を非表示
+- **PitchDetector本体は常に動作**: MediaStreamエラー回避
+
+### **技術的成果**
+1. ✅ **エラー解消**: MediaStreamTrack capture failure 根本解決
+2. ✅ **コンポーネント化**: 再利用可能な共通コンポーネント完成
+3. ✅ **UI統一**: 両ページで一貫した表示（中央寄せ）
+4. ✅ **将来拡張性**: 連続チャレンジ・12音階モードでの再利用準備
+
+### **Git状態記録**
+```bash
+# 現在ブランチ
+random-training-tonejs-fixed-001
+
+# 実装コミット
+8afd616 完了: PitchDetector isActiveリアクティブ修正による音程検出エラー解決
+8bce02c 実装: リアルタイム音程検出表示のコンポーネント化とミュート機能
+736170f 修正: PitchDetectionDisplay 表示統一 - 全状態で中央寄せ
+2cf256a 適用: マイクテストページにもPitchDetectionDisplayコンポーネント適用
+
+# 状態
+- Clean（全変更コミット済み）
+- GitHub Actions デプロイ成功
+```
+
+### **次回作業予定**
+1. **連続チャレンジモード実装**: PitchDetectionDisplay 活用
+2. **12音階モード実装**: 同コンポーネント再利用
+3. **エラー管理システム実装**: ErrorManager.js（高優先度）  
 **次回継続**: 高優先度3項目の実装（ErrorManager/BrowserChecker/RecoveryGuide）

@@ -41,7 +41,7 @@
 ├─────────────────────────────────┤
 │ Scale Guide (ドレミガイド)        │
 ├─────────────────────────────────┤
-│ Detection Section (音程検出)      │
+│ Detection Section (音程検出) ✅   │
 ├─────────────────────────────────┤
 │ Results Section (結果・SNS)       │
 └─────────────────────────────────┘
@@ -291,7 +291,7 @@ interface TrainingState {
 TrainingRandomPage/
 ├── BasetonPlayer/          # 基音再生
 ├── ScaleGuide/            # ドレミガイド
-├── PitchDetector/         # 音程検出
+├── PitchDetectionDisplay/ # 音程検出表示 ✅ **実装完了**
 ├── ResultsDisplay/        # 結果表示
 ├── ShareButton/           # SNS共有
 └── StatusIndicator/       # 状態表示
@@ -333,7 +333,7 @@ TrainingRandomPage/
 
 ### **Phase 3: UI統合**
 1. ドレミガイドアニメーション
-2. リアルタイム検出表示
+2. リアルタイム検出表示 ✅ **PitchDetectionDisplayコンポーネント実装完了**
 3. 結果画面実装
 
 ### **Phase 4: 機能強化**
@@ -348,7 +348,7 @@ TrainingRandomPage/
 ### **機能要件**
 - [ ] ランダム基音再生（10種類）
 - [ ] ドレミ8音階ガイド表示
-- [ ] リアルタイム音程検出
+- [x] リアルタイム音程検出 ✅ **PitchDetectionDisplayコンポーネント実装完了**
 - [ ] 採点・結果表示
 - [ ] SNS共有機能
 - [ ] エラーハンドリング

@@ -92,22 +92,28 @@ interface ScaleGuideProps {
 type ScaleState = 'inactive' | 'active' | 'correct' | 'incorrect' | 'completed';
 ```
 
-### **4. PitchDetectionDisplay** (音程検出表示)
+### **4. PitchDetectionDisplay** (音程検出表示) ✅ **実装完了**
+
+**実装状況**: `/src/lib/components/PitchDetectionDisplay.svelte` 完成
+**適用済み**: ランダム基音ページ、マイクテストページ
 
 ```typescript
+// 実装済みProps
 interface PitchDetectionProps {
-  isActive: boolean;
-  detectedFrequency: number | null;
-  targetFrequency: number | null;
-  accuracy: number; // 0-100%
-  showVisualFeedback: boolean;
+  frequency: number;      // 検出周波数
+  note: string;          // 検出音名
+  volume: number;        // 音量
+  isMuted: boolean;      // ミュート状態
+  muteMessage: string;   // ミュート時メッセージ
+  className?: string;    // 追加CSSクラス
 }
 
-// 共通ビジュアル要素
-// - リアルタイム周波数表示
-// - 音量バー
-// - 精度インジケーター
-// - 音程差表示
+// 実装済み機能
+// ✅ リアルタイム周波数表示（中央寄せ統一）
+// ✅ 音量バー表示
+// ✅ ミュート機能（表示制御）
+// ✅ カスタマイズ可能なメッセージ
+// ✅ 3モード共通で使用可能
 ```
 
 ### **5. ResultsDisplay** (結果表示)
