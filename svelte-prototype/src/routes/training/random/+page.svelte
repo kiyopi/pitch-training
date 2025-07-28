@@ -13,6 +13,7 @@
   import * as Tone from 'tone';
   import { audioManager } from '$lib/audio/AudioManager.js';
   import { harmonicCorrection } from '$lib/audio/HarmonicCorrection.js';
+  import { logger } from '$lib/utils/debugUtils.js';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
@@ -22,10 +23,10 @@
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('from') === 'microphone-test') {
-        console.log('🎤 [RandomTraining] 早期検出: マイクテストページからの遷移');
+        logger.info('[RandomTraining] マイクテストページからの遷移を検出');
         return 'granted';
       } else {
-        console.log('🎤 [RandomTraining] ダイレクトアクセスを検出');
+        logger.info('[RandomTraining] ダイレクトアクセスを検出');
         return 'checking';
       }
     }
@@ -136,14 +137,14 @@
       // PitchDetector初期化（外部AudioContext方式）
       setTimeout(async () => {
         if (pitchDetectorComponent) {
-          console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
+          logger.audio('[RandomTraining] PitchDetector初期化開始');
           await pitchDetectorComponent.initialize();
-          console.log('✅ [RandomTraining] PitchDetector初期化完了');
+          logger.audio('[RandomTraining] PitchDetector初期化完了');
         }
       }, 200);
       
     } catch (error) {
-      console.error('❌ [RandomTraining] マイク許可エラー:', error);
+      logger.error('[RandomTraining] マイク許可エラー:', error);
       microphoneState = (error?.name === 'NotAllowedError') ? 'denied' : 'error';
     }
   }
@@ -156,11 +157,11 @@
     currentBaseFrequency = selectedNote.frequency;
     
     // 基音周波数設定確認ログ
-    console.log(`🎵 [BaseNote] 基音設定: ${currentBaseNote} = ${currentBaseFrequency}Hz`);
+    logger.info(`[BaseNote] 基音設定: ${currentBaseNote} = ${currentBaseFrequency}Hz`);
     
     // 基音周波数が正常に設定されたことを確認
     if (!currentBaseFrequency || currentBaseFrequency <= 0) {
-      console.error('❌ [BaseNote] 基音周波数設定エラー:', selectedNote);
+      logger.error('[BaseNote] 基音周波数設定エラー:', selectedNote);
       throw new Error(`Invalid base frequency: ${currentBaseFrequency}`);
     }
   }
@@ -275,7 +276,7 @@
     const semitones = diatonicIntervals[scaleIndex];
     const targetFreq = baseFreq * Math.pow(2, semitones / 12);
     
-    console.log(`🎯 [calculateExpectedFrequency] ${scaleSteps[scaleIndex].name}: 基音${baseFreq.toFixed(1)}Hz + ${semitones}半音 = ${targetFreq.toFixed(1)}Hz`);
+    logger.debug(`[calculateExpectedFrequency] ${scaleSteps[scaleIndex].name}: 基音${baseFreq.toFixed(1)}Hz + ${semitones}半音 = ${targetFreq.toFixed(1)}Hz`);
     
     return targetFreq;
   }
@@ -631,7 +632,7 @@
     
     // 【緊急デバッグ】音階インデックスと基音状態監視
     if (activeStepIndex >= 4) { // ソ以降で強化ログ
-      console.log(`🔍 [採点デバッグ] activeStepIndex=${activeStepIndex} (${scaleSteps[activeStepIndex].name}), currentBaseFrequency=${currentBaseFrequency}Hz`);
+      logger.debug(`[採点デバッグ] activeStepIndex=${activeStepIndex} (${scaleSteps[activeStepIndex].name}), currentBaseFrequency=${currentBaseFrequency}Hz`);
     }
     
     // 【修正】プロトタイプ式のシンプルで正確な周波数計算を使用
@@ -639,7 +640,7 @@
     
     // 【デバッグ】音程計算の詳細ログ（修正版）
     if (activeStepIndex >= 0) { // 全音程でログ出力して修正確認
-      console.log(`🔢 [音程計算修正版] ${scaleSteps[activeStepIndex].name}: 期待周波数 ${expectedFrequency.toFixed(1)}Hz`);
+      logger.debug(`[音程計算修正版] ${scaleSteps[activeStepIndex].name}: 期待周波数 ${expectedFrequency.toFixed(1)}Hz`);
     }
     
     // 【緊急修正】期待周波数の有効性チェック
@@ -661,7 +662,7 @@
     
     // 【デバッグ】プロトタイプ式補正結果の詳細ログ
     if (Math.abs(centDifference) > 200 || correctionFactor !== 1) {
-      console.warn(`🔧 [プロトタイプ式補正] ${scaleSteps[activeStepIndex].name}:`);
+      logger.debug(`[プロトタイプ式補正] ${scaleSteps[activeStepIndex].name}:`);
       console.warn(`   検出周波数: ${frequency.toFixed(1)}Hz`);
       console.warn(`   補正後周波数: ${adjustedFrequency.toFixed(1)}Hz`);
       console.warn(`   期待周波数: ${expectedFrequency.toFixed(1)}Hz`);
@@ -715,7 +716,7 @@
       
       // 簡素化デバッグログ（重要な情報のみ）
       if (scaleEvaluations.length % 4 === 0) { // 4ステップごとに進捗表示
-        console.log(`🎵 採点進捗: ${scaleEvaluations.length}/${scaleSteps.length}ステップ完了`);
+        logger.realtime(`採点進捗: ${scaleEvaluations.length}/${scaleSteps.length}ステップ完了`);
       }
     }
   }

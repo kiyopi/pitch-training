@@ -4,6 +4,7 @@
   import VolumeBar from './VolumeBar.svelte';
   import { audioManager } from '$lib/audio/AudioManager.js';
   import { harmonicCorrection } from '$lib/audio/HarmonicCorrection.js';
+  import { logger } from '$lib/utils/debugUtils.js';
 
   const dispatch = createEventDispatcher();
 
@@ -106,7 +107,7 @@
       currentFrequency
     };
     
-    console.log(`🎤 [PitchDetector] ${timestamp}:`, status);
+    logger.realtime(`[PitchDetector] ${timestamp}:`, status);
     
     // マイク状態の異常を検知して親に通知
     let microphoneHealthy = true;
