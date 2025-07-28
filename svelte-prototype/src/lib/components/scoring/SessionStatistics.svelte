@@ -34,27 +34,27 @@
     'exhausted': { label: '疲労', color: 'text-red-600', icon: '😩' }
   };
   
-  $: fatigue = fatigueInfo[stats.fatigueLevel] || fatigueInfo.normal;
+  $: fatigue = (stats && stats.fatigueLevel && fatigueInfo[stats.fatigueLevel]) || fatigueInfo.normal;
   
-  // 統計カテゴリ
-  const statCategories = [
+  // 統計カテゴリ（安全なアクセス）
+  $: statCategories = [
     {
       title: 'パフォーマンス',
       icon: '📊',
       stats: [
-        { label: '総挑戦回数', value: `${stats.totalAttempts}回`, highlight: stats.totalAttempts > 20 },
-        { label: '成功率', value: `${stats.successRate.toFixed(1)}%`, highlight: stats.successRate > 70 },
-        { label: '平均スコア', value: `${stats.averageScore.toFixed(1)}点`, highlight: stats.averageScore > 75 },
-        { label: '最高スコア', value: `${stats.bestScore}点`, highlight: stats.bestScore > 90 }
+        { label: '総挑戦回数', value: `${(stats?.totalAttempts || 0)}回`, highlight: (stats?.totalAttempts || 0) > 20 },
+        { label: '成功率', value: `${((stats?.successRate || 0).toFixed(1))}%`, highlight: (stats?.successRate || 0) > 70 },
+        { label: '平均スコア', value: `${((stats?.averageScore || 0).toFixed(1))}点`, highlight: (stats?.averageScore || 0) > 75 },
+        { label: '最高スコア', value: `${(stats?.bestScore || 0)}点`, highlight: (stats?.bestScore || 0) > 90 }
       ]
     },
     {
       title: 'セッション情報',
       icon: '⏱️',
       stats: [
-        { label: '練習時間', value: formatDuration(stats.sessionDuration) },
-        { label: '連続正解', value: `${stats.streakCount}回`, highlight: stats.streakCount > 5 },
-        { label: '平均応答時間', value: `${stats.averageResponseTime.toFixed(1)}秒` },
+        { label: '練習時間', value: formatDuration(stats?.sessionDuration || 0) },
+        { label: '連続正解', value: `${(stats?.streakCount || 0)}回`, highlight: (stats?.streakCount || 0) > 5 },
+        { label: '平均応答時間', value: `${((stats?.averageResponseTime || 0).toFixed(1))}秒` },
         { 
           label: '疲労度', 
           value: fatigue.label, 
@@ -69,12 +69,12 @@
       stats: [
         { 
           label: '最も難しい音程', 
-          value: stats.mostDifficultInterval,
+          value: stats?.mostDifficultInterval || '未分析',
           customClass: 'text-red-600'
         },
         { 
           label: '最も得意な音程', 
-          value: stats.mostSuccessfulInterval,
+          value: stats?.mostSuccessfulInterval || '未分析',
           customClass: 'text-green-600'
         }
       ]
