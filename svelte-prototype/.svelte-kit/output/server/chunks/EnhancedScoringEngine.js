@@ -2294,6 +2294,95 @@ class EnhancedScoringEngine {
     }
   }
   /**
+   * 試行結果を処理（analyzePerformanceのエイリアス）
+   * @param {Object} params - 採点パラメータ
+   * @returns {Object} - 統合採点結果
+   */
+  async processAttempt(params) {
+    return await this.analyzePerformance(params);
+  }
+  /**
+   * 詳細レポートを生成
+   * @returns {Object} - 詳細レポート
+   */
+  generateDetailedReport() {
+    const statistics = this.getStatistics();
+    const sessionData = this.sessionData;
+    const overallPerformance = {
+      totalScore: sessionData.overallScore,
+      totalAttempts: sessionData.totalAttempts,
+      averageScore: sessionData.totalAttempts > 0 ? sessionData.overallScore / sessionData.totalAttempts : 0,
+      sessionDuration: Date.now() - sessionData.startTime,
+      level: sessionData.currentLevel
+    };
+    const detailedAnalysis = {
+      intervals: statistics.analyzers.interval,
+      directions: statistics.analyzers.direction,
+      consistency: statistics.analyzers.consistency
+    };
+    const improvements = this.generateImprovementSuggestions();
+    const sessionStats = {
+      startTime: sessionData.startTime,
+      duration: Date.now() - sessionData.startTime,
+      attempts: sessionData.totalAttempts,
+      achievements: Array.from(sessionData.achievements),
+      performanceHistory: sessionData.performanceHistory.slice(-10)
+      // 直近10回
+    };
+    return {
+      timestamp: Date.now(),
+      overall: overallPerformance,
+      detailed: detailedAnalysis,
+      improvements,
+      session: sessionStats,
+      metadata: {
+        version: "2.0.0-SCORING",
+        engine: "EnhancedScoringEngine"
+      }
+    };
+  }
+  /**
+   * 改善提案を生成
+   * @returns {Array} - 改善提案リスト
+   */
+  generateImprovementSuggestions() {
+    const suggestions = [];
+    const stats = this.getStatistics();
+    if (stats.analyzers.interval.averageAccuracy < 70) {
+      suggestions.push({
+        category: "interval",
+        priority: "high",
+        message: "音程の正確性向上が必要です。基本的な音程（完全5度、オクターブ）から練習を始めましょう。",
+        actions: ["基本音程の集中練習", "楽器での確認", "歌唱練習"]
+      });
+    }
+    if (stats.analyzers.direction.accuracy < 80) {
+      suggestions.push({
+        category: "direction",
+        priority: "medium",
+        message: "音程の上行・下行の判断精度を向上させましょう。",
+        actions: ["音階練習", "聴音練習", "インターバル識別"]
+      });
+    }
+    if (stats.analyzers.consistency.score < 75) {
+      suggestions.push({
+        category: "consistency",
+        priority: "medium",
+        message: "安定した精度を保つため、継続的な練習が効果的です。",
+        actions: ["定期的な練習", "集中力向上", "疲労管理"]
+      });
+    }
+    if (this.sessionData.totalAttempts < 5) {
+      suggestions.push({
+        category: "session",
+        priority: "low",
+        message: "より多くの練習で正確な評価が可能になります。",
+        actions: ["練習量の増加", "多様な音程での練習"]
+      });
+    }
+    return suggestions;
+  }
+  /**
    * 統計データの取得
    * @returns {Object} - 統計データ
    */
