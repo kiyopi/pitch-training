@@ -113,6 +113,24 @@
   
   function handlePitchDetectorError(event) {
     console.error('❌ [MicTest] PitchDetectorエラー:', event.detail);
+    
+    const { error, reason, recovery } = event.detail;
+    
+    // MediaStream終了エラーの場合は自動復旧を試行
+    if (reason === 'mediastream_ended' && recovery === 'restart_required') {
+      console.log('🔄 [MicTest] MediaStream終了検出 - 自動復旧開始');
+      
+      // マイク許可状態をリセット
+      micPermission = 'initial';
+      
+      // 検出データをリセット
+      currentVolume = 0;
+      currentFrequency = 0;
+      detectedNote = 'ーー';
+      
+      // ユーザーに再許可を促すメッセージ（自動的に表示される）
+      console.log('⚠️ [MicTest] マイク再許可が必要です');
+    }
   }
 </script>
 
@@ -179,38 +197,22 @@
       </Card>
     </div>
 
-    <!-- PitchDetector: 隠しコンポーネント（常に存在） -->
-    <div style="display: none;">
-      <PitchDetector
-        bind:this={pitchDetectorComponent}
-        isActive={micPermission === 'granted'}
-        on:pitchUpdate={handlePitchUpdate}
-        on:stateChange={handlePitchDetectorStateChange}
-        on:error={handlePitchDetectorError}
-        className="pitch-detector-content"
-        debugMode={false}
-      />
-    </div>
-
     <!-- リアルタイム音程検出エリア（常時表示） -->
     <Card class="main-card">
       <div class="card-header">
         <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
       </div>
       <div class="card-content">
-        <!-- データ表示のみ（実際のPitchDetectorは上に隠して配置） -->
-        <div class="pitch-detector">
-          <div class="detection-display">
-            <div class="detection-card">
-              <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
-              <span class="hz-suffix">Hz</span>
-              <span class="divider">|</span>
-              <span class="detected-note">{detectedNote}</span>
-            </div>
-            
-            <VolumeBar volume={currentFrequency > 0 ? currentVolume : 0} className="volume-bar" />
-          </div>
-        </div>
+        <!-- PitchDetectorコンポーネントを直接表示（Safari対応） -->
+        <PitchDetector
+          bind:this={pitchDetectorComponent}
+          isActive={micPermission === 'granted'}
+          on:pitchUpdate={handlePitchUpdate}
+          on:stateChange={handlePitchDetectorStateChange}
+          on:error={handlePitchDetectorError}
+          className="pitch-detector-content"
+          debugMode={false}
+        />
       </div>
     </Card>
 
@@ -554,64 +556,5 @@
     gap: 1rem;
   }
 
-  /* 検出表示 */
-  .detection-display {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .detection-card {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    background: hsl(0 0% 100%);
-    border: 1px solid hsl(214.3 31.8% 91.4%);
-    border-radius: 8px;
-    width: fit-content;
-  }
-
-  /* PitchDetector表示の最強制スタイリング */
-  :global(.detected-frequency) {
-    font-weight: 600 !important;
-    font-size: 2rem !important;
-    color: hsl(222.2 84% 4.9%) !important;
-    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
-                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
-    min-width: 4ch !important;
-    text-align: right !important;
-    display: inline-block !important;
-    font-variant-numeric: tabular-nums !important;
-    -webkit-font-smoothing: antialiased !important;
-    -moz-osx-font-smoothing: grayscale !important;
-  }
-
-  :global(.hz-suffix) {
-    font-weight: 600 !important;
-    font-size: 2rem !important;
-    color: hsl(222.2 84% 4.9%) !important;
-  }
-
-  :global(.divider) {
-    color: hsl(214.3 31.8% 70%) !important;
-    font-size: 1.5rem !important;
-    margin: 0 0.25rem !important;
-    font-weight: 300 !important;
-  }
-  
-  :global(.detected-note) {
-    font-weight: 600 !important;
-    font-size: 2rem !important;
-    color: hsl(215.4 16.3% 46.9%) !important;
-    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
-                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
-    min-width: 3ch !important;
-    display: inline-block !important;
-    text-align: center !important;
-  }
-
-  :global(.volume-bar) {
-    border-radius: 4px !important;
-  }
+  /* PitchDetectorコンポーネント内に統合済み */
 </style>
