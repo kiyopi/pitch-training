@@ -154,6 +154,15 @@
     const selectedNote = baseNotes[randomIndex];
     currentBaseNote = selectedNote.name;
     currentBaseFrequency = selectedNote.frequency;
+    
+    // 基音周波数設定確認ログ
+    console.log(`🎵 [BaseNote] 基音設定: ${currentBaseNote} = ${currentBaseFrequency}Hz`);
+    
+    // 基音周波数が正常に設定されたことを確認
+    if (!currentBaseFrequency || currentBaseFrequency <= 0) {
+      console.error('❌ [BaseNote] 基音周波数設定エラー:', selectedNote);
+      throw new Error(`Invalid base frequency: ${currentBaseFrequency}`);
+    }
   }
 
   // ランダム基音再生（新しい基音を選択）
@@ -526,7 +535,14 @@
   
   // 裏での評価蓄積（ガイドアニメーション中）
   function evaluateScaleStep(frequency, note) {
-    if (!frequency || frequency <= 0 || !currentBaseFrequency || !isGuideAnimationActive) {
+    if (!frequency || frequency <= 0 || !isGuideAnimationActive) {
+      return;
+    }
+    
+    // 【緊急修正】基音周波数の有効性チェック
+    if (!currentBaseFrequency || currentBaseFrequency <= 0) {
+      console.error(`❌ [採点エラー] 基音周波数が無効: ${currentBaseFrequency}Hz`);
+      console.error(`❌ [採点エラー] 基音名: ${currentBaseNote}`);
       return;
     }
     
@@ -541,8 +557,26 @@
     const expectedInterval = scaleIntervals[activeStepIndex] * 100; // セント
     const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 1200);
     
+    // 【緊急修正】期待周波数の有効性チェック
+    if (!expectedFrequency || expectedFrequency <= 0 || !isFinite(expectedFrequency)) {
+      console.error(`❌ [採点エラー] 期待周波数計算エラー:`);
+      console.error(`   基音周波数: ${currentBaseFrequency}Hz`);
+      console.error(`   音程インターバル: ${expectedInterval}セント`);
+      console.error(`   期待周波数: ${expectedFrequency}Hz`);
+      return;
+    }
+    
     // 音程差を計算（セント）
     const centDifference = Math.round(1200 * Math.log2(frequency / expectedFrequency));
+    
+    // 【緊急修正】セント計算の有効性チェック
+    if (!isFinite(centDifference)) {
+      console.error(`❌ [採点エラー] セント計算エラー:`);
+      console.error(`   検出周波数: ${frequency}Hz`);
+      console.error(`   期待周波数: ${expectedFrequency}Hz`);
+      console.error(`   セント差: ${centDifference}`);
+      return;
+    }
     
     // 判定基準（±50セント以内で正解）
     const tolerance = 50;
