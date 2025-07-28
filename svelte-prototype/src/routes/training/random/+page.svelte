@@ -609,21 +609,30 @@
         intervalData = [];
       }
       
-      // 一貫性データ更新
-      consistencyData = results.consistencyHistory.map((score, index) => ({
-        score: Math.round(score),
-        timestamp: Date.now() - (results.consistencyHistory.length - index) * 1000
-      }));
+      // 一貫性データ更新（安全な参照）
+      if (results.consistencyHistory && Array.isArray(results.consistencyHistory)) {
+        consistencyData = results.consistencyHistory.map((score, index) => ({
+          score: Math.round(score),
+          timestamp: Date.now() - (results.consistencyHistory.length - index) * 1000
+        }));
+      } else {
+        console.warn('⚠️ [RandomTraining] consistencyHistory が未定義または配列ではありません');
+        consistencyData = [];
+      }
       
-      // フィードバックデータ更新
-      feedbackData = results.feedback;
+      // フィードバックデータ更新（安全な参照）
+      feedbackData = results.feedback || {
+        primary: '採点結果を生成中です...',
+        detailed: [],
+        suggestions: []
+      };
       
-      // セッション統計更新
+      // セッション統計更新（安全な参照）
       sessionStatistics = {
-        totalAttempts: results.totalAttempts,
-        successRate: results.successRate,
-        averageScore: results.totalScore,
-        bestScore: Math.max(results.totalScore, sessionStatistics.bestScore),
+        totalAttempts: results.totalAttempts || 0,
+        successRate: results.successRate || 0,
+        averageScore: results.totalScore || 0,
+        bestScore: Math.max(results.totalScore || 0, sessionStatistics.bestScore || 0),
         sessionDuration: Math.round((Date.now() - sessionStatistics.sessionStart) / 60000) || 0,
         streakCount: results.streak || 0,
         fatigueLevel: results.fatigueLevel || 'normal',
