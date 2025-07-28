@@ -139,6 +139,7 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
+      "_exports.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.js"
     ],
@@ -181,6 +182,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
+      "_exports.js",
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",

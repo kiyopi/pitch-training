@@ -275,6 +275,12 @@
     isGuideAnimationActive = true;
     scaleEvaluations = [];
     
+    console.group('🎬 [ガイドアニメーション] 開始');
+    console.log(`🎵 基音: ${currentBaseNote} (${currentBaseFrequency.toFixed(1)}Hz)`);
+    console.log(`📝 対象音階: ${scaleSteps.map(s => s.name).join(' → ')}`);
+    console.log(`⏱️ 各ステップ間隔: 600ms`);
+    console.groupEnd();
+    
     // 各ステップを順次ハイライト（1秒間隔）
     function animateNextStep() {
       if (currentScaleIndex < scaleSteps.length) {
@@ -294,6 +300,8 @@
           targetFrequency: targetFreq
         });
         
+        console.log(`🎯 [ガイド] ${scaleSteps[currentScaleIndex].name} アクティブ (目標: ${targetFreq.toFixed(1)}Hz)`);
+        
         currentScaleIndex++;
         
         // 0.6秒後に次のステップ（テンポアップ）
@@ -311,6 +319,9 @@
   function finishGuideAnimation() {
     isGuideAnimationActive = false;
     
+    console.group('🏁 [ガイドアニメーション] 完了');
+    console.log(`📊 収集された評価数: ${scaleEvaluations.length}/${scaleSteps.length}`);
+    
     // 最後のステップも非アクティブに
     if (scaleSteps.length > 0) {
       scaleSteps[scaleSteps.length - 1].state = 'inactive';
@@ -319,10 +330,14 @@
     // 音程検出停止
     if (pitchDetectorComponent) {
       pitchDetectorComponent.stopDetection();
+      console.log('🎙️ 音程検出停止');
     }
     
     // 倍音補正モジュールのコンテキストをクリア
     harmonicCorrection.clearContext();
+    console.log('🔧 倍音補正コンテキストクリア');
+    
+    console.groupEnd();
     
     // 採点結果を計算して表示
     calculateFinalResults();
@@ -334,20 +349,54 @@
     let correctCount = 0;
     let totalAccuracy = 0;
     
-    scaleEvaluations.forEach(evaluation => {
+    console.group('🏁 [最終採点] セッション結果計算開始');
+    console.log(`📊 評価データ数: ${scaleEvaluations.length}/${scaleSteps.length}ステップ`);
+    
+    // 各ステップの詳細ログ
+    scaleEvaluations.forEach((evaluation, index) => {
       if (evaluation.isCorrect) {
         correctCount++;
       }
       totalAccuracy += evaluation.accuracy;
+      
+      console.log(`${index + 1}. ${evaluation.stepName}: ${evaluation.isCorrect ? '✅' : '❌'} (${evaluation.accuracy}%, ${evaluation.centDifference}¢)`);
     });
+    
+    // 評価されなかったステップのチェック
+    const missingSteps = scaleSteps.filter((step, index) => 
+      !scaleEvaluations.some(evaluation => evaluation.stepIndex === index)
+    );
+    if (missingSteps.length > 0) {
+      console.warn(`⚠️ 評価されなかったステップ: ${missingSteps.map(s => s.name).join(', ')}`);
+    }
+    
+    const averageAccuracy = scaleEvaluations.length > 0 ? Math.round(totalAccuracy / scaleEvaluations.length) : 0;
+    const correctRate = Math.round((correctCount / scaleSteps.length) * 100);
     
     sessionResults = {
       correctCount: correctCount,
       totalCount: scaleSteps.length,
-      averageAccuracy: scaleEvaluations.length > 0 ? Math.round(totalAccuracy / scaleEvaluations.length) : 0,
+      averageAccuracy: averageAccuracy,
       averageTime: 0, // 今回は時間測定なし
       isCompleted: true
     };
+    
+    // 結果サマリー
+    console.log(`🎯 最終結果:`);
+    console.log(`   正解数: ${correctCount}/${scaleSteps.length} (${correctRate}%)`);
+    console.log(`   平均精度: ${averageAccuracy}%`);
+    console.log(`   評価総数: ${scaleEvaluations.length}件`);
+    
+    // 精度分布分析
+    const accuracyRanges = {
+      '90-100%': scaleEvaluations.filter(evaluation => evaluation.accuracy >= 90).length,
+      '70-89%': scaleEvaluations.filter(evaluation => evaluation.accuracy >= 70 && evaluation.accuracy < 90).length,
+      '50-69%': scaleEvaluations.filter(evaluation => evaluation.accuracy >= 50 && evaluation.accuracy < 70).length,
+      '50%未満': scaleEvaluations.filter(evaluation => evaluation.accuracy < 50).length
+    };
+    console.table(accuracyRanges);
+    
+    console.groupEnd();
     
     // 前回の結果として保存（再挑戦時表示用）
     if (scaleEvaluations.length > 0) {
@@ -554,14 +603,61 @@
         timestamp: Date.now()
       };
       
+      // 採点ロジックのデバッグログ出力
+      logScoringDebug(evaluation, frequency, note, activeStepIndex, existingIndex >= 0);
+      
       if (existingIndex >= 0) {
         scaleEvaluations[existingIndex] = evaluation;
       } else {
         scaleEvaluations.push(evaluation);
       }
-      
-      // デバッグログ削除（サイレント蓄積）
+    } else {
+      // 音量不足時のデバッグログ
+      console.log(`🔇 [採点] ${scaleSteps[activeStepIndex].name}: 音量不足 (${currentVolume} < ${minVolumeForDetection}) - 評価をスキップ`);
     }
+  }
+  
+  // 採点ロジックのデバッグログ出力
+  function logScoringDebug(evaluation, frequency, note, activeStepIndex, isUpdate) {
+    const stepName = evaluation.stepName;
+    const isCorrect = evaluation.isCorrect;
+    const accuracy = evaluation.accuracy;
+    const centDifference = evaluation.centDifference;
+    const expectedFreq = evaluation.expectedFrequency;
+    const detectedFreq = evaluation.detectedFrequency;
+    
+    // 精度レベル判定
+    const precisionLevel = Math.abs(centDifference) <= 20 ? '🎯 超高精度' :
+                          Math.abs(centDifference) <= 35 ? '✅ 高精度' :
+                          Math.abs(centDifference) <= 50 ? '⭕ 合格' :
+                          Math.abs(centDifference) <= 75 ? '⚠️ 微妙' :
+                          Math.abs(centDifference) <= 100 ? '🔺 低精度' : '❌ 不正確';
+    
+    console.group(`🎵 [採点] ${stepName} ${isUpdate ? '(更新)' : '(新規)'}`);
+    
+    // 基本情報
+    console.log(`📊 検出: ${detectedFreq}Hz (${note}) | 期待: ${expectedFreq}Hz`);
+    console.log(`📏 差分: ${centDifference >= 0 ? '+' : ''}${centDifference}¢ | 音量: ${currentVolume}`);
+    console.log(`🎯 判定: ${isCorrect ? '✅ 正解' : '❌ 不正解'} | 精度: ${accuracy}% | ${precisionLevel}`);
+    
+    // 詳細計算情報
+    const baseFreqInfo = `基音: ${currentBaseFrequency.toFixed(1)}Hz`;
+    const intervalInfo = `音程: ${activeStepIndex}番目 (${[0,2,4,5,7,9,11,12][activeStepIndex]}半音)`;
+    const toleranceInfo = `許容範囲: ±50¢ (実際: ${Math.abs(centDifference)}¢)`;
+    console.log(`📐 計算詳細: ${baseFreqInfo} | ${intervalInfo} | ${toleranceInfo}`);
+    
+    // 現在の評価状況
+    const currentEvaluationCount = scaleEvaluations.length + (isUpdate ? 0 : 1);
+    const totalSteps = scaleSteps.length;
+    console.log(`📈 進捗: ${currentEvaluationCount}/${totalSteps}ステップ評価済み`);
+    
+    // 評価履歴（同じステップの更新回数）
+    const sameStepCount = scaleEvaluations.filter(evaluation => evaluation.stepIndex === activeStepIndex).length;
+    if (sameStepCount > 0 || isUpdate) {
+      console.log(`🔄 ${stepName}の評価回数: ${sameStepCount + (isUpdate ? 0 : 1)}回目`);
+    }
+    
+    console.groupEnd();
   }
   
   // セッション完了処理

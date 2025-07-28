@@ -3,6 +3,6 @@
 export const index = 4;
 let component_cache;
 export const component = async () => component_cache ??= (await import('../entries/pages/microphone-test-simple/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/4.BF1rYyIE.js","_app/immutable/chunks/CBDdZxR7.js","_app/immutable/chunks/CmL6UHZb.js"];
+export const imports = ["_app/immutable/nodes/4.D9TdGOp4.js","_app/immutable/chunks/BaJCk71S.js","_app/immutable/chunks/D6YF6ztN.js","_app/immutable/chunks/IHki7fMi.js"];
 export const stylesheets = ["_app/immutable/assets/4.CwlaRopw.css"];
 export const fonts = [];
