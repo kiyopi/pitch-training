@@ -308,6 +308,11 @@
         // 【音階コンテキストログ】軽量版
         console.log(`🎵 [Scale] 基音:${currentBaseNote}(${currentBaseFrequency.toFixed(0)}Hz) 現在:${scaleSteps[currentScaleIndex].name} 目標:${targetFreq.toFixed(0)}Hz`);
         
+        // 【緊急デバッグ】ガイドアニメーション中の基音状態監視
+        if (currentScaleIndex >= 4) { // ソ以降で強化ログ
+          console.log(`🔍 [デバッグ] Step ${currentScaleIndex}: currentBaseFrequency=${currentBaseFrequency}, currentBaseNote='${currentBaseNote}'`);
+        }
+        
         // ガイドログ削除（パフォーマンス優先）
         
         currentScaleIndex++;
@@ -543,6 +548,9 @@
     if (!currentBaseFrequency || currentBaseFrequency <= 0) {
       console.error(`❌ [採点エラー] 基音周波数が無効: ${currentBaseFrequency}Hz`);
       console.error(`❌ [採点エラー] 基音名: ${currentBaseNote}`);
+      console.error(`❌ [採点エラー] activeStepIndex: ${currentScaleIndex - 1}`);
+      console.error(`❌ [採点エラー] trainingPhase: ${trainingPhase}`);
+      console.error(`❌ [採点エラー] isGuideAnimationActive: ${isGuideAnimationActive}`);
       return;
     }
     
@@ -550,6 +558,11 @@
     const activeStepIndex = currentScaleIndex - 1;
     if (activeStepIndex < 0 || activeStepIndex >= scaleSteps.length) {
       return;
+    }
+    
+    // 【緊急デバッグ】音階インデックスと基音状態監視
+    if (activeStepIndex >= 4) { // ソ以降で強化ログ
+      console.log(`🔍 [採点デバッグ] activeStepIndex=${activeStepIndex} (${scaleSteps[activeStepIndex].name}), currentBaseFrequency=${currentBaseFrequency}Hz`);
     }
     
     // 期待される周波数を計算（基音からの相対音程）
@@ -670,6 +683,9 @@
     // 4. 基音情報もリセット
     currentBaseNote = '';
     currentBaseFrequency = 0;
+    
+    // 【緊急デバッグ】基音リセットログ
+    console.log('🔄 [restartDifferentBaseNote] 基音情報をリセットしました');
     
     // 5. PitchDetectorの表示状態をリセット
     if (pitchDetectorComponent && pitchDetectorComponent.resetDisplayState) {
