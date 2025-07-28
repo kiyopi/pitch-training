@@ -35,8 +35,8 @@ class HarmonicCorrection {
     this.previousFrequency = 0;
     this.maxHistoryLength = 5; // 最大5フレーム保持
     
-    // デバッグモード
-    this.debugMode = false;
+    // デバッグモード（デフォルトで有効化）
+    this.debugMode = true;
     
     // 現在のコンテキスト（音階情報）
     this.currentContext = {};
