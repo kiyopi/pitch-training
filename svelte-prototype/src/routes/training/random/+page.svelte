@@ -564,6 +564,13 @@
       return;
     }
     
+    // 【音量チェック】環境音を除外
+    const minVolumeForScoring = 20; // 採点用の最低音量しきい値
+    if (currentVolume < minVolumeForScoring) {
+      // 音量不足の場合は採点をスキップ（環境音の可能性）
+      return;
+    }
+    
     // 現在ハイライト中のステップを取得（currentScaleIndex - 1が実際にハイライト中）
     const activeStepIndex = currentScaleIndex - 1;
     if (activeStepIndex < 0 || activeStepIndex >= scaleSteps.length) {
@@ -592,15 +599,37 @@
       return;
     }
     
+    // 【オクターブ補正】倍音誤検出の修正
+    let adjustedFrequency = frequency;
+    let octaveAdjustment = 0;
+    
+    // 1オクターブ下を検出している場合の補正
+    if (frequency < expectedFrequency * 0.75) {
+      // 周波数が期待値の75%未満の場合、オクターブ補正を試みる
+      while (adjustedFrequency < expectedFrequency * 0.75 && octaveAdjustment < 3) {
+        adjustedFrequency *= 2;
+        octaveAdjustment++;
+      }
+    }
+    // 1オクターブ上を検出している場合の補正
+    else if (frequency > expectedFrequency * 1.5) {
+      while (adjustedFrequency > expectedFrequency * 1.5 && octaveAdjustment > -3) {
+        adjustedFrequency /= 2;
+        octaveAdjustment--;
+      }
+    }
+    
     // 音程差を計算（セント）
-    const centDifference = Math.round(1200 * Math.log2(frequency / expectedFrequency));
+    const centDifference = Math.round(1200 * Math.log2(adjustedFrequency / expectedFrequency));
     
     // 【デバッグ】異常なセント値の調査
     if (Math.abs(centDifference) > 200) {
       console.warn(`⚠️ [異常セント値検出] ${scaleSteps[activeStepIndex].name}:`);
       console.warn(`   検出周波数: ${frequency.toFixed(1)}Hz`);
+      console.warn(`   補正後周波数: ${adjustedFrequency.toFixed(1)}Hz`);
       console.warn(`   期待周波数: ${expectedFrequency.toFixed(1)}Hz`);
       console.warn(`   セント差: ${centDifference}¢`);
+      console.warn(`   オクターブ補正: ${octaveAdjustment}オクターブ`);
       console.warn(`   基音: ${currentBaseNote} (${currentBaseFrequency.toFixed(1)}Hz)`);
     }
     
@@ -632,9 +661,11 @@
         stepName: scaleSteps[activeStepIndex].name,
         expectedFrequency: Math.round(expectedFrequency),
         detectedFrequency: Math.round(frequency),
+        adjustedFrequency: Math.round(adjustedFrequency),
         centDifference: centDifference,
         accuracy: accuracy,
         isCorrect: isCorrect,
+        octaveAdjustment: octaveAdjustment,
         timestamp: Date.now()
       };
       
