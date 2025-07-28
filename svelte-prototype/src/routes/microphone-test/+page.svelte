@@ -82,13 +82,8 @@
             await pitchDetectorComponent.initialize();
             console.log('✅ [MicTest] PitchDetector初期化完了');
             
-            // 初期化完了後にSafari対応で十分な待機時間を設けて検出開始
-            setTimeout(() => {
-              if (pitchDetectorComponent) {
-                console.log('🎯 [MicTest] PitchDetector検出開始（Safari対応）');
-                pitchDetectorComponent.startDetection();
-              }
-            }, 2000);
+            // リアクティブなisActiveで自動検出開始されるため手動呼び出し不要
+            console.log('🎯 [MicTest] PitchDetector isActiveリアクティブで自動検出開始');
           }
         }, 1000);
       } else {
@@ -215,7 +210,7 @@
         <!-- PitchDetectorコンポーネントを直接表示（Safari対応） -->
         <PitchDetector
           bind:this={pitchDetectorComponent}
-          isActive={false}
+          isActive={micPermission === 'granted'}
           on:pitchUpdate={handlePitchUpdate}
           on:stateChange={handlePitchDetectorStateChange}
           on:error={handlePitchDetectorError}

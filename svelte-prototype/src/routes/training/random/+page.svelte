@@ -731,7 +731,7 @@
     <div style="display: none;">
       <PitchDetector
         bind:this={pitchDetectorComponent}
-        isActive={trainingPhase === 'guiding'}
+        isActive={microphoneState === 'granted'}
         on:pitchUpdate={handlePitchUpdate}
         on:stateChange={handlePitchDetectorStateChange}
         on:error={handlePitchDetectorError}
