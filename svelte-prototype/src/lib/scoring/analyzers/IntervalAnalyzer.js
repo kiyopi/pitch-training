@@ -168,6 +168,7 @@ export class IntervalAnalyzer {
         detectedSemitones,
         accuracy,
         mastery,
+        masteryLevels: Object.fromEntries(this.masteryData), // EnhancedScoringEngine互換性のため追加
         isCorrectInterval: targetInterval.key === detectedInterval.key,
         feedback: this.generateIntervalFeedback(targetInterval, detectedInterval, accuracy),
         timestamp: Date.now()
@@ -540,6 +541,7 @@ export class IntervalAnalyzer {
       detectedInterval: { name: '不明', key: 'unknown' },
       accuracy: 0,
       mastery: { level: 'beginner', progress: 0 },
+      masteryLevels: Object.fromEntries(this.masteryData), // EnhancedScoringEngine互換性のため追加
       isCorrectInterval: false,
       feedback: '音程分析でエラーが発生しました。',
       error: true
