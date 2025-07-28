@@ -268,36 +268,22 @@
     }
   }
 
-  // 目標周波数計算（ドレミファソラシド）
-  function calculateTargetFrequency(baseFreq, scaleIndex) {
-    // 【修正】基音ベースの音程計算ロジックを統一
-    const baseNoteIndex = baseNotes.findIndex(note => note.name === currentBaseNote);
-    if (baseNoteIndex === -1) {
-      console.error(`❌ [音程計算エラー] 基音が見つかりません: ${currentBaseNote}`);
-      return baseFreq; // フォールバック
-    }
-    
-    const baseNoteData = baseNotes[baseNoteIndex];
-    
-    // 基音から各音程への半音間隔（ドレミファソラシドの順序）
-    const scaleIntervalsFromBase = [
-      -baseNoteData.semitonesFromC,      // ド: 基音からドへの間隔
-      -baseNoteData.semitonesFromC + 2,  // レ: 基音からレへの間隔
-      -baseNoteData.semitonesFromC + 4,  // ミ: 基音からミへの間隔
-      -baseNoteData.semitonesFromC + 5,  // ファ: 基音からファへの間隔
-      -baseNoteData.semitonesFromC + 7,  // ソ: 基音からソへの間隔
-      -baseNoteData.semitonesFromC + 9,  // ラ: 基音からラへの間隔
-      -baseNoteData.semitonesFromC + 11, // シ: 基音からシへの間隔
-      -baseNoteData.semitonesFromC + 12  // ド（高）: 基音から高ドへの間隔
-    ];
-    
-    const semitones = scaleIntervalsFromBase[scaleIndex];
+  // 【新】プロトタイプ式のシンプルで正確な周波数計算
+  function calculateExpectedFrequency(baseFreq, scaleIndex) {
+    // ドレミファソラシドの固定間隔（半音） - プロトタイプと同一
+    const diatonicIntervals = [0, 2, 4, 5, 7, 9, 11, 12];
+    const semitones = diatonicIntervals[scaleIndex];
     const targetFreq = baseFreq * Math.pow(2, semitones / 12);
     
-    // 【デバッグ】目標周波数計算ログ
-    console.log(`🎯 [calculateTargetFrequency] ${scaleSteps[scaleIndex].name}: 基音${currentBaseNote}(${baseNoteData.semitonesFromC}半音) → 間隔${semitones}半音 → ${targetFreq.toFixed(1)}Hz`);
+    console.log(`🎯 [calculateExpectedFrequency] ${scaleSteps[scaleIndex].name}: 基音${baseFreq.toFixed(1)}Hz + ${semitones}半音 = ${targetFreq.toFixed(1)}Hz`);
     
     return targetFreq;
+  }
+
+  // 目標周波数計算（ドレミファソラシド）- プロトタイプ式に統一
+  function calculateTargetFrequency(baseFreq, scaleIndex) {
+    // 【統一】新しいシンプルで正確な計算を使用
+    return calculateExpectedFrequency(baseFreq, scaleIndex);
   }
 
   // ガイドアニメーション開始（簡素版）
@@ -589,29 +575,12 @@
       console.log(`🔍 [採点デバッグ] activeStepIndex=${activeStepIndex} (${scaleSteps[activeStepIndex].name}), currentBaseFrequency=${currentBaseFrequency}Hz`);
     }
     
-    // 期待される周波数を計算（基音からの相対音程）
-    // 【緊急修正】音階間隔を基音基準に計算
-    const baseNoteIndex = baseNotes.findIndex(note => note.name === currentBaseNote);
-    const baseNoteData = baseNotes[baseNoteIndex];
+    // 【修正】プロトタイプ式のシンプルで正確な周波数計算を使用
+    const expectedFrequency = calculateExpectedFrequency(currentBaseFrequency, activeStepIndex);
     
-    // 基音から各音程への半音間隔（ドレミファソラシドの順序）
-    const scaleIntervalsFromBase = [
-      -baseNoteData.semitonesFromC,      // ド: 基音からドへの間隔
-      -baseNoteData.semitonesFromC + 2,  // レ: 基音からレへの間隔
-      -baseNoteData.semitonesFromC + 4,  // ミ: 基音からミへの間隔
-      -baseNoteData.semitonesFromC + 5,  // ファ: 基音からファへの間隔
-      -baseNoteData.semitonesFromC + 7,  // ソ: 基音からソへの間隔
-      -baseNoteData.semitonesFromC + 9,  // ラ: 基音からラへの間隔
-      -baseNoteData.semitonesFromC + 11, // シ: 基音からシへの間隔
-      -baseNoteData.semitonesFromC + 12  // ド（高）: 基音から高ドへの間隔
-    ];
-    
-    const expectedInterval = scaleIntervalsFromBase[activeStepIndex]; // 半音単位
-    const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 12);
-    
-    // 【デバッグ】音程計算の詳細ログ
+    // 【デバッグ】音程計算の詳細ログ（修正版）
     if (activeStepIndex >= 0) { // 全音程でログ出力して修正確認
-      console.log(`🔢 [音程計算] ${scaleSteps[activeStepIndex].name}: 基音${currentBaseNote}(${baseNoteData.semitonesFromC}半音) → 間隔${scaleIntervalsFromBase[activeStepIndex]}半音 → ${expectedFrequency.toFixed(1)}Hz`);
+      console.log(`🔢 [音程計算修正版] ${scaleSteps[activeStepIndex].name}: 期待周波数 ${expectedFrequency.toFixed(1)}Hz`);
     }
     
     // 【緊急修正】期待周波数の有効性チェック
