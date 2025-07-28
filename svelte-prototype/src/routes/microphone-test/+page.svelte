@@ -6,6 +6,8 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import PitchDetector from '$lib/components/PitchDetector.svelte';
+  import VolumeBar from '$lib/components/VolumeBar.svelte';
   import { audioManager } from '$lib/audio/AudioManager.js';
   
   // URL パラメータから mode を取得
@@ -19,6 +21,12 @@
 
   // マイクテスト状態管理（シンプル版）
   let micPermission = 'initial'; // 'initial' | 'pending' | 'granted' | 'denied'
+
+  // 音程検出
+  let currentVolume = 0;
+  let currentFrequency = 0;
+  let detectedNote = 'ーー';
+  let pitchDetectorComponent = null;
 
   // トレーニングモード設定
   const trainingModes = {
@@ -65,6 +73,15 @@
       if (resources.mediaStream && resources.audioContext) {
         micPermission = 'granted';
         console.log('✅ [MicTest] マイク許可完了');
+        
+        // PitchDetector初期化（マイク許可後）
+        setTimeout(async () => {
+          if (pitchDetectorComponent) {
+            console.log('🎙️ [MicTest] PitchDetector初期化開始');
+            await pitchDetectorComponent.initialize();
+            console.log('✅ [MicTest] PitchDetector初期化完了');
+          }
+        }, 200);
       } else {
         throw new Error('リソース取得失敗');
       }
@@ -79,6 +96,23 @@
   function startTraining() {
     console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
     goto(`${base}${selectedMode.path}?from=microphone-test`);
+  }
+
+  // PitchDetectorコンポーネントからのイベントハンドラー
+  function handlePitchUpdate(event) {
+    const { frequency, note, volume, rawVolume, clarity } = event.detail;
+    
+    currentFrequency = frequency;
+    detectedNote = note;
+    currentVolume = volume;
+  }
+  
+  function handlePitchDetectorStateChange(event) {
+    // ログ削除（シンプル版）
+  }
+  
+  function handlePitchDetectorError(event) {
+    console.error('❌ [MicTest] PitchDetectorエラー:', event.detail);
   }
 </script>
 
@@ -145,6 +179,40 @@
       </Card>
     </div>
 
+    <!-- PitchDetector: 隠しコンポーネント（常に存在） -->
+    <div style="display: none;">
+      <PitchDetector
+        bind:this={pitchDetectorComponent}
+        isActive={micPermission === 'granted'}
+        on:pitchUpdate={handlePitchUpdate}
+        on:stateChange={handlePitchDetectorStateChange}
+        on:error={handlePitchDetectorError}
+        className="pitch-detector-content"
+        debugMode={false}
+      />
+    </div>
+
+    <!-- リアルタイム音程検出エリア（常時表示） -->
+    <Card class="main-card">
+      <div class="card-header">
+        <h3 class="section-title">🎙️ リアルタイム音程検出</h3>
+      </div>
+      <div class="card-content">
+        <!-- データ表示のみ（実際のPitchDetectorは上に隠して配置） -->
+        <div class="pitch-detector">
+          <div class="detection-display">
+            <div class="detection-card">
+              <span class="detected-frequency">{currentFrequency > 0 ? Math.round(currentFrequency) : '---'}</span>
+              <span class="hz-suffix">Hz</span>
+              <span class="divider">|</span>
+              <span class="detected-note">{detectedNote}</span>
+            </div>
+            
+            <VolumeBar volume={currentFrequency > 0 ? currentVolume : 0} className="volume-bar" />
+          </div>
+        </div>
+      </div>
+    </Card>
 
   </div>
 </PageLayout>
@@ -452,5 +520,98 @@
       flex-direction: row;
       text-align: left;
     }
+  }
+
+  /* === リアルタイム音程検出エリア === */
+  
+  /* カードスタイル（shadcn/ui風） */
+  :global(.main-card) {
+    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
+    background: hsl(0 0% 100%) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06) !important;
+    margin-bottom: 1.5rem;
+  }
+
+  /* カードヘッダー */
+  .card-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
+    margin-bottom: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(222.2 84% 4.9%);
+    margin: 0;
+  }
+
+  /* カードコンテンツ */
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* 検出表示 */
+  .detection-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .detection-card {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  /* PitchDetector表示の最強制スタイリング */
+  :global(.detected-frequency) {
+    font-weight: 600 !important;
+    font-size: 2rem !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+    min-width: 4ch !important;
+    text-align: right !important;
+    display: inline-block !important;
+    font-variant-numeric: tabular-nums !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  :global(.hz-suffix) {
+    font-weight: 600 !important;
+    font-size: 2rem !important;
+    color: hsl(222.2 84% 4.9%) !important;
+  }
+
+  :global(.divider) {
+    color: hsl(214.3 31.8% 70%) !important;
+    font-size: 1.5rem !important;
+    margin: 0 0.25rem !important;
+    font-weight: 300 !important;
+  }
+  
+  :global(.detected-note) {
+    font-weight: 600 !important;
+    font-size: 2rem !important;
+    color: hsl(215.4 16.3% 46.9%) !important;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 
+                 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+    min-width: 3ch !important;
+    display: inline-block !important;
+    text-align: center !important;
+  }
+
+  :global(.volume-bar) {
+    border-radius: 4px !important;
   }
 </style>
