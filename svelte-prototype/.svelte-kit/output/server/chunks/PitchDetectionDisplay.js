@@ -511,7 +511,6 @@ class HarmonicCorrection {
   resetHistory() {
     this.harmonicHistory = [];
     this.previousFrequency = 0;
-    console.log("🔄 [HarmonicCorrection] 履歴リセット完了");
   }
   /**
    * 設定更新

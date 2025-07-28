@@ -252,7 +252,8 @@ class HarmonicCorrection {
   resetHistory() {
     this.harmonicHistory = [];
     this.previousFrequency = 0;
-    console.log('🔄 [HarmonicCorrection] 履歴リセット完了');
+    // 履歴リセットのログを無効化（頻繁すぎるため）
+    // console.log('🔄 [HarmonicCorrection] 履歴リセット完了');
   }
 
   /**
