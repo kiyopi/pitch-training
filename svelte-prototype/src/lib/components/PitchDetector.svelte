@@ -11,6 +11,7 @@
   export let isActive = false;
   export let className = '';
   export let debugMode = false; // デバッグモード
+  export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用）
 
   // 状態管理（改訂版）
   let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
@@ -304,8 +305,8 @@
       // 統一倍音補正システム適用
       const correctedFreq = harmonicCorrection.correctHarmonic(pitch);
       
-      // 【軽量倍音補正ログ】コンソール安定性重視
-      if (correctedFreq !== pitch && Math.abs(correctedFreq - pitch) > 5) {
+      // 【軽量倍音補正ログ】ガイド期間中のみ出力
+      if (correctedFreq !== pitch && Math.abs(correctedFreq - pitch) > 5 && trainingPhase === 'guiding') {
         const ratio = pitch / correctedFreq;
         const correctionType = ratio > 1.8 && ratio < 2.2 ? '2x' : 
                               ratio > 2.8 && ratio < 3.2 ? '3x' : 

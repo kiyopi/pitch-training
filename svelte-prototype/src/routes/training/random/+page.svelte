@@ -772,6 +772,7 @@
       <PitchDetector
         bind:this={pitchDetectorComponent}
         isActive={microphoneState === 'granted'}
+        trainingPhase={trainingPhase}
         on:pitchUpdate={handlePitchUpdate}
         on:stateChange={handlePitchDetectorStateChange}
         on:error={handlePitchDetectorError}
