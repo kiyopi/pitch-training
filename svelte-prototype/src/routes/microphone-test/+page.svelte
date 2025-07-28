@@ -75,13 +75,22 @@
         console.log('✅ [MicTest] マイク許可完了');
         
         // PitchDetector初期化（マイク許可後）
+        // Safari対応: より長い待機時間でMediaStream安定化
         setTimeout(async () => {
           if (pitchDetectorComponent) {
             console.log('🎙️ [MicTest] PitchDetector初期化開始');
             await pitchDetectorComponent.initialize();
             console.log('✅ [MicTest] PitchDetector初期化完了');
+            
+            // 初期化完了後にさらに安全な待機時間を設けて検出開始
+            setTimeout(() => {
+              if (pitchDetectorComponent) {
+                console.log('🎯 [MicTest] PitchDetector検出開始');
+                pitchDetectorComponent.startDetection();
+              }
+            }, 500);
           }
-        }, 200);
+        }, 1000);
       } else {
         throw new Error('リソース取得失敗');
       }
@@ -206,7 +215,7 @@
         <!-- PitchDetectorコンポーネントを直接表示（Safari対応） -->
         <PitchDetector
           bind:this={pitchDetectorComponent}
-          isActive={micPermission === 'granted'}
+          isActive={false}
           on:pitchUpdate={handlePitchUpdate}
           on:stateChange={handlePitchDetectorStateChange}
           on:error={handlePitchDetectorError}
