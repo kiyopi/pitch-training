@@ -606,8 +606,8 @@
       -baseNoteData.semitonesFromC + 12  // ド（高）: 基音から高ドへの間隔
     ];
     
-    const expectedInterval = scaleIntervalsFromBase[activeStepIndex] * 100; // セント
-    const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 1200);
+    const expectedInterval = scaleIntervalsFromBase[activeStepIndex]; // 半音単位
+    const expectedFrequency = currentBaseFrequency * Math.pow(2, expectedInterval / 12);
     
     // 【デバッグ】音程計算の詳細ログ
     if (activeStepIndex >= 0) { // 全音程でログ出力して修正確認
