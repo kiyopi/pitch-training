@@ -22,10 +22,12 @@
           {#if isMuted}
             <span class="muted-message">{muteMessage}</span>
           {:else}
-            <span class="detected-frequency">{frequency > 0 ? Math.round(frequency) : '---'}</span>
-            <span class="hz-suffix">Hz</span>
-            <span class="divider">|</span>
-            <span class="detected-note">{note}</span>
+            <div class="detection-values">
+              <span class="detected-frequency">{frequency > 0 ? Math.round(frequency) : '---'}</span>
+              <span class="hz-suffix">Hz</span>
+              <span class="divider">|</span>
+              <span class="detected-note">{note}</span>
+            </div>
           {/if}
         </div>
         
@@ -76,13 +78,19 @@
     border-radius: 8px;
     padding: 1.5rem;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
-    gap: 0.5rem;
     font-size: 1.5rem;
     font-weight: 600;
     color: hsl(222.2 84% 4.9%);
     min-height: 80px;
+  }
+
+  /* 検出値のコンテナ */
+  .detection-values {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
   }
 
   /* ミュート時のメッセージ */
