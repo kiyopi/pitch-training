@@ -51,6 +51,10 @@
   // デバッグ用
   let debugInterval = null;
   
+  // 倍音補正ログ制御用
+  let lastHarmonicLog = '';
+  let lastLogTime = 0;
+  
   // 表示状態リセット関数（外部から呼び出し可能）
   export function resetDisplayState() {
     currentVolume = 0;
@@ -67,6 +71,10 @@
     
     // 統一倍音補正モジュールのリセット
     harmonicCorrection.resetHistory();
+    
+    // 倍音補正ログ状態もリセット
+    lastHarmonicLog = '';
+    lastLogTime = 0;
     
     if (debugMode) {
       console.log('🔄 [PitchDetector] Display state reset');
@@ -305,7 +313,7 @@
       // 統一倍音補正システム適用
       const correctedFreq = harmonicCorrection.correctHarmonic(pitch);
       
-      // 【軽量倍音補正ログ】ガイド期間中のみ出力
+      // 【軽量倍音補正ログ】ガイド期間中のみ出力（重複除去・間隔制限付き）
       if (correctedFreq !== pitch && Math.abs(correctedFreq - pitch) > 5 && trainingPhase === 'guiding') {
         const ratio = pitch / correctedFreq;
         const correctionType = ratio > 1.8 && ratio < 2.2 ? '2x' : 
@@ -314,7 +322,15 @@
                               ratio > 0.45 && ratio < 0.55 ? '1/2x' : 'other';
         const noteOrig = frequencyToNote(pitch);
         const noteCorrected = frequencyToNote(correctedFreq);
-        console.log(`🔧 [Harmonic] ${pitch.toFixed(0)}Hz(${noteOrig}) → ${correctedFreq.toFixed(0)}Hz(${noteCorrected}) [${correctionType}補正]`);
+        const logMessage = `🔧 [Harmonic] ${pitch.toFixed(0)}Hz(${noteOrig}) → ${correctedFreq.toFixed(0)}Hz(${noteCorrected}) [${correctionType}補正]`;
+        
+        // 重複除去と500ms間隔制限
+        const currentTime = Date.now();
+        if (logMessage !== lastHarmonicLog && (currentTime - lastLogTime) > 500) {
+          console.log(logMessage);
+          lastHarmonicLog = logMessage;
+          lastLogTime = currentTime;
+        }
       }
       
       // 周波数表示を更新
