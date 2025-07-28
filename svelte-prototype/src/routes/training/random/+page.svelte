@@ -50,9 +50,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v1.3.2-FORCE";
-  const buildTimestamp = "07/27 02:20";
-  const updateStatus = "🔥 ROSE色修正・音源削除・評価改善";
+  const buildVersion = "v2.0.0-SCORING";
+  const buildTimestamp = "07/28 21:15";
+  const updateStatus = "🎯 採点システム統合完了・5側面評価実装";
   
   // 基音関連
   let currentBaseNote = '';
@@ -1147,11 +1147,15 @@
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
     <!-- 🧪 デバッグ用: テスト採点結果表示ボタン（ヘッダーに配置） -->
-    <div class="debug-section" style="margin-top: 1rem;">
+    <div class="debug-section" style="margin-top: 1rem; background: linear-gradient(45deg, #f0f9ff, #ecfdf5); padding: 1rem; border-radius: 8px; border: 2px dashed #3b82f6;">
+      <div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #1e40af;">
+        🚀 採点システムデバッグモード | Deploy: {buildTimestamp}
+      </div>
       <Button 
         variant="secondary"
         class="debug-button"
         on:click={showTestScoring}
+        style="background: #3b82f6; color: white; border: none; font-weight: bold;"
       >
         🧪 テスト採点結果を表示（デバッグ用）
       </Button>
