@@ -35,13 +35,13 @@ class HarmonicCorrection {
     this.previousFrequency = 0;
     this.maxHistoryLength = 5; // 最大5フレーム保持
     
-    // デバッグモード（デフォルトで有効化）
-    this.debugMode = true;
+    // デバッグモード（デフォルトで無効化 - パフォーマンス優先）
+    this.debugMode = false;
     
     // 現在のコンテキスト（音階情報）
     this.currentContext = {};
     
-    console.log('🔧 [HarmonicCorrection] 統一倍音補正システム初期化完了');
+    // 初期化ログ削除（パフォーマンス優先）
   }
 
   /**

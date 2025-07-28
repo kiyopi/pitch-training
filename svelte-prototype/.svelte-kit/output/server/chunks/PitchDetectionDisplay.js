@@ -356,9 +356,8 @@ class HarmonicCorrection {
     this.harmonicHistory = [];
     this.previousFrequency = 0;
     this.maxHistoryLength = 5;
-    this.debugMode = true;
+    this.debugMode = false;
     this.currentContext = {};
-    console.log("🔧 [HarmonicCorrection] 統一倍音補正システム初期化完了");
   }
   /**
    * メイン倍音補正処理
