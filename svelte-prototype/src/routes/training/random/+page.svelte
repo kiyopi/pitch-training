@@ -296,6 +296,9 @@
           targetFrequency: targetFreq
         });
         
+        // 【音階コンテキストログ】軽量版
+        console.log(`🎵 [Scale] 基音:${currentBaseNote}(${currentBaseFrequency.toFixed(0)}Hz) 現在:${scaleSteps[currentScaleIndex].name} 目標:${targetFreq.toFixed(0)}Hz`);
+        
         // ガイドログ削除（パフォーマンス優先）
         
         currentScaleIndex++;

@@ -304,6 +304,18 @@
       // 統一倍音補正システム適用
       const correctedFreq = harmonicCorrection.correctHarmonic(pitch);
       
+      // 【軽量倍音補正ログ】コンソール安定性重視
+      if (correctedFreq !== pitch && Math.abs(correctedFreq - pitch) > 5) {
+        const ratio = pitch / correctedFreq;
+        const correctionType = ratio > 1.8 && ratio < 2.2 ? '2x' : 
+                              ratio > 2.8 && ratio < 3.2 ? '3x' : 
+                              ratio > 3.8 && ratio < 4.2 ? '4x' : 
+                              ratio > 0.45 && ratio < 0.55 ? '1/2x' : 'other';
+        const noteOrig = frequencyToNote(pitch);
+        const noteCorrected = frequencyToNote(correctedFreq);
+        console.log(`🔧 [Harmonic] ${pitch.toFixed(0)}Hz(${noteOrig}) → ${correctedFreq.toFixed(0)}Hz(${noteCorrected}) [${correctionType}補正]`);
+      }
+      
       // 周波数表示を更新
       currentFrequency = Math.round(correctedFreq);
       detectedNote = frequencyToNote(currentFrequency);
