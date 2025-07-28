@@ -587,13 +587,22 @@
     if (!expectedFrequency || expectedFrequency <= 0 || !isFinite(expectedFrequency)) {
       console.error(`❌ [採点エラー] 期待周波数計算エラー:`);
       console.error(`   基音周波数: ${currentBaseFrequency}Hz`);
-      console.error(`   音程インターバル: ${expectedInterval}セント`);
+      console.error(`   音階インデックス: ${activeStepIndex}`);
       console.error(`   期待周波数: ${expectedFrequency}Hz`);
       return;
     }
     
     // 音程差を計算（セント）
     const centDifference = Math.round(1200 * Math.log2(frequency / expectedFrequency));
+    
+    // 【デバッグ】異常なセント値の調査
+    if (Math.abs(centDifference) > 200) {
+      console.warn(`⚠️ [異常セント値検出] ${scaleSteps[activeStepIndex].name}:`);
+      console.warn(`   検出周波数: ${frequency.toFixed(1)}Hz`);
+      console.warn(`   期待周波数: ${expectedFrequency.toFixed(1)}Hz`);
+      console.warn(`   セント差: ${centDifference}¢`);
+      console.warn(`   基音: ${currentBaseNote} (${currentBaseFrequency.toFixed(1)}Hz)`);
+    }
     
     // 【緊急修正】セント計算の有効性チェック
     if (!isFinite(centDifference)) {
