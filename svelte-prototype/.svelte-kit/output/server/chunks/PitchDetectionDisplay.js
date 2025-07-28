@@ -1,4 +1,4 @@
-import { c as create_ssr_component, g as add_attribute, e as escape, h as createEventDispatcher, o as onDestroy, v as validate_component } from "./ssr.js";
+import { c as create_ssr_component, g as add_attribute, e as escape, i as createEventDispatcher, o as onDestroy, v as validate_component } from "./ssr.js";
 import { PitchDetector } from "pitchy";
 import { C as Card } from "./PageLayout.js";
 const css$2 = {

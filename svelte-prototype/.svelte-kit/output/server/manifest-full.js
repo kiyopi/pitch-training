@@ -10,7 +10,7 @@ return {
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.1DaEhhPF.js",app:"_app/immutable/entry/app.BuhqwVgG.js",imports:["_app/immutable/entry/start.1DaEhhPF.js","_app/immutable/chunks/UiuniD7Z.js","_app/immutable/chunks/DYrQga1O.js","_app/immutable/entry/app.BuhqwVgG.js","_app/immutable/chunks/DYrQga1O.js","_app/immutable/chunks/CHpRvnA3.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.DFaZjvoy.js",app:"_app/immutable/entry/app.87He8u-w.js",imports:["_app/immutable/entry/start.DFaZjvoy.js","_app/immutable/chunks/BUYpAnBK.js","_app/immutable/chunks/DgX0WCss.js","_app/immutable/entry/app.87He8u-w.js","_app/immutable/chunks/DgX0WCss.js","_app/immutable/chunks/CQE7AbJL.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -20,7 +20,8 @@ return {
 			__memo(() => import('./nodes/5.js')),
 			__memo(() => import('./nodes/6.js')),
 			__memo(() => import('./nodes/7.js')),
-			__memo(() => import('./nodes/8.js'))
+			__memo(() => import('./nodes/8.js')),
+			__memo(() => import('./nodes/9.js'))
 		],
 		routes: [
 			{
@@ -45,31 +46,38 @@ return {
 				endpoint: null
 			},
 			{
+				id: "/scoring-components-test",
+				pattern: /^\/scoring-components-test\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				endpoint: null
+			},
+			{
 				id: "/scoring-test",
 				pattern: /^\/scoring-test\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				page: { layouts: [0,], errors: [1,], leaf: 6 },
 				endpoint: null
 			},
 			{
 				id: "/training/chromatic",
 				pattern: /^\/training\/chromatic\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 6 },
+				page: { layouts: [0,], errors: [1,], leaf: 7 },
 				endpoint: null
 			},
 			{
 				id: "/training/continuous",
 				pattern: /^\/training\/continuous\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 7 },
+				page: { layouts: [0,], errors: [1,], leaf: 8 },
 				endpoint: null
 			},
 			{
 				id: "/training/random",
 				pattern: /^\/training\/random\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 8 },
+				page: { layouts: [0,], errors: [1,], leaf: 9 },
 				endpoint: null
 			}
 		],

@@ -14,6 +14,18 @@
   import { audioManager } from '$lib/audio/AudioManager.js';
   import { harmonicCorrection } from '$lib/audio/HarmonicCorrection.js';
   import { logger } from '$lib/utils/debugUtils.js';
+  
+  // 採点システムコンポーネント
+  import { 
+    ScoreResultPanel,
+    IntervalProgressTracker,
+    ConsistencyGraph,
+    FeedbackDisplay,
+    SessionStatistics
+  } from '$lib/components/scoring';
+  
+  // 採点エンジン
+  import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
@@ -84,6 +96,38 @@
     averageTime: 0,
     isCompleted: false
   };
+  
+  // 採点システム関連
+  let scoringEngine = null;
+  let currentScoreData = {
+    totalScore: 0,
+    grade: 'C',
+    componentScores: {
+      pitchAccuracy: 0,
+      recognitionSpeed: 0,
+      intervalMastery: 0,
+      directionAccuracy: 0,
+      consistency: 0
+    }
+  };
+  let intervalData = [];
+  let consistencyData = [];
+  let feedbackData = {};
+  let sessionStatistics = {
+    totalAttempts: 0,
+    successRate: 0,
+    averageScore: 0,
+    bestScore: 0,
+    sessionDuration: 0,
+    streakCount: 0,
+    fatigueLevel: 'fresh',
+    mostDifficultInterval: '-',
+    mostSuccessfulInterval: '-',
+    averageResponseTime: 0,
+    sessionStart: Date.now()
+  };
+  let showScoringResults = false;
+  let activeTab = 'intervals'; // 'intervals' | 'consistency' | 'statistics'
   
   // Tone.jsサンプラー
   let sampler = null;
@@ -360,6 +404,10 @@
     
     // 採点結果を計算して表示
     calculateFinalResults();
+    
+    // 強化採点エンジンの結果生成
+    generateFinalScoring();
+    
     trainingPhase = 'results';
   }
   
@@ -491,10 +539,109 @@
     }
   }
 
+  // 採点エンジン初期化
+  function initializeScoringEngine() {
+    try {
+      scoringEngine = new EnhancedScoringEngine();
+      logger.info('[RandomTraining] 採点エンジン初期化完了');
+    } catch (error) {
+      logger.error('[RandomTraining] 採点エンジン初期化エラー:', error);
+    }
+  }
+  
+  // 採点エンジンにデータを送信
+  function updateScoringEngine(frequency, note) {
+    if (!scoringEngine || !isGuideAnimationActive) return;
+    
+    const activeStepIndex = currentScaleIndex - 1;
+    if (activeStepIndex < 0 || activeStepIndex >= scaleSteps.length) return;
+    
+    const expectedFrequency = calculateExpectedFrequency(currentBaseFrequency, activeStepIndex);
+    
+    // 採点エンジンに音程データを送信
+    const attemptData = {
+      baseFrequency: currentBaseFrequency,
+      targetFrequency: expectedFrequency,
+      detectedFrequency: frequency,
+      detectedNote: note,
+      volume: currentVolume,
+      timestamp: Date.now(),
+      scaleIndex: activeStepIndex,
+      scaleName: scaleSteps[activeStepIndex].name
+    };
+    
+    try {
+      scoringEngine.processAttempt(attemptData);
+    } catch (error) {
+      logger.error('[RandomTraining] 採点エンジンエラー:', error);
+    }
+  }
+  
+  // 最終採点結果を取得
+  function generateFinalScoring() {
+    if (!scoringEngine) return;
+    
+    try {
+      const results = scoringEngine.generateDetailedReport();
+      
+      // スコアデータ更新
+      currentScoreData = {
+        totalScore: results.totalScore,
+        grade: results.grade,
+        componentScores: results.componentScores
+      };
+      
+      // 音程データ更新
+      intervalData = Object.entries(results.intervalAnalysis.masteryLevels).map(([type, mastery]) => ({
+        type,
+        mastery: Math.round(mastery),
+        attempts: results.intervalAnalysis.attemptCounts[type] || 0,
+        accuracy: results.intervalAnalysis.accuracyRates[type] || 0
+      }));
+      
+      // 一貫性データ更新
+      consistencyData = results.consistencyHistory.map((score, index) => ({
+        score: Math.round(score),
+        timestamp: Date.now() - (results.consistencyHistory.length - index) * 1000
+      }));
+      
+      // フィードバックデータ更新
+      feedbackData = results.feedback;
+      
+      // セッション統計更新
+      sessionStatistics = {
+        totalAttempts: results.totalAttempts,
+        successRate: results.successRate,
+        averageScore: results.totalScore,
+        bestScore: Math.max(results.totalScore, sessionStatistics.bestScore),
+        sessionDuration: Math.round((Date.now() - sessionStatistics.sessionStart) / 60000) || 0,
+        streakCount: results.streak || 0,
+        fatigueLevel: results.fatigueLevel || 'normal',
+        mostDifficultInterval: results.mostDifficultInterval || '-',
+        mostSuccessfulInterval: results.mostSuccessfulInterval || '-',
+        averageResponseTime: results.averageResponseTime || 0
+      };
+      
+      showScoringResults = true;
+      logger.info('[RandomTraining] 採点結果生成完了:', currentScoreData);
+      
+    } catch (error) {
+      logger.error('[RandomTraining] 採点結果生成エラー:', error);
+    }
+  }
+  
+  // タブ切り替え
+  function switchTab(tab) {
+    activeTab = tab;
+  }
+
   // 初期化
   onMount(async () => {
     // 音源初期化
     initializeSampler();
+    
+    // 採点エンジン初期化
+    initializeScoringEngine();
     
     // マイクテストページから来た場合は許可済みとして扱う
     if ($page.url.searchParams.get('from') === 'microphone-test') {
@@ -547,6 +694,11 @@
     
     // ガイドアニメーション中の評価蓄積
     evaluateScaleStep(frequency, note);
+    
+    // 採点エンジンへのデータ送信
+    if (scoringEngine && frequency > 0 && currentBaseFrequency > 0) {
+      updateScoringEngine(frequency, note);
+    }
   }
   
   // 【プロトタイプ式】多段階オクターブ補正関数
@@ -1015,49 +1167,139 @@
     {/if}
 
 
-    <!-- Results Section -->
+    <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
-      <Card class="main-card results-card">
-        <div class="card-header">
-          <h3 class="section-title">🎉 採点結果</h3>
-        </div>
-        <div class="card-content">
-          <div class="results-summary">
-            <div class="result-item">
-              <span class="result-label">正解数</span>
-              <span class="result-value success">{sessionResults.correctCount}/{sessionResults.totalCount}</span>
-            </div>
-            <div class="result-item">
-              <span class="result-label">平均精度</span>
-              <span class="result-value">{sessionResults.averageAccuracy}%</span>
-            </div>
-            <div class="result-item">
-              <span class="result-label">正解率</span>
-              <span class="result-value">{Math.round(sessionResults.correctCount / sessionResults.totalCount * 100)}%</span>
-            </div>
+      <!-- メイン採点結果 -->
+      {#if showScoringResults}
+        <ScoreResultPanel 
+          totalScore={currentScoreData.totalScore}
+          grade={currentScoreData.grade}
+          componentScores={currentScoreData.componentScores}
+          className="mb-6"
+        />
+        
+        <!-- フィードバック表示 -->
+        {#if feedbackData && Object.keys(feedbackData).length > 0}
+          <FeedbackDisplay 
+            feedback={feedbackData}
+            className="mb-6"
+          />
+        {/if}
+        
+        <!-- 詳細統計（タブ形式） -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div class="flex gap-2 mb-4 overflow-x-auto">
+            <button 
+              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
+              class:bg-blue-500={activeTab === 'intervals'}
+              class:text-white={activeTab === 'intervals'}
+              class:bg-gray-200={activeTab !== 'intervals'}
+              class:text-gray-700={activeTab !== 'intervals'}
+              on:click={() => switchTab('intervals')}
+            >
+              音程別進捗
+            </button>
+            <button 
+              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
+              class:bg-blue-500={activeTab === 'consistency'}
+              class:text-white={activeTab === 'consistency'}
+              class:bg-gray-200={activeTab !== 'consistency'}
+              class:text-gray-700={activeTab !== 'consistency'}
+              on:click={() => switchTab('consistency')}
+            >
+              一貫性グラフ
+            </button>
+            <button 
+              class="px-4 py-2 rounded-lg flex-shrink-0 scoring-tab transition-colors"
+              class:bg-blue-500={activeTab === 'statistics'}
+              class:text-white={activeTab === 'statistics'}
+              class:bg-gray-200={activeTab !== 'statistics'}
+              class:text-gray-700={activeTab !== 'statistics'}
+              on:click={() => switchTab('statistics')}
+            >
+              セッション統計
+            </button>
           </div>
           
-          <!-- 詳細結果 -->
-          <div class="detailed-results">
-            <h4 class="detailed-title">音階別結果</h4>
-            {#if getDisplayEvaluations().length > 0}
-              <div class="scale-results">
-                {#each getDisplayEvaluations() as evaluation, index}
-                  <div class="scale-result-item" class:correct={evaluation.isCorrect} class:incorrect={!evaluation.isCorrect}>
-                    <span class="scale-name">{evaluation.stepName}</span>
-                    <span class="scale-accuracy">{evaluation.accuracy}%</span>
-                    <span class="scale-cents">{evaluation.centDifference >= 0 ? '+' : ''}{evaluation.centDifference}¢</span>
-                    <span class="scale-status">{evaluation.isCorrect ? '✅' : '❌'}</span>
-                  </div>
-                {/each}
+          <!-- タブコンテンツ -->
+          <div class="tab-content">
+            <!-- 音程別進捗タブ -->
+            {#if activeTab === 'intervals'}
+              <div class="tab-panel">
+                <IntervalProgressTracker 
+                  intervalData={intervalData}
+                />
               </div>
-            {:else}
-              <div class="no-evaluation-data">
-                <p>評価データがありません。トレーニング中にマイクから十分な音声が検出されませんでした。</p>
+            {/if}
+            
+            <!-- 一貫性グラフタブ -->
+            {#if activeTab === 'consistency'}
+              <div class="tab-panel">
+                <ConsistencyGraph 
+                  consistencyData={consistencyData}
+                />
+              </div>
+            {/if}
+            
+            <!-- セッション統計タブ -->
+            {#if activeTab === 'statistics'}
+              <div class="tab-panel">
+                <SessionStatistics 
+                  statistics={sessionStatistics}
+                />
               </div>
             {/if}
           </div>
-          
+        </div>
+      {:else}
+        <!-- 従来の結果表示（フォールバック） -->
+        <Card class="main-card results-card">
+          <div class="card-header">
+            <h3 class="section-title">🎉 採点結果</h3>
+          </div>
+          <div class="card-content">
+            <div class="results-summary">
+              <div class="result-item">
+                <span class="result-label">正解数</span>
+                <span class="result-value success">{sessionResults.correctCount}/{sessionResults.totalCount}</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">平均精度</span>
+                <span class="result-value">{sessionResults.averageAccuracy}%</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">正解率</span>
+                <span class="result-value">{Math.round(sessionResults.correctCount / sessionResults.totalCount * 100)}%</span>
+              </div>
+            </div>
+            
+            <!-- 詳細結果 -->
+            <div class="detailed-results">
+              <h4 class="detailed-title">音階別結果</h4>
+              {#if getDisplayEvaluations().length > 0}
+                <div class="scale-results">
+                  {#each getDisplayEvaluations() as evaluation, index}
+                    <div class="scale-result-item" class:correct={evaluation.isCorrect} class:incorrect={!evaluation.isCorrect}>
+                      <span class="scale-name">{evaluation.stepName}</span>
+                      <span class="scale-accuracy">{evaluation.accuracy}%</span>
+                      <span class="scale-cents">{evaluation.centDifference >= 0 ? '+' : ''}{evaluation.centDifference}¢</span>
+                      <span class="scale-status">{evaluation.isCorrect ? '✅' : '❌'}</span>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <div class="no-evaluation-data">
+                  <p>評価データがありません。トレーニング中にマイクから十分な音声が検出されませんでした。</p>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </Card>
+      {/if}
+      
+      <!-- アクションボタン -->
+      <Card class="main-card">
+        <div class="card-content">
           <div class="action-buttons">
             <Button 
               variant="primary"

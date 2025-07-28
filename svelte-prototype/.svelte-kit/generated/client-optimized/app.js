@@ -9,7 +9,8 @@ export const nodes = [
 	() => import('./nodes/5'),
 	() => import('./nodes/6'),
 	() => import('./nodes/7'),
-	() => import('./nodes/8')
+	() => import('./nodes/8'),
+	() => import('./nodes/9')
 ];
 
 export const server_loads = [];
@@ -18,10 +19,11 @@ export const dictionary = {
 		"/": [2],
 		"/microphone-test-simple": [4],
 		"/microphone-test": [3],
-		"/scoring-test": [5],
-		"/training/chromatic": [6],
-		"/training/continuous": [7],
-		"/training/random": [8]
+		"/scoring-components-test": [5],
+		"/scoring-test": [6],
+		"/training/chromatic": [7],
+		"/training/continuous": [8],
+		"/training/random": [9]
 	};
 
 export const hooks = {

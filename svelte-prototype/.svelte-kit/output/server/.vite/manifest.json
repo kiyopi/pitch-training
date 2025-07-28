@@ -16,6 +16,10 @@
       "_PageLayout.js"
     ]
   },
+  "_EnhancedScoringEngine.js": {
+    "file": "chunks/EnhancedScoringEngine.js",
+    "name": "EnhancedScoringEngine"
+  },
   "_PageLayout.js": {
     "file": "chunks/PageLayout.js",
     "name": "PageLayout",
@@ -36,6 +40,10 @@
     "css": [
       "_app/immutable/assets/PitchDetectionDisplay.D_00FytZ.css"
     ]
+  },
+  "_SessionStatistics.svelte_svelte_type_style_lang.js": {
+    "file": "_app/immutable/assets/SessionStatistics.CLC8DLhC.css",
+    "src": "_SessionStatistics.svelte_svelte_type_style_lang.js"
   },
   "_exports.js": {
     "file": "chunks/exports.js",
@@ -96,7 +104,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.CrWZKMKI.css"
+      "_app/immutable/assets/_layout.D6bRXdik.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -146,13 +154,27 @@
       "_app/immutable/assets/_page.Dl6HdkQ7.css"
     ]
   },
+  "src/routes/scoring-components-test/+page.svelte": {
+    "file": "entries/pages/scoring-components-test/_page.svelte.js",
+    "name": "entries/pages/scoring-components-test/_page.svelte",
+    "src": "src/routes/scoring-components-test/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.Dr2eeyM5.css",
+      "_app/immutable/assets/SessionStatistics.CLC8DLhC.css"
+    ]
+  },
   "src/routes/scoring-test/+page.svelte": {
     "file": "entries/pages/scoring-test/_page.svelte.js",
     "name": "entries/pages/scoring-test/_page.svelte",
     "src": "src/routes/scoring-test/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_ssr.js"
+      "_ssr.js",
+      "_EnhancedScoringEngine.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BeR5LleT.css"
@@ -196,10 +218,12 @@
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",
-      "_PitchDetectionDisplay.js"
+      "_PitchDetectionDisplay.js",
+      "_EnhancedScoringEngine.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.B0VAUGJI.css"
+      "_app/immutable/assets/_page.B0VAUGJI.css",
+      "_app/immutable/assets/SessionStatistics.CLC8DLhC.css"
     ]
   }
 }
