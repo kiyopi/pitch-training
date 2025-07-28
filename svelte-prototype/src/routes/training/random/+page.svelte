@@ -50,9 +50,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v2.2.1-FIXED";
-  const buildTimestamp = "07/29 03:35";
-  const updateStatus = "🔧 SessionStatistics未定義エラー修正";
+  const buildVersion = "v2.2.2-SCORING";
+  const buildTimestamp = "07/29 03:40";
+  const updateStatus = "🎯 採点データ生成エラー修正・5側面評価完全対応";
   
   // 基音関連
   let currentBaseNote = '';

@@ -993,14 +993,53 @@ export class EnhancedScoringEngine {
       performanceHistory: sessionData.performanceHistory.slice(-10) // 直近10回
     };
     
+    // ランダムトレーニングページが期待する形式に適合
+    const feedback = {
+      primary: improvements.length > 0 ? improvements[0].message : '良好な演奏です！',
+      detailed: improvements.map(imp => imp.message),
+      suggestions: improvements.map(imp => imp.actions).flat()
+    };
+
+    // 5側面の採点結果
+    const componentScores = [
+      { label: '音程精度', value: Math.round(statistics.analyzers.interval?.averageAccuracy || 0), weight: 40 },
+      { label: '認識速度', value: Math.round(100 - (statistics.averageResponseTime || 5000) / 50), weight: 20 },
+      { label: '音程習得', value: Math.round(statistics.analyzers.interval?.masteryLevel || 0), weight: 20 },
+      { label: '方向精度', value: Math.round(statistics.analyzers.direction?.accuracy || 0), weight: 10 },
+      { label: '一貫性', value: Math.round(statistics.analyzers.consistency?.score || 0), weight: 10 }
+    ];
+
+    // 総合スコア計算
+    const totalScore = componentScores.reduce((sum, component) => 
+      sum + (component.value * component.weight / 100), 0
+    );
+
+    // グレード計算
+    let grade = 'C';
+    if (totalScore >= 90) grade = 'S';
+    else if (totalScore >= 80) grade = 'A';
+    else if (totalScore >= 70) grade = 'B';
+
     return {
       timestamp: Date.now(),
+      // ランダムトレーニングページが期待するプロパティ
+      totalScore: Math.round(totalScore),
+      grade: grade,
+      componentScores: componentScores,
+      feedback: feedback,
+      intervalAnalysis: {
+        masteryLevels: statistics.analyzers.interval?.intervalMastery || {},
+        attemptCounts: statistics.analyzers.interval?.attemptCounts || {},
+        accuracyRates: statistics.analyzers.interval?.accuracyRates || {}
+      },
+      consistencyHistory: statistics.analyzers.consistency?.recentScores || [],
+      // 元の形式も保持
       overall: overallPerformance,
       detailed: detailedAnalysis,
       improvements: improvements,
       session: sessionStats,
       metadata: {
-        version: '2.0.0-SCORING',
+        version: '2.2.1-FIXED',
         engine: 'EnhancedScoringEngine'
       }
     };
