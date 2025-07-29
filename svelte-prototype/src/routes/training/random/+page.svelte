@@ -834,12 +834,61 @@
       baseNote: baseNote,
       baseFrequency: baseFrequency,
       noteResults: noteResultsForDisplay,
-      distribution: calculateGradeDistribution(noteResultsForDisplay)
+      distribution: calculateGradeDistribution(noteResultsForDisplay),
+      // セッション履歴データを追加
+      sessionHistory: [{
+        timestamp: new Date(),
+        baseNote: baseNote,
+        baseFrequency: baseFrequency,
+        noteResults: noteResultsForDisplay,
+        measuredNotes: measuredNotes,
+        accuracy: averageAccuracy,
+        grade: calculateSessionGrade(noteResultsForDisplay)
+      }]
     };
     
     console.log('[UnifiedScore] 統合採点データ生成完了:', unifiedScoreData);
   }
   
+  // セッショングレード計算（4段階評価）
+  function calculateSessionGrade(noteResults) {
+    if (!noteResults || noteResults.length === 0) return 'needWork';
+    
+    const results = noteResults.reduce((acc, note) => {
+      const grade = calculateNoteGrade(note.cents);
+      acc[grade] = (acc[grade] || 0) + 1;
+      if (grade !== 'notMeasured') {
+        acc.totalError += Math.abs(note.cents);
+        acc.measuredCount += 1;
+      }
+      return acc;
+    }, { excellent: 0, good: 0, pass: 0, needWork: 0, notMeasured: 0, totalError: 0, measuredCount: 0 });
+    
+    const averageError = results.measuredCount > 0 ? results.totalError / results.measuredCount : 100;
+    const passCount = results.excellent + results.good + results.pass;
+    
+    // RandomModeScoreResultと同じ判定ロジック
+    if (results.notMeasured > 3) return 'needWork';
+    if (results.needWork > 2) return 'needWork';
+    if (results.measuredCount === 0) return 'needWork';
+    if (averageError <= 20 && results.excellent >= 6) return 'excellent';
+    if (averageError <= 30 && passCount >= 7) return 'good';
+    if (passCount >= 5) return 'pass';
+    return 'needWork';
+  }
+
+  // 音程評価計算（RandomModeScoreResultと統一）
+  function calculateNoteGrade(cents) {
+    if (cents === null || cents === undefined || isNaN(cents)) {
+      return 'notMeasured';
+    }
+    const absCents = Math.abs(cents);
+    if (absCents <= 15) return 'excellent';
+    if (absCents <= 25) return 'good';
+    if (absCents <= 40) return 'pass';
+    return 'needWork';
+  }
+
   // グレード分布計算
   function calculateGradeDistribution(noteResults) {
     const distribution = {
