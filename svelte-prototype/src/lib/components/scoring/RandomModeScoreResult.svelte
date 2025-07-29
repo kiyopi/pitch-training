@@ -109,6 +109,7 @@
       <div class="simple-grade-icon">
         <svelte:component 
           this={gradeDefinitions[overallGrade].icon} 
+          size="120"
           class="grade-icon-simple {gradeDefinitions[overallGrade].color}" 
         />
       </div>
@@ -365,6 +366,11 @@
   .grade-icon-simple {
     width: 120px !important;
     height: 120px !important;
+    min-width: 120px !important;
+    min-height: 120px !important;
+    max-width: 120px !important;
+    max-height: 120px !important;
+    font-size: 120px !important;
   }
 
 

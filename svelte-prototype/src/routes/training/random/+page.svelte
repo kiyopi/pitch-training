@@ -56,6 +56,9 @@
   const buildTimestamp = "07/29 04:15";
   const updateStatus = "🎬 評価分布アニメーション実装・UX向上";
   
+  // 統一音階表記（グローバル定数）
+  const SCALE_NAMES = ['ド3', 'レ3', 'ミ3', 'ファ3', 'ソ3', 'ラ3', 'シ3', 'ド4'];
+  
   // 基音関連
   let currentBaseNote = '';
   let currentBaseFrequency = 0;
@@ -63,16 +66,11 @@
   
   // 音程ガイド
   let currentScaleIndex = 0;
-  let scaleSteps = [
-    { name: 'ド', state: 'inactive', completed: false },
-    { name: 'レ', state: 'inactive', completed: false },
-    { name: 'ミ', state: 'inactive', completed: false },
-    { name: 'ファ', state: 'inactive', completed: false },
-    { name: 'ソ', state: 'inactive', completed: false },
-    { name: 'ラ', state: 'inactive', completed: false },
-    { name: 'シ', state: 'inactive', completed: false },
-    { name: 'ド（高）', state: 'inactive', completed: false }
-  ];
+  let scaleSteps = SCALE_NAMES.map(name => ({
+    name,
+    state: 'inactive',
+    completed: false
+  }));
   
   // ガイドアニメーション制御
   let guideAnimationTimer = null;
@@ -415,8 +413,7 @@
     
     // 8音階評価データを新コンポーネント用に変換
     // 全8音階を固定表示（測定できなかった音も含む）
-    const allNoteNames = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド↑'];
-    noteResultsForDisplay = allNoteNames.map(noteName => {
+    noteResultsForDisplay = SCALE_NAMES.map(noteName => {
       const evaluation = scaleEvaluations.find(evaluation => evaluation.stepName === noteName);
       
       if (evaluation) {
