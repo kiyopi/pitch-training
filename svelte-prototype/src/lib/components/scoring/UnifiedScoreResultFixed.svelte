@@ -269,16 +269,7 @@
                 <!-- 8音階詳細表示 -->
                 {#if session.noteResults}
                   <RandomModeScoreResult 
-                    scoreData={{
-                      baseNote: session.baseNote,
-                      baseFrequency: session.baseFrequency,
-                      noteResults: session.noteResults,
-                      measuredNotes: session.measuredNotes,
-                      totalNotes: 8,
-                      overallGrade: session.grade,
-                      timestamp: session.timestamp
-                    }}
-                    showDetails={true}
+                    noteResults={session.noteResults}
                     className="carousel-score-result"
                   />
                 {:else}
