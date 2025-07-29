@@ -116,8 +116,8 @@
           <div class="sparkle-effect">
             <div class="sparkle sparkle-1">✨</div>
             <div class="sparkle sparkle-2">⭐</div>
-            <div class="sparkle sparkle-3">💫</div>
-            <div class="sparkle sparkle-4">🌟</div>
+            <div class="sparkle sparkle-3">✨</div>
+            <div class="sparkle sparkle-4">⭐</div>
           </div>
         {/if}
         {#if overallGrade === 'good'}
@@ -248,6 +248,7 @@
               </div>
               <div class="accuracy-indicator {grade}" 
                    style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 100) * 50))}%">
+                <div class="indicator-arrow"></div>
               </div>
             </div>
           </div>
@@ -258,20 +259,20 @@
           </div>
         {/if}
         
-        <!-- 周波数詳細（常時表示） -->
-        <div class="frequency-details-simple">
-          <div class="freq-row">
-            <Target class="w-4 h-4 text-gray-500" />
-            <span>正解: {note.targetFreq}Hz</span>
-          </div>
-          <div class="freq-row">
-            <Mic class="w-4 h-4 text-gray-500" />
-            {#if grade === 'notMeasured'}
-              <span>あなた: 検出できませんでした</span>
-            {:else}
-              <span>あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz)</span>
+        <!-- 周波数詳細（横並び表示） -->
+        <div class="frequency-details-horizontal">
+          {#if grade === 'notMeasured'}
+            <span class="note-name-horizontal">{note.name}</span>
+            <span class="detection-failed">検出できませんでした</span>
+          {:else}
+            <span class="note-name-horizontal">{note.name}（{note.targetFreq}Hz）</span>
+            <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+            {#if isOutlier}
+              <span class="outlier-badge-horizontal">
+                {Math.abs(note.cents) > 100 ? '重大' : '注意'}
+              </span>
             {/if}
-          </div>
+          {/if}
         </div>
       </div>
     {/each}
@@ -335,6 +336,7 @@
     <summary>
       <Info class="w-4 h-4" />
       判定結果の見方
+      <ChevronDown class="w-4 h-4 chevron-icon" />
     </summary>
     <div class="criteria-content">
       {#each Object.entries(gradeDefinitions) as [key, def]}
@@ -543,9 +545,9 @@
   }
   
   .bar-container {
-    height: 24px;
+    height: 12px;
     background: #f3f4f6;
-    border-radius: 12px;
+    border-radius: 6px;
     overflow: hidden;
     position: relative;
   }
@@ -798,6 +800,68 @@
     border: 1px solid #e2e8f0;
     font-size: 0.875rem;
   }
+
+  /* 横並び周波数詳細 */
+  .frequency-details-horizontal {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .note-name-horizontal {
+    font-weight: 600;
+    color: #374151;
+    min-width: 120px;
+  }
+
+  .detection-result {
+    color: #6b7280;
+    flex: 1;
+  }
+
+  .detection-failed {
+    color: #ef4444;
+    font-weight: 500;
+  }
+
+  .outlier-badge-horizontal {
+    padding: 0.125rem 0.375rem;
+    background: #ef4444;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* 精度バー矢印 */
+  .indicator-arrow {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 6px solid currentColor;
+  }
+
+  /* プルダウンアイコン */
+  .chevron-icon {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+  }
+
+  details[open] .chevron-icon {
+    transform: rotate(180deg);
+  }
   
   /* 外れ値セクション */
   .outlier-section {
@@ -942,23 +1006,15 @@
 
   @keyframes sparkleRotate {
     0% {
-      transform: rotate(0deg) scale(1);
+      transform: scale(1);
       opacity: 0.8;
     }
-    25% {
-      opacity: 1;
-      transform: rotate(90deg) scale(1.2);
-    }
     50% {
-      transform: rotate(180deg) scale(1);
-      opacity: 0.6;
-    }
-    75% {
+      transform: scale(1.2);
       opacity: 1;
-      transform: rotate(270deg) scale(1.1);
     }
     100% {
-      transform: rotate(360deg) scale(1);
+      transform: scale(1);
       opacity: 0.8;
     }
   }

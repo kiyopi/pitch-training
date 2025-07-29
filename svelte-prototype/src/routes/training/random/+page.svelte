@@ -416,10 +416,10 @@
     // 8音階評価データを新コンポーネント用に変換
     noteResultsForDisplay = scaleEvaluations.map(evaluation => ({
       name: evaluation.stepName,
-      cents: Math.round(evaluation.centDifference),
+      cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
       targetFreq: evaluation.expectedFrequency,
-      detectedFreq: evaluation.adjustedFrequency,
-      diff: evaluation.adjustedFrequency - evaluation.expectedFrequency,
+      detectedFreq: evaluation.adjustedFrequency || null,
+      diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
       accuracy: evaluation.accuracy
     }));
     
