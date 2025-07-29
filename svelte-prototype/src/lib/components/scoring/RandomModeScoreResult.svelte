@@ -527,13 +527,15 @@
   .distribution-bar {
     height: 100%;
     border-radius: 12px;
-    background: #3b82f6;
     transition: width 0.3s ease-out;
   }
   
-  .distribution-bar.warning {
-    background: #ef4444;
-  }
+  /* 各グレードの分布バー色を詳細結果と統一 */
+  .distribution-row:nth-child(1) .distribution-bar { background: #f59e0b; } /* excellent - 金 */
+  .distribution-row:nth-child(2) .distribution-bar { background: #10b981; } /* good - 緑 */
+  .distribution-row:nth-child(3) .distribution-bar { background: #3b82f6; } /* pass - 青 */
+  .distribution-row:nth-child(4) .distribution-bar { background: #ef4444; } /* needWork - 赤 */
+  .distribution-row:nth-child(5) .distribution-bar { background: #6b7280; } /* notMeasured - グレー */
   
   .count-display {
     display: flex;
@@ -797,8 +799,8 @@
   }
 
   .simple-header.needWork {
-    background: #fee2e2;
-    border-color: #ef4444;
+    background: #f9fafb;
+    border-color: #d1d5db;
   }
 
   .simple-header.notMeasured {
