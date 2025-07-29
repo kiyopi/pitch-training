@@ -1594,6 +1594,11 @@
                 scoreData={generateTestUnifiedScoreData()}
                 showDetails={false}
                 className="unified-test-result"
+                currentScoreData={currentScoreData}
+                intervalData={intervalData}
+                consistencyData={consistencyData}
+                feedbackData={feedbackData}
+                sessionStatistics={sessionStatistics}
               />
             </div>
           </Card>

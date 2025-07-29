@@ -8,9 +8,28 @@
   import SessionCarousel from './SessionCarousel.svelte';
   import RandomModeScoreResult from './RandomModeScoreResult.svelte';
   
+  // デバッグエリアの完成したコンポーネントを統合
+  import { 
+    ScoreResultPanel,
+    IntervalProgressTracker,
+    ConsistencyGraph,
+    FeedbackDisplay,
+    SessionStatistics
+  } from '$lib/components/scoring';
+  
   export let scoreData = null;
   export let showDetails = false;
   export let className = '';
+  
+  // デバッグエリアの統合データ（親から受け取る）
+  export let currentScoreData = null;
+  export let intervalData = [];
+  export let consistencyData = [];
+  export let feedbackData = null;
+  export let sessionStatistics = null;
+  
+  // タブ管理
+  let activeTab = 'intervals';
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
   const sessionGradeDefinitions = {
@@ -125,6 +144,11 @@
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+  
+  // タブ切り替え
+  function switchTab(tab) {
+    activeTab = tab;
   }
   
   // セッション履歴からS-E級統合評価を算出
@@ -388,6 +412,94 @@
     {/if}
     
   </div>
+  
+  <!-- デバッグエリア完成機能の統合表示 -->
+  {#if currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics}
+    <div class="debug-integration-section" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
+      
+      <!-- 従来採点詳細（折りたたみ） -->
+      {#if currentScoreData}
+        <details class="score-details">
+          <summary class="score-details-summary">
+            <Trophy size="16" />
+            <span>
+              従来の採点詳細を見る
+            </span>
+          </summary>
+          <ScoreResultPanel 
+            totalScore={currentScoreData.totalScore}
+            grade={currentScoreData.grade}
+            componentScores={currentScoreData.componentScores}
+            className="mb-6"
+          />
+        </details>
+      {/if}
+      
+      <!-- フィードバック表示 -->
+      {#if feedbackData && Object.keys(feedbackData).length > 0}
+        <FeedbackDisplay 
+          feedback={feedbackData}
+          className="mb-6"
+        />
+      {/if}
+      
+      <!-- 詳細統計（タブ形式） -->
+      {#if intervalData.length > 0 || consistencyData.length > 0 || sessionStatistics}
+        <div class="scoring-tabs-container">
+          <div class="scoring-tabs">
+            <button 
+              class="scoring-tab"
+              class:active={activeTab === 'intervals'}
+              on:click={() => switchTab('intervals')}
+            >
+              音程別進捗
+            </button>
+            <button 
+              class="scoring-tab"
+              class:active={activeTab === 'consistency'}
+              on:click={() => switchTab('consistency')}
+            >
+              一貫性グラフ
+            </button>
+            <button 
+              class="scoring-tab"
+              class:active={activeTab === 'statistics'}
+              on:click={() => switchTab('statistics')}
+            >
+              セッション統計
+            </button>
+          </div>
+          
+          <!-- 音程別進捗タブ -->
+          {#if activeTab === 'intervals' && intervalData.length > 0}
+            <div class="tab-panel">
+              <IntervalProgressTracker 
+                intervalData={intervalData}
+              />
+            </div>
+          {/if}
+          
+          <!-- 一貫性グラフタブ -->
+          {#if activeTab === 'consistency' && consistencyData.length > 0}
+            <div class="tab-panel">
+              <ConsistencyGraph 
+                consistencyData={consistencyData}
+              />
+            </div>
+          {/if}
+          
+          <!-- セッション統計タブ -->
+          {#if activeTab === 'statistics' && sessionStatistics}
+            <div class="tab-panel">
+              <SessionStatistics 
+                statistics={sessionStatistics}
+              />
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
   
   <!-- SNS共有ボタン -->
   {#if scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8)}
@@ -658,6 +770,85 @@
     font-size: 0.875rem;
   }
   
+  /* デバッグエリア統合スタイル */
+  .debug-integration-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .score-details {
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .score-details-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    cursor: pointer;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.2s;
+  }
+  
+  .score-details-summary:hover {
+    background: #f3f4f6;
+  }
+  
+  .score-details[open] .score-details-summary {
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .scoring-tabs-container {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .scoring-tabs {
+    display: flex;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .scoring-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid #e5e7eb;
+  }
+  
+  .scoring-tab:last-child {
+    border-right: none;
+  }
+  
+  .scoring-tab:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  
+  .scoring-tab.active {
+    background: white;
+    color: #3b82f6;
+    border-bottom: 2px solid #3b82f6;
+  }
+  
+  .tab-panel {
+    padding: 1.5rem;
+  }
+  
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
     .unified-score-result {
@@ -684,6 +875,19 @@
     .session-bar {
       min-width: 70px;
       height: 70px;
+    }
+    
+    .scoring-tabs {
+      flex-direction: column;
+    }
+    
+    .scoring-tab {
+      border-right: none;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .scoring-tab:last-child {
+      border-bottom: none;
     }
   }
 </style>
