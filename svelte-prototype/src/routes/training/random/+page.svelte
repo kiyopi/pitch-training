@@ -56,8 +56,8 @@
   const buildTimestamp = "07/29 04:15";
   const updateStatus = "🎬 評価分布アニメーション実装・UX向上";
   
-  // 統一音階表記（グローバル定数）
-  const SCALE_NAMES = ['ド3', 'レ3', 'ミ3', 'ファ3', 'ソ3', 'ラ3', 'シ3', 'ド4'];
+  // 統一音階表記（相対音程表記）
+  const SCALE_NAMES = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド（高）'];
   
   // 基音関連
   let currentBaseNote = '';
