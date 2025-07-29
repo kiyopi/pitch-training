@@ -4,18 +4,13 @@
   import { fly, fade, slide } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
+  import { onMount } from 'svelte';
   
   export let noteResults = [];
   export let className = '';
   
   let showDetails = false;
   let showFrequencyDetails = {};
-  
-  // アニメーション用のスコア
-  const displayScore = tweened(0, {
-    duration: 1000,
-    easing: cubicOut
-  });
   
   // 4段階評価の定義
   const gradeDefinitions = {
@@ -24,6 +19,22 @@
     pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500' },
     needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500' }
   };
+  
+  // アニメーション用のスコア
+  const displayScore = tweened(0, {
+    duration: 1000,
+    easing: cubicOut
+  });
+  
+  // 評価分布バーのアニメーション用
+  const barWidths = Object.keys(gradeDefinitions).reduce((acc, key) => {
+    acc[key] = tweened(0, {
+      duration: 800,
+      easing: cubicOut,
+      delay: ['excellent', 'good', 'pass', 'needWork'].indexOf(key) * 100
+    });
+    return acc;
+  }, {});
   
   // 評価を計算
   function calculateGrade(cents) {
@@ -67,6 +78,16 @@
   $: if (noteResults.length > 0) {
     const baseScore = Math.max(0, 100 - Math.round(averageError / 10));
     displayScore.set(baseScore - penalty);
+    
+    // 評価分布バーのアニメーション開始
+    setTimeout(() => {
+      Object.entries(results).forEach(([key, count]) => {
+        if (barWidths[key]) {
+          const percentage = (count / 8) * 100;
+          barWidths[key].set(percentage);
+        }
+      });
+    }, 300); // 総合評価の後にバーアニメーション開始
   }
 </script>
 
@@ -107,8 +128,8 @@
           </div>
           
           <div class="bar-container">
-            <div class="distribution-bar {key === 'needWork' && count > 0 ? 'bg-red-500' : 'bg-gray-300'}" 
-                 style="width: {percentage}%; transition-delay: {i * 0.1}s">
+            <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
+                 style="width: {$barWidths[key]}%">
             </div>
           </div>
           
@@ -360,7 +381,12 @@
   .distribution-bar {
     height: 100%;
     border-radius: 12px;
-    transition: width 0.5s ease-out;
+    background: #3b82f6;
+    transition: width 0.3s ease-out;
+  }
+  
+  .distribution-bar.warning {
+    background: #ef4444;
   }
   
   .count-display {
@@ -671,4 +697,5 @@
       transform: translateY(0);
     }
   }
+  
 </style>

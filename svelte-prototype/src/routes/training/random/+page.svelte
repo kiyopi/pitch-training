@@ -52,9 +52,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v2.3.0-8NOTES";
-  const buildTimestamp = "07/29 04:00";
-  const updateStatus = "🎵 8音階評価システム実装・新UI導入";
+  const buildVersion = "v2.3.1-ANIMATED";
+  const buildTimestamp = "07/29 04:15";
+  const updateStatus = "🎬 評価分布アニメーション実装・UX向上";
   
   // 基音関連
   let currentBaseNote = '';
