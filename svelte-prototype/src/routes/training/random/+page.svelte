@@ -29,9 +29,37 @@
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
+  
+  // テスト用ダミーデータ生成
+  function generateTestUnifiedScoreData() {
+    return {
+      mode: 'random',
+      timestamp: new Date(),
+      duration: 180,
+      totalNotes: 8,
+      measuredNotes: 7,
+      averageAccuracy: 85,
+      overallGrade: 'A',
+      baseNote: 'C4',
+      baseFrequency: 261.63,
+      sessionHistory: [
+        { grade: 'A', accuracy: 87, baseNote: 'C4' },
+        { grade: 'B', accuracy: 78, baseNote: 'D4' },
+        { grade: 'A', accuracy: 92, baseNote: 'E4' },
+        { grade: 'S', accuracy: 95, baseNote: 'F4' },
+        { grade: 'B', accuracy: 82, baseNote: 'G4' },
+        { grade: 'A', accuracy: 88, baseNote: 'A4' },
+        { grade: 'C', accuracy: 74, baseNote: 'B4' },
+        { grade: 'A', accuracy: 84, baseNote: 'C5' }
+      ]
+    };
+  }
 
   // 基本状態管理
   let trainingPhase = 'setup'; // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
+  
+  // テスト表示用状態
+  let showTestResults = false;
   
   // マイクテストページからの遷移を早期検出
   let microphoneState = (() => {
@@ -1268,14 +1296,24 @@
       <div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #1e40af;">
         🚀 採点システムデバッグモード | Deploy: {buildTimestamp}
       </div>
-      <Button 
-        variant="secondary"
-        class="debug-button"
-        on:click={showTestScoring}
-        style="background: #3b82f6; color: white; border: none; font-weight: bold;"
-      >
-        🧪 テスト採点結果を表示（デバッグ用）
-      </Button>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <Button 
+          variant="secondary"
+          class="debug-button"
+          on:click={showTestScoring}
+          style="background: #3b82f6; color: white; border: none; font-weight: bold; font-size: 0.8rem;"
+        >
+          🧪 従来採点結果
+        </Button>
+        <Button 
+          variant="secondary"
+          class="debug-button"
+          on:click={() => showTestResults = !showTestResults}
+          style="background: #10b981; color: white; border: none; font-weight: bold; font-size: 0.8rem;"
+        >
+          🚀 v1.0統合採点結果
+        </Button>
+      </div>
     </div>
     
     <div class="debug-info">
@@ -1500,6 +1538,22 @@
             {/if}
           </div>
         </Card>
+        
+        <!-- 🧪 v1.0統合採点結果テスト表示 -->
+        {#if showTestResults}
+          <Card class="main-card">
+            <div class="card-header">
+              <h3 class="section-title">🚀 v1.0統合採点結果（テスト表示）</h3>
+            </div>
+            <div class="card-content">
+              <UnifiedScoreResult 
+                scoreData={generateTestUnifiedScoreData()}
+                showDetails={false}
+                className="unified-test-result"
+              />
+            </div>
+          </Card>
+        {/if}
       {:else}
         <!-- 従来の結果表示（フォールバック） -->
         <Card class="main-card results-card">

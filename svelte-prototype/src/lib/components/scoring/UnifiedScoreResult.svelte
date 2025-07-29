@@ -4,6 +4,7 @@
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
   import { onMount } from 'svelte';
+  import SNSShareButtons from './SNSShareButtons.svelte';
   
   export let scoreData = null;
   export let showDetails = false;
@@ -254,26 +255,35 @@
           <span>平均精度: {scoreData.averageAccuracy}%</span>
         </div>
         
-        <!-- 8音階達成度 -->
-        <div class="achievement-section">
-          <div class="achievement-title">ドレミファソラシド 達成度</div>
-          <div class="achievement-bar">
-            {#if scoreData.noteResults}
-              {#each scoreData.noteResults as note}
-                <div class="note-indicator {note.accuracy !== 'notMeasured' ? 
-                  (Math.abs(note.cents) <= 15 ? 'excellent' : 
-                   Math.abs(note.cents) <= 25 ? 'good' : 
-                   Math.abs(note.cents) <= 40 ? 'pass' : 'needWork') : 
-                  'notMeasured'}" 
-                  title="{note.name}: {note.accuracy !== 'notMeasured' ? 
-                    (Math.abs(note.cents) <= 15 ? '優秀 (±15¢以内)' : 
-                     Math.abs(note.cents) <= 25 ? '良好 (±25¢以内)' : 
-                     Math.abs(note.cents) <= 40 ? '合格 (±40¢以内)' : '要練習 (±41¢以上)') : 
-                    '測定できませんでした'}">
-                  <span class="note-name">{note.name}</span>
+        <!-- セッション履歴表示 -->
+        <div class="session-history-section">
+          <div class="session-title">
+            {#if scoreData.mode === 'random'}
+              🎵 ランダム基音トレーニング完走履歴
+            {:else if scoreData.mode === 'continuous'}
+              ⏱️ 連続チャレンジモード完走履歴
+            {:else if scoreData.mode === 'chromatic'}
+              🎹 12音階マスターモード完走履歴
+            {/if}
+          </div>
+          <div class="session-bars">
+            {#if scoreData.sessionHistory}
+              {#each scoreData.sessionHistory as session, index}
+                <div class="session-bar completed grade-{session.grade.toLowerCase()}"
+                     title="セッション{index + 1}: {session.grade}級 (精度{session.accuracy}%)">
+                  <div class="session-number">{index + 1}</div>
+                  <div class="session-grade">{session.grade}</div>
+                  {#if scoreData.mode === 'random' || scoreData.mode === 'continuous'}
+                    <div class="session-detail">{session.baseNote || 'N/A'}</div>
+                  {:else if scoreData.mode === 'chromatic'}
+                    <div class="session-detail">{session.chromaticNote || 'N/A'}</div>
+                  {/if}
                 </div>
               {/each}
             {/if}
+          </div>
+          <div class="completion-message">
+            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
           </div>
         </div>
       </div>
@@ -289,6 +299,28 @@
           <Timer class="w-4 h-4 text-blue-500" />
           <span>継続時間: {formatDuration(scoreData.duration)}</span>
         </div>
+        
+        <!-- セッション履歴表示 -->
+        <div class="session-history-section">
+          <div class="session-title">
+            ⏱️ 連続チャレンジモード完走履歴
+          </div>
+          <div class="session-bars">
+            {#if scoreData.sessionHistory}
+              {#each scoreData.sessionHistory as session, index}
+                <div class="session-bar completed grade-{session.grade.toLowerCase()}"
+                     title="セッション{index + 1}: {session.grade}級 (精度{session.accuracy}%)">
+                  <div class="session-number">{index + 1}</div>
+                  <div class="session-grade">{session.grade}</div>
+                  <div class="session-detail">{session.baseNote || 'N/A'}</div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+          <div class="completion-message">
+            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
+          </div>
+        </div>
       </div>
       
     {:else if scoreData?.mode === 'chromatic'}
@@ -297,6 +329,28 @@
         <div class="stat-row">
           <Piano class="w-4 h-4 text-purple-600" />
           <span>半音精度: {scoreData.overallChromaticAccuracy || 0}%</span>
+        </div>
+        
+        <!-- セッション履歴表示 -->
+        <div class="session-history-section">
+          <div class="session-title">
+            🎹 12音階マスターモード完走履歴
+          </div>
+          <div class="session-bars chromatic-mode">
+            {#if scoreData.sessionHistory}
+              {#each scoreData.sessionHistory as session, index}
+                <div class="session-bar completed grade-{session.grade.toLowerCase()}"
+                     title="セッション{index + 1}: {session.grade}級 (精度{session.accuracy}%)">
+                  <div class="session-number">{index + 1}</div>
+                  <div class="session-grade">{session.grade}</div>
+                  <div class="session-detail">{session.chromaticNote || 'N/A'}</div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+          <div class="completion-message">
+            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
+          </div>
         </div>
       </div>
     {/if}
@@ -317,6 +371,11 @@
       </div>
     {/if}
   </div>
+  
+  <!-- SNS共有ボタン -->
+  {#if scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8)}
+    <SNSShareButtons {scoreData} />
+  {/if}
   
   <!-- 詳細表示トグル -->
   {#if showDetails}
@@ -379,11 +438,11 @@
     font-size: 0.95rem;
   }
   
-  .achievement-section {
+  .session-history-section {
     margin-top: 1rem;
   }
   
-  .achievement-title {
+  .session-title {
     font-size: 0.875rem;
     font-weight: 500;
     color: #6b7280;
@@ -391,30 +450,106 @@
     text-align: center;
   }
   
-  .achievement-bar {
+  .session-bars {
     display: flex;
-    gap: 4px;
-    padding: 0.5rem;
+    gap: 6px;
+    padding: 0.75rem;
     background: white;
-    border-radius: 6px;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
-  .note-indicator {
+  .session-bars.chromatic-mode {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  
+  @media (max-width: 640px) {
+    .session-bars.chromatic-mode {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  
+  .session-bar {
     flex: 1;
-    height: 40px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    min-width: 80px;
+    height: 60px;
+    border-radius: 6px;
+    transition: all 0.3s;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
+    border: 2px solid transparent;
+    cursor: pointer;
   }
   
-  .note-name {
-    font-size: 0.75rem;
-    font-weight: 600;
+  .session-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .session-number {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2px;
+  }
+  
+  .session-grade {
+    font-size: 1rem;
+    font-weight: 700;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .session-detail {
+    font-size: 0.6rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 1px;
+  }
+  
+  .completion-message {
+    text-align: center;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #059669;
+    font-weight: 500;
+  }
+  
+  /* グレード別色クラス */
+  .session-bar.grade-s {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    border-color: #7c3aed;
+  }
+  
+  .session-bar.grade-a {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    border-color: #d97706;
+  }
+  
+  .session-bar.grade-b {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    border-color: #059669;
+  }
+  
+  .session-bar.grade-c {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    border-color: #2563eb;
+  }
+  
+  .session-bar.grade-d {
+    background: linear-gradient(135deg, #f97316, #fb923c);
+    border-color: #ea580c;
+  }
+  
+  .session-bar.grade-e {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    border-color: #dc2626;
   }
   
   .note-indicator.excellent { background: #fbbf24; }
