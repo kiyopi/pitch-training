@@ -255,18 +255,26 @@
         </div>
         
         <!-- 8音階達成度 -->
-        <div class="achievement-bar">
-          {#if scoreData.noteResults}
-            {#each scoreData.noteResults as note}
-              <div class="note-indicator {note.accuracy !== 'notMeasured' ? 
-                (Math.abs(note.cents) <= 15 ? 'excellent' : 
-                 Math.abs(note.cents) <= 25 ? 'good' : 
-                 Math.abs(note.cents) <= 40 ? 'pass' : 'needWork') : 
-                'notMeasured'}" 
-                title="{note.name}">
-              </div>
-            {/each}
-          {/if}
+        <div class="achievement-section">
+          <div class="achievement-title">ドレミファソラシド 達成度</div>
+          <div class="achievement-bar">
+            {#if scoreData.noteResults}
+              {#each scoreData.noteResults as note}
+                <div class="note-indicator {note.accuracy !== 'notMeasured' ? 
+                  (Math.abs(note.cents) <= 15 ? 'excellent' : 
+                   Math.abs(note.cents) <= 25 ? 'good' : 
+                   Math.abs(note.cents) <= 40 ? 'pass' : 'needWork') : 
+                  'notMeasured'}" 
+                  title="{note.name}: {note.accuracy !== 'notMeasured' ? 
+                    (Math.abs(note.cents) <= 15 ? '優秀 (±15¢以内)' : 
+                     Math.abs(note.cents) <= 25 ? '良好 (±25¢以内)' : 
+                     Math.abs(note.cents) <= 40 ? '合格 (±40¢以内)' : '要練習 (±41¢以上)') : 
+                    '測定できませんでした'}">
+                  <span class="note-name">{note.name}</span>
+                </div>
+              {/each}
+            {/if}
+          </div>
         </div>
       </div>
       
@@ -371,10 +379,21 @@
     font-size: 0.95rem;
   }
   
+  .achievement-section {
+    margin-top: 1rem;
+  }
+  
+  .achievement-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  
   .achievement-bar {
     display: flex;
     gap: 4px;
-    margin-top: 1rem;
     padding: 0.5rem;
     background: white;
     border-radius: 6px;
@@ -382,16 +401,34 @@
   
   .note-indicator {
     flex: 1;
-    height: 24px;
+    height: 40px;
     border-radius: 4px;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .note-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
   
   .note-indicator.excellent { background: #fbbf24; }
   .note-indicator.good { background: #10b981; }
   .note-indicator.pass { background: #3b82f6; }
   .note-indicator.needWork { background: #ef4444; }
-  .note-indicator.notMeasured { background: #e5e7eb; }
+  .note-indicator.notMeasured { 
+    background: #e5e7eb; 
+  }
+  
+  .note-indicator.notMeasured .note-name {
+    color: #6b7280;
+    text-shadow: none;
+  }
   
   .common-stats {
     display: flex;
