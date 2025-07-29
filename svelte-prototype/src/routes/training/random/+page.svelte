@@ -50,9 +50,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v2.2.2-SCORING";
-  const buildTimestamp = "07/29 03:40";
-  const updateStatus = "🎯 採点データ生成エラー修正・5側面評価完全対応";
+  const buildVersion = "v2.2.3-LUCIDE";
+  const buildTimestamp = "07/29 03:45";
+  const updateStatus = "🎨 Lucideアイコン導入・shadcn/uiテーマ統一";
   
   // 基音関連
   let currentBaseNote = '';

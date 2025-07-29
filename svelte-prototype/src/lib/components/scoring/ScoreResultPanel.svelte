@@ -1,4 +1,6 @@
 <script>
+  import { Target, Zap, BarChart3, Navigation, Activity } from 'lucide-svelte';
+  
   export let totalScore = 0;
   export let grade = 'C';
   export let componentScores = {};
@@ -23,11 +25,11 @@
   
   // 5側面採点項目の定義
   const scoringAspects = [
-    { key: 'pitchAccuracy', name: '音程精度', icon: '🎯', weight: 40 },
-    { key: 'recognitionSpeed', name: '認識速度', icon: '⚡', weight: 20 },
-    { key: 'intervalMastery', name: '音程習得', icon: '📊', weight: 20 },
-    { key: 'directionAccuracy', name: '方向精度', icon: '🧭', weight: 10 },
-    { key: 'consistency', name: '一貫性', icon: '🎪', weight: 10 }
+    { key: 'pitchAccuracy', name: '音程精度', icon: Target, weight: 40 },
+    { key: 'recognitionSpeed', name: '認識速度', icon: Zap, weight: 20 },
+    { key: 'intervalMastery', name: '音程習得', icon: BarChart3, weight: 20 },
+    { key: 'directionAccuracy', name: '方向精度', icon: Navigation, weight: 10 },
+    { key: 'consistency', name: '一貫性', icon: Activity, weight: 10 }
   ];
   
   $: gradeStyle = getGradeStyle(grade);
@@ -58,7 +60,7 @@
         <div class="scoring-aspect">
           <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-2">
-              <span class="text-xl">{aspect.icon}</span>
+              <svelte:component this={aspect.icon} class="w-5 h-5 text-gray-600" />
               <span class="font-medium text-gray-700">{aspect.name}</span>
               <span class="text-xs text-gray-500">({aspect.weight}%)</span>
             </div>
