@@ -112,17 +112,7 @@
           this={gradeDefinitions[overallGrade].icon} 
           class="grade-icon-large {gradeDefinitions[overallGrade].color}" 
         />
-        {#if overallGrade === 'excellent'}
-          <div class="sparkle-effect">
-            <div class="sparkle sparkle-1">✨</div>
-            <div class="sparkle sparkle-2">⭐</div>
-            <div class="sparkle sparkle-3">✨</div>
-            <div class="sparkle sparkle-4">⭐</div>
-          </div>
-        {/if}
-        {#if overallGrade === 'good'}
-          <div class="shine-effect"></div>
-        {/if}
+        <!-- アニメーション削除：後回し -->
       </div>
       
       <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
@@ -214,64 +204,19 @@
            class:outlier={isOutlier}
            in:fly={{ x: -20, duration: 300, delay: 300 + i * 50 }}>
         
-        <!-- ヘッダー -->
-        <div class="note-header">
-          <div class="note-info">
-            <svelte:component 
-              this={gradeDefinitions[grade].icon} 
-              class="w-5 h-5 {gradeDefinitions[grade].color}" 
-            />
-            <span class="note-name">{note.name}</span>
-          </div>
-          
-          <div class="cents-display {grade}">
-            {#if grade === 'notMeasured'}
-              測定不可
-            {:else}
-              {note.cents > 0 ? '+' : ''}{note.cents}¢
-              {#if isOutlier}
-                <span class="outlier-badge">
-                  {Math.abs(note.cents) > 100 ? '重大' : '注意'}
-                </span>
-              {/if}
-            {/if}
-          </div>
-        </div>
-        
-        <!-- 精度バー -->
-        {#if grade !== 'notMeasured'}
-          <div class="accuracy-bar">
-            <div class="bar-track">
-              <div class="center-line-enhanced">
-                <div class="center-marker"></div>
-                <span class="center-label">正確</span>
-              </div>
-              <div class="accuracy-indicator {grade}" 
-                   style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 100) * 50))}%">
-                <div class="indicator-arrow {grade}"></div>
-              </div>
-            </div>
-          </div>
-        {:else}
-          <div class="not-measured-indicator">
-            <AlertCircle class="w-6 h-6 text-gray-400" />
-            <span class="not-measured-text">音声を検出できませんでした</span>
-          </div>
-        {/if}
-        
-        <!-- 統合周波数詳細（グレーエリア削除） -->
-        <div class="frequency-details-integrated">
+        <!-- 統合ヘッダー（精度バー上に情報まとめ） -->
+        <div class="integrated-header">
           {#if grade === 'notMeasured'}
-            <div class="integrated-content">
+            <div class="integrated-info">
               <svelte:component 
                 this={gradeDefinitions[grade].icon} 
                 class="w-4 h-4 {gradeDefinitions[grade].color}" 
               />
               <span class="note-name-integrated">{note.name}</span>
-              <span class="detection-failed">検出できませんでした</span>
+              <span class="detection-failed">測定できませんでした</span>
             </div>
           {:else}
-            <div class="integrated-content">
+            <div class="integrated-info">
               <svelte:component 
                 this={gradeDefinitions[grade].icon} 
                 class="w-4 h-4 {gradeDefinitions[grade].color}" 
@@ -286,6 +231,21 @@
             </div>
           {/if}
         </div>
+        
+        <!-- 精度バー（矢印は後回し） -->
+        {#if grade !== 'notMeasured'}
+          <div class="accuracy-bar">
+            <div class="bar-track">
+              <div class="center-line-enhanced">
+                <div class="center-marker"></div>
+                <span class="center-label">正確</span>
+              </div>
+              <div class="accuracy-indicator {grade}" 
+                   style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 100) * 50))}%">
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     {/each}
   </div>
@@ -813,12 +773,12 @@
     font-size: 0.875rem;
   }
 
-  /* 統合周波数詳細（グレーエリア削除版） */
-  .frequency-details-integrated {
-    margin-top: 0.75rem;
+  /* 統合ヘッダー（精度バー上に情報集約） */
+  .integrated-header {
+    margin-bottom: 0.5rem;
   }
 
-  .integrated-content {
+  .integrated-info {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -851,33 +811,7 @@
     font-weight: 600;
   }
 
-  /* 精度バー矢印 */
-  .indicator-arrow {
-    position: absolute;
-    top: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-  }
-
-  .indicator-arrow.excellent {
-    border-bottom: 8px solid #eab308;
-  }
-
-  .indicator-arrow.good {
-    border-bottom: 8px solid #10b981;
-  }
-
-  .indicator-arrow.pass {
-    border-bottom: 8px solid #3b82f6;
-  }
-
-  .indicator-arrow.needWork {
-    border-bottom: 8px solid #ef4444;
-  }
+  /* 精度バー矢印（後回し） */
 
   /* プルダウンアイコン */
   .chevron-icon {

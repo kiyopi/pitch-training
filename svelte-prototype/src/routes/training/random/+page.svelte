@@ -414,14 +414,33 @@
     generateFinalScoring();
     
     // 8音階評価データを新コンポーネント用に変換
-    noteResultsForDisplay = scaleEvaluations.map(evaluation => ({
-      name: evaluation.stepName,
-      cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
-      targetFreq: evaluation.expectedFrequency,
-      detectedFreq: evaluation.adjustedFrequency || null,
-      diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
-      accuracy: evaluation.accuracy
-    }));
+    // 全8音階を固定表示（測定できなかった音も含む）
+    const allNoteNames = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド↑'];
+    noteResultsForDisplay = allNoteNames.map(noteName => {
+      const evaluation = scaleEvaluations.find(evaluation => evaluation.stepName === noteName);
+      
+      if (evaluation) {
+        // 測定できた音
+        return {
+          name: evaluation.stepName,
+          cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
+          targetFreq: evaluation.expectedFrequency,
+          detectedFreq: evaluation.adjustedFrequency || null,
+          diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
+          accuracy: evaluation.accuracy
+        };
+      } else {
+        // 測定できなかった音
+        return {
+          name: noteName,
+          cents: null,
+          targetFreq: null,
+          detectedFreq: null,
+          diff: null,
+          accuracy: 'notMeasured'
+        };
+      }
+    });
     
     trainingPhase = 'results';
   }
