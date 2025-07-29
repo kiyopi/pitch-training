@@ -200,7 +200,6 @@
       {@const grade = calculateGrade(note.cents)}
       {@const isOutlier = Math.abs(note.cents) > 50}
       <div class="note-result {grade}" 
-           class:outlier={isOutlier}
            in:fly={{ x: -20, duration: 300, delay: 300 + i * 50 }}>
         
         <!-- シンプル統合ヘッダー（色分けのみ） -->
@@ -493,11 +492,11 @@
   }
   
   .note-result {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     padding: 1rem;
     background: #f9fafb;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 2px solid #e5e7eb;
     transition: all 0.2s;
   }
   
@@ -505,10 +504,33 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
-  .note-result.outlier {
-    border-color: #fca5a5;
+  /* 評価別の枠線色 */
+  .note-result.excellent {
+    border-color: #fbbf24;
+    background: #fffbeb;
+  }
+  
+  .note-result.good {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+  
+  .note-result.pass {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+  
+  .note-result.needWork {
+    border-color: #ef4444;
     background: #fef2f2;
   }
+  
+  .note-result.notMeasured {
+    border-color: #9ca3af;
+    background: #f9fafb;
+  }
+  
+  /* outlierクラスは削除（評価別枠線で代替） */
   
   .note-header {
     display: flex;
