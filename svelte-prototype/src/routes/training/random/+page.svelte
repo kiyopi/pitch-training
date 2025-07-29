@@ -30,6 +30,8 @@
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
   
+  // Force GitHub Actions trigger: 2025-07-29 06:30
+  
   // テスト用ダミーデータ生成（正しい4段階評価システム）
   function generateTestUnifiedScoreData() {
     return {
