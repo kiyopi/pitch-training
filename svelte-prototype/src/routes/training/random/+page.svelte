@@ -1557,24 +1557,8 @@
         </div>
       {/if}
       
-      <!-- メイン採点結果（5側面評価） -->
+      <!-- 🧪 v1.0統合採点結果テスト表示 -->
       {#if showScoringResults}
-        <ScoreResultPanel 
-          totalScore={currentScoreData.totalScore}
-          grade={currentScoreData.grade}
-          componentScores={currentScoreData.componentScores}
-          className="mb-6"
-        />
-        
-        <!-- フィードバック表示 -->
-        {#if feedbackData && Object.keys(feedbackData).length > 0}
-          <FeedbackDisplay 
-            feedback={feedbackData}
-            className="mb-6"
-          />
-        {/if}
-        
-        <!-- 🧪 v1.0統合採点結果テスト表示 -->
         {#if showTestResults}
           <Card class="main-card">
             <div class="card-header">
