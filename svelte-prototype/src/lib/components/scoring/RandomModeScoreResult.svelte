@@ -204,30 +204,65 @@
            class:outlier={isOutlier}
            in:fly={{ x: -20, duration: 300, delay: 300 + i * 50 }}>
         
-        <!-- 統合ヘッダー（精度バー上に情報まとめ） -->
-        <div class="integrated-header">
-          {#if grade === 'notMeasured'}
-            <div class="integrated-info">
+        <!-- 強化表現ヘッダー（B案：段階的成功表現） -->
+        <div class="enhanced-header {grade}">
+          <div class="note-info-section">
+            <div class="note-identity">
               <svelte:component 
                 this={gradeDefinitions[grade].icon} 
-                class="w-4 h-4 {gradeDefinitions[grade].color}" 
+                class="note-icon {gradeDefinitions[grade].color}" 
               />
-              <span class="note-name-integrated">{note.name}</span>
-              <span class="detection-failed">測定できませんでした</span>
+              <span class="note-name-enhanced">{note.name}</span>
+              {#if grade !== 'notMeasured'}
+                <span class="target-freq">（{note.targetFreq}Hz）</span>
+              {/if}
+            </div>
+            
+            <div class="grade-display-section">
+              {#if grade === 'notMeasured'}
+                <div class="grade-badge notMeasured">
+                  <span class="grade-label">測定不可</span>
+                </div>
+              {:else if grade === 'excellent'}
+                <div class="grade-badge excellent">
+                  <span class="grade-emoji">🏆</span>
+                  <span class="grade-label">EXCELLENT</span>
+                  <span class="cents-badge">{note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+                </div>
+              {:else if grade === 'good'}
+                <div class="grade-badge good">
+                  <span class="grade-emoji">⭐</span>
+                  <span class="grade-label">GOOD</span>
+                  <span class="cents-badge">{note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+                </div>
+              {:else if grade === 'pass'}
+                <div class="grade-badge pass">
+                  <span class="grade-emoji">👍</span>
+                  <span class="grade-label">PASS</span>
+                  <span class="cents-badge">{note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+                </div>
+              {:else}
+                <div class="grade-badge needWork">
+                  <span class="grade-emoji">📚</span>
+                  <span class="grade-label">PRACTICE</span>
+                  <span class="cents-badge">{note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+                  {#if isOutlier}
+                    <span class="outlier-badge-new">
+                      {Math.abs(note.cents) > 100 ? '重大' : '注意'}
+                    </span>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+          
+          {#if grade !== 'notMeasured'}
+            <div class="detection-info">
+              <span class="detection-text">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz)</span>
             </div>
           {:else}
-            <div class="integrated-info">
-              <svelte:component 
-                this={gradeDefinitions[grade].icon} 
-                class="w-4 h-4 {gradeDefinitions[grade].color}" 
-              />
-              <span class="note-name-integrated">{note.name}（{note.targetFreq}Hz）</span>
-              <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
-              {#if isOutlier}
-                <span class="outlier-badge-horizontal">
-                  {Math.abs(note.cents) > 100 ? '重大' : '注意'}
-                </span>
-              {/if}
+            <div class="detection-info failed">
+              <span class="detection-text">測定できませんでした</span>
             </div>
           {/if}
         </div>
@@ -773,41 +808,173 @@
     font-size: 0.875rem;
   }
 
-  /* 統合ヘッダー（精度バー上に情報集約） */
-  .integrated-header {
+  /* B案：段階的成功表現ヘッダー */
+  .enhanced-header {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .enhanced-header.excellent {
+    background: linear-gradient(135deg, #fef3c7, #fed7aa);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  .enhanced-header.good {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border: 2px solid #10b981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .enhanced-header.pass {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 2px solid #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .enhanced-header.needWork {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 2px solid #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .enhanced-header.notMeasured {
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+    border: 2px solid #d1d5db;
+    box-shadow: 0 4px 12px rgba(209, 213, 219, 0.3);
+  }
+
+  .note-info-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
   }
 
-  .integrated-info {
+  .note-identity {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-wrap: wrap;
+  }
+
+  .note-icon {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .note-name-enhanced {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #1f2937;
+  }
+
+  .target-freq {
     font-size: 0.875rem;
-  }
-
-  .note-name-integrated {
-    font-weight: 600;
-    color: #374151;
-    min-width: 120px;
-  }
-
-  .detection-result {
     color: #6b7280;
-    flex: 1;
-  }
-
-  .detection-failed {
-    color: #ef4444;
     font-weight: 500;
   }
 
-  .outlier-badge-horizontal {
+  .grade-display-section {
+    display: flex;
+    align-items: center;
+  }
+
+  .grade-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  .grade-badge.excellent {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+  }
+
+  .grade-badge.good {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+  }
+
+  .grade-badge.pass {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3b82f6;
+  }
+
+  .grade-badge.needWork {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+  }
+
+  .grade-badge.notMeasured {
+    background: rgba(156, 163, 175, 0.2);
+    border: 1px solid #9ca3af;
+  }
+
+  .grade-emoji {
+    font-size: 1.25rem;
+  }
+
+  .grade-label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .grade-badge.excellent .grade-label {
+    color: #92400e;
+  }
+
+  .grade-badge.good .grade-label {
+    color: #065f46;
+  }
+
+  .grade-badge.pass .grade-label {
+    color: #1e40af;
+  }
+
+  .grade-badge.needWork .grade-label {
+    color: #991b1b;
+  }
+
+  .grade-badge.notMeasured .grade-label {
+    color: #6b7280;
+  }
+
+  .cents-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
     padding: 0.125rem 0.375rem;
-    background: #ef4444;
+    background: white;
+    border-radius: 4px;
+    margin-left: 0.25rem;
+  }
+
+  .outlier-badge-new {
+    padding: 0.125rem 0.375rem;
+    background: #7f1d1d;
     color: white;
     border-radius: 4px;
-    font-size: 0.75rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    margin-left: 0.25rem;
+  }
+
+  .detection-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .detection-info.failed .detection-text {
+    color: #ef4444;
     font-weight: 600;
   }
 
