@@ -25,6 +25,7 @@
     SessionStatistics
   } from '$lib/components/scoring';
   import RandomModeScoreResult from '$lib/components/scoring/RandomModeScoreResult.svelte';
+  import UnifiedScoreResult from '$lib/components/scoring/UnifiedScoreResult.svelte';
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
@@ -131,6 +132,9 @@
   
   // ランダムモード用の8音階評価データ
   let noteResultsForDisplay = [];
+  
+  // 統合採点システム用データ
+  let unifiedScoreData = null;
   
   // Tone.jsサンプラー
   let sampler = null;
@@ -438,6 +442,9 @@
         };
       }
     });
+    
+    // 統合採点システムデータを生成
+    generateUnifiedScoreData();
     
     trainingPhase = 'results';
   }
@@ -764,6 +771,71 @@
   // タブ切り替え
   function switchTab(tab) {
     activeTab = tab;
+  }
+  
+  // 統合採点データ生成
+  function generateUnifiedScoreData() {
+    if (!noteResultsForDisplay || noteResultsForDisplay.length === 0) {
+      console.warn('[UnifiedScore] noteResultsForDisplay が空です');
+      return;
+    }
+    
+    // 測定成功率計算
+    const measuredNotes = noteResultsForDisplay.filter(note => note.accuracy !== 'notMeasured').length;
+    const totalNotes = noteResultsForDisplay.length;
+    
+    // 平均精度計算
+    const validAccuracies = noteResultsForDisplay
+      .filter(note => note.accuracy !== 'notMeasured' && typeof note.accuracy === 'number')
+      .map(note => note.accuracy);
+    const averageAccuracy = validAccuracies.length > 0 
+      ? Math.round(validAccuracies.reduce((sum, acc) => sum + acc, 0) / validAccuracies.length)
+      : 0;
+    
+    // 基音情報
+    const baseNote = currentBaseNote || 'Unknown';
+    const baseFrequency = currentBaseFrequency || 0;
+    
+    // 統合スコアデータを作成
+    unifiedScoreData = {
+      mode: 'random',
+      timestamp: new Date(),
+      duration: 0, // 今回は時間測定なし
+      totalNotes: totalNotes,
+      measuredNotes: measuredNotes,
+      averageAccuracy: averageAccuracy,
+      baseNote: baseNote,
+      baseFrequency: baseFrequency,
+      noteResults: noteResultsForDisplay,
+      distribution: calculateGradeDistribution(noteResultsForDisplay)
+    };
+    
+    console.log('[UnifiedScore] 統合採点データ生成完了:', unifiedScoreData);
+  }
+  
+  // グレード分布計算
+  function calculateGradeDistribution(noteResults) {
+    const distribution = {
+      excellent: 0,
+      good: 0,
+      pass: 0,
+      needWork: 0,
+      notMeasured: 0
+    };
+    
+    noteResults.forEach(note => {
+      if (note.accuracy === 'notMeasured' || note.cents === null) {
+        distribution.notMeasured++;
+      } else {
+        const absCents = Math.abs(note.cents);
+        if (absCents <= 15) distribution.excellent++;
+        else if (absCents <= 25) distribution.good++;
+        else if (absCents <= 40) distribution.pass++;
+        else distribution.needWork++;
+      }
+    });
+    
+    return distribution;
   }
   
   // デバッグ用: テスト採点結果を強制表示
@@ -1322,12 +1394,29 @@
 
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
-      <!-- ランダムモード専用採点結果 -->
-      {#if noteResultsForDisplay.length > 0}
-        <RandomModeScoreResult 
-          noteResults={noteResultsForDisplay}
+      <!-- 統合採点システム結果（メイン表示） -->
+      {#if unifiedScoreData}
+        <UnifiedScoreResult 
+          scoreData={unifiedScoreData}
+          showDetails={false}
           className="mb-6"
         />
+      {/if}
+      
+      <!-- ランダムモード専用採点結果（詳細表示） -->
+      {#if noteResultsForDisplay.length > 0}
+        <details class="detailed-random-scoring">
+          <summary class="cursor-pointer text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2">
+              <ChevronRight class="w-4 h-4" />
+              8音階詳細採点を見る
+            </span>
+          </summary>
+          <RandomModeScoreResult 
+            noteResults={noteResultsForDisplay}
+            className="mb-6"
+          />
+        </details>
       {/if}
       
       <!-- メイン採点結果（5側面評価） -->
@@ -2216,7 +2305,8 @@
   }
   
   /* 折りたたみ詳細セクション */
-  .traditional-scoring-details {
+  .traditional-scoring-details,
+  .detailed-random-scoring {
     margin-top: 2rem;
     padding: 1rem;
     background: #f9fafb;
