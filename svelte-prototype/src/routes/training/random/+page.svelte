@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { page } from '$app/stores';
+  import { ChevronRight } from 'lucide-svelte';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
@@ -23,6 +24,7 @@
     FeedbackDisplay,
     SessionStatistics
   } from '$lib/components/scoring';
+  import RandomModeScoreResult from '$lib/components/scoring/RandomModeScoreResult.svelte';
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
@@ -50,9 +52,9 @@
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
-  const buildVersion = "v2.2.3-LUCIDE";
-  const buildTimestamp = "07/29 03:45";
-  const updateStatus = "🎨 Lucideアイコン導入・shadcn/uiテーマ統一";
+  const buildVersion = "v2.3.0-8NOTES";
+  const buildTimestamp = "07/29 04:00";
+  const updateStatus = "🎵 8音階評価システム実装・新UI導入";
   
   // 基音関連
   let currentBaseNote = '';
@@ -128,6 +130,9 @@
   };
   let showScoringResults = false;
   let activeTab = 'intervals'; // 'intervals' | 'consistency' | 'statistics'
+  
+  // ランダムモード用の8音階評価データ
+  let noteResultsForDisplay = [];
   
   // Tone.jsサンプラー
   let sampler = null;
@@ -407,6 +412,16 @@
     
     // 強化採点エンジンの結果生成
     generateFinalScoring();
+    
+    // 8音階評価データを新コンポーネント用に変換
+    noteResultsForDisplay = scaleEvaluations.map(evaluation => ({
+      name: evaluation.stepName,
+      cents: Math.round(evaluation.centDifference),
+      targetFreq: evaluation.expectedFrequency,
+      detectedFreq: evaluation.adjustedFrequency,
+      diff: evaluation.adjustedFrequency - evaluation.expectedFrequency,
+      accuracy: evaluation.accuracy
+    }));
     
     trainingPhase = 'results';
   }
@@ -1291,14 +1306,30 @@
 
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
-      <!-- メイン採点結果 -->
-      {#if showScoringResults}
-        <ScoreResultPanel 
-          totalScore={currentScoreData.totalScore}
-          grade={currentScoreData.grade}
-          componentScores={currentScoreData.componentScores}
+      <!-- ランダムモード専用採点結果 -->
+      {#if noteResultsForDisplay.length > 0}
+        <RandomModeScoreResult 
+          noteResults={noteResultsForDisplay}
           className="mb-6"
         />
+      {/if}
+      
+      <!-- メイン採点結果（5側面評価） -->
+      {#if showScoringResults}
+        <details class="traditional-scoring-details">
+          <summary class="cursor-pointer text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2">
+              <ChevronRight class="w-4 h-4" />
+              従来の採点詳細を見る
+            </span>
+          </summary>
+          <ScoreResultPanel 
+            totalScore={currentScoreData.totalScore}
+            grade={currentScoreData.grade}
+            componentScores={currentScoreData.componentScores}
+            className="mb-6"
+          />
+        </details>
         
         <!-- フィードバック表示 -->
         {#if feedbackData && Object.keys(feedbackData).length > 0}
@@ -2166,5 +2197,30 @@
       flex: 1;
       min-width: 120px;
     }
+  }
+  
+  /* 折りたたみ詳細セクション */
+  .traditional-scoring-details {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+  
+  .traditional-scoring-details summary {
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  
+  .traditional-scoring-details summary:hover {
+    color: #374151;
+  }
+  
+  .traditional-scoring-details[open] summary span {
+    transform: rotate(90deg);
+  }
+  
+  .traditional-scoring-details summary span {
+    transition: transform 0.2s;
   }
 </style>
