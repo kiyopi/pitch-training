@@ -9,6 +9,12 @@
   let shareImageUrl = '';
   let copySuccess = false;
   
+  // 4段階評価システム定義
+  const gradeNames = {
+    excellent: '優秀', good: '良好', pass: '合格', 
+    needWork: '要練習', notMeasured: '測定不可'
+  };
+  
   // SNS共有画像生成
   async function generateShareImage() {
     if (!canvas || !scoreData) return '';
@@ -30,16 +36,22 @@
     ctx.textAlign = 'center';
     ctx.fillText('🎵 相対音感トレーニング結果', width / 2, 80);
     
-    // グレード表示
-    const grade = scoreData.overallGrade || 'E';
-    const gradeColors = {
-      S: '#8b5cf6', A: '#f59e0b', B: '#10b981',
-      C: '#3b82f6', D: '#f97316', E: '#ef4444'
+    // グレード表示（4段階評価システム）
+    const gradeNames = {
+      excellent: '優秀', good: '良好', pass: '合格', 
+      needWork: '要練習', notMeasured: '測定不可'
     };
+    const gradeColors = {
+      excellent: '#fbbf24', good: '#10b981', pass: '#3b82f6',
+      needWork: '#ef4444', notMeasured: '#9ca3af'
+    };
+    
+    const grade = scoreData.overallGrade || 'needWork';
+    const gradeName = gradeNames[grade] || '要練習';
     
     ctx.fillStyle = gradeColors[grade];
     ctx.font = 'bold 72px system-ui';
-    ctx.fillText(`${grade}級達成！`, width / 2, 180);
+    ctx.fillText(`${gradeName}達成！`, width / 2, 180);
     
     // モード名
     const modeNames = {
@@ -78,6 +90,7 @@
       scoreData.sessionHistory.forEach((session, index) => {
         const x = startX + index * (barWidth + barGap);
         const color = gradeColors[session.grade] || '#6b7280';
+        const sessionGradeName = gradeNames[session.grade] || '不明';
         
         // バー背景
         ctx.fillStyle = color;
@@ -90,8 +103,8 @@
         ctx.fillText(`${index + 1}`, x + barWidth / 2, startY + 25);
         
         // グレード
-        ctx.font = 'bold 24px system-ui';
-        ctx.fillText(session.grade, x + barWidth / 2, startY + 50);
+        ctx.font = 'bold 20px system-ui';
+        ctx.fillText(sessionGradeName, x + barWidth / 2, startY + 50);
       });
     }
     
@@ -107,7 +120,8 @@
   // Twitter共有
   async function shareToTwitter() {
     const imageUrl = await generateShareImage();
-    const text = `🎵 相対音感トレーニングで${scoreData.overallGrade}級達成！\n平均精度: ${scoreData.averageAccuracy}%\n${scoreData.sessionHistory?.length || 0}セッション完走 🎉`;
+    const gradeName = gradeNames[scoreData.overallGrade] || '要練習';
+    const text = `🎵 相対音感トレーニングで「${gradeName}」達成！\n平均精度: ${scoreData.averageAccuracy}%\n${scoreData.sessionHistory?.length || 0}セッション完走 🎉`;
     const url = 'https://kiyopi.github.io/pitch-training/';
     
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
@@ -117,8 +131,9 @@
   // 画像ダウンロード
   async function downloadImage() {
     const imageUrl = await generateShareImage();
+    const gradeName = gradeNames[scoreData.overallGrade] || '要練習';
     const link = document.createElement('a');
-    link.download = `pitch-training-result-${scoreData.mode}-${scoreData.overallGrade}.png`;
+    link.download = `pitch-training-result-${scoreData.mode}-${gradeName}.png`;
     link.href = imageUrl;
     link.click();
   }
@@ -144,9 +159,10 @@
     }
     
     try {
+      const gradeName = gradeNames[scoreData.overallGrade] || '要練習';
       await navigator.share({
         title: '🎵 相対音感トレーニング結果',
-        text: `${scoreData.overallGrade}級達成！平均精度: ${scoreData.averageAccuracy}%`,
+        text: `「${gradeName}」達成！平均精度: ${scoreData.averageAccuracy}%`,
         url: 'https://kiyopi.github.io/pitch-training/'
       });
     } catch (err) {

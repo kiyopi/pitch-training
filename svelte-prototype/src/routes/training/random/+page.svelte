@@ -25,32 +25,31 @@
     SessionStatistics
   } from '$lib/components/scoring';
   import RandomModeScoreResult from '$lib/components/scoring/RandomModeScoreResult.svelte';
-  import UnifiedScoreResult from '$lib/components/scoring/UnifiedScoreResult.svelte';
+  import UnifiedScoreResultFixed from '$lib/components/scoring/UnifiedScoreResultFixed.svelte';
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
   
-  // テスト用ダミーデータ生成
+  // テスト用ダミーデータ生成（正しい4段階評価システム）
   function generateTestUnifiedScoreData() {
     return {
       mode: 'random',
       timestamp: new Date(),
       duration: 180,
-      totalNotes: 8,
-      measuredNotes: 7,
+      totalNotes: 64, // 8セッション × 8音
+      measuredNotes: 58,
       averageAccuracy: 85,
-      overallGrade: 'A',
       baseNote: 'C4',
       baseFrequency: 261.63,
       sessionHistory: [
-        { grade: 'A', accuracy: 87, baseNote: 'C4' },
-        { grade: 'B', accuracy: 78, baseNote: 'D4' },
-        { grade: 'A', accuracy: 92, baseNote: 'E4' },
-        { grade: 'S', accuracy: 95, baseNote: 'F4' },
-        { grade: 'B', accuracy: 82, baseNote: 'G4' },
-        { grade: 'A', accuracy: 88, baseNote: 'A4' },
-        { grade: 'C', accuracy: 74, baseNote: 'B4' },
-        { grade: 'A', accuracy: 84, baseNote: 'C5' }
+        { grade: 'excellent', accuracy: 92, baseNote: 'C4' },
+        { grade: 'good', accuracy: 78, baseNote: 'D4' },
+        { grade: 'excellent', accuracy: 95, baseNote: 'E4' },
+        { grade: 'excellent', accuracy: 89, baseNote: 'F4' },
+        { grade: 'good', accuracy: 82, baseNote: 'G4' },
+        { grade: 'pass', accuracy: 68, baseNote: 'A4' },
+        { grade: 'good', accuracy: 74, baseNote: 'B4' },
+        { grade: 'excellent', accuracy: 91, baseNote: 'C5' }
       ]
     };
   }
@@ -1434,7 +1433,7 @@
     {#if trainingPhase === 'results'}
       <!-- 統合採点システム結果（メイン表示） -->
       {#if unifiedScoreData}
-        <UnifiedScoreResult 
+        <UnifiedScoreResultFixed 
           scoreData={unifiedScoreData}
           showDetails={false}
           className="mb-6"
@@ -1546,7 +1545,7 @@
               <h3 class="section-title">🚀 v1.0統合採点結果（テスト表示）</h3>
             </div>
             <div class="card-content">
-              <UnifiedScoreResult 
+              <UnifiedScoreResultFixed 
                 scoreData={generateTestUnifiedScoreData()}
                 showDetails={false}
                 className="unified-test-result"
