@@ -34,17 +34,6 @@
   const needWorkWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 300 });
   const notMeasuredWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 400 });
 
-  // ヘルパー関数でtwenned値を取得
-  function getBarWidth(key) {
-    switch(key) {
-      case 'excellent': return excellentWidth;
-      case 'good': return goodWidth;
-      case 'pass': return passWidth;
-      case 'needWork': return needWorkWidth;
-      case 'notMeasured': return notMeasuredWidth;
-      default: return tweened(0);
-    }
-  }
   
   // 評価を計算
   function calculateGrade(cents) {
@@ -166,7 +155,11 @@
           
           <div class="bar-container">
             <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
-                 style="width: {$getBarWidth(key)}%">
+                 style="width: {key === 'excellent' ? $excellentWidth : 
+                               key === 'good' ? $goodWidth : 
+                               key === 'pass' ? $passWidth : 
+                               key === 'needWork' ? $needWorkWidth : 
+                               key === 'notMeasured' ? $notMeasuredWidth : 0}%">
             </div>
           </div>
           
