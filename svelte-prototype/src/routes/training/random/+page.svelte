@@ -44,14 +44,60 @@
       baseNote: 'C4',
       baseFrequency: 261.63,
       sessionHistory: [
-        { grade: 'excellent', accuracy: 92, baseNote: 'C4' },
-        { grade: 'good', accuracy: 78, baseNote: 'D4' },
-        { grade: 'excellent', accuracy: 95, baseNote: 'E4' },
-        { grade: 'excellent', accuracy: 89, baseNote: 'F4' },
-        { grade: 'good', accuracy: 82, baseNote: 'G4' },
-        { grade: 'pass', accuracy: 68, baseNote: 'A4' },
-        { grade: 'good', accuracy: 74, baseNote: 'B4' },
-        { grade: 'excellent', accuracy: 91, baseNote: 'C5' }
+        { 
+          grade: 'excellent', 
+          accuracy: 92, 
+          baseNote: 'C4',
+          baseFrequency: 261.63,
+          timestamp: new Date(Date.now() - 7 * 60000),
+          measuredNotes: 8,
+          noteResults: [
+            { note: 'ド', frequency: 262, detectedFrequency: 264, cents: +13, grade: 'excellent' },
+            { note: 'レ', frequency: 294, detectedFrequency: 291, cents: -18, grade: 'good' },
+            { note: 'ミ', frequency: 330, detectedFrequency: 335, cents: +26, grade: 'pass' },
+            { note: 'ファ', frequency: 349, detectedFrequency: 346, cents: -15, grade: 'excellent' },
+            { note: 'ソ', frequency: 392, detectedFrequency: 388, cents: -18, grade: 'good' },
+            { note: 'ラ', frequency: 440, detectedFrequency: 444, cents: +16, grade: 'good' },
+            { note: 'シ', frequency: 494, detectedFrequency: 499, cents: +17, grade: 'good' },
+            { note: 'ド（高）', frequency: 523, detectedFrequency: 520, cents: -10, grade: 'excellent' }
+          ]
+        },
+        { 
+          grade: 'good', 
+          accuracy: 78, 
+          baseNote: 'D4',
+          baseFrequency: 293.66,
+          timestamp: new Date(Date.now() - 6 * 60000),
+          measuredNotes: 7,
+          noteResults: [
+            { note: 'ド', frequency: 294, detectedFrequency: 290, cents: -23, grade: 'good' },
+            { note: 'レ', frequency: 330, detectedFrequency: 340, cents: +53, grade: 'needWork' },
+            { note: 'ミ', frequency: 370, detectedFrequency: 375, cents: +23, grade: 'good' },
+            { note: 'ファ', frequency: 392, detectedFrequency: 385, cents: -31, grade: 'pass' },
+            { note: 'ソ', frequency: 440, detectedFrequency: 432, cents: -31, grade: 'pass' },
+            { note: 'ラ', frequency: 494, detectedFrequency: 510, cents: +56, grade: 'needWork' },
+            { note: 'シ', frequency: 554, detectedFrequency: null, cents: null, grade: 'notMeasured' },
+            { note: 'ド（高）', frequency: 587, detectedFrequency: 580, cents: -21, grade: 'good' }
+          ]
+        },
+        { 
+          grade: 'excellent', 
+          accuracy: 95, 
+          baseNote: 'E4',
+          baseFrequency: 329.63,
+          timestamp: new Date(Date.now() - 5 * 60000),
+          measuredNotes: 8,
+          noteResults: [
+            { note: 'ド', frequency: 330, detectedFrequency: 332, cents: +10, grade: 'excellent' },
+            { note: 'レ', frequency: 370, detectedFrequency: 368, cents: -9, grade: 'excellent' },
+            { note: 'ミ', frequency: 415, detectedFrequency: 418, cents: +12, grade: 'excellent' },
+            { note: 'ファ', frequency: 440, detectedFrequency: 436, cents: -16, grade: 'good' },
+            { note: 'ソ', frequency: 494, detectedFrequency: 497, cents: +11, grade: 'excellent' },
+            { note: 'ラ', frequency: 554, detectedFrequency: 551, cents: -9, grade: 'excellent' },
+            { note: 'シ', frequency: 622, detectedFrequency: 625, cents: +8, grade: 'excellent' },
+            { note: 'ド（高）', frequency: 659, detectedFrequency: 655, cents: -10, grade: 'excellent' }
+          ]
+        }
       ]
     };
   }
@@ -921,6 +967,16 @@
     generateTestScoreData();
     trainingPhase = 'results';
   }
+  
+  // 本実装エリア用: 同じデータを使って統合表示
+  function showUnifiedTestResults() {
+    // デバッグエリアと同じデータを生成
+    generateTestScoreData();
+    // 統合表示フラグをON
+    showTestResults = true;
+    // 結果画面に移動
+    trainingPhase = 'results';
+  }
 
   // 初期化
   onMount(async () => {
@@ -1358,7 +1414,7 @@
         <Button 
           variant="secondary"
           class="debug-button"
-          on:click={() => showTestResults = !showTestResults}
+          on:click={showUnifiedTestResults}
           style="background: #10b981; color: white; border: none; font-weight: bold; font-size: 0.8rem;"
         >
           🚀 v1.0統合採点結果
