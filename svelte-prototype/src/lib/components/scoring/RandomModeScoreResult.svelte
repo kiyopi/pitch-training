@@ -28,13 +28,23 @@
   });
   
   // 評価分布バーのアニメーション用
-  const barWidths = {
-    excellent: tweened(0, { duration: 800, easing: cubicOut, delay: 0 }),
-    good: tweened(0, { duration: 800, easing: cubicOut, delay: 100 }),
-    pass: tweened(0, { duration: 800, easing: cubicOut, delay: 200 }),
-    needWork: tweened(0, { duration: 800, easing: cubicOut, delay: 300 }),
-    notMeasured: tweened(0, { duration: 800, easing: cubicOut, delay: 400 })
-  };
+  const excellentWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 0 });
+  const goodWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 100 });
+  const passWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 200 });
+  const needWorkWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 300 });
+  const notMeasuredWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 400 });
+
+  // ヘルパー関数でtwenned値を取得
+  function getBarWidth(key) {
+    switch(key) {
+      case 'excellent': return excellentWidth;
+      case 'good': return goodWidth;
+      case 'pass': return passWidth;
+      case 'needWork': return needWorkWidth;
+      case 'notMeasured': return notMeasuredWidth;
+      default: return tweened(0);
+    }
+  }
   
   // 評価を計算
   function calculateGrade(cents) {
@@ -93,13 +103,11 @@
     
     // 評価分布バーのアニメーション開始
     setTimeout(() => {
-      const gradeKeys = ['excellent', 'good', 'pass', 'needWork', 'notMeasured'];
-      gradeKeys.forEach(key => {
-        if (barWidths[key] && results[key] !== undefined) {
-          const percentage = (results[key] / 8) * 100;
-          barWidths[key].set(percentage);
-        }
-      });
+      excellentWidth.set((results.excellent / 8) * 100);
+      goodWidth.set((results.good / 8) * 100);
+      passWidth.set((results.pass / 8) * 100);
+      needWorkWidth.set((results.needWork / 8) * 100);
+      notMeasuredWidth.set((results.notMeasured / 8) * 100);
     }, 300); // 総合評価の後にバーアニメーション開始
   }
 </script>
@@ -158,7 +166,7 @@
           
           <div class="bar-container">
             <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
-                 style="width: {$barWidths[key]}%">
+                 style="width: {$getBarWidth(key)}%">
             </div>
           </div>
           
