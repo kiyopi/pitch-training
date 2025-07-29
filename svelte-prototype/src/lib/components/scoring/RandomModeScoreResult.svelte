@@ -248,7 +248,7 @@
               </div>
               <div class="accuracy-indicator {grade}" 
                    style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 100) * 50))}%">
-                <div class="indicator-arrow"></div>
+                <div class="indicator-arrow {grade}"></div>
               </div>
             </div>
           </div>
@@ -259,19 +259,31 @@
           </div>
         {/if}
         
-        <!-- 周波数詳細（横並び表示） -->
-        <div class="frequency-details-horizontal">
+        <!-- 統合周波数詳細（グレーエリア削除） -->
+        <div class="frequency-details-integrated">
           {#if grade === 'notMeasured'}
-            <span class="note-name-horizontal">{note.name}</span>
-            <span class="detection-failed">検出できませんでした</span>
+            <div class="integrated-content">
+              <svelte:component 
+                this={gradeDefinitions[grade].icon} 
+                class="w-4 h-4 {gradeDefinitions[grade].color}" 
+              />
+              <span class="note-name-integrated">{note.name}</span>
+              <span class="detection-failed">検出できませんでした</span>
+            </div>
           {:else}
-            <span class="note-name-horizontal">{note.name}（{note.targetFreq}Hz）</span>
-            <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
-            {#if isOutlier}
-              <span class="outlier-badge-horizontal">
-                {Math.abs(note.cents) > 100 ? '重大' : '注意'}
-              </span>
-            {/if}
+            <div class="integrated-content">
+              <svelte:component 
+                this={gradeDefinitions[grade].icon} 
+                class="w-4 h-4 {gradeDefinitions[grade].color}" 
+              />
+              <span class="note-name-integrated">{note.name}（{note.targetFreq}Hz）</span>
+              <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+              {#if isOutlier}
+                <span class="outlier-badge-horizontal">
+                  {Math.abs(note.cents) > 100 ? '重大' : '注意'}
+                </span>
+              {/if}
+            </div>
           {/if}
         </div>
       </div>
@@ -801,21 +813,20 @@
     font-size: 0.875rem;
   }
 
-  /* 横並び周波数詳細 */
-  .frequency-details-horizontal {
+  /* 統合周波数詳細（グレーエリア削除版） */
+  .frequency-details-integrated {
     margin-top: 0.75rem;
-    padding: 0.5rem;
-    background: #f8fafc;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
   }
 
-  .note-name-horizontal {
+  .integrated-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+  }
+
+  .note-name-integrated {
     font-weight: 600;
     color: #374151;
     min-width: 120px;
@@ -843,14 +854,29 @@
   /* 精度バー矢印 */
   .indicator-arrow {
     position: absolute;
-    top: -2px;
+    top: -6px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 6px solid currentColor;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+  }
+
+  .indicator-arrow.excellent {
+    border-bottom: 8px solid #eab308;
+  }
+
+  .indicator-arrow.good {
+    border-bottom: 8px solid #10b981;
+  }
+
+  .indicator-arrow.pass {
+    border-bottom: 8px solid #3b82f6;
+  }
+
+  .indicator-arrow.needWork {
+    border-bottom: 8px solid #ef4444;
   }
 
   /* プルダウンアイコン */
@@ -964,6 +990,11 @@
     cursor: pointer;
     font-weight: 600;
     color: #374151;
+    list-style: none;
+  }
+
+  .criteria-section summary::-webkit-details-marker {
+    display: none;
   }
   
   .criteria-content {
@@ -1006,15 +1037,15 @@
 
   @keyframes sparkleRotate {
     0% {
-      transform: scale(1);
+      transform: scale(1) rotate(0deg);
       opacity: 0.8;
     }
     50% {
-      transform: scale(1.2);
+      transform: scale(1.2) rotate(180deg);
       opacity: 1;
     }
     100% {
-      transform: scale(1);
+      transform: scale(1) rotate(360deg);
       opacity: 0.8;
     }
   }
