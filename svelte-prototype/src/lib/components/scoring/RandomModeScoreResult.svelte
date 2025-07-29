@@ -105,14 +105,12 @@
   <!-- 総合評価セクション -->
   <div class="overall-score-section">
     <div class="grade-display-enhanced" in:fly={{ y: -20, duration: 500 }}>
-      <!-- 大型アイコンとエフェクト -->
-      <div class="grade-icon-container {overallGrade}">
-        <div class="grade-icon-bg"></div>
+      <!-- シンプルアイコン（アニメーション完全削除） -->
+      <div class="simple-grade-icon">
         <svelte:component 
           this={gradeDefinitions[overallGrade].icon} 
-          class="grade-icon-large {gradeDefinitions[overallGrade].color}" 
+          class="grade-icon-simple {gradeDefinitions[overallGrade].color}" 
         />
-        <!-- アニメーション削除：後回し -->
       </div>
       
       <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
@@ -355,107 +353,20 @@
     gap: 1rem;
   }
 
-  /* 大型グレードアイコンコンテナ */
-  .grade-icon-container {
-    position: relative;
+  /* シンプルグレードアイコン */
+  .simple-grade-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    overflow: visible;
+    width: 80px;
+    height: 80px;
   }
 
-  .grade-icon-bg {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(245,245,245,0.6) 100%);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+  .grade-icon-simple {
+    width: 48px !important;
+    height: 48px !important;
   }
 
-  .grade-icon-container.excellent .grade-icon-bg {
-    background: radial-gradient(circle, rgba(255,248,220,0.9) 0%, rgba(255,235,59,0.3) 100%);
-    box-shadow: 0 8px 32px rgba(234, 179, 8, 0.3);
-  }
-
-  .grade-icon-container.good .grade-icon-bg {
-    background: radial-gradient(circle, rgba(236,253,245,0.9) 0%, rgba(16,185,129,0.3) 100%);
-    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
-  }
-
-  .grade-icon-container.pass .grade-icon-bg {
-    background: radial-gradient(circle, rgba(239,246,255,0.9) 0%, rgba(59,130,246,0.3) 100%);
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
-  }
-
-  .grade-icon-container.needWork .grade-icon-bg {
-    background: radial-gradient(circle, rgba(254,242,242,0.9) 0%, rgba(239,68,68,0.3) 100%);
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
-  }
-
-  .grade-icon-large {
-    position: relative;
-    z-index: 2;
-    width: 64px !important;
-    height: 64px !important;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-  }
-
-  /* スパークルエフェクト（優秀グレード用） */
-  .sparkle-effect {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .sparkle {
-    position: absolute;
-    font-size: 1.5rem;
-    animation: sparkleRotate 3s infinite;
-    opacity: 0.8;
-  }
-
-  .sparkle-1 {
-    top: 10%;
-    right: 15%;
-    animation-delay: 0s;
-  }
-
-  .sparkle-2 {
-    bottom: 15%;
-    left: 10%;
-    animation-delay: 0.7s;
-  }
-
-  .sparkle-3 {
-    top: 20%;
-    left: 20%;
-    animation-delay: 1.4s;
-  }
-
-  .sparkle-4 {
-    bottom: 25%;
-    right: 25%;
-    animation-delay: 2.1s;
-  }
-
-  /* シャインエフェクト（良好グレード用） */
-  .shine-effect {
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    right: -10px;
-    bottom: -10px;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent, rgba(16,185,129,0.4), transparent, rgba(16,185,129,0.4), transparent);
-    animation: shineRotate 4s linear infinite;
-    pointer-events: none;
-  }
 
   .grade-title {
     font-size: 2rem;
@@ -530,12 +441,12 @@
     transition: width 0.3s ease-out;
   }
   
-  /* 各グレードの分布バー色を詳細結果と統一 */
-  .distribution-row:nth-child(1) .distribution-bar { background: #f59e0b; } /* excellent - 金 */
-  .distribution-row:nth-child(2) .distribution-bar { background: #10b981; } /* good - 緑 */
-  .distribution-row:nth-child(3) .distribution-bar { background: #3b82f6; } /* pass - 青 */
-  .distribution-row:nth-child(4) .distribution-bar { background: #ef4444; } /* needWork - 赤 */
-  .distribution-row:nth-child(5) .distribution-bar { background: #6b7280; } /* notMeasured - グレー */
+  /* 各グレードの分布バー色を詳細結果と統一（薄いトーン） */
+  .distribution-row:nth-child(1) .distribution-bar { background: #fef3c7; } /* excellent - 薄い金 */
+  .distribution-row:nth-child(2) .distribution-bar { background: #d1fae5; } /* good - 薄い緑 */
+  .distribution-row:nth-child(3) .distribution-bar { background: #dbeafe; } /* pass - 薄い青 */
+  .distribution-row:nth-child(4) .distribution-bar { background: #fee2e2; } /* needWork - 薄い赤 */
+  .distribution-row:nth-child(5) .distribution-bar { background: #f9fafb; } /* notMeasured - 薄いグレー */
   
   .count-display {
     display: flex;
@@ -799,8 +710,8 @@
   }
 
   .simple-header.needWork {
-    background: #f9fafb;
-    border-color: #d1d5db;
+    background: #fee2e2;
+    border-color: #ef4444;
   }
 
   .simple-header.notMeasured {
@@ -999,33 +910,5 @@
     }
   }
 
-  @keyframes sparkleRotate {
-    0% {
-      transform: scale(1) rotate(0deg);
-      opacity: 0.8;
-    }
-    50% {
-      transform: scale(1.2) rotate(180deg);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1) rotate(360deg);
-      opacity: 0.8;
-    }
-  }
-
-  @keyframes shineRotate {
-    0% {
-      transform: rotate(0deg);
-      opacity: 0.6;
-    }
-    50% {
-      opacity: 0.9;
-    }
-    100% {
-      transform: rotate(360deg);
-      opacity: 0.6;
-    }
-  }
   
 </style>
