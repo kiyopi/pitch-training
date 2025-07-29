@@ -1559,20 +1559,12 @@
       
       <!-- メイン採点結果（5側面評価） -->
       {#if showScoringResults}
-        <details class="traditional-scoring-details">
-          <summary class="cursor-pointer text-gray-600 mb-4">
-            <span class="inline-flex items-center gap-2">
-              <ChevronRight class="w-4 h-4" />
-              従来の採点詳細を見る
-            </span>
-          </summary>
-          <ScoreResultPanel 
-            totalScore={currentScoreData.totalScore}
-            grade={currentScoreData.grade}
-            componentScores={currentScoreData.componentScores}
-            className="mb-6"
-          />
-        </details>
+        <ScoreResultPanel 
+          totalScore={currentScoreData.totalScore}
+          grade={currentScoreData.grade}
+          componentScores={currentScoreData.componentScores}
+          className="mb-6"
+        />
         
         <!-- フィードバック表示 -->
         {#if feedbackData && Object.keys(feedbackData).length > 0}
@@ -1581,63 +1573,6 @@
             className="mb-6"
           />
         {/if}
-        
-        <!-- 詳細統計（タブ形式） -->
-        <Card class="main-card">
-          <div class="scoring-tabs-container">
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'intervals'}
-              on:click={() => switchTab('intervals')}
-            >
-              音程別進捗
-            </button>
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'consistency'}
-              on:click={() => switchTab('consistency')}
-            >
-              一貫性グラフ
-            </button>
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'statistics'}
-              on:click={() => switchTab('statistics')}
-            >
-              セッション統計
-            </button>
-          </div>
-          
-          <!-- タブコンテンツ -->
-          <div class="tab-content">
-            <!-- 音程別進捗タブ -->
-            {#if activeTab === 'intervals'}
-              <div class="tab-panel">
-                <IntervalProgressTracker 
-                  intervalData={intervalData}
-                />
-              </div>
-            {/if}
-            
-            <!-- 一貫性グラフタブ -->
-            {#if activeTab === 'consistency'}
-              <div class="tab-panel">
-                <ConsistencyGraph 
-                  consistencyData={consistencyData}
-                />
-              </div>
-            {/if}
-            
-            <!-- セッション統計タブ -->
-            {#if activeTab === 'statistics'}
-              <div class="tab-panel">
-                <SessionStatistics 
-                  statistics={sessionStatistics}
-                />
-              </div>
-            {/if}
-          </div>
-        </Card>
         
         <!-- 🧪 v1.0統合採点結果テスト表示 -->
         {#if showTestResults}
