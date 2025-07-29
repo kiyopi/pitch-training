@@ -358,13 +358,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 80px;
-    height: 80px;
+    width: 160px;
+    height: 160px;
   }
 
   .grade-icon-simple {
-    width: 48px !important;
-    height: 48px !important;
+    width: 120px !important;
+    height: 120px !important;
   }
 
 
@@ -441,12 +441,12 @@
     transition: width 0.3s ease-out;
   }
   
-  /* 各グレードの分布バー色を詳細結果と統一（薄いトーン） */
-  .distribution-row:nth-child(1) .distribution-bar { background: #fef3c7; } /* excellent - 薄い金 */
-  .distribution-row:nth-child(2) .distribution-bar { background: #d1fae5; } /* good - 薄い緑 */
-  .distribution-row:nth-child(3) .distribution-bar { background: #dbeafe; } /* pass - 薄い青 */
-  .distribution-row:nth-child(4) .distribution-bar { background: #fee2e2; } /* needWork - 薄い赤 */
-  .distribution-row:nth-child(5) .distribution-bar { background: #f9fafb; } /* notMeasured - 薄いグレー */
+  /* 各グレードの分布バー色を詳細結果と統一（適度な濃さ） */
+  .distribution-row:nth-child(1) .distribution-bar { background: #fbbf24; } /* excellent - 適度な金 */
+  .distribution-row:nth-child(2) .distribution-bar { background: #34d399; } /* good - 適度な緑 */
+  .distribution-row:nth-child(3) .distribution-bar { background: #60a5fa; } /* pass - 適度な青 */
+  .distribution-row:nth-child(4) .distribution-bar { background: #f87171; } /* needWork - 適度な赤 */
+  .distribution-row:nth-child(5) .distribution-bar { background: #9ca3af; } /* notMeasured - 適度なグレー */
   
   .count-display {
     display: flex;
