@@ -28,14 +28,13 @@
   });
   
   // 評価分布バーのアニメーション用
-  const barWidths = Object.keys(gradeDefinitions).reduce((acc, key) => {
-    acc[key] = tweened(0, {
-      duration: 800,
-      easing: cubicOut,
-      delay: ['excellent', 'good', 'pass', 'needWork', 'notMeasured'].indexOf(key) * 100
-    });
-    return acc;
-  }, {});
+  const barWidths = {
+    excellent: tweened(0, { duration: 800, easing: cubicOut, delay: 0 }),
+    good: tweened(0, { duration: 800, easing: cubicOut, delay: 100 }),
+    pass: tweened(0, { duration: 800, easing: cubicOut, delay: 200 }),
+    needWork: tweened(0, { duration: 800, easing: cubicOut, delay: 300 }),
+    notMeasured: tweened(0, { duration: 800, easing: cubicOut, delay: 400 })
+  };
   
   // 評価を計算
   function calculateGrade(cents) {
@@ -94,9 +93,10 @@
     
     // 評価分布バーのアニメーション開始
     setTimeout(() => {
-      Object.entries(results).forEach(([key, count]) => {
-        if (barWidths[key]) {
-          const percentage = (count / 8) * 100;
+      const gradeKeys = ['excellent', 'good', 'pass', 'needWork', 'notMeasured'];
+      gradeKeys.forEach(key => {
+        if (barWidths[key] && results[key] !== undefined) {
+          const percentage = (results[key] / 8) * 100;
           barWidths[key].set(percentage);
         }
       });
