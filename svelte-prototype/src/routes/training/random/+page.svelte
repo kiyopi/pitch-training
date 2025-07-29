@@ -1440,20 +1440,14 @@
         />
       {/if}
       
-      <!-- ランダムモード専用採点結果（詳細表示） -->
+      <!-- ランダムモード専用採点結果（常時表示） -->
       {#if noteResultsForDisplay.length > 0}
-        <details class="detailed-random-scoring">
-          <summary class="cursor-pointer text-gray-600 mb-4">
-            <span class="inline-flex items-center gap-2">
-              <ChevronRight class="w-4 h-4" />
-              8音階詳細採点を見る
-            </span>
-          </summary>
+        <div class="random-scoring-section">
           <RandomModeScoreResult 
             noteResults={noteResultsForDisplay}
             className="mb-6"
           />
-        </details>
+        </div>
       {/if}
       
       <!-- メイン採点結果（5側面評価） -->
@@ -1560,20 +1554,6 @@
             <h3 class="section-title">🎉 採点結果</h3>
           </div>
           <div class="card-content">
-            <div class="results-summary">
-              <div class="result-item">
-                <span class="result-label">正解数</span>
-                <span class="result-value success">{sessionResults.correctCount}/{sessionResults.totalCount}</span>
-              </div>
-              <div class="result-item">
-                <span class="result-label">平均精度</span>
-                <span class="result-value">{sessionResults.averageAccuracy}%</span>
-              </div>
-              <div class="result-item">
-                <span class="result-label">正解率</span>
-                <span class="result-value">{Math.round(sessionResults.correctCount / sessionResults.totalCount * 100)}%</span>
-              </div>
-            </div>
             
             <!-- 詳細結果 -->
             <div class="detailed-results">
@@ -2359,7 +2339,8 @@
   
   /* 折りたたみ詳細セクション */
   .traditional-scoring-details,
-  .detailed-random-scoring {
+  .detailed-random-scoring,
+  .random-scoring-section {
     margin-top: 2rem;
     padding: 1rem;
     background: #f9fafb;

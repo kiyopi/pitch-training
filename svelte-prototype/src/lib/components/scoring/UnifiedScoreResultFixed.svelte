@@ -196,14 +196,6 @@
     {#if scoreData?.mode === 'random'}
       <!-- ランダムモードサマリー -->
       <div class="summary-section">
-        <div class="stat-row">
-          <Music class="w-4 h-4 text-gray-600" />
-          <span>ランダム基音トレーニング</span>
-        </div>
-        <div class="stat-row">
-          <BarChart3 class="w-4 h-4 text-gray-600" />
-          <span>平均精度: {scoreData.averageAccuracy || 0}%</span>
-        </div>
         
         <!-- セッション履歴バー（コンパクト版） -->
         {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
@@ -279,14 +271,6 @@
     {:else if scoreData?.mode === 'continuous'}
       <!-- 連続モードサマリー -->
       <div class="summary-section">
-        <div class="stat-row">
-          <Flame class="w-4 h-4 text-orange-500" />
-          <span>連続チャレンジモード</span>
-        </div>
-        <div class="stat-row">
-          <Timer class="w-4 h-4 text-blue-500" />
-          <span>継続時間: {formatDuration(scoreData.duration || 0)}</span>
-        </div>
         
         <!-- セッション履歴バー（コンパクト版） -->
         {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
@@ -346,10 +330,6 @@
     {:else if scoreData?.mode === 'chromatic'}
       <!-- 12音階モードサマリー -->
       <div class="summary-section">
-        <div class="stat-row">
-          <Piano class="w-4 h-4 text-purple-600" />
-          <span>12音階マスターモード</span>
-        </div>
         
         <!-- セッション履歴バー（コンパクト版） -->
         {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
@@ -407,21 +387,6 @@
       </div>
     {/if}
     
-    <!-- 共通統計 -->
-    {#if scoreData}
-      <div class="common-stats">
-        <div class="stat-item">
-          <span class="stat-label">測定率</span>
-          <span class="stat-value">
-            {Math.round((scoreData.measuredNotes / scoreData.totalNotes) * 100) || 0}%
-          </span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">総合精度</span>
-          <span class="stat-value">{scoreData.averageAccuracy || 0}%</span>
-        </div>
-      </div>
-    {/if}
   </div>
   
   <!-- SNS共有ボタン -->
@@ -482,13 +447,6 @@
     margin-bottom: 1rem;
   }
   
-  .stat-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
-  }
   
   .session-history-section {
     margin-top: 1rem;
@@ -545,30 +503,6 @@
     font-weight: 500;
   }
   
-  .common-stats {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-  }
-  
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .stat-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .stat-value {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
   
   .details-toggle {
     width: 100%;
