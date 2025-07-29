@@ -5,6 +5,8 @@
   import { cubicOut } from 'svelte/easing';
   import { onMount } from 'svelte';
   import SNSShareButtons from './SNSShareButtons.svelte';
+  import SessionCarousel from './SessionCarousel.svelte';
+  import RandomModeScoreResult from './RandomModeScoreResult.svelte';
   
   export let scoreData = null;
   export let showDetails = false;
@@ -74,6 +76,9 @@
   // アニメーション用
   const iconScale = tweened(0, { duration: 600, easing: cubicOut });
   const bgOpacity = tweened(0, { duration: 300, easing: cubicOut });
+  
+  // カルーセル用
+  let currentSessionIndex = 0;
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
   function calculateSessionGrade(sessionData) {
@@ -163,34 +168,28 @@
 </script>
 
 <div class="unified-score-result {className}">
-  <!-- 総合評価表示 -->
-  <div class="grade-display" 
-       style="background-color: {gradeDef.bgColor}; border-color: {gradeDef.borderColor}; opacity: {$bgOpacity}">
-    <div class="grade-icon-wrapper">
-      <svelte:component 
-        this={gradeDef.icon} 
-        size="80"
-        class="grade-icon {gradeDef.color}"
-        style="transform: scale({$iconScale})"
-      />
-    </div>
-    
-    <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
-      {#if isCompleted}
+  <!-- 総合評価表示（8セッション完走時のみ） -->
+  {#if isCompleted}
+    <div class="grade-display" 
+         style="background-color: {gradeDef.bgColor}; border-color: {gradeDef.borderColor}; opacity: {$bgOpacity}">
+      <div class="grade-icon-wrapper">
+        <svelte:component 
+          this={gradeDef.icon} 
+          size="80"
+          class="grade-icon {gradeDef.color}"
+          style="transform: scale({$iconScale})"
+        />
+      </div>
+      
+      <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
         {gradeDef.name}
-      {:else}
-        現在の進捗: {scoreData?.sessionHistory?.length || 0}/{scoreData?.mode === 'chromatic' ? 12 : 8}セッション
-      {/if}
-    </h2>
-    
-    <p class="grade-description" in:fade={{ delay: 600 }}>
-      {#if isCompleted}
+      </h2>
+      
+      <p class="grade-description" in:fade={{ delay: 600 }}>
         {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
-      {:else}
-        統合評価まであと{(scoreData?.mode === 'chromatic' ? 12 : 8) - (scoreData?.sessionHistory?.length || 0)}セッション
-      {/if}
-    </p>
-  </div>
+      </p>
+    </div>
+  {/if}
   
   <!-- モード別サマリー -->
   <div class="mode-summary" in:fly={{ y: 20, duration: 500, delay: 800 }}>
@@ -206,30 +205,75 @@
           <span>平均精度: {scoreData.averageAccuracy || 0}%</span>
         </div>
         
-        <!-- セッション履歴表示 -->
-        <div class="session-history-section">
-          <div class="session-title">
-            🎵 ランダム基音トレーニング完走履歴
-          </div>
-          <div class="session-bars">
-            {#if scoreData.sessionHistory}
+        <!-- セッション履歴バー（コンパクト版） -->
+        {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
+          <div class="session-history-section compact">
+            <div class="session-title">
+              🎵 セッション履歴 ({scoreData.sessionHistory.length}/{scoreData.mode === 'chromatic' ? 12 : 8})
+            </div>
+            <div class="session-bars compact">
               {#each scoreData.sessionHistory as session, index}
-                <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
-                  <div class="session-number">{index + 1}</div>
-                  <div class="session-grade-icon">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
-                  </div>
-                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
-                  <div class="session-detail">{session.baseNote || 'N/A'}</div>
+                <button 
+                  class="session-bar-button grade-{session.grade}"
+                  class:active={index === currentSessionIndex}
+                  on:click={() => currentSessionIndex = index}
+                  title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                  <span class="session-number">{index + 1}</span>
+                  <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
+                </button>
+              {/each}
+              <!-- 未完了セッション表示 -->
+              {#each Array((scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length) as _, index}
+                <div class="session-bar-button empty">
+                  <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
+                  <span class="empty-icon">-</span>
                 </div>
               {/each}
-            {/if}
+            </div>
           </div>
-          <div class="completion-message">
-            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
+          
+          <!-- セッションカルーセル -->
+          <div class="carousel-wrapper">
+            <SessionCarousel 
+              bind:currentIndex={currentSessionIndex}
+              sessionHistory={scoreData.sessionHistory}
+              className="session-detail-carousel"
+            >
+              <div slot="default" let:session let:index>
+                <div class="carousel-session-header">
+                  <h3 class="carousel-session-title">
+                    セッション{index + 1} - 基音: {session.baseNote}
+                  </h3>
+                  <div class="carousel-session-grade grade-{session.grade}">
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
+                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
+                  </div>
+                </div>
+                
+                <!-- 8音階詳細表示 -->
+                {#if session.noteResults}
+                  <RandomModeScoreResult 
+                    scoreData={{
+                      baseNote: session.baseNote,
+                      baseFrequency: session.baseFrequency,
+                      noteResults: session.noteResults,
+                      measuredNotes: session.measuredNotes,
+                      totalNotes: 8,
+                      overallGrade: session.grade,
+                      timestamp: session.timestamp
+                    }}
+                    showDetails={true}
+                    className="carousel-score-result"
+                  />
+                {:else}
+                  <div class="no-details">
+                    詳細データがありません
+                  </div>
+                {/if}
+              </div>
+            </SessionCarousel>
           </div>
-        </div>
+        {/if}
       </div>
       
     {:else if scoreData?.mode === 'continuous'}
@@ -244,30 +288,59 @@
           <span>継続時間: {formatDuration(scoreData.duration || 0)}</span>
         </div>
         
-        <!-- セッション履歴表示 -->
-        <div class="session-history-section">
-          <div class="session-title">
-            ⏱️ 連続チャレンジモード完走履歴
-          </div>
-          <div class="session-bars">
-            {#if scoreData.sessionHistory}
+        <!-- セッション履歴バー（コンパクト版） -->
+        {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
+          <div class="session-history-section compact">
+            <div class="session-title">
+              ⏱️ セッション履歴 ({scoreData.sessionHistory.length}/{scoreData.mode === 'chromatic' ? 12 : 8})
+            </div>
+            <div class="session-bars compact">
               {#each scoreData.sessionHistory as session, index}
-                <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
-                  <div class="session-number">{index + 1}</div>
-                  <div class="session-grade-icon">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
-                  </div>
-                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
-                  <div class="session-detail">{session.baseNote || 'N/A'}</div>
+                <button 
+                  class="session-bar-button grade-{session.grade}"
+                  class:active={index === currentSessionIndex}
+                  on:click={() => currentSessionIndex = index}
+                  title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                  <span class="session-number">{index + 1}</span>
+                  <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
+                </button>
+              {/each}
+              <!-- 未完了セッション表示 -->
+              {#each Array((scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length) as _, index}
+                <div class="session-bar-button empty">
+                  <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
+                  <span class="empty-icon">-</span>
                 </div>
               {/each}
-            {/if}
+            </div>
           </div>
-          <div class="completion-message">
-            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
+          
+          <!-- セッションカルーセル -->
+          <div class="carousel-wrapper">
+            <SessionCarousel 
+              bind:currentIndex={currentSessionIndex}
+              sessionHistory={scoreData.sessionHistory}
+              className="session-detail-carousel"
+            >
+              <div slot="default" let:session let:index>
+                <div class="carousel-session-header">
+                  <h3 class="carousel-session-title">
+                    セッション{index + 1} - 基音: {session.baseNote}
+                  </h3>
+                  <div class="carousel-session-grade grade-{session.grade}">
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
+                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
+                  </div>
+                </div>
+                
+                <!-- 連続モード用の詳細表示（将来実装） -->
+                <div class="no-details">
+                  連続モードの詳細表示は準備中です
+                </div>
+              </div>
+            </SessionCarousel>
           </div>
-        </div>
+        {/if}
       </div>
       
     {:else if scoreData?.mode === 'chromatic'}
@@ -278,30 +351,59 @@
           <span>12音階マスターモード</span>
         </div>
         
-        <!-- セッション履歴表示 -->
-        <div class="session-history-section">
-          <div class="session-title">
-            🎹 12音階マスターモード完走履歴
-          </div>
-          <div class="session-bars chromatic-mode">
-            {#if scoreData.sessionHistory}
+        <!-- セッション履歴バー（コンパクト版） -->
+        {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
+          <div class="session-history-section compact">
+            <div class="session-title">
+              🎹 セッション履歴 ({scoreData.sessionHistory.length}/12)
+            </div>
+            <div class="session-bars compact chromatic-mode">
               {#each scoreData.sessionHistory as session, index}
-                <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
-                  <div class="session-number">{index + 1}</div>
-                  <div class="session-grade-icon">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
-                  </div>
-                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
-                  <div class="session-detail">{session.chromaticNote || 'N/A'}</div>
+                <button 
+                  class="session-bar-button grade-{session.grade}"
+                  class:active={index === currentSessionIndex}
+                  on:click={() => currentSessionIndex = index}
+                  title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                  <span class="session-number">{index + 1}</span>
+                  <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
+                </button>
+              {/each}
+              <!-- 未完了セッション表示 -->
+              {#each Array(12 - scoreData.sessionHistory.length) as _, index}
+                <div class="session-bar-button empty">
+                  <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
+                  <span class="empty-icon">-</span>
                 </div>
               {/each}
-            {/if}
+            </div>
           </div>
-          <div class="completion-message">
-            🎉 {scoreData.sessionHistory?.length || 0}セッション完走おめでとうございます！
+          
+          <!-- セッションカルーセル -->
+          <div class="carousel-wrapper">
+            <SessionCarousel 
+              bind:currentIndex={currentSessionIndex}
+              sessionHistory={scoreData.sessionHistory}
+              className="session-detail-carousel"
+            >
+              <div slot="default" let:session let:index>
+                <div class="carousel-session-header">
+                  <h3 class="carousel-session-title">
+                    セッション{index + 1} - 半音階: {session.chromaticNote}
+                  </h3>
+                  <div class="carousel-session-grade grade-{session.grade}">
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
+                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
+                  </div>
+                </div>
+                
+                <!-- 12音階モード用の詳細表示（将来実装） -->
+                <div class="no-details">
+                  12音階モードの詳細表示は準備中です
+                </div>
+              </div>
+            </SessionCarousel>
           </div>
-        </div>
+        {/if}
       </div>
     {/if}
     
@@ -392,12 +494,19 @@
     margin-top: 1rem;
   }
   
+  .session-history-section.compact {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+  }
+  
   .session-title {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #6b7280;
-    margin-bottom: 0.5rem;
-    text-align: center;
+    margin-bottom: 0.25rem;
+    text-align: left;
   }
   
   .session-bars {
@@ -408,6 +517,11 @@
     border-radius: 8px;
     flex-wrap: wrap;
     justify-content: center;
+  }
+  
+  .session-bars.compact {
+    padding: 0.5rem;
+    gap: 4px;
   }
   
   .session-bars.chromatic-mode {
@@ -422,78 +536,6 @@
     }
   }
   
-  .session-bar {
-    flex: 1;
-    min-width: 90px;
-    height: 80px;
-    border-radius: 6px;
-    transition: all 0.3s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    border: 2px solid;
-    cursor: pointer;
-    padding: 0.5rem;
-  }
-  
-  .session-bar:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* 4段階評価別色分け（RandomModeScoreResultと統一） */
-  .session-bar.grade-excellent {
-    background: #fffbeb;
-    border-color: #fbbf24;
-  }
-  
-  .session-bar.grade-good {
-    background: #ecfdf5;
-    border-color: #10b981;
-  }
-  
-  .session-bar.grade-pass {
-    background: #eff6ff;
-    border-color: #3b82f6;
-  }
-  
-  .session-bar.grade-needWork {
-    background: #fef2f2;
-    border-color: #ef4444;
-  }
-  
-  .session-bar.grade-notMeasured {
-    background: #f9fafb;
-    border-color: #9ca3af;
-  }
-  
-  .session-number {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: #6b7280;
-    margin-bottom: 2px;
-  }
-  
-  .session-grade-icon {
-    margin-bottom: 2px;
-  }
-  
-  .session-grade-text {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 2px;
-    text-align: center;
-  }
-  
-  .session-detail {
-    font-size: 0.6rem;
-    font-weight: 400;
-    color: #6b7280;
-    text-align: center;
-  }
   
   .completion-message {
     text-align: center;
@@ -543,6 +585,143 @@
   
   .details-toggle:hover {
     background: #e5e7eb;
+  }
+  
+  /* セッションバーボタン */
+  .session-bar-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid;
+    cursor: pointer;
+    padding: 0;
+    background: white;
+    font-size: 0.7rem;
+  }
+  
+  .session-bar-button:hover:not(.empty) {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .session-bar-button.active {
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  
+  .session-bar-button.empty {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+    cursor: default;
+    color: #d1d5db;
+  }
+  
+  .session-bar-button .session-number {
+    font-size: 0.6rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  
+  .session-bar-button .empty-icon {
+    font-size: 0.875rem;
+    color: #d1d5db;
+  }
+  
+  /* 4段階評価別色分け（コンパクト版） */
+  .session-bar-button.grade-excellent {
+    background: #fffbeb;
+    border-color: #fbbf24;
+    color: #f59e0b;
+  }
+  
+  .session-bar-button.grade-good {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #059669;
+  }
+  
+  .session-bar-button.grade-pass {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #2563eb;
+  }
+  
+  .session-bar-button.grade-needWork {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #dc2626;
+  }
+  
+  .session-bar-button.grade-notMeasured {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #6b7280;
+  }
+  
+  /* カルーセルラッパー */
+  .carousel-wrapper {
+    margin-top: 1rem;
+  }
+  
+  .carousel-session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .carousel-session-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  .carousel-session-grade {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .carousel-session-grade.grade-excellent {
+    background: #fffbeb;
+    color: #f59e0b;
+  }
+  
+  .carousel-session-grade.grade-good {
+    background: #ecfdf5;
+    color: #059669;
+  }
+  
+  .carousel-session-grade.grade-pass {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .carousel-session-grade.grade-needWork {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .carousel-score-result {
+    margin-top: 0;
+  }
+  
+  .no-details {
+    text-align: center;
+    padding: 3rem;
+    color: #9ca3af;
+    font-size: 0.875rem;
   }
   
   /* レスポンシブ対応 */
