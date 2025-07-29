@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Star, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -10,13 +10,65 @@
   export let showDetails = false;
   export let className = '';
   
-  // 4段階評価の定義（RandomModeScoreResultと統一）
-  const gradeDefinitions = {
+  // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
+  const sessionGradeDefinitions = {
     excellent: { name: '優秀', icon: Trophy, range: '±15¢以内', color: 'text-yellow-500', bgColor: '#fffbeb', borderColor: '#fbbf24' },
     good: { name: '良好', icon: Star, range: '±25¢以内', color: 'text-green-500', bgColor: '#ecfdf5', borderColor: '#10b981' },
     pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500', bgColor: '#eff6ff', borderColor: '#3b82f6' },
     needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500', bgColor: '#fef2f2', borderColor: '#ef4444' },
     notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500', bgColor: '#f9fafb', borderColor: '#9ca3af' }
+  };
+  
+  // S-E級統合評価システム（8セッション完走時用）
+  const unifiedGradeDefinitions = {
+    S: { 
+      name: 'S級マスター', 
+      icon: Trophy, 
+      color: 'text-purple-500',
+      bgColor: '#faf5ff',
+      borderColor: '#8b5cf6',
+      description: '完璧な演奏です！'
+    },
+    A: { 
+      name: 'A級エキスパート', 
+      icon: Crown, 
+      color: 'text-yellow-500',
+      bgColor: '#fffbeb',
+      borderColor: '#f59e0b',
+      description: '素晴らしい精度です！'
+    },
+    B: { 
+      name: 'B級プロフィシエント', 
+      icon: Star, 
+      color: 'text-green-500',
+      bgColor: '#ecfdf5',
+      borderColor: '#10b981',
+      description: '良い調子です！'
+    },
+    C: { 
+      name: 'C級アドバンス', 
+      icon: Award, 
+      color: 'text-blue-500',
+      bgColor: '#eff6ff',
+      borderColor: '#3b82f6',
+      description: '着実に上達しています'
+    },
+    D: { 
+      name: 'D級ビギナー', 
+      icon: Target, 
+      color: 'text-orange-500',
+      bgColor: '#fff7ed',
+      borderColor: '#f97316',
+      description: '練習を続けましょう'
+    },
+    E: { 
+      name: 'E級スターター', 
+      icon: TrendingUp, 
+      color: 'text-red-500',
+      bgColor: '#fef2f2',
+      borderColor: '#ef4444',
+      description: '基礎から頑張りましょう'
+    }
   };
   
   // アニメーション用
@@ -70,9 +122,9 @@
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
   
-  // セッション履歴から総合評価を算出
-  $: overallGrade = (() => {
-    if (!scoreData?.sessionHistory || scoreData.sessionHistory.length === 0) return 'needWork';
+  // セッション履歴からS-E級統合評価を算出
+  $: unifiedGrade = (() => {
+    if (!scoreData?.sessionHistory || scoreData.sessionHistory.length === 0) return 'E';
     
     const sessionGrades = scoreData.sessionHistory.map(session => session.grade);
     const excellentCount = sessionGrades.filter(g => g === 'excellent').length;
@@ -80,15 +132,23 @@
     const passCount = sessionGrades.filter(g => g === 'pass').length;
     const totalGoodSessions = excellentCount + goodCount + passCount;
     
-    // 8セッション（または12セッション）の総合判定
+    // 統合評価の計算（S-E級システム）
     const totalSessions = scoreData.sessionHistory.length;
-    if (excellentCount >= totalSessions * 0.75) return 'excellent';
-    if (totalGoodSessions >= totalSessions * 0.8) return 'good';
-    if (totalGoodSessions >= totalSessions * 0.6) return 'pass';
-    return 'needWork';
+    const excellentRatio = excellentCount / totalSessions;
+    const goodRatio = totalGoodSessions / totalSessions;
+    
+    if (excellentRatio >= 0.9 && goodRatio >= 0.95) return 'S';
+    if (excellentRatio >= 0.7 && goodRatio >= 0.85) return 'A';
+    if (excellentRatio >= 0.5 && goodRatio >= 0.75) return 'B';
+    if (goodRatio >= 0.65) return 'C';
+    if (goodRatio >= 0.50) return 'D';
+    return 'E';
   })();
   
-  $: gradeDef = gradeDefinitions[overallGrade];
+  // 8セッション完走判定
+  $: isCompleted = scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8);
+  
+  $: gradeDef = isCompleted ? unifiedGradeDefinitions[unifiedGrade] : sessionGradeDefinitions[scoreData?.sessionHistory?.[scoreData.sessionHistory.length - 1]?.grade || 'needWork'];
   
   onMount(() => {
     // アニメーション開始
@@ -116,11 +176,19 @@
     </div>
     
     <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
-      {gradeDef.name}
+      {#if isCompleted}
+        {gradeDef.name}
+      {:else}
+        現在の進捗: {scoreData?.sessionHistory?.length || 0}/{scoreData?.mode === 'chromatic' ? 12 : 8}セッション
+      {/if}
     </h2>
     
     <p class="grade-description" in:fade={{ delay: 600 }}>
-      {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
+      {#if isCompleted}
+        {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
+      {:else}
+        統合評価まであと{(scoreData?.mode === 'chromatic' ? 12 : 8) - (scoreData?.sessionHistory?.length || 0)}セッション
+      {/if}
     </p>
   </div>
   
@@ -147,12 +215,12 @@
             {#if scoreData.sessionHistory}
               {#each scoreData.sessionHistory as session, index}
                 <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {gradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <div class="session-number">{index + 1}</div>
                   <div class="session-grade-icon">
-                    <svelte:component this={gradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
                   </div>
-                  <div class="session-grade-text">{gradeDefinitions[session.grade]?.name || '不明'}</div>
+                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
                   <div class="session-detail">{session.baseNote || 'N/A'}</div>
                 </div>
               {/each}
@@ -185,12 +253,12 @@
             {#if scoreData.sessionHistory}
               {#each scoreData.sessionHistory as session, index}
                 <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {gradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <div class="session-number">{index + 1}</div>
                   <div class="session-grade-icon">
-                    <svelte:component this={gradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
                   </div>
-                  <div class="session-grade-text">{gradeDefinitions[session.grade]?.name || '不明'}</div>
+                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
                   <div class="session-detail">{session.baseNote || 'N/A'}</div>
                 </div>
               {/each}
@@ -219,12 +287,12 @@
             {#if scoreData.sessionHistory}
               {#each scoreData.sessionHistory as session, index}
                 <div class="session-bar completed grade-{session.grade}"
-                     title="セッション{index + 1}: {gradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
+                     title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <div class="session-number">{index + 1}</div>
                   <div class="session-grade-icon">
-                    <svelte:component this={gradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
+                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="16" />
                   </div>
-                  <div class="session-grade-text">{gradeDefinitions[session.grade]?.name || '不明'}</div>
+                  <div class="session-grade-text">{sessionGradeDefinitions[session.grade]?.name || '不明'}</div>
                   <div class="session-detail">{session.chromaticNote || 'N/A'}</div>
                 </div>
               {/each}
