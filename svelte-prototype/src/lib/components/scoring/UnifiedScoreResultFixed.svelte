@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, HelpCircle } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronDown } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -7,7 +7,6 @@
   import SNSShareButtons from './SNSShareButtons.svelte';
   import SessionCarousel from './SessionCarousel.svelte';
   import RandomModeScoreResult from './RandomModeScoreResult.svelte';
-  import GradeExplanationModal from './GradeExplanationModal.svelte';
   
   // デバッグエリアの完成したコンポーネントを統合
   import { 
@@ -31,8 +30,6 @@
   // タブ管理
   let activeTab = 'intervals';
   
-  // 評価説明モーダル管理
-  let showGradeExplanation = false;
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
   const sessionGradeDefinitions = {
@@ -238,19 +235,9 @@
         />
       </div>
       
-      <div class="grade-header" in:fade={{ delay: 400 }}>
-        <h2 class="grade-name {gradeDef.color}">
-          {gradeDef.name}
-        </h2>
-        <button 
-          class="grade-help-button"
-          on:click={() => showGradeExplanation = true}
-          title="評価の見方"
-          aria-label="評価の見方を表示"
-        >
-          <HelpCircle size="20" class="text-gray-500 hover:text-blue-600 transition-colors" />
-        </button>
-      </div>
+      <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
+        {gradeDef.name}
+      </h2>
       
       <p class="grade-description" in:fade={{ delay: 600 }}>
         {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
@@ -265,6 +252,63 @@
           />
         </div>
       {/if}
+      
+      <!-- 評価の見方（簡潔版） -->
+      <div class="grade-explanation" in:fade={{ delay: 1000 }}>
+        <details class="grade-details">
+          <summary class="grade-summary">
+            <ChevronDown size="16" class="chevron-icon" />
+            <span>評価の見方</span>
+          </summary>
+          <div class="grade-explanation-content">
+            <div class="grade-table">
+              <div class="grade-row">
+                <span class="grade-label">S級マスター</span>
+                <span class="grade-condition">優秀90%以上 + 良好以上95%以上</span>
+              </div>
+              <div class="grade-row">
+                <span class="grade-label">A級エキスパート</span>
+                <span class="grade-condition">優秀70%以上 + 良好以上85%以上</span>
+              </div>
+              <div class="grade-row">
+                <span class="grade-label">B級プロフィシエント</span>
+                <span class="grade-condition">優秀50%以上 + 良好以上75%以上</span>
+              </div>
+              <div class="grade-row">
+                <span class="grade-label">C級アドバンス</span>
+                <span class="grade-condition">良好以上65%以上</span>
+              </div>
+              <div class="grade-row">
+                <span class="grade-label">D級ビギナー</span>
+                <span class="grade-condition">良好以上50%以上</span>
+              </div>
+              <div class="grade-row">
+                <span class="grade-label">E級スターター</span>
+                <span class="grade-condition">良好以上50%未満</span>
+              </div>
+            </div>
+            <div class="session-grades-explanation">
+              <h4 class="explanation-title">個別セッション評価</h4>
+              <div class="session-grade-row">
+                <span class="session-grade-label excellent">優秀</span>
+                <span class="session-grade-range">±15¢以内</span>
+              </div>
+              <div class="session-grade-row">
+                <span class="session-grade-label good">良好</span>
+                <span class="session-grade-range">±25¢以内</span>
+              </div>
+              <div class="session-grade-row">
+                <span class="session-grade-label pass">合格</span>
+                <span class="session-grade-range">±40¢以内</span>
+              </div>
+              <div class="session-grade-row">
+                <span class="session-grade-label need-work">要練習</span>
+                <span class="session-grade-range">±41¢以上</span>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
     </div>
   {/if}
   
@@ -534,13 +578,6 @@
   {/if}
 </div>
 
-<!-- 評価説明モーダル -->
-<GradeExplanationModal 
-  bind:isOpen={showGradeExplanation}
-  currentGrade={unifiedGrade}
-  currentStats={currentStats}
-  on:close={() => showGradeExplanation = false}
-/>
 
 <style>
   .unified-score-result {
@@ -577,28 +614,127 @@
     color: #6b7280;
   }
   
-  .grade-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
+  /* 評価の見方スタイル（shadcn/ui風） */
+  .grade-explanation {
+    margin-top: 1.5rem;
+    border-top: 1px solid hsl(214.3 31.8% 91.4%);
+    padding-top: 1rem;
   }
   
-  .grade-help-button {
-    background: none;
-    border: none;
+  .grade-details {
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .grade-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: hsl(210 40% 98%);
     cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-weight: 500;
+    color: hsl(222.2 84% 4.9%);
     transition: background-color 0.2s;
+    list-style: none;
   }
   
-  .grade-help-button:hover {
-    background: rgba(0, 0, 0, 0.05);
+  .grade-summary:hover {
+    background: hsl(210 40% 96%);
+  }
+  
+  .chevron-icon {
+    transition: transform 0.2s;
+    color: hsl(215.4 16.3% 46.9%);
+  }
+  
+  .grade-details[open] .chevron-icon {
+    transform: rotate(180deg);
+  }
+  
+  .grade-explanation-content {
+    padding: 1rem;
+    background: white;
+  }
+  
+  .grade-table {
+    margin-bottom: 1.5rem;
+  }
+  
+  .grade-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
+  }
+  
+  .grade-row:last-child {
+    border-bottom: none;
+  }
+  
+  .grade-label {
+    font-weight: 500;
+    color: hsl(222.2 84% 4.9%);
+    font-size: 0.875rem;
+  }
+  
+  .grade-condition {
+    font-size: 0.75rem;
+    color: hsl(215.4 16.3% 46.9%);
+    text-align: right;
+  }
+  
+  .session-grades-explanation {
+    border-top: 1px solid hsl(214.3 31.8% 91.4%);
+    padding-top: 1rem;
+  }
+  
+  .explanation-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(222.2 84% 4.9%);
+    margin-bottom: 0.75rem;
+  }
+  
+  .session-grade-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0;
+  }
+  
+  .session-grade-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .session-grade-label.excellent {
+    background: hsl(47.9 95.8% 53.1% / 0.1);
+    color: hsl(25 95% 53%);
+  }
+  
+  .session-grade-label.good {
+    background: hsl(142.1 76.2% 36.3% / 0.1);
+    color: hsl(142.1 84.2% 31.2%);
+  }
+  
+  .session-grade-label.pass {
+    background: hsl(221.2 83.2% 53.3% / 0.1);
+    color: hsl(221.2 83.2% 53.3%);
+  }
+  
+  .session-grade-label.need-work {
+    background: hsl(0 84.2% 60.2% / 0.1);
+    color: hsl(0 84.2% 60.2%);
+  }
+  
+  .session-grade-range {
+    font-size: 0.75rem;
+    color: hsl(215.4 16.3% 46.9%);
   }
   
   /* 8セッション完走時のフィードバック専用スタイル（shadcn/ui テーマ） */
@@ -992,6 +1128,30 @@
     
     .grade-display {
       padding: 1.5rem;
+    }
+    
+    .grade-summary {
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+    
+    .grade-explanation-content {
+      padding: 0.75rem;
+    }
+    
+    .grade-condition {
+      font-size: 0.6875rem;
+    }
+    
+    .grade-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      padding: 0.75rem 0;
+    }
+    
+    .grade-condition {
+      text-align: left;
     }
     
     .grade-icon {
