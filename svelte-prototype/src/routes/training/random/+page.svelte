@@ -1636,20 +1636,28 @@
   }
   
   // 違う基音で開始
-  function restartDifferentBaseNote() {
+  async function restartDifferentBaseNote() {
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
-    // 2. UI状態のみ変更（即座画面遷移）
+    // 2. localStorage完全リセット（最優先）
+    try {
+      await resetProgress();
+      console.log('🔄 [restartDifferentBaseNote] localStorage完全リセット完了');
+    } catch (error) {
+      console.error('🔄 [restartDifferentBaseNote] localStorageリセットエラー:', error);
+    }
+    
+    // 3. UI状態のみ変更（即座画面遷移）
     trainingPhase = 'setup';
     
-    // 3. 最小限のクリーンアップ
+    // 4. 最小限のクリーンアップ
     if (guideAnimationTimer) {
       clearTimeout(guideAnimationTimer);
       guideAnimationTimer = null;
     }
     
-    // 4. 基音情報もリセット
+    // 5. 基音情報もリセット
     currentBaseNote = '';
     currentBaseFrequency = 0;
     
