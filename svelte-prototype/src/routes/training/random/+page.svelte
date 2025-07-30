@@ -1462,66 +1462,34 @@
   }
 
   onMount(async () => {
-    // localStorage 初期化（最優先）
-    console.log('📊 [SessionStorage] セッション管理初期化開始');
+    // localStorage 完全リセット（最優先）
+    console.log('📊 [SessionStorage] セッション管理初期化開始 - 常にフレッシュスタート');
     try {
-      const success = await loadProgress();
-      if (success) {
-        console.log('📊 [SessionStorage] セッション進行状況の読み込み完了');
-        console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
-        console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
-        console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
-        
-        // 【異常状態修正】8セッション完了済みの場合はresults画面に強制遷移
-        console.log('🔧 [デバッグ] isCompleted:', $isCompleted, 'currentSessionId:', $currentSessionId, 'progressPercentage:', $progressPercentage);
-        if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
-          console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
-          console.log('🔧 [SessionStorage] 条件: isCompleted=' + $isCompleted + ', currentSessionId=' + $currentSessionId + ', progressPercentage=' + $progressPercentage);
-          
-          // 強制的にtrainingPhaseを変更（複数手法でSvelteリアクティビティを確実に発火）
-          trainingPhase = 'results';
-          console.log('🔧 [SessionStorage] trainingPhase変更後:', trainingPhase);
-          
-          // 空の評価データで最低限の表示を可能にする
-          noteResultsForDisplay = SCALE_NAMES.map(noteName => ({
-            name: noteName,
-            cents: null,
-            targetFreq: null,
-            detectedFreq: null,
-            diff: null,
-            accuracy: 'notMeasured'
-          }));
-          
-          // 統合採点データが存在しない場合の処理はストア側で自動実行されるため省略
-          
-          // 強力なUI更新: tick()とsetTimeoutの組み合わせ
-          tick().then(() => {
-            console.log('🔧 [SessionStorage] tick()後のtrainingPhase:', trainingPhase);
-            // 再代入でリアクティビティを強制発火
-            const currentPhase = trainingPhase;
-            trainingPhase = '';
-            trainingPhase = currentPhase;
-            console.log('🔧 [SessionStorage] リアクティビティ強制発火完了:', trainingPhase);
-            
-            // DOM直接操作による最終手段の画面切り替え
-            forceDOMScreenTransition();
-          });
-          
-          setTimeout(() => {
-            console.log('🔧 [SessionStorage] UI更新確認 - trainingPhase:', trainingPhase);
-            if (trainingPhase !== 'results') {
-              console.error('❌ [SessionStorage] trainingPhase設定が失敗しました - 再試行');
-              trainingPhase = 'results'; // 再試行
-            }
-            // DOM強制更新の再実行
-            forceDOMScreenTransition();
-          }, 100);
-        }
-      } else {
-        console.log('📊 [SessionStorage] 新規セッション開始');
-      }
+      // 既存データを完全削除
+      console.log('🔄 [SessionStorage] 既存localStorage完全削除');
+      localStorage.removeItem('pitchTrainingProgress');
+      localStorage.removeItem('sessionHistory');
+      localStorage.removeItem('unifiedScoreData');
+      
+      // 新規プログレス作成
+      console.log('🆕 [SessionStorage] 新規セッション作成 - 1/8, 0%');
+      await createNewProgress();
+      
+      // 確認
+      console.log('✅ [SessionStorage] 初期化完了');
+      console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
+      console.log('📊 [SessionStorage] 進捗率:', $progressPercentage, '%');
+      console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '完了' : '未完了');
+      
     } catch (error) {
-      console.error('📊 [SessionStorage] 初期化エラー:', error);
+      console.error('❌ [SessionStorage] 初期化エラー:', error);
+      // エラー時も新規プログレス作成を試行
+      try {
+        await createNewProgress();
+        console.log('🔄 [SessionStorage] エラー後の新規プログレス作成完了');
+      } catch (secondError) {
+        console.error('❌ [SessionStorage] 新規プログレス作成も失敗:', secondError);
+      }
     }
     
     // 音源初期化
