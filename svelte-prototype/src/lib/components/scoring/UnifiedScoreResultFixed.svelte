@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, HelpCircle } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -7,6 +7,7 @@
   import SNSShareButtons from './SNSShareButtons.svelte';
   import SessionCarousel from './SessionCarousel.svelte';
   import RandomModeScoreResult from './RandomModeScoreResult.svelte';
+  import GradeExplanationModal from './GradeExplanationModal.svelte';
   
   // デバッグエリアの完成したコンポーネントを統合
   import { 
@@ -29,6 +30,9 @@
   
   // タブ管理
   let activeTab = 'intervals';
+  
+  // 評価説明モーダル管理
+  let showGradeExplanation = false;
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
   const sessionGradeDefinitions = {
@@ -173,6 +177,36 @@
     return 'E';
   })();
   
+  // 現在の統計情報を計算
+  $: currentStats = (() => {
+    if (!scoreData?.sessionHistory || scoreData.sessionHistory.length === 0) {
+      return {
+        totalSessions: 0,
+        excellentCount: 0,
+        goodCount: 0,
+        passCount: 0,
+        excellentRate: 0,
+        goodRate: 0
+      };
+    }
+    
+    const sessionGrades = scoreData.sessionHistory.map(session => session.grade);
+    const excellentCount = sessionGrades.filter(g => g === 'excellent').length;
+    const goodCount = sessionGrades.filter(g => g === 'good').length;
+    const passCount = sessionGrades.filter(g => g === 'pass').length;
+    const totalGoodSessions = excellentCount + goodCount + passCount;
+    const totalSessions = scoreData.sessionHistory.length;
+    
+    return {
+      totalSessions,
+      excellentCount,
+      goodCount,
+      passCount,
+      excellentRate: Math.round((excellentCount / totalSessions) * 100),
+      goodRate: Math.round((totalGoodSessions / totalSessions) * 100)
+    };
+  })();
+  
   // 8セッション完走判定
   $: isCompleted = scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8);
   
@@ -204,9 +238,19 @@
         />
       </div>
       
-      <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
-        {gradeDef.name}
-      </h2>
+      <div class="grade-header" in:fade={{ delay: 400 }}>
+        <h2 class="grade-name {gradeDef.color}">
+          {gradeDef.name}
+        </h2>
+        <button 
+          class="grade-help-button"
+          on:click={() => showGradeExplanation = true}
+          title="評価の見方"
+          aria-label="評価の見方を表示"
+        >
+          <HelpCircle size="20" class="text-gray-500 hover:text-blue-600 transition-colors" />
+        </button>
+      </div>
       
       <p class="grade-description" in:fade={{ delay: 600 }}>
         {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
@@ -490,6 +534,14 @@
   {/if}
 </div>
 
+<!-- 評価説明モーダル -->
+<GradeExplanationModal 
+  bind:isOpen={showGradeExplanation}
+  currentGrade={unifiedGrade}
+  currentStats={currentStats}
+  on:close={() => showGradeExplanation = false}
+/>
+
 <style>
   .unified-score-result {
     padding: 1.5rem;
@@ -523,6 +575,30 @@
   .grade-description {
     font-size: 1rem;
     color: #6b7280;
+  }
+  
+  .grade-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .grade-help-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+  
+  .grade-help-button:hover {
+    background: rgba(0, 0, 0, 0.05);
   }
   
   /* 8セッション完走時のフィードバック専用スタイル（shadcn/ui テーマ） */
