@@ -37,12 +37,12 @@
     return {
       mode: 'random',
       timestamp: new Date(),
-      duration: 240,
-      totalNotes: 32, // 4セッション × 8音
-      measuredNotes: 30,
-      averageAccuracy: 78,
-      baseNote: 'C4',
-      baseFrequency: 261.63,
+      duration: 480, // 8セッション × 60秒
+      totalNotes: 64, // 8セッション × 8音
+      measuredNotes: 59, // 8セッション総計
+      averageAccuracy: 79, // 8セッション全体平均
+      baseNote: 'C5', // 最終セッションの基音
+      baseFrequency: 523.25,
       sessionHistory: [
         { 
           grade: 'excellent', 
@@ -114,6 +114,79 @@
             { name: 'ラ', note: 'ラ', frequency: 587, detectedFrequency: null, cents: null, grade: 'notMeasured' },
             { name: 'シ', note: 'シ', frequency: 659, detectedFrequency: 650, cents: -24, grade: 'good' },
             { name: 'ド（高）', note: 'ド（高）', frequency: 698, detectedFrequency: null, cents: null, grade: 'notMeasured' }
+          ]
+        },
+        // === 追加セッション 5-8 ===
+        { 
+          grade: 'good', 
+          accuracy: 85, 
+          baseNote: 'G4',
+          baseFrequency: 392.00,
+          timestamp: new Date(Date.now() - 3 * 60000),
+          measuredNotes: 8,
+          noteResults: [
+            { name: 'ド', note: 'ド', frequency: 392, detectedFrequency: 395, cents: 13, grade: 'excellent' },
+            { name: 'レ', note: 'レ', frequency: 440, detectedFrequency: 438, cents: -8, grade: 'excellent' },
+            { name: 'ミ', note: 'ミ', frequency: 494, detectedFrequency: 500, cents: 21, grade: 'good' },
+            { name: 'ファ', note: 'ファ', frequency: 523, detectedFrequency: 520, cents: -10, grade: 'excellent' },
+            { name: 'ソ', note: 'ソ', frequency: 587, detectedFrequency: 595, cents: 24, grade: 'good' },
+            { name: 'ラ', note: 'ラ', frequency: 659, detectedFrequency: 665, cents: 16, grade: 'good' },
+            { name: 'シ', note: 'シ', frequency: 740, detectedFrequency: 755, cents: 35, grade: 'pass' },
+            { name: 'ド（高）', note: 'ド（高）', frequency: 784, detectedFrequency: 780, cents: -9, grade: 'excellent' }
+          ]
+        },
+        { 
+          grade: 'excellent', 
+          accuracy: 94, 
+          baseNote: 'A4',
+          baseFrequency: 440.00,
+          timestamp: new Date(Date.now() - 2 * 60000),
+          measuredNotes: 8,
+          noteResults: [
+            { name: 'ド', note: 'ド', frequency: 440, detectedFrequency: 442, cents: 8, grade: 'excellent' },
+            { name: 'レ', note: 'レ', frequency: 494, detectedFrequency: 492, cents: -7, grade: 'excellent' },
+            { name: 'ミ', note: 'ミ', frequency: 554, detectedFrequency: 558, cents: 12, grade: 'excellent' },
+            { name: 'ファ', note: 'ファ', frequency: 587, detectedFrequency: 585, cents: -6, grade: 'excellent' },
+            { name: 'ソ', note: 'ソ', frequency: 659, detectedFrequency: 665, cents: 16, grade: 'good' },
+            { name: 'ラ', note: 'ラ', frequency: 740, detectedFrequency: 738, cents: -5, grade: 'excellent' },
+            { name: 'シ', note: 'シ', frequency: 831, detectedFrequency: 840, cents: 19, grade: 'good' },
+            { name: 'ド（高）', note: 'ド（高）', frequency: 880, detectedFrequency: 882, cents: 4, grade: 'excellent' }
+          ]
+        },
+        { 
+          grade: 'pass', 
+          accuracy: 68, 
+          baseNote: 'Bb4',
+          baseFrequency: 466.16,
+          timestamp: new Date(Date.now() - 1 * 60000),
+          measuredNotes: 7,
+          noteResults: [
+            { name: 'ド', note: 'ド', frequency: 466, detectedFrequency: 470, cents: 15, grade: 'excellent' },
+            { name: 'レ', note: 'レ', frequency: 523, detectedFrequency: 535, cents: 39, grade: 'pass' },
+            { name: 'ミ', note: 'ミ', frequency: 587, detectedFrequency: 600, cents: 38, grade: 'pass' },
+            { name: 'ファ', note: 'ファ', frequency: 622, detectedFrequency: 615, cents: -19, grade: 'good' },
+            { name: 'ソ', note: 'ソ', frequency: 698, detectedFrequency: 720, cents: 54, grade: 'needWork' },
+            { name: 'ラ', note: 'ラ', frequency: 784, detectedFrequency: null, cents: null, grade: 'notMeasured' },
+            { name: 'シ', note: 'シ', frequency: 880, detectedFrequency: 895, cents: 29, grade: 'pass' },
+            { name: 'ド（高）', note: 'ド（高）', frequency: 932, detectedFrequency: 925, cents: -13, grade: 'excellent' }
+          ]
+        },
+        { 
+          grade: 'good', 
+          accuracy: 82, 
+          baseNote: 'C5',
+          baseFrequency: 523.25,
+          timestamp: new Date(),
+          measuredNotes: 8,
+          noteResults: [
+            { name: 'ド', note: 'ド', frequency: 523, detectedFrequency: 526, cents: 10, grade: 'excellent' },
+            { name: 'レ', note: 'レ', frequency: 587, detectedFrequency: 584, cents: -9, grade: 'excellent' },
+            { name: 'ミ', note: 'ミ', frequency: 659, detectedFrequency: 665, cents: 16, grade: 'good' },
+            { name: 'ファ', note: 'ファ', frequency: 698, detectedFrequency: 692, cents: -15, grade: 'excellent' },
+            { name: 'ソ', note: 'ソ', frequency: 784, detectedFrequency: 795, cents: 24, grade: 'good' },
+            { name: 'ラ', note: 'ラ', frequency: 880, detectedFrequency: 890, cents: 19, grade: 'good' },
+            { name: 'シ', note: 'シ', frequency: 988, detectedFrequency: 1010, cents: 38, grade: 'pass' },
+            { name: 'ド（高）', note: 'ド（高）', frequency: 1047, detectedFrequency: 1042, cents: -8, grade: 'excellent' }
           ]
         }
       ]
