@@ -1269,7 +1269,79 @@
 
   // 初期化
   onMount(async () => {
-    // localStorage 初期化（最優先）
+    // 最優先: マイクテスト完了フラグ確認
+    const micTestCompleted = localStorage.getItem('mic-test-completed');
+    
+    // マイクテストページから来た場合は許可済みとして扱う
+    if ($page.url.searchParams.get('from') === 'microphone-test') {
+      console.log('🎤 [RandomTraining] マイクテストページからの遷移を検出');
+      
+      // URLパラメータを削除（お気に入り登録時の問題回避）
+      const url = new URL(window.location);
+      url.searchParams.delete('from');
+      window.history.replaceState({}, '', url);
+      
+      // マイクテストページから来た場合は許可済みとして扱い、ストリームを準備
+      microphoneState = 'granted';
+      trainingPhase = 'setup';
+      console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
+      
+      // AudioManagerリソースは既にマイクテストページで初期化済み
+      console.log('🎤 [RandomTraining] マイクテストページ経由のためAudioManagerリソース利用可能');
+      
+      // localStorage 初期化（マイクテスト完了後のみ）
+      console.log('📊 [SessionStorage] セッション管理初期化開始');
+      try {
+        const success = await loadProgress();
+        if (success) {
+          console.log('📊 [SessionStorage] セッション進行状況の読み込み完了');
+          console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
+          console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
+          console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+        } else {
+          console.log('📊 [SessionStorage] 新規セッション開始');
+        }
+      } catch (error) {
+        console.error('📊 [SessionStorage] 初期化エラー:', error);
+      }
+      
+      // 音源初期化
+      initializeSampler();
+      
+      // 採点エンジン初期化
+      initializeScoringEngine();
+      
+      return;
+    }
+    
+    // ダイレクトアクセス時: マイクテスト完了フラグ確認
+    if (!micTestCompleted) {
+      // フラグなし → 準備画面表示（localStorage作成しない）
+      console.log('🚫 [RandomTraining] マイクテスト未完了 - 準備画面表示');
+      checkExistingMicrophonePermission();
+      return;
+    }
+    
+    // フラグあり → 通常の初期化処理
+    console.log('✅ [RandomTraining] マイクテスト完了フラグ確認済み - 通常初期化');
+    microphoneState = 'granted';
+    trainingPhase = 'setup';
+    
+    // AudioManagerリソース初期化（フラグ確認済みの場合）
+    try {
+      console.log('🎤 [RandomTraining] AudioManagerリソース初期化開始');
+      const resources = await audioManager.initialize();
+      audioContext = resources.audioContext;
+      mediaStream = resources.mediaStream;
+      sourceNode = resources.sourceNode;
+      console.log('✅ [RandomTraining] AudioManagerリソース初期化完了');
+    } catch (error) {
+      console.error('❌ [RandomTraining] AudioManagerリソース初期化エラー:', error);
+      microphoneState = 'error';
+      return;
+    }
+    
+    // localStorage 初期化（フラグがある場合のみ）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
       const success = await loadProgress();
@@ -1290,29 +1362,6 @@
     
     // 採点エンジン初期化
     initializeScoringEngine();
-    
-    // マイクテストページから来た場合は許可済みとして扱う
-    if ($page.url.searchParams.get('from') === 'microphone-test') {
-      console.log('🎤 [RandomTraining] マイクテストページからの遷移を検出');
-      
-      // URLパラメータを削除（お気に入り登録時の問題回避）
-      const url = new URL(window.location);
-      url.searchParams.delete('from');
-      window.history.replaceState({}, '', url);
-      
-      // マイクテストページから来た場合は許可済みとして扱い、ストリームを準備
-      microphoneState = 'granted';
-      trainingPhase = 'setup';
-      console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
-      
-      // AudioManagerリソースは既にマイクテストページで初期化済み
-      console.log('🎤 [RandomTraining] マイクテストページ経由のためAudioManagerリソース利用可能');
-      return;
-    }
-    
-    // ダイレクトアクセス時のみマイク許可状態確認
-    await new Promise(resolve => setTimeout(resolve, 100));
-    checkExistingMicrophonePermission();
   });
   
   // PitchDetectorコンポーネントからのイベントハンドラー
