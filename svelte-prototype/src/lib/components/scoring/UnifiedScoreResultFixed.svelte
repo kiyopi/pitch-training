@@ -229,7 +229,7 @@
       <div class="grade-icon-wrapper">
         <svelte:component 
           this={gradeDef.icon} 
-          size="80"
+          size="120"
           class="grade-icon {gradeDef.color}"
           style="transform: scale({$iconScale})"
         />
@@ -585,7 +585,7 @@
   }
   
   .grade-name {
-    font-size: 1.75rem;
+    font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
   }
@@ -1110,7 +1110,7 @@
     }
     
     .grade-name {
-      font-size: 1.5rem;
+      font-size: 2rem;
     }
     
     .common-stats {
