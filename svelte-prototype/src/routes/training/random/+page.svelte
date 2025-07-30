@@ -1339,7 +1339,17 @@
 
   // 初期化
   onMount(async () => {
-    // localStorage 初期化（最優先）
+    // **最優先**: マイクテスト完了フラグ確認（localStorage作成前）
+    const micTestCompleted = localStorage.getItem('mic-test-completed');
+    
+    if (!micTestCompleted) {
+      // マイクテスト未完了 → 準備画面表示（localStorage作成しない）
+      console.log('🚫 [RandomTraining] マイクテスト未完了 - 準備画面表示');
+      checkExistingMicrophonePermission();
+      return;
+    }
+    
+    // localStorage 初期化（マイクテスト完了時のみ）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
       const success = await loadProgress();
