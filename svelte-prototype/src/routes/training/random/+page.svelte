@@ -1642,12 +1642,20 @@
     
     // 2. localStorage完全リセット（最優先）
     try {
+      console.log('🔄 [restartDifferentBaseNote] リセット開始前の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      
       await resetProgress();
       console.log('🔄 [restartDifferentBaseNote] localStorage完全リセット完了');
+      console.log('🔄 [restartDifferentBaseNote] リセット直後の状態:', $currentSessionId, '/', $progressPercentage + '%');
       
       // 新しいプログレスを作成
       await createNewProgress();
       console.log('🔄 [restartDifferentBaseNote] 新しいプログレス作成完了');
+      console.log('🔄 [restartDifferentBaseNote] 作成後の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      
+      // 強制的にページをリロードして確実にリセット
+      console.log('🔄 [restartDifferentBaseNote] 強制リロードを実行します');
+      window.location.reload();
     } catch (error) {
       console.error('🔄 [restartDifferentBaseNote] localStorageリセット/作成エラー:', error);
     }
