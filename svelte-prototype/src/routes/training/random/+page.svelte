@@ -1045,6 +1045,9 @@
     
     try {
       console.log('📊 [SessionStorage] セッション結果保存開始');
+      console.log('📊 [SessionStorage] noteResultsForDisplay:', noteResultsForDisplay);
+      console.log('📊 [SessionStorage] currentBaseNote:', currentBaseNote);
+      console.log('📊 [SessionStorage] currentBaseFrequency:', currentBaseFrequency);
       
       // noteResultsForDisplayを正しい形式に変換
       const convertedNoteResults = noteResultsForDisplay.map(note => ({
@@ -1056,12 +1059,16 @@
         accuracy: typeof note.accuracy === 'number' ? note.accuracy : 0
       }));
       
+      console.log('📊 [SessionStorage] convertedNoteResults:', convertedNoteResults);
+      
       // セッション継続時間を計算（開始時刻からの経過時間）
       const duration = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 60;
       
-      // 基音情報
-      const baseNote = $nextBaseNote; // 次の基音ストアから取得
-      const baseName = $nextBaseName; // 次の基音名ストアから取得
+      // 基音情報（現在完了したセッションの基音）
+      const baseNote = baseNotes.find(note => note.name === currentBaseNote)?.note || 'C4';
+      const baseName = currentBaseNote || 'ド（中）';
+      
+      console.log('📊 [SessionStorage] 基音情報:', { baseNote, baseName, duration });
       
       // saveSessionResult に渡す
       const success = await saveSessionResult(
@@ -1923,8 +1930,8 @@
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
       <!-- 統合採点システム結果（localStorage統合版） -->
-      {#if $unifiedScoreData && $isCompleted}
-        <!-- 8セッション完了時：localStorageデータを使用 -->
+      {#if $unifiedScoreData}
+        <!-- localStorage統合データを常に使用（1セッション目から） -->
         <UnifiedScoreResultFixed 
           scoreData={$unifiedScoreData}
           showDetails={false}
@@ -1936,7 +1943,7 @@
           sessionStatistics={sessionStatistics}
         />
       {:else if currentUnifiedScoreData}
-        <!-- 1セッション完了時：従来のデータを使用 -->
+        <!-- フォールバック：従来のデータを使用 -->
         <UnifiedScoreResultFixed 
           scoreData={currentUnifiedScoreData}
           showDetails={false}
