@@ -1,7 +1,5 @@
-import { c as create_ssr_component, a as subscribe, v as validate_component } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, a as validate_store, b as subscribe, v as validate_component } from "../../../chunks/ssr.js";
 import { p as page } from "../../../chunks/stores.js";
-import "@sveltejs/kit/internal";
-import "../../../chunks/exports.js";
 import { P as PageLayout, C as Card } from "../../../chunks/PageLayout.js";
 import { P as PitchDetectionDisplay, a as PitchDetector_1 } from "../../../chunks/PitchDetectionDisplay.js";
 const css = {
@@ -10,6 +8,7 @@ const css = {
 };
 const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let $$unsubscribe_page;
+  validate_store(page, "page");
   $$unsubscribe_page = subscribe(page, (value) => value);
   let micPermission = "initial";
   let currentVolume = 0;
@@ -25,7 +24,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     $$result.head = previous_head;
     $$rendered = `${$$result.head += `<!-- HEAD_svelte-8st1fo_START -->${$$result.title = `<title>マイクテスト - 相対音感トレーニング</title>`, ""}<!-- HEAD_svelte-8st1fo_END -->`, ""} ${validate_component(PageLayout, "PageLayout").$$render($$result, { showBackButton: true }, {}, {
       default: () => {
-        return `<div class="microphone-test svelte-s1thfd"> <div class="header svelte-s1thfd" data-svelte-h="svelte-4qcd63"><div class="mic-test-header svelte-s1thfd"><div class="mic-icon svelte-s1thfd"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line><line x1="8" x2="16" y1="22" y2="22"></line></svg></div> <div><h1 class="mic-test-title svelte-s1thfd">マイクテスト</h1> <p class="mic-test-description svelte-s1thfd">音感トレーニングを始める前に、マイクの動作を確認します</p></div></div></div>  <div class="training-mode-info svelte-s1thfd">${validate_component(Card, "Card").$$render($$result, { variant: "default", padding: "lg" }, {}, {
+        return `<div class="microphone-test svelte-s1thfd"> <div class="header svelte-s1thfd"><div class="mic-test-header svelte-s1thfd"><div class="mic-icon svelte-s1thfd"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line><line x1="8" x2="16" y1="22" y2="22"></line></svg></div> <div><h1 class="mic-test-title svelte-s1thfd" data-svelte-h="svelte-z7m4lk">マイクテスト</h1> <p class="mic-test-description svelte-s1thfd" data-svelte-h="svelte-1vtv92f">音感トレーニングを始める前に、マイクの動作を確認します</p></div></div></div>  <div class="training-mode-info svelte-s1thfd">${validate_component(Card, "Card").$$render($$result, { variant: "default", padding: "lg" }, {}, {
           default: () => {
             return `<div class="training-mode-content svelte-s1thfd">${` <h3 class="instructions-title svelte-s1thfd" data-svelte-h="svelte-gfi16f">マイクのテストを開始します</h3> <p class="instructions-description svelte-s1thfd" data-svelte-h="svelte-1w19y1h">マイクテスト開始ボタンを押してマイクの使用を許可してください</p> ${`${`${`<div class="mic-test-button-area svelte-s1thfd"><button class="mic-test-button start svelte-s1thfd" data-svelte-h="svelte-caex95">マイクテストを開始</button></div>`}`}`}`}</div>`;
           }

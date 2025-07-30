@@ -1367,6 +1367,24 @@
         console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
         console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+        
+        // 【異常状態修正】8セッション完了済みの場合はresults画面に強制遷移
+        if ($isCompleted && $currentSessionId >= 8) {
+          console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
+          trainingPhase = 'results';
+          
+          // 空の評価データで最低限の表示を可能にする
+          noteResultsForDisplay = SCALE_NAMES.map(noteName => ({
+            name: noteName,
+            cents: null,
+            targetFreq: null,
+            detectedFreq: null,
+            diff: null,
+            accuracy: 'notMeasured'
+          }));
+          
+          // 統合採点データが存在しない場合の処理はストア側で自動実行されるため省略
+        }
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
       }
