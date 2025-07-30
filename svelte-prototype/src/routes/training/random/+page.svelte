@@ -1385,18 +1385,19 @@
       trainingPhase = 'setup';
       console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
       
-      // AudioManagerリソースの事前取得（スムーズな再生のため）
-      setTimeout(async () => {
-        if (!mediaStream) {
-          console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得開始');
-          try {
-            await checkMicrophonePermission();
-            console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得完了');
-          } catch (error) {
-            console.warn('⚠️ 事前AudioManagerリソース取得失敗（後で再試行）:', error);
-          }
+      // AudioManagerリソースの即座取得（基音再生のため）
+      if (!mediaStream) {
+        console.log('🎤 [RandomTraining] AudioManagerリソース取得開始');
+        try {
+          const resources = await audioManager.initialize();
+          audioContext = resources.audioContext;
+          mediaStream = resources.mediaStream;
+          sourceNode = resources.sourceNode;
+          console.log('🎤 [RandomTraining] AudioManagerリソース取得完了');
+        } catch (error) {
+          console.warn('⚠️ AudioManagerリソース取得失敗（後で再試行）:', error);
         }
-      }, 100);
+      }
       return;
     }
     
