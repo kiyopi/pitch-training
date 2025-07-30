@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { page } from '$app/stores';
@@ -384,6 +384,8 @@
           
           // ダイレクトアクセス制御を解除
           microphoneRequired = false;
+          console.log('🔓 [DirectAccess] マイクテスト制御解除 (success):', microphoneRequired);
+          await tick(); // UI更新を強制
           
           // 8セッション完了済みの場合はresults画面に強制遷移
           if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
@@ -411,6 +413,8 @@
       
       // ダイレクトアクセス制御を解除
       microphoneRequired = false;
+      console.log('🔓 [DirectAccess] マイクテスト制御解除 (final):', microphoneRequired);
+      await tick(); // UI更新を強制
       
       // PitchDetector初期化（外部AudioContext方式）
       setTimeout(async () => {
