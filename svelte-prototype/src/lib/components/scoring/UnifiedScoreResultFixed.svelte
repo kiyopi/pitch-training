@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronDown } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -257,7 +257,7 @@
       <div class="grade-explanation" in:fade={{ delay: 1000 }}>
         <details class="grade-details">
           <summary class="grade-summary">
-            <ChevronDown size="16" class="chevron-icon" />
+            <ChevronRight size="16" class="chevron-icon" />
             <span>評価の見方</span>
           </summary>
           <div class="grade-explanation-content">
@@ -644,6 +644,15 @@
     background: hsl(210 40% 96%);
   }
   
+  /* ブラウザのデフォルト矢印を完全に非表示 */
+  .grade-summary::-webkit-details-marker {
+    display: none;
+  }
+  
+  .grade-details summary::-webkit-details-marker {
+    display: none;
+  }
+  
   .chevron-icon {
     transition: transform 0.2s ease-in-out;
     color: hsl(215.4 16.3% 46.9%);
@@ -652,16 +661,16 @@
   }
   
   .grade-details[open] .chevron-icon {
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
   
   /* More specific selectors to ensure proper application */
   .grade-details[open] :global(.chevron-icon) {
-    transform: rotate(180deg) !important;
+    transform: rotate(90deg) !important;
   }
   
   .grade-details[open] :global(svg.chevron-icon) {
-    transform: rotate(180deg) !important;
+    transform: rotate(90deg) !important;
   }
   
   .grade-explanation-content {
