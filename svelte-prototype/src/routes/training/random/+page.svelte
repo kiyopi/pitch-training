@@ -235,6 +235,7 @@
   
   // シンプルな状態管理
   let microphoneHealthy = true; // マイク健康状態
+  let microphoneRequired = false; // ダイレクトアクセス制御用フラグ
   let microphoneErrors = []; // マイクエラー詳細
   
   // デバッグ情報（強制更新）
@@ -1358,7 +1359,21 @@
 
   // 初期化
   onMount(async () => {
-    // localStorage 初期化（最優先）
+    // 【修正】ダイレクトアクセス制御 - マイクテスト完了確認
+    console.log('🔒 [DirectAccess] ダイレクトアクセス制御開始');
+    
+    // マイクテスト完了フラグ確認
+    const micTestCompleted = localStorage.getItem('mic-test-completed');
+    console.log('🔒 [DirectAccess] マイクテスト完了フラグ:', micTestCompleted ? 'あり' : 'なし');
+    
+    // ダイレクトアクセス制御: マイクテスト未完了の場合
+    if (!micTestCompleted) {
+      console.log('🔒 [DirectAccess] マイクテスト未完了 → マイクテスト要求画面表示');
+      microphoneRequired = true;
+      return; // localStorage作成を防ぐため早期リターン
+    }
+    
+    // localStorage 初期化（マイクテスト完了確認後のみ）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
       const success = await loadProgress();
@@ -1902,7 +1917,26 @@
   </div>
 
 
-  {#if microphoneState === 'granted'}
+  {#if microphoneRequired}
+    <!-- マイクテスト要求画面 -->
+    <Card class="error-card">
+      <div class="error-content">
+        <div class="error-icon">🎤</div>
+        <h3 class="error-title">マイクテストが必要です</h3>
+        <p class="error-message">
+          トレーニングを開始するには、まずマイクテストを完了してください。
+        </p>
+        <div class="error-actions">
+          <Button variant="primary" on:click={() => goto(`${base}/microphone-test?mode=random`)}>
+            マイクテストへ
+          </Button>
+          <Button variant="outline" on:click={() => goto(`${base}/`)}>
+            ホームに戻る
+          </Button>
+        </div>
+      </div>
+    </Card>
+  {:else if microphoneState === 'granted'}
     <!-- PitchDetector: 常に存在（セッション間で破棄されない） -->
     <div style="display: none;">
       <PitchDetector
