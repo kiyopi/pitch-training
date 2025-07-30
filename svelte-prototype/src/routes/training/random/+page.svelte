@@ -1357,6 +1357,49 @@
   
 
   // 初期化
+  // DOM直接操作による強制画面切り替え（最終手段）
+  function forceDOMScreenTransition() {
+    console.log('🔧 [DOM直接操作] 強制画面切り替え開始');
+    
+    try {
+      // 基音再生セクションを非表示
+      const setupSection = document.querySelector('[id*="setup"], .setup-section, .base-note-section');
+      if (setupSection) {
+        setupSection.style.display = 'none';
+        console.log('🔧 [DOM直接操作] 基音再生セクション非表示完了');
+      }
+      
+      // トレーニングセクションを非表示
+      const trainingSection = document.querySelector('[id*="training"], .training-section');
+      if (trainingSection) {
+        trainingSection.style.display = 'none';
+        console.log('🔧 [DOM直接操作] トレーニングセクション非表示完了');
+      }
+      
+      // 結果セクションを表示（強制的に表示）
+      const resultsSection = document.querySelector('[id*="results"], .results-section');
+      if (resultsSection) {
+        resultsSection.style.display = 'block';
+        resultsSection.style.visibility = 'visible';
+        resultsSection.style.opacity = '1';
+        console.log('🔧 [DOM直接操作] 結果セクション表示完了');
+      }
+      
+      // より具体的なセレクターでの検索
+      const unifiedScoreResult = document.querySelector('.unified-score-result, [class*="unified"]');
+      if (unifiedScoreResult) {
+        unifiedScoreResult.style.display = 'block';
+        unifiedScoreResult.style.visibility = 'visible';
+        console.log('🔧 [DOM直接操作] 統合採点結果表示完了');
+      }
+      
+      console.log('✅ [DOM直接操作] 強制画面切り替え完了');
+      
+    } catch (error) {
+      console.error('❌ [DOM直接操作] エラー:', error);
+    }
+  }
+
   onMount(async () => {
     // localStorage 初期化（最優先）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
@@ -1398,6 +1441,9 @@
             trainingPhase = '';
             trainingPhase = currentPhase;
             console.log('🔧 [SessionStorage] リアクティビティ強制発火完了:', trainingPhase);
+            
+            // DOM直接操作による最終手段の画面切り替え
+            forceDOMScreenTransition();
           });
           
           setTimeout(() => {
@@ -1405,9 +1451,9 @@
             if (trainingPhase !== 'results') {
               console.error('❌ [SessionStorage] trainingPhase設定が失敗しました - 再試行');
               trainingPhase = 'results'; // 再試行
-              // 追加の強制更新
-              tick();
             }
+            // DOM強制更新の再実行
+            forceDOMScreenTransition();
           }, 100);
         }
       } else {
