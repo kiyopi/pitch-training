@@ -1339,6 +1339,16 @@
 
   // 初期化
   onMount(async () => {
+    // 【緊急デバッグ】localStorage現在状況確認
+    console.log('🚨 [DebugStart] ページアクセス時のlocalStorage状況');
+    const existingData = localStorage.getItem('pitch-training-progress');
+    console.log('🚨 [DebugStart] 既存データ:', existingData ? 'あり' : 'なし');
+    if (existingData) {
+      const parsed = JSON.parse(existingData);
+      console.log('🚨 [DebugStart] 既存セッションID:', parsed.currentSessionId);
+      console.log('🚨 [DebugStart] セッション履歴数:', parsed.sessionHistory?.length || 0);
+    }
+    
     // localStorage 初期化（最優先）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
@@ -1350,6 +1360,14 @@
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
+      }
+      
+      // 【緊急デバッグ】loadProgress後のlocalStorage状況確認
+      const afterData = localStorage.getItem('pitch-training-progress');
+      if (afterData) {
+        const parsed = JSON.parse(afterData);
+        console.log('🚨 [DebugAfter] loadProgress後セッションID:', parsed.currentSessionId);
+        console.log('🚨 [DebugAfter] Svelteストア値:', $currentSessionId);
       }
     } catch (error) {
       console.error('📊 [SessionStorage] 初期化エラー:', error);
