@@ -1662,9 +1662,13 @@
       // SessionStorageManagerインスタンスを新しく作成させる
       console.log('🔄 [restartDifferentBaseNote] SessionStorageManager処理完了');
       
-      // 強制的にページをリロードして確実にリセット
-      console.log('🔄 [restartDifferentBaseNote] 強制リロードを実行します');
-      window.location.reload();
+      // リロード前に最終確認
+      console.log('🔄 [restartDifferentBaseNote] 最終確認: localStorage状態:', localStorage.getItem('training-progress'));
+      console.log('🔄 [restartDifferentBaseNote] 最終確認: ストア状態:', $currentSessionId, '/', $progressPercentage + '%');
+      
+      // デバッグのため一時的にリロード無効化
+      console.log('🔄 [restartDifferentBaseNote] デバッグモード: リロードをスキップしてUI確認');
+      // window.location.reload();
     } catch (error) {
       console.error('🔄 [restartDifferentBaseNote] localStorageリセット/作成エラー:', error);
     }
