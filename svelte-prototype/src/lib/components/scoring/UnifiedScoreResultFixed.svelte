@@ -645,12 +645,23 @@
   }
   
   .chevron-icon {
-    transition: transform 0.2s;
+    transition: transform 0.2s ease-in-out;
     color: hsl(215.4 16.3% 46.9%);
+    transform-origin: center;
+    display: inline-block;
   }
   
   .grade-details[open] .chevron-icon {
     transform: rotate(180deg);
+  }
+  
+  /* More specific selectors to ensure proper application */
+  .grade-details[open] :global(.chevron-icon) {
+    transform: rotate(180deg) !important;
+  }
+  
+  .grade-details[open] :global(svg.chevron-icon) {
+    transform: rotate(180deg) !important;
   }
   
   .grade-explanation-content {
