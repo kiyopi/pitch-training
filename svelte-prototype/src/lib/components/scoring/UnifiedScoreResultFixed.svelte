@@ -10,7 +10,6 @@
   
   // デバッグエリアの完成したコンポーネントを統合
   import { 
-    ScoreResultPanel,
     IntervalProgressTracker,
     ConsistencyGraph,
     FeedbackDisplay,
@@ -408,23 +407,6 @@
   {#if currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics}
     <div class="debug-integration-section" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
       
-      <!-- 従来採点詳細（折りたたみ） -->
-      {#if currentScoreData}
-        <details class="score-details">
-          <summary class="score-details-summary">
-            <Trophy size="16" />
-            <span>
-              従来の採点詳細を見る
-            </span>
-          </summary>
-          <ScoreResultPanel 
-            totalScore={currentScoreData.totalScore}
-            grade={currentScoreData.grade}
-            componentScores={currentScoreData.componentScores}
-            className="mb-6"
-          />
-        </details>
-      {/if}
       
       <!-- フィードバック表示 -->
       {#if feedbackData && Object.keys(feedbackData).length > 0}
@@ -768,32 +750,6 @@
     border-top: 1px solid #e5e7eb;
   }
   
-  .score-details {
-    margin-bottom: 1.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  .score-details-summary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: #f9fafb;
-    cursor: pointer;
-    font-weight: 500;
-    color: #374151;
-    transition: all 0.2s;
-  }
-  
-  .score-details-summary:hover {
-    background: #f3f4f6;
-  }
-  
-  .score-details[open] .score-details-summary {
-    border-bottom: 1px solid #e5e7eb;
-  }
   
   .scoring-tabs-container {
     background: white;
