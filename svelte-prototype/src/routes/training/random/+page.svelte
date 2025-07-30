@@ -372,6 +372,10 @@
       microphoneState = 'granted';
       trainingPhase = 'setup';
       
+      // マイクテスト完了フラグ設定（直接マイク許可の場合）
+      localStorage.setItem('mic-test-completed', 'true');
+      console.log('🔒 [RandomTraining] ダイレクトマイク許可 - マイクテスト完了フラグ設定完了');
+      
       // PitchDetector初期化（外部AudioContext方式）
       setTimeout(async () => {
         if (pitchDetectorComponent) {
@@ -1339,17 +1343,25 @@
 
   // 初期化
   onMount(async () => {
-    // 【緊急デバッグ】localStorage現在状況確認
-    console.log('🚨 [DebugStart] ページアクセス時のlocalStorage状況');
+    // 【修正】ダイレクトアクセス制御 - マイクテスト完了確認
+    console.log('🔒 [DirectAccess] ダイレクトアクセス制御開始');
+    
+    // localStorage確認（localStorage自動作成前にチェック）
     const existingData = localStorage.getItem('pitch-training-progress');
-    console.log('🚨 [DebugStart] 既存データ:', existingData ? 'あり' : 'なし');
-    if (existingData) {
-      const parsed = JSON.parse(existingData);
-      console.log('🚨 [DebugStart] 既存セッションID:', parsed.currentSessionId);
-      console.log('🚨 [DebugStart] セッション履歴数:', parsed.sessionHistory?.length || 0);
+    console.log('🔒 [DirectAccess] 既存データ:', existingData ? 'あり' : 'なし');
+    
+    // マイクテスト完了フラグ確認
+    const micTestCompleted = localStorage.getItem('mic-test-completed');
+    console.log('🔒 [DirectAccess] マイクテスト完了フラグ:', micTestCompleted ? 'あり' : 'なし');
+    
+    // ダイレクトアクセス制御: マイクテスト未完了の場合
+    if (!micTestCompleted && !existingData) {
+      console.log('🔒 [DirectAccess] マイクテスト未完了 → マイクテストページにリダイレクト');
+      microphoneRequired = true;
+      return; // localStorage作成を防ぐため早期リターン
     }
     
-    // localStorage 初期化（最優先）
+    // localStorage 初期化（マイクテスト完了確認後のみ）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
       const success = await loadProgress();
@@ -1360,14 +1372,6 @@
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
-      }
-      
-      // 【緊急デバッグ】loadProgress後のlocalStorage状況確認
-      const afterData = localStorage.getItem('pitch-training-progress');
-      if (afterData) {
-        const parsed = JSON.parse(afterData);
-        console.log('🚨 [DebugAfter] loadProgress後セッションID:', parsed.currentSessionId);
-        console.log('🚨 [DebugAfter] Svelteストア値:', $currentSessionId);
       }
     } catch (error) {
       console.error('📊 [SessionStorage] 初期化エラー:', error);

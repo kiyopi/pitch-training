@@ -100,6 +100,11 @@
   // トレーニング開始関数
   function startTraining() {
     console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
+    
+    // マイクテスト完了フラグ設定
+    localStorage.setItem('mic-test-completed', 'true');
+    console.log('🔒 [MicTest] マイクテスト完了フラグ設定完了');
+    
     goto(`${base}${selectedMode.path}?from=microphone-test`);
   }
 
