@@ -1369,8 +1369,10 @@
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
         
         // 【異常状態修正】8セッション完了済みの場合はresults画面に強制遷移
-        if ($isCompleted && $currentSessionId >= 8) {
+        console.log('🔧 [デバッグ] isCompleted:', $isCompleted, 'currentSessionId:', $currentSessionId, 'progressPercentage:', $progressPercentage);
+        if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
           console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
+          console.log('🔧 [SessionStorage] 条件: isCompleted=' + $isCompleted + ', currentSessionId=' + $currentSessionId + ', progressPercentage=' + $progressPercentage);
           trainingPhase = 'results';
           
           // 空の評価データで最低限の表示を可能にする
