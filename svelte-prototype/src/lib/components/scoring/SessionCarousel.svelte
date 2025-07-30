@@ -24,6 +24,11 @@
     }
   }
   
+  // currentIndexが外部から変更された時のリアクティブ対応
+  $: if (currentIndex >= 0 && currentIndex < sessionHistory.length) {
+    slidePosition.set(-currentIndex * 100);
+  }
+  
   function nextSession() {
     if (hasNext) {
       goToSession(currentIndex + 1);
