@@ -1373,7 +1373,10 @@
         if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
           console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
           console.log('🔧 [SessionStorage] 条件: isCompleted=' + $isCompleted + ', currentSessionId=' + $currentSessionId + ', progressPercentage=' + $progressPercentage);
+          
+          // 強制的にtrainingPhaseを変更
           trainingPhase = 'results';
+          console.log('🔧 [SessionStorage] trainingPhase変更後:', trainingPhase);
           
           // 空の評価データで最低限の表示を可能にする
           noteResultsForDisplay = SCALE_NAMES.map(noteName => ({
@@ -1386,6 +1389,15 @@
           }));
           
           // 統合採点データが存在しない場合の処理はストア側で自動実行されるため省略
+          
+          // 強制的にUI更新をトリガー
+          setTimeout(() => {
+            console.log('🔧 [SessionStorage] UI更新確認 - trainingPhase:', trainingPhase);
+            if (trainingPhase !== 'results') {
+              console.error('❌ [SessionStorage] trainingPhase設定が失敗しました');
+              trainingPhase = 'results'; // 再試行
+            }
+          }, 100);
         }
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
