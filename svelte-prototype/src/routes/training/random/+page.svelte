@@ -373,6 +373,45 @@
       microphoneState = 'granted';
       trainingPhase = 'setup';
       
+      // 【修正】マイク許可取得後にlocalStorage初期化を実行
+      console.log('📊 [SessionStorage] マイク許可取得後のセッション管理初期化開始');
+      try {
+        const success = await loadProgress();
+        if (success) {
+          console.log('📊 [SessionStorage] セッション進行状況の読み込み完了');
+          console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
+          console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+          
+          // ダイレクトアクセス制御を解除
+          microphoneRequired = false;
+          
+          // 8セッション完了済みの場合はresults画面に強制遷移
+          if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
+            console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
+            trainingPhase = 'results';
+            
+            // 空の評価データで最低限の表示を可能にする
+            noteResultsForDisplay = SCALE_NAMES.map(noteName => ({
+              name: noteName,
+              cents: null,
+              targetFreq: null,
+              detectedFreq: null,
+              diff: null,
+              accuracy: 'notMeasured'
+            }));
+            
+            return; // PitchDetector初期化は不要
+          }
+        } else {
+          console.error('📊 [SessionStorage] セッション進行状況の読み込み失敗');
+        }
+      } catch (error) {
+        console.error('📊 [SessionStorage] localStorage初期化エラー:', error);
+      }
+      
+      // ダイレクトアクセス制御を解除
+      microphoneRequired = false;
+      
       // PitchDetector初期化（外部AudioContext方式）
       setTimeout(async () => {
         if (pitchDetectorComponent) {
@@ -1897,7 +1936,7 @@
           <Button variant="primary" on:click={() => goto(`${base}/microphone-test?mode=random`)}>
             マイクテストページへ移動
           </Button>
-          <Button variant="outline" on:click={requestMicrophone}>
+          <Button variant="outline" on:click={checkMicrophonePermission}>
             直接マイク許可を取得
           </Button>
           <Button variant="outline" on:click={() => goto(`${base}/`)}>
