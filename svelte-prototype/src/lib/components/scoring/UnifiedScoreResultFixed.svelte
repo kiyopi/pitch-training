@@ -211,6 +211,16 @@
       <p class="grade-description" in:fade={{ delay: 600 }}>
         {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
       </p>
+      
+      <!-- 8セッション完走時の総合フィードバック -->
+      {#if feedbackData && Object.keys(feedbackData).length > 0}
+        <div class="completion-feedback" in:fade={{ delay: 800 }}>
+          <FeedbackDisplay 
+            feedback={feedbackData}
+            className="mt-6 completion-feedback-display"
+          />
+        </div>
+      {/if}
     </div>
   {/if}
   
@@ -408,13 +418,6 @@
     <div class="debug-integration-section" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
       
       
-      <!-- フィードバック表示 -->
-      {#if feedbackData && Object.keys(feedbackData).length > 0}
-        <FeedbackDisplay 
-          feedback={feedbackData}
-          className="mb-6"
-        />
-      {/if}
       
       <!-- 詳細統計（タブ形式） -->
       {#if intervalData.length > 0 || consistencyData.length > 0 || sessionStatistics}
@@ -520,6 +523,115 @@
   .grade-description {
     font-size: 1rem;
     color: #6b7280;
+  }
+  
+  /* 8セッション完走時のフィードバック専用スタイル（shadcn/ui テーマ） */
+  .completion-feedback {
+    margin-top: 1.5rem;
+    border-top: 1px solid hsl(214.3 31.8% 91.4%);
+    padding-top: 1.5rem;
+  }
+  
+  :global(.completion-feedback-display) {
+    background: hsl(0 0% 100%) !important;
+    border: 1px solid hsl(214.3 31.8% 91.4%) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06) !important;
+    padding: 1.5rem !important;
+  }
+  
+  /* フィードバック内のテキストスタイル調整 */
+  :global(.completion-feedback-display .feedback-primary) {
+    color: hsl(222.2 84% 4.9%) !important;
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  :global(.completion-feedback-display .feedback-summary) {
+    color: hsl(215.4 16.3% 46.9%) !important;
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  /* フィードバック詳細リストのスタイル */
+  :global(.completion-feedback-display .feedback-details) {
+    display: grid !important;
+    gap: 0.75rem !important;
+  }
+  
+  :global(.completion-feedback-display .feedback-item) {
+    padding: 0.75rem !important;
+    border-radius: 6px !important;
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* カテゴリ別の色分け（shadcn/ui カラーパレット） */
+  :global(.completion-feedback-display .feedback-item.strengths) {
+    background: hsl(142.1 76.2% 36.3% / 0.1) !important;
+    border-left: 4px solid hsl(142.1 76.2% 36.3%) !important;
+    color: hsl(142.1 84.2% 31.2%) !important;
+  }
+  
+  :global(.completion-feedback-display .feedback-item.improvements) {
+    background: hsl(47.9 95.8% 53.1% / 0.1) !important;
+    border-left: 4px solid hsl(47.9 95.8% 53.1%) !important;
+    color: hsl(25 95% 53%) !important;
+  }
+  
+  :global(.completion-feedback-display .feedback-item.tips) {
+    background: hsl(221.2 83.2% 53.3% / 0.1) !important;
+    border-left: 4px solid hsl(221.2 83.2% 53.3%) !important;
+    color: hsl(221.2 83.2% 53.3%) !important;
+  }
+  
+  :global(.completion-feedback-display .feedback-item.practice) {
+    background: hsl(262.1 83.3% 57.8% / 0.1) !important;
+    border-left: 4px solid hsl(262.1 83.3% 57.8%) !important;
+    color: hsl(262.1 83.3% 57.8%) !important;
+  }
+  
+  /* 次のステップセクション */
+  :global(.completion-feedback-display .next-steps) {
+    margin-top: 1.25rem !important;
+    padding-top: 1rem !important;
+    border-top: 1px solid hsl(214.3 31.8% 91.4%) !important;
+  }
+  
+  :global(.completion-feedback-display .next-steps-title) {
+    color: hsl(222.2 84% 4.9%) !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  :global(.completion-feedback-display .next-steps-list) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  :global(.completion-feedback-display .next-step-item) {
+    padding: 0.5rem 0.75rem !important;
+    background: hsl(210 40% 98%) !important;
+    border-radius: 6px !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    font-size: 0.875rem !important;
+    border-left: 3px solid hsl(221.2 83.2% 53.3%) !important;
+  }
+  
+  /* 継続メッセージ */
+  :global(.completion-feedback-display .encouragement) {
+    text-align: center !important;
+    margin-top: 1.25rem !important;
+    padding: 1rem !important;
+    background: linear-gradient(135deg, hsl(142.1 76.2% 36.3% / 0.1), hsl(221.2 83.2% 53.3% / 0.1)) !important;
+    border-radius: 8px !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
   }
   
   .mode-summary {
