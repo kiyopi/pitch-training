@@ -416,6 +416,12 @@
   async function playRandomBaseNote() {
     if (isPlaying || !sampler || isSamplerLoading) return;
     
+    // 8セッション完了後は新規セッション開始を防ぐ
+    if ($progressPercentage >= 100 || $currentSessionId > 8) {
+      console.warn('🚫 [RandomTraining] 8セッション完了済みのため、新規セッション開始をブロック');
+      return;
+    }
+    
     // マイク許可が未取得の場合は先に許可を取得
     if (microphoneState !== 'granted') {
       console.log('🎤 [RandomTraining] マイク許可が必要です。許可取得を開始...');
@@ -462,6 +468,12 @@
   // 現在の基音再生（既存の基音を再利用）
   async function playCurrentBaseNote() {
     if (isPlaying || !sampler || isLoading || !currentBaseNote) return;
+    
+    // 8セッション完了後は新規セッション開始を防ぐ
+    if ($progressPercentage >= 100 || $currentSessionId > 8) {
+      console.warn('🚫 [RandomTraining] 8セッション完了済みのため、セッション開始をブロック');
+      return;
+    }
     
     // マイク許可が未取得の場合は先に許可を取得
     if (microphoneState !== 'granted') {

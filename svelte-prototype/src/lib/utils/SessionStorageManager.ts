@@ -206,15 +206,17 @@ export class SessionStorageManager {
         progress.usedBaseNotes.push(sessionResult.baseNote);
       }
 
-      // 次セッションID更新
-      progress.currentSessionId = Math.min(progress.currentSessionId + 1, 9);
-
       // 8セッション完了チェック
       if (progress.sessionHistory.length >= 8) {
         progress.isCompleted = true;
         progress.overallGrade = this.calculateOverallGrade(progress.sessionHistory);
         progress.overallAccuracy = this.calculateOverallAccuracy(progress.sessionHistory);
         progress.totalPlayTime = progress.sessionHistory.reduce((sum, session) => sum + session.duration, 0);
+        // 完了時はセッションIDを8で固定
+        progress.currentSessionId = 8;
+      } else {
+        // 未完了時のみ次セッションIDを更新
+        progress.currentSessionId = Math.min(progress.currentSessionId + 1, 8);
       }
 
       // 保存

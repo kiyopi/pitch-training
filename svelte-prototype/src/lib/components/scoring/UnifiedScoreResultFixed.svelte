@@ -317,7 +317,7 @@
                 </button>
               {/each}
               <!-- 未完了セッション表示 -->
-              {#each Array((scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length) as _, index}
+              {#each Array(Math.max(0, (scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length)) as _, index}
                 <div class="session-bar-button empty">
                   <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
                   <span class="empty-icon">-</span>
@@ -383,7 +383,7 @@
                 </button>
               {/each}
               <!-- 未完了セッション表示 -->
-              {#each Array((scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length) as _, index}
+              {#each Array(Math.max(0, (scoreData.mode === 'chromatic' ? 12 : 8) - scoreData.sessionHistory.length)) as _, index}
                 <div class="session-bar-button empty">
                   <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
                   <span class="empty-icon">-</span>
@@ -442,7 +442,7 @@
                 </button>
               {/each}
               <!-- 未完了セッション表示 -->
-              {#each Array(12 - scoreData.sessionHistory.length) as _, index}
+              {#each Array(Math.max(0, 12 - scoreData.sessionHistory.length)) as _, index}
                 <div class="session-bar-button empty">
                   <span class="session-number">{scoreData.sessionHistory.length + index + 1}</span>
                   <span class="empty-icon">-</span>

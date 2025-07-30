@@ -1,4 +1,4 @@
-import { i as getContext } from "./ssr.js";
+import { h as getContext } from "./ssr.js";
 import "@sveltejs/kit/internal";
 import "./exports.js";
 import { o as onMount } from "./ssr2.js";
@@ -14,17 +14,6 @@ if (is_legacy) {
     status: -1,
     url: new URL("https://example.com")
   });
-}
-{
-  const console_warn = console.warn;
-  console.warn = function warn(...args) {
-    if (args.length === 1 && /<(Layout|Page|Error)(_[\w$]+)?> was created (with unknown|without expected) prop '(data|form)'/.test(
-      args[0]
-    )) {
-      return;
-    }
-    console_warn(...args);
-  };
 }
 const getStores = () => {
   const stores = getContext("__svelte__");
