@@ -1876,6 +1876,37 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
+    
+    <div class="debug-info">
+      📱 {buildVersion} | {buildTimestamp}<br/>
+      <small style="font-size: 0.6rem;">{updateStatus}</small>
+    </div>
+  </div>
+
+
+  {#if microphoneRequired}
+    <!-- マイクテスト要求画面 -->
+    <Card class="error-card">
+      <div class="error-content">
+        <div class="error-icon">🎤</div>
+        <h3 class="error-title">マイクテストが必要です</h3>
+        <p class="error-message">
+          トレーニングを開始するには、まずマイクテストを完了してください。
+        </p>
+        <div class="error-actions">
+          <Button variant="primary" on:click={() => goto(`${base}/microphone-test?mode=random`)}>
+            マイクテストページへ移動
+          </Button>
+          <Button variant="outline" on:click={requestMicrophone}>
+            直接マイク許可を取得
+          </Button>
+          <Button variant="outline" on:click={() => goto(`${base}/`)}>
+            ホームに戻る
+          </Button>
+        </div>
+      </div>
+    </Card>
+  {:else if microphoneState === 'granted'}
     <!-- セッション進捗表示 -->
     {#if !$isLoading}
       <div class="session-progress">
@@ -1909,34 +1940,7 @@
         {/if}
       </div>
     {/if}
-    
-    <div class="debug-info">
-      📱 {buildVersion} | {buildTimestamp}<br/>
-      <small style="font-size: 0.6rem;">{updateStatus}</small>
-    </div>
-  </div>
 
-
-  {#if microphoneRequired}
-    <!-- マイクテスト要求画面 -->
-    <Card class="error-card">
-      <div class="error-content">
-        <div class="error-icon">🎤</div>
-        <h3 class="error-title">マイクテストが必要です</h3>
-        <p class="error-message">
-          トレーニングを開始するには、まずマイクテストを完了してください。
-        </p>
-        <div class="error-actions">
-          <Button variant="primary" on:click={() => goto(`${base}/microphone-test?mode=random`)}>
-            マイクテストへ
-          </Button>
-          <Button variant="outline" on:click={() => goto(`${base}/`)}>
-            ホームに戻る
-          </Button>
-        </div>
-      </div>
-    </Card>
-  {:else if microphoneState === 'granted'}
     <!-- PitchDetector: 常に存在（セッション間で破棄されない） -->
     <div style="display: none;">
       <PitchDetector
