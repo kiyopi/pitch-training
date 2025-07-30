@@ -287,25 +287,6 @@
                 <span class="grade-condition">良好以上50%未満</span>
               </div>
             </div>
-            <div class="session-grades-explanation">
-              <h4 class="explanation-title">個別セッション評価</h4>
-              <div class="session-grade-row">
-                <span class="session-grade-label excellent">優秀</span>
-                <span class="session-grade-range">±15¢以内</span>
-              </div>
-              <div class="session-grade-row">
-                <span class="session-grade-label good">良好</span>
-                <span class="session-grade-range">±25¢以内</span>
-              </div>
-              <div class="session-grade-row">
-                <span class="session-grade-label pass">合格</span>
-                <span class="session-grade-range">±40¢以内</span>
-              </div>
-              <div class="session-grade-row">
-                <span class="session-grade-label need-work">要練習</span>
-                <span class="session-grade-range">±41¢以上</span>
-              </div>
-            </div>
           </div>
         </details>
       </div>
@@ -706,56 +687,6 @@
     text-align: right;
   }
   
-  .session-grades-explanation {
-    border-top: 1px solid hsl(214.3 31.8% 91.4%);
-    padding-top: 1rem;
-  }
-  
-  .explanation-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: hsl(222.2 84% 4.9%);
-    margin-bottom: 0.75rem;
-  }
-  
-  .session-grade-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.375rem 0;
-  }
-  
-  .session-grade-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-  }
-  
-  .session-grade-label.excellent {
-    background: hsl(47.9 95.8% 53.1% / 0.1);
-    color: hsl(25 95% 53%);
-  }
-  
-  .session-grade-label.good {
-    background: hsl(142.1 76.2% 36.3% / 0.1);
-    color: hsl(142.1 84.2% 31.2%);
-  }
-  
-  .session-grade-label.pass {
-    background: hsl(221.2 83.2% 53.3% / 0.1);
-    color: hsl(221.2 83.2% 53.3%);
-  }
-  
-  .session-grade-label.need-work {
-    background: hsl(0 84.2% 60.2% / 0.1);
-    color: hsl(0 84.2% 60.2%);
-  }
-  
-  .session-grade-range {
-    font-size: 0.75rem;
-    color: hsl(215.4 16.3% 46.9%);
-  }
   
   /* 8セッション完走時のフィードバック専用スタイル（shadcn/ui テーマ） */
   .completion-feedback {
