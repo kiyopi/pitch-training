@@ -24,7 +24,6 @@
     FeedbackDisplay,
     SessionStatistics
   } from '$lib/components/scoring';
-  import RandomModeScoreResult from '$lib/components/scoring/RandomModeScoreResult.svelte';
   import UnifiedScoreResultFixed from '$lib/components/scoring/UnifiedScoreResultFixed.svelte';
   
   // 採点エンジン
@@ -1797,15 +1796,6 @@
         />
       {/if}
       
-      <!-- ランダムモード専用採点結果（常時表示） -->
-      {#if noteResultsForDisplay.length > 0}
-        <div class="random-scoring-section">
-          <RandomModeScoreResult 
-            noteResults={noteResultsForDisplay}
-            className="mb-6"
-          />
-        </div>
-      {/if}
       
       
       <!-- アクションボタン -->
