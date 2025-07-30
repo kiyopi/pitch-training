@@ -1,4 +1,6 @@
 <script>
+  import { Lightbulb, ThumbsUp, Trophy, AlertTriangle, Info, Star, Target, FileText, Piano, ArrowRight } from 'lucide-svelte';
+  
   export let feedback = {};
   export let className = '';
   
@@ -7,7 +9,7 @@
     'excellent': {
       bg: 'bg-green-50',
       border: 'border-green-200',
-      icon: '🎆',
+      icon: Trophy,
       iconBg: 'bg-green-100',
       titleColor: 'text-green-800',
       contentColor: 'text-green-700'
@@ -15,7 +17,7 @@
     'good': {
       bg: 'bg-blue-50',
       border: 'border-blue-200',
-      icon: '👍',
+      icon: ThumbsUp,
       iconBg: 'bg-blue-100',
       titleColor: 'text-blue-800',
       contentColor: 'text-blue-700'
@@ -23,7 +25,7 @@
     'improvement': {
       bg: 'bg-amber-50',
       border: 'border-amber-200',
-      icon: '💡',
+      icon: Lightbulb,
       iconBg: 'bg-amber-100',
       titleColor: 'text-amber-800',
       contentColor: 'text-amber-700'
@@ -31,7 +33,7 @@
     'warning': {
       bg: 'bg-red-50',
       border: 'border-red-200',
-      icon: '⚠️',
+      icon: AlertTriangle,
       iconBg: 'bg-red-100',
       titleColor: 'text-red-800',
       contentColor: 'text-red-700'
@@ -39,7 +41,7 @@
     'info': {
       bg: 'bg-gray-50',
       border: 'border-gray-200',
-      icon: 'ℹ️',
+      icon: Info,
       iconBg: 'bg-gray-100',
       titleColor: 'text-gray-800',
       contentColor: 'text-gray-700'
@@ -69,10 +71,10 @@
   }
   
   const categoryInfo = {
-    strengths: { title: '優れている点', icon: '✨' },
-    improvements: { title: '改善点', icon: '🎯' },
-    tips: { title: 'アドバイス', icon: '📝' },
-    practice: { title: '練習提案', icon: '🎹' }
+    strengths: { title: '優れている点', icon: Star },
+    improvements: { title: '改善点', icon: Target },
+    tips: { title: 'アドバイス', icon: FileText },
+    practice: { title: '練習提案', icon: Piano }
   };
 </script>
 
@@ -80,7 +82,7 @@
   <!-- メインフィードバック -->
   <div class="flex items-start gap-4 mb-4">
     <div class="{style.iconBg} rounded-full p-3 flex-shrink-0">
-      <span class="text-2xl">{style.icon}</span>
+      <svelte:component this={style.icon} size="24" class="{style.titleColor}" />
     </div>
     <div class="flex-1">
       <h3 class="{style.titleColor} font-semibold text-lg mb-2">
@@ -101,7 +103,7 @@
         {#if items.length > 0}
           <div class="category-section">
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg">{categoryInfo[category].icon}</span>
+              <svelte:component this={categoryInfo[category].icon} size="16" class="{style.titleColor}" />
               <h4 class="font-medium {style.titleColor}">
                 {categoryInfo[category].title}
               </h4>
@@ -125,8 +127,9 @@
   <!-- 次のステップ -->
   {#if feedback.nextSteps && feedback.nextSteps.length > 0}
     <div class="mt-6 pt-4 border-t {style.border}">
-      <h4 class="font-medium {style.titleColor} mb-3">
-        🚀 次のステップ
+      <h4 class="font-medium {style.titleColor} mb-3 flex items-center gap-2">
+        <ArrowRight size="16" class="{style.titleColor}" />
+        次のステップ
       </h4>
       <div class="grid gap-2">
         {#each feedback.nextSteps as step, i}
@@ -145,7 +148,7 @@
   {#if feedback.motivation}
     <div class="mt-4 text-center">
       <div class="inline-flex items-center gap-2 bg-white bg-opacity-50 rounded-full px-4 py-2">
-        <span class="text-xl">🌟</span>
+        <Star size="16" class="{style.titleColor}" />
         <span class="font-medium {style.titleColor}">
           {feedback.motivation}
         </span>
