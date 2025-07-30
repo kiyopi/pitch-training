@@ -1364,7 +1364,7 @@
 
   // 初期化
   onMount(async () => {
-    // 【修正】ダイレクトアクセス制御 - マイクテスト完了確認
+    // 【根本修正】ダイレクトアクセス制御 - マイクテスト完了確認
     console.log('🔒 [DirectAccess] ダイレクトアクセス制御開始');
     
     // マイクテスト完了フラグ確認
@@ -1373,13 +1373,14 @@
     
     // ダイレクトアクセス制御: マイクテスト未完了の場合
     if (!micTestCompleted) {
-      console.log('🔒 [DirectAccess] マイクテスト未完了 → マイクテスト要求画面表示');
+      console.log('🔒 [DirectAccess] マイクテスト未完了 → localStorage作成せずに要求画面表示');
       microphoneRequired = true;
-      return; // localStorage作成を防ぐため早期リターン
+      // 重要: loadProgress()は実行しない（localStorage作成防止）
+      return;
     }
     
-    // 【修正】マイクテスト完了済みの場合は、マイク許可済みとして扱う
-    console.log('✅ [DirectAccess] マイクテスト完了済み → 通常のトレーニング画面を表示');
+    // 【修正】マイクテスト完了済みの場合のみlocalStorage処理を実行
+    console.log('✅ [DirectAccess] マイクテスト完了済み → localStorage初期化実行');
     microphoneState = 'granted';
     trainingPhase = 'setup';
     
