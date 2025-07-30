@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { page } from '$app/stores';
@@ -1374,7 +1374,7 @@
           console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
           console.log('🔧 [SessionStorage] 条件: isCompleted=' + $isCompleted + ', currentSessionId=' + $currentSessionId + ', progressPercentage=' + $progressPercentage);
           
-          // 強制的にtrainingPhaseを変更
+          // 強制的にtrainingPhaseを変更（複数手法でSvelteリアクティビティを確実に発火）
           trainingPhase = 'results';
           console.log('🔧 [SessionStorage] trainingPhase変更後:', trainingPhase);
           
@@ -1390,12 +1390,23 @@
           
           // 統合採点データが存在しない場合の処理はストア側で自動実行されるため省略
           
-          // 強制的にUI更新をトリガー
+          // 強力なUI更新: tick()とsetTimeoutの組み合わせ
+          tick().then(() => {
+            console.log('🔧 [SessionStorage] tick()後のtrainingPhase:', trainingPhase);
+            // 再代入でリアクティビティを強制発火
+            const currentPhase = trainingPhase;
+            trainingPhase = '';
+            trainingPhase = currentPhase;
+            console.log('🔧 [SessionStorage] リアクティビティ強制発火完了:', trainingPhase);
+          });
+          
           setTimeout(() => {
             console.log('🔧 [SessionStorage] UI更新確認 - trainingPhase:', trainingPhase);
             if (trainingPhase !== 'results') {
-              console.error('❌ [SessionStorage] trainingPhase設定が失敗しました');
+              console.error('❌ [SessionStorage] trainingPhase設定が失敗しました - 再試行');
               trainingPhase = 'results'; // 再試行
+              // 追加の強制更新
+              tick();
             }
           }, 100);
         }
