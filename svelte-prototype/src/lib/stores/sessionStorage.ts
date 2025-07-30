@@ -1,0 +1,487 @@
+// Svelteストア - localStorage統合
+// SessionStorageManagerとリアクティブシステムの統合
+
+import { writable, derived, get } from 'svelte/store';
+import type { 
+  TrainingProgress, 
+  SessionResult, 
+  UnifiedScoreData, 
+  SessionGrade, 
+  BaseNote 
+} from '../types/sessionStorage';
+import type { Grade, NoteResult } from '../types/scoring';
+import { SessionStorageManager } from '../utils/SessionStorageManager';
+
+// =============================================================================
+// メインストア
+// =============================================================================
+
+/**
+ * トレーニング進行状況のメインストア
+ */
+export const trainingProgress = writable<TrainingProgress | null>(null);
+
+/**
+ * 現在のセッション番号ストア
+ */
+export const currentSessionId = writable<number>(1);
+
+/**
+ * 次の基音ストア
+ */
+export const nextBaseNote = writable<BaseNote>('C4');
+
+/**
+ * 次の基音名ストア
+ */
+export const nextBaseName = writable<string>('ド（低）');
+
+/**
+ * データ読み込み状態ストア
+ */
+export const isLoading = writable<boolean>(false);
+
+/**
+ * エラー状態ストア
+ */
+export const storageError = writable<string | null>(null);
+
+// =============================================================================
+// 派生ストア (Derived Stores)
+// =============================================================================
+
+/**
+ * 8セッション完了判定
+ */
+export const isCompleted = derived(
+  trainingProgress,
+  $progress => $progress?.isCompleted || false
+);
+
+/**
+ * セッション履歴
+ */
+export const sessionHistory = derived(
+  trainingProgress,
+  $progress => $progress?.sessionHistory || []
+);
+
+/**
+ * S-E級総合評価
+ */
+export const overallGrade = derived(
+  trainingProgress,
+  $progress => $progress?.overallGrade || null
+);
+
+/**
+ * 全体精度平均
+ */
+export const overallAccuracy = derived(
+  trainingProgress,
+  $progress => $progress?.overallAccuracy || 0
+);
+
+/**
+ * 総プレイ時間
+ */
+export const totalPlayTime = derived(
+  trainingProgress,
+  $progress => $progress?.totalPlayTime || 0
+);
+
+/**
+ * 使用済み基音リスト
+ */
+export const usedBaseNotes = derived(
+  trainingProgress,
+  $progress => $progress?.usedBaseNotes || []
+);
+
+/**
+ * UnifiedScoreResultFixed用データ
+ */
+export const unifiedScoreData = derived(
+  trainingProgress,
+  $progress => {
+    if (!$progress) return null;
+    
+    const manager = SessionStorageManager.getInstance();
+    return manager.generateUnifiedScoreData();
+  }
+);
+
+/**
+ * セッション進捗率 (0-100)
+ */
+export const progressPercentage = derived(
+  trainingProgress,
+  $progress => {
+    if (!$progress) return 0;
+    return Math.min(($progress.sessionHistory.length / 8) * 100, 100);
+  }
+);
+
+/**
+ * 残りセッション数
+ */
+export const remainingSessions = derived(
+  trainingProgress,
+  $progress => {
+    if (!$progress) return 8;
+    return Math.max(8 - $progress.sessionHistory.length, 0);
+  }
+);
+
+/**
+ * 最新セッション結果
+ */
+export const latestSessionResult = derived(
+  sessionHistory,
+  $history => {
+    if ($history.length === 0) return null;
+    return $history[$history.length - 1];
+  }
+);
+
+// =============================================================================
+// アクション関数 (Actions)
+// =============================================================================
+
+/**
+ * SessionStorageManagerのインスタンス取得
+ */
+function getStorageManager(): SessionStorageManager {
+  return SessionStorageManager.getInstance();
+}
+
+/**
+ * エラーハンドリング付きアクション実行
+ */
+async function executeWithErrorHandling<T>(
+  action: () => T | Promise<T>,
+  errorMessage: string
+): Promise<T | null> {
+  try {
+    storageError.set(null);
+    const result = await action();
+    return result;
+  } catch (error) {
+    console.error(`[SessionStorage] ${errorMessage}:`, error);
+    storageError.set(`${errorMessage}: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * 進行状況をlocalStorageから読み込み
+ */
+export async function loadProgress(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    isLoading.set(true);
+    
+    const manager = getStorageManager();
+    const progress = manager.loadProgress();
+    
+    if (progress) {
+      // ストア更新
+      trainingProgress.set(progress);
+      currentSessionId.set(progress.currentSessionId);
+      
+      // 次の基音を設定
+      const nextNote = manager.getNextBaseNote();
+      nextBaseNote.set(nextNote);
+      nextBaseName.set(manager.getBaseNoteName(nextNote));
+      
+      console.info('[SessionStorage] Progress loaded successfully:', {
+        sessionCount: progress.sessionHistory.length,
+        currentSession: progress.currentSessionId,
+        isCompleted: progress.isCompleted
+      });
+    } else {
+      // 新規作成
+      const newProgress = manager.createNewProgress();
+      trainingProgress.set(newProgress);
+      currentSessionId.set(1);
+      
+      const nextNote = manager.getNextBaseNote();
+      nextBaseNote.set(nextNote);
+      nextBaseName.set(manager.getBaseNoteName(nextNote));
+      
+      console.info('[SessionStorage] New progress created');
+    }
+    
+    isLoading.set(false);
+    return true;
+  }, 'Failed to load progress') !== null;
+}
+
+/**
+ * セッション結果を保存
+ */
+export async function saveSessionResult(
+  noteResults: NoteResult[],
+  duration: number,
+  baseNote: BaseNote,
+  baseName: string
+): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const currentProgress = get(trainingProgress);
+    
+    if (!currentProgress) {
+      throw new Error('No progress data available');
+    }
+    
+    // SessionResultを生成
+    const sessionResult: SessionResult = {
+      sessionId: currentProgress.currentSessionId,
+      baseNote,
+      baseName,
+      grade: manager.calculateSessionGrade(noteResults),
+      accuracy: calculateAccuracy(noteResults),
+      averageError: calculateAverageError(noteResults),
+      completedAt: new Date().toISOString(),
+      duration,
+      noteResults,
+      outliers: detectOutliers(noteResults),
+      distribution: calculateDistribution(noteResults),
+      isCompleted: true
+    };
+    
+    // SessionStorageManagerに保存
+    const success = manager.addSessionResult(sessionResult);
+    
+    if (success) {
+      // ストア更新
+      const updatedProgress = manager.loadProgress();
+      if (updatedProgress) {
+        trainingProgress.set(updatedProgress);
+        currentSessionId.set(updatedProgress.currentSessionId);
+        
+        // 次の基音を設定（8セッション未完了の場合）
+        if (!updatedProgress.isCompleted) {
+          const nextNote = manager.getNextBaseNote();
+          nextBaseNote.set(nextNote);
+          nextBaseName.set(manager.getBaseNoteName(nextNote));
+        }
+        
+        console.info('[SessionStorage] Session result saved:', {
+          sessionId: sessionResult.sessionId,
+          grade: sessionResult.grade,
+          accuracy: sessionResult.accuracy,
+          isCompleted: updatedProgress.isCompleted
+        });
+      }
+    }
+    
+    return success;
+  }, 'Failed to save session result') !== null;
+}
+
+/**
+ * 進行状況をリセット
+ */
+export async function resetProgress(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const success = manager.resetProgress();
+    
+    if (success) {
+      // ストア初期化
+      trainingProgress.set(null);
+      currentSessionId.set(1);
+      nextBaseNote.set('C4');
+      nextBaseName.set('ド（低）');
+      
+      console.info('[SessionStorage] Progress reset successfully');
+    }
+    
+    return success;
+  }, 'Failed to reset progress') !== null;
+}
+
+/**
+ * 新しい進行状況を作成
+ */
+export async function createNewProgress(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const newProgress = manager.createNewProgress();
+    
+    // ストア設定
+    trainingProgress.set(newProgress);
+    currentSessionId.set(1);
+    
+    const nextNote = manager.getNextBaseNote();
+    nextBaseNote.set(nextNote);
+    nextBaseName.set(manager.getBaseNoteName(nextNote));
+    
+    console.info('[SessionStorage] New progress created');
+    return true;
+  }, 'Failed to create new progress') !== null;
+}
+
+/**
+ * バックアップから復旧
+ */
+export async function restoreFromBackup(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const restored = manager.restoreFromBackup();
+    
+    if (restored) {
+      // ストア更新
+      trainingProgress.set(restored);
+      currentSessionId.set(restored.currentSessionId);
+      
+      const nextNote = manager.getNextBaseNote();
+      nextBaseNote.set(nextNote);
+      nextBaseName.set(manager.getBaseNoteName(nextNote));
+      
+      console.info('[SessionStorage] Restored from backup');
+      return true;
+    }
+    
+    return false;
+  }, 'Failed to restore from backup') !== null;
+}
+
+// =============================================================================
+// ユーティリティ関数
+// =============================================================================
+
+/**
+ * 精度計算
+ */
+function calculateAccuracy(noteResults: NoteResult[]): number {
+  const measuredNotes = noteResults.filter(note => 
+    note.cents !== null && note.cents !== undefined && !isNaN(note.cents)
+  );
+  
+  if (measuredNotes.length === 0) return 0;
+  
+  const totalError = measuredNotes.reduce((sum, note) => sum + Math.abs(note.cents!), 0);
+  const averageError = totalError / measuredNotes.length;
+  
+  // セント誤差を精度に変換（50¢で0%、0¢で100%）
+  return Math.max(0, Math.min(100, 100 - (averageError / 50) * 100));
+}
+
+/**
+ * 平均誤差計算
+ */
+function calculateAverageError(noteResults: NoteResult[]): number {
+  const measuredNotes = noteResults.filter(note => 
+    note.cents !== null && note.cents !== undefined && !isNaN(note.cents)
+  );
+  
+  if (measuredNotes.length === 0) return 100;
+  
+  const totalError = measuredNotes.reduce((sum, note) => sum + Math.abs(note.cents!), 0);
+  return Math.round(totalError / measuredNotes.length);
+}
+
+/**
+ * 外れ値検出
+ */
+function detectOutliers(noteResults: NoteResult[]): Array<{name: string; cents: number; severity: 'attention' | 'critical'}> {
+  return noteResults
+    .filter(note => note.cents !== null && Math.abs(note.cents!) >= 50)
+    .map(note => ({
+      name: note.name,
+      cents: note.cents!,
+      severity: Math.abs(note.cents!) >= 100 ? 'critical' : 'attention'
+    }));
+}
+
+/**
+ * グレード分布計算
+ */
+function calculateDistribution(noteResults: NoteResult[]): {
+  excellent: number;
+  good: number;
+  pass: number;
+  needWork: number;
+  notMeasured: number;
+} {
+  return noteResults.reduce((acc, note) => {
+    if (note.cents === null || note.cents === undefined || isNaN(note.cents)) {
+      acc.notMeasured++;
+    } else {
+      const absCents = Math.abs(note.cents);
+      if (absCents <= 15) acc.excellent++;
+      else if (absCents <= 25) acc.good++;
+      else if (absCents <= 40) acc.pass++;
+      else acc.needWork++;
+    }
+    return acc;
+  }, { excellent: 0, good: 0, pass: 0, needWork: 0, notMeasured: 0 });
+}
+
+// =============================================================================
+// デバッグ・開発用関数
+// =============================================================================
+
+/**
+ * ストレージ情報取得（デバッグ用）
+ */
+export function getStorageInfo(): { used: number; available: boolean } {
+  const manager = getStorageManager();
+  return manager.getStorageInfo();
+}
+
+/**
+ * 現在の進行状況取得（デバッグ用）
+ */
+export function getCurrentProgress(): TrainingProgress | null {
+  return get(trainingProgress);
+}
+
+/**
+ * テストデータ生成（開発用）
+ */
+export function generateTestSessionResult(
+  sessionId: number,
+  baseNote: BaseNote,
+  grade: SessionGrade
+): SessionResult {
+  const noteNames = ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド'];
+  const noteResults: NoteResult[] = noteNames.map(name => ({
+    name,
+    cents: Math.random() * 40 - 20, // ±20¢の範囲
+    targetFreq: 261.63 * Math.pow(2, Math.random()),
+    detectedFreq: 261.63 * Math.pow(2, Math.random()),
+    diff: Math.random() * 10 - 5,
+    accuracy: 85 + Math.random() * 15
+  }));
+  
+  const manager = getStorageManager();
+  
+  return {
+    sessionId,
+    baseNote,
+    baseName: manager.getBaseNoteName(baseNote),
+    grade,
+    accuracy: calculateAccuracy(noteResults),
+    averageError: calculateAverageError(noteResults),
+    completedAt: new Date().toISOString(),
+    duration: 120 + Math.random() * 60,
+    noteResults,
+    outliers: detectOutliers(noteResults),
+    distribution: calculateDistribution(noteResults),
+    isCompleted: true
+  };
+}
+
+// =============================================================================
+// 型エクスポート（再エクスポート）
+// =============================================================================
+
+export type {
+  TrainingProgress,
+  SessionResult,
+  UnifiedScoreData,
+  SessionGrade,
+  BaseNote
+} from '../types/sessionStorage';

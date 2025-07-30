@@ -29,6 +29,28 @@
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
   
+  // localStorage セッション管理
+  import {
+    trainingProgress,
+    currentSessionId,
+    nextBaseNote,
+    nextBaseName,
+    isLoading,
+    storageError,
+    isCompleted,
+    sessionHistory,
+    overallGrade,
+    overallAccuracy,
+    progressPercentage,
+    remainingSessions,
+    latestSessionResult,
+    unifiedScoreData,
+    loadProgress,
+    saveSessionResult,
+    resetProgress,
+    createNewProgress
+  } from '$lib/stores/sessionStorage';
+  
   // Force GitHub Actions trigger: 2025-07-29 06:30
   
   // テスト用ダミーデータ生成（正しい4段階評価システム）
@@ -295,12 +317,12 @@
   // ランダムモード用の8音階評価データ
   let noteResultsForDisplay = [];
   
-  // 統合採点システム用データ
-  let unifiedScoreData = null;
+  // 統合採点システム用データ（従来の1セッション用）
+  let currentUnifiedScoreData = null;
   
   // Tone.jsサンプラー
   let sampler = null;
-  let isLoading = true;
+  let isSamplerLoading = true;
   
   // 音程検出コンポーネント
   let pitchDetectorComponent = null;
@@ -309,6 +331,9 @@
   let mediaStream = null;   // AudioManagerから取得
   let audioContext = null;  // AudioManagerから取得
   let sourceNode = null;    // AudioManagerから取得
+  
+  // セッション時刻管理
+  let sessionStartTime = null;
 
   // 基音候補（存在する音源ファイルに合わせた10種類）
   const baseNotes = [
@@ -364,13 +389,21 @@
 
   // ランダム基音選択
   function selectRandomBaseNote() {
-    const randomIndex = Math.floor(Math.random() * baseNotes.length);
-    const selectedNote = baseNotes[randomIndex];
+    // localStorageから次の基音を取得
+    const nextNote = $nextBaseNote;
+    const nextName = $nextBaseName;
+    
+    // baseNotesから対応する情報を検索
+    const selectedNote = baseNotes.find(note => note.note === nextNote) || 
+                        baseNotes.find(note => note.name === nextName) ||
+                        baseNotes[0]; // フォールバック
+    
     currentBaseNote = selectedNote.name;
     currentBaseFrequency = selectedNote.frequency;
     
     // 基音周波数設定確認ログ
-    logger.info(`[BaseNote] 基音設定: ${currentBaseNote} = ${currentBaseFrequency}Hz`);
+    logger.info(`[BaseNote] 基音設定（localStorage連携）: ${currentBaseNote} = ${currentBaseFrequency}Hz`);
+    logger.info(`[BaseNote] localStorage基音情報: note=${nextNote}, name=${nextName}`);
     
     // 基音周波数が正常に設定されたことを確認
     if (!currentBaseFrequency || currentBaseFrequency <= 0) {
@@ -381,7 +414,7 @@
 
   // ランダム基音再生（新しい基音を選択）
   async function playRandomBaseNote() {
-    if (isPlaying || !sampler || isLoading) return;
+    if (isPlaying || !sampler || isSamplerLoading) return;
     
     // マイク許可が未取得の場合は先に許可を取得
     if (microphoneState !== 'granted') {
@@ -411,6 +444,7 @@
     // 即座に状態変更
     isPlaying = true;
     trainingPhase = 'listening';
+    sessionStartTime = Date.now(); // セッション開始時刻を記録
     selectRandomBaseNote(); // 新しいランダム基音を選択
     
     // 音声再生
@@ -457,6 +491,7 @@
     // 即座に状態変更
     isPlaying = true;
     trainingPhase = 'listening';
+    sessionStartTime = Date.now(); // セッション開始時刻を記録
     // selectRandomBaseNote() は呼ばない - 既存の基音を保持
     
     // 音声再生
@@ -650,7 +685,7 @@
   function getStatusMessage() {
     switch (trainingPhase) {
       case 'setup':
-        if (isLoading || !sampler) {
+        if (isSamplerLoading || !sampler) {
           return '🎵 音源読み込み中...';
         } else {
           return '🎤 マイク準備完了 - トレーニング開始可能';
@@ -694,7 +729,7 @@
   // Tone.jsサンプラー初期化（Salamander Grand Piano - 最適化版）
   async function initializeSampler() {
     try {
-      isLoading = true;
+      isSamplerLoading = true;
       
       // AudioContextは初回再生時に起動（安全なアプローチ）
       
@@ -706,11 +741,11 @@
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
         onload: () => {
-          isLoading = false;
+          isSamplerLoading = false;
         },
         onerror: (error) => {
           console.error('❌ Salamander Piano音源読み込みエラー:', error);
-          isLoading = false;
+          isSamplerLoading = false;
         }
       }).toDestination();
       
@@ -719,7 +754,7 @@
       
     } catch (error) {
       console.error('サンプラー初期化エラー:', error);
-      isLoading = false;
+      isSamplerLoading = false;
     }
   }
   
@@ -972,7 +1007,7 @@
     }));
     
     // 統合スコアデータを作成（完全版データ構造）
-    unifiedScoreData = {
+    currentUnifiedScoreData = {
       mode: 'random',
       timestamp: new Date(),
       duration: 60, // 1セッション約60秒想定
@@ -995,7 +1030,62 @@
       }]
     };
     
-    console.log('[UnifiedScore] 統合採点データ生成完了（完全版）:', unifiedScoreData);
+    console.log('[UnifiedScore] 統合採点データ生成完了（完全版）:', currentUnifiedScoreData);
+    
+    // localStorage にセッション結果を保存
+    saveSessionToStorage();
+  }
+  
+  // セッション結果をlocalStorageに保存
+  async function saveSessionToStorage() {
+    if (!noteResultsForDisplay || noteResultsForDisplay.length === 0) {
+      console.warn('📊 [SessionStorage] 保存データなし');
+      return;
+    }
+    
+    try {
+      console.log('📊 [SessionStorage] セッション結果保存開始');
+      
+      // noteResultsForDisplayを正しい形式に変換
+      const convertedNoteResults = noteResultsForDisplay.map(note => ({
+        name: note.name,
+        cents: note.cents,
+        targetFreq: note.targetFreq || note.expectedFrequency,
+        detectedFreq: note.detectedFreq,
+        diff: note.diff,
+        accuracy: typeof note.accuracy === 'number' ? note.accuracy : 0
+      }));
+      
+      // セッション継続時間を計算（開始時刻からの経過時間）
+      const duration = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 60;
+      
+      // 基音情報
+      const baseNote = $nextBaseNote; // 次の基音ストアから取得
+      const baseName = $nextBaseName; // 次の基音名ストアから取得
+      
+      // saveSessionResult に渡す
+      const success = await saveSessionResult(
+        convertedNoteResults,
+        duration,
+        baseNote,
+        baseName
+      );
+      
+      if (success) {
+        console.log('📊 [SessionStorage] セッション結果保存完了');
+        console.log('📊 [SessionStorage] 保存後の状況:', {
+          currentSession: $currentSessionId,
+          totalSessions: $sessionHistory.length,
+          isCompleted: $isCompleted,
+          nextBaseNote: $nextBaseNote,
+          nextBaseName: $nextBaseName
+        });
+      } else {
+        console.error('📊 [SessionStorage] セッション結果保存失敗');
+      }
+    } catch (error) {
+      console.error('📊 [SessionStorage] セッション保存エラー:', error);
+    }
   }
 
   // 実際のトレーニングデータから追加採点データを生成
@@ -1047,7 +1137,7 @@
         sessionStatistics = {
           totalAttempts: results.totalAttempts || noteResultsForDisplay.length,
           successRate: results.successRate || (noteResultsForDisplay.filter(n => n.accuracy !== 'notMeasured').length / noteResultsForDisplay.length * 100),
-          averageScore: results.totalScore || unifiedScoreData?.averageAccuracy || 0,
+          averageScore: results.totalScore || currentUnifiedScoreData?.averageAccuracy || 0,
           bestScore: Math.max(results.totalScore || 0, sessionStatistics.bestScore || 0),
           sessionDuration: Math.round(60), // 1セッション約60秒
           streakCount: results.streak || 0,
@@ -1074,7 +1164,7 @@
   // フォールバック用簡易データ生成
   function generateFallbackEnhancedData() {
     const measuredNotes = noteResultsForDisplay.filter(n => n.accuracy !== 'notMeasured');
-    const averageAccuracy = unifiedScoreData?.averageAccuracy || 0;
+    const averageAccuracy = currentUnifiedScoreData?.averageAccuracy || 0;
     
     // 簡易スコアデータ
     currentScoreData = {
@@ -1129,7 +1219,7 @@
 
   // 実際のトレーニング結果から一貫性データを生成
   function generateConsistencyDataFromResults(results) {
-    const baseScore = unifiedScoreData?.averageAccuracy || 70;
+    const baseScore = currentUnifiedScoreData?.averageAccuracy || 70;
     return Array.from({length: 8}, (_, i) => ({
       score: Math.max(30, Math.min(100, baseScore + (Math.random() - 0.5) * 20)),
       timestamp: Date.now() - (8 - i) * 7500 // 7.5秒間隔
@@ -1139,7 +1229,7 @@
   // 実際のトレーニング結果からフィードバックを生成
   function generateFeedbackFromResults(results) {
     const measuredCount = results.filter(n => n.accuracy !== 'notMeasured').length;
-    const averageAccuracy = unifiedScoreData?.averageAccuracy || 0;
+    const averageAccuracy = currentUnifiedScoreData?.averageAccuracy || 0;
     
     let type, primary, summary;
     
@@ -1249,6 +1339,22 @@
 
   // 初期化
   onMount(async () => {
+    // localStorage 初期化（最優先）
+    console.log('📊 [SessionStorage] セッション管理初期化開始');
+    try {
+      const success = await loadProgress();
+      if (success) {
+        console.log('📊 [SessionStorage] セッション進行状況の読み込み完了');
+        console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
+        console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
+        console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+      } else {
+        console.log('📊 [SessionStorage] 新規セッション開始');
+      }
+    } catch (error) {
+      console.error('📊 [SessionStorage] 初期化エラー:', error);
+    }
+    
     // 音源初期化
     initializeSampler();
     
@@ -1612,7 +1718,7 @@
 
   
   // リアクティブシステム
-  $: canStartTraining = microphoneState === 'granted' && !isLoading && sampler && microphoneHealthy;
+  $: canStartTraining = microphoneState === 'granted' && !isSamplerLoading && sampler && microphoneHealthy;
   $: canRestartSession = trainingPhase === 'results';
   
   // 状態変化時の自動スクロール（ダイレクトアクセス、マイク許可後の画面遷移時）
@@ -1665,6 +1771,40 @@
   <div class="header-section">
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
+    
+    <!-- セッション進捗表示 -->
+    {#if !$isLoading}
+      <div class="session-progress">
+        <div class="progress-info">
+          <span class="session-count">
+            セッション {$currentSessionId} / 8
+          </span>
+          <span class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {$progressPercentage}%"></div>
+            </div>
+            <span class="progress-text">{Math.round($progressPercentage)}%</span>
+          </span>
+        </div>
+        
+        {#if !$isCompleted}
+          <div class="next-session-info">
+            <span class="next-base-note">
+              次の基音: <strong>{$nextBaseName}</strong>
+            </span>
+            <span class="remaining-sessions">
+              残り {$remainingSessions} セッション
+            </span>
+          </div>
+        {:else}
+          <div class="completion-info">
+            <span class="completion-message">
+              🎉 8セッション完了！ S-E級評価: <strong>{$overallGrade}級</strong>
+            </span>
+          </div>
+        {/if}
+      </div>
+    {/if}
     
     <div class="debug-info">
       📱 {buildVersion} | {buildTimestamp}<br/>
@@ -1782,10 +1922,23 @@
 
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
-      <!-- 統合採点システム結果（完全版・メイン表示） -->
-      {#if unifiedScoreData}
+      <!-- 統合採点システム結果（localStorage統合版） -->
+      {#if $unifiedScoreData && $isCompleted}
+        <!-- 8セッション完了時：localStorageデータを使用 -->
         <UnifiedScoreResultFixed 
-          scoreData={unifiedScoreData}
+          scoreData={$unifiedScoreData}
+          showDetails={false}
+          className="mb-6"
+          currentScoreData={currentScoreData}
+          intervalData={intervalData}
+          consistencyData={consistencyData}
+          feedbackData={feedbackData}
+          sessionStatistics={sessionStatistics}
+        />
+      {:else if currentUnifiedScoreData}
+        <!-- 1セッション完了時：従来のデータを使用 -->
+        <UnifiedScoreResultFixed 
+          scoreData={currentUnifiedScoreData}
           showDetails={false}
           className="mb-6"
           currentScoreData={currentScoreData}
@@ -2581,5 +2734,100 @@
   
   .traditional-scoring-details summary span {
     transition: transform 0.2s;
+  }
+  
+  /* セッション進捗表示 */
+  .session-progress {
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+  
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  
+  .session-count {
+    font-weight: 600;
+    color: hsl(222.2 84% 4.9%);
+    font-size: 1.1rem;
+  }
+  
+  .progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .progress-bar {
+    width: 120px;
+    height: 8px;
+    background: hsl(210 40% 96%);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: hsl(222.2 47.4% 11.2%);
+    transition: width 0.3s ease;
+  }
+  
+  .progress-text {
+    font-size: 0.9rem;
+    color: hsl(222.2 84% 4.9%);
+    font-weight: 500;
+    min-width: 40px;
+  }
+  
+  .next-session-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: hsl(215.4 16.3% 46.9%);
+  }
+  
+  .next-base-note {
+    color: hsl(222.2 84% 4.9%);
+  }
+  
+  .remaining-sessions {
+    color: hsl(25 95% 53%);
+    font-weight: 500;
+  }
+  
+  .completion-info {
+    text-align: center;
+  }
+  
+  .completion-message {
+    color: hsl(142.1 76.2% 36.3%);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .progress-info {
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+    
+    .progress-bar-container {
+      justify-content: space-between;
+    }
+    
+    .next-session-info {
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
   }
 </style>
