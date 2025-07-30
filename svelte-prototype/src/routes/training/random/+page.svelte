@@ -1644,8 +1644,12 @@
     try {
       await resetProgress();
       console.log('🔄 [restartDifferentBaseNote] localStorage完全リセット完了');
+      
+      // 新しいプログレスを作成
+      await createNewProgress();
+      console.log('🔄 [restartDifferentBaseNote] 新しいプログレス作成完了');
     } catch (error) {
-      console.error('🔄 [restartDifferentBaseNote] localStorageリセットエラー:', error);
+      console.error('🔄 [restartDifferentBaseNote] localStorageリセット/作成エラー:', error);
     }
     
     // 3. UI状態のみ変更（即座画面遷移）
