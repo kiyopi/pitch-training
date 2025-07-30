@@ -1783,7 +1783,7 @@
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
     <!-- セッション進捗表示 -->
-    {#if !$isLoading}
+    {#if microphoneState === 'granted' && !$isLoading}
       <div class="session-progress">
         <div class="progress-info">
           <span class="session-count">
