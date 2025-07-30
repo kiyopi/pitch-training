@@ -1657,6 +1657,45 @@
     // 6. セッション状態リセット
     resetSessionState();
   }
+
+  // ランダム基音トレーニングを最初から行う（8セッション完了後）
+  function restartCompleteTraining() {
+    // 1. ページトップにスクロール
+    scrollToTop();
+    
+    // 2. localStorage完全リセット
+    const storageManager = SessionStorageManager.getInstance();
+    storageManager.resetProgress();
+    
+    // 3. Svelteストア完全リセット
+    currentSessionId.set(1);
+    progressPercentage.set(0);
+    isCompleted.set(false);
+    unifiedScoreData.set(null);
+    
+    // 4. UI状態リセット
+    trainingPhase = 'setup';
+    
+    // 5. 基音情報リセット
+    currentBaseNote = '';
+    currentBaseFrequency = 0;
+    
+    // 6. クリーンアップ
+    if (guideAnimationTimer) {
+      clearTimeout(guideAnimationTimer);
+      guideAnimationTimer = null;
+    }
+    
+    // 7. PitchDetectorの表示状態をリセット
+    if (pitchDetectorComponent && pitchDetectorComponent.resetDisplayState) {
+      pitchDetectorComponent.resetDisplayState();
+    }
+    
+    // 8. セッション状態リセット
+    resetSessionState();
+    
+    console.log('🔄 [restartCompleteTraining] ランダム基音トレーニングを最初からリスタート');
+  }
   
   // 強化版スクロール関数（ブラウザ互換性対応）
   function scrollToTop() {
@@ -1954,24 +1993,38 @@
       <!-- アクションボタン -->
       <Card class="main-card">
         <div class="card-content">
-          <div class="action-buttons">
-            <Button 
-              variant="primary"
-              class="restart-button" 
-              disabled={!canRestartSession}
-              on:click={restartSameBaseNote}
-            >
-              同じ基音で再挑戦
-            </Button>
-            <Button 
-              variant="primary"
-              class="new-base-button" 
-              disabled={!canRestartSession}
-              on:click={restartDifferentBaseNote}
-            >
-              違う基音で開始
-            </Button>
-          </div>
+          {#if $isCompleted}
+            <!-- 8セッション完了時：完全リスタートボタンのみ -->
+            <div class="action-buttons-complete">
+              <Button 
+                variant="primary"
+                class="complete-restart-button" 
+                on:click={restartCompleteTraining}
+              >
+                🎯 ランダム基音トレーニングを最初から行う
+              </Button>
+            </div>
+          {:else}
+            <!-- 単一セッション完了時：既存のボタン -->
+            <div class="action-buttons">
+              <Button 
+                variant="primary"
+                class="restart-button" 
+                disabled={!canRestartSession}
+                on:click={restartSameBaseNote}
+              >
+                同じ基音で再挑戦
+              </Button>
+              <Button 
+                variant="primary"
+                class="new-base-button" 
+                disabled={!canRestartSession}
+                on:click={restartDifferentBaseNote}
+              >
+                違う基音で開始
+              </Button>
+            </div>
+          {/if}
         </div>
       </Card>
     {/if}
@@ -2529,10 +2582,24 @@
     flex-wrap: wrap;
   }
   
+  /* 8セッション完了時のアクションボタン */
+  .action-buttons-complete {
+    display: flex;
+    justify-content: center;
+  }
+  
   /* 再挑戦系ボタンのスタイリング */
   :global(.restart-button), :global(.new-base-button) {
     min-width: 160px !important;
     font-weight: 500 !important;
+  }
+  
+  /* 完全リスタートボタンのスタイリング */
+  :global(.complete-restart-button) {
+    min-width: 280px !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 1.5rem !important;
   }
   
   /* 共通アクションボタン */
