@@ -1640,18 +1640,27 @@
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
-    // 2. localStorage完全リセット（最優先）
+    // 2. localStorage強制完全クリア（最優先）
     try {
       console.log('🔄 [restartDifferentBaseNote] リセット開始前の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      console.log('🔄 [restartDifferentBaseNote] リセット前のlocalStorage確認:', localStorage.getItem('training-progress'));
       
-      await resetProgress();
-      console.log('🔄 [restartDifferentBaseNote] localStorage完全リセット完了');
-      console.log('🔄 [restartDifferentBaseNote] リセット直後の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      // 直接localStorage からキーを削除
+      localStorage.removeItem('training-progress');
+      localStorage.removeItem('training-progress-backup');
+      console.log('🔄 [restartDifferentBaseNote] localStorage直接削除完了');
+      console.log('🔄 [restartDifferentBaseNote] 削除後のlocalStorage確認:', localStorage.getItem('training-progress'));
       
-      // 新しいプログレスを作成
-      await createNewProgress();
-      console.log('🔄 [restartDifferentBaseNote] 新しいプログレス作成完了');
-      console.log('🔄 [restartDifferentBaseNote] 作成後の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      // ストアも強制リセット
+      trainingProgress.set(null);
+      currentSessionId.set(1);
+      nextBaseNote.set('C4');
+      nextBaseName.set('ド（低）');
+      console.log('🔄 [restartDifferentBaseNote] Svelteストア強制リセット完了');
+      console.log('🔄 [restartDifferentBaseNote] ストアリセット後の状態:', $currentSessionId, '/', $progressPercentage + '%');
+      
+      // SessionStorageManagerインスタンスを新しく作成させる
+      console.log('🔄 [restartDifferentBaseNote] SessionStorageManager処理完了');
       
       // 強制的にページをリロードして確実にリセット
       console.log('🔄 [restartDifferentBaseNote] 強制リロードを実行します');
