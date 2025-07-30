@@ -370,60 +370,15 @@
       
       console.log('✅ [RandomTraining] AudioManager リソース取得完了');
       
-      microphoneState = 'granted';
-      trainingPhase = 'setup';
+      // 【修正】マイク許可取得成功後、フラグを設定してページリロード
+      console.log('✅ [RandomTraining] マイク許可取得成功 - リロードで初期化を実行');
       
-      // 【修正】マイク許可取得後にlocalStorage初期化を実行
-      console.log('📊 [SessionStorage] マイク許可取得後のセッション管理初期化開始');
-      try {
-        const success = await loadProgress();
-        if (success) {
-          console.log('📊 [SessionStorage] セッション進行状況の読み込み完了');
-          console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
-          console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
-          
-          // ダイレクトアクセス制御を解除
-          microphoneRequired = false;
-          console.log('🔓 [DirectAccess] マイクテスト制御解除 (success):', microphoneRequired);
-          await tick(); // UI更新を強制
-          
-          // 8セッション完了済みの場合はresults画面に強制遷移
-          if ($isCompleted || $currentSessionId >= 8 || $progressPercentage >= 100) {
-            console.log('🔧 [SessionStorage] 8セッション完了状態を検出 - results画面に強制遷移');
-            trainingPhase = 'results';
-            
-            // 空の評価データで最低限の表示を可能にする
-            noteResultsForDisplay = SCALE_NAMES.map(noteName => ({
-              name: noteName,
-              cents: null,
-              targetFreq: null,
-              detectedFreq: null,
-              diff: null,
-              accuracy: 'notMeasured'
-            }));
-            
-            return; // PitchDetector初期化は不要
-          }
-        } else {
-          console.error('📊 [SessionStorage] セッション進行状況の読み込み失敗');
-        }
-      } catch (error) {
-        console.error('📊 [SessionStorage] localStorage初期化エラー:', error);
-      }
+      // マイクテスト完了フラグを設定
+      localStorage.setItem('mic-test-completed', 'true');
+      console.log('🔒 [DirectAccess] マイクテスト完了フラグを設定');
       
-      // ダイレクトアクセス制御を解除
-      microphoneRequired = false;
-      console.log('🔓 [DirectAccess] マイクテスト制御解除 (final):', microphoneRequired);
-      await tick(); // UI更新を強制
-      
-      // PitchDetector初期化（外部AudioContext方式）
-      setTimeout(async () => {
-        if (pitchDetectorComponent) {
-          logger.audio('[RandomTraining] PitchDetector初期化開始');
-          await pitchDetectorComponent.initialize();
-          logger.audio('[RandomTraining] PitchDetector初期化完了');
-        }
-      }, 200);
+      // ページをリロードして正常な初期化フローを通す
+      window.location.reload();
       
     } catch (error) {
       logger.error('[RandomTraining] マイク許可エラー:', error);
