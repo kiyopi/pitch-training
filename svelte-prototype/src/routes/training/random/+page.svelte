@@ -350,42 +350,6 @@
   ];
 
   // マイク許可確認（AudioManager対応版）
-  async function checkMicrophonePermission() {
-    microphoneState = 'checking';
-    
-    try {
-      console.log('🎤 [RandomTraining] AudioManager経由でマイク許可確認開始');
-      
-      if (!navigator.mediaDevices?.getUserMedia) {
-        microphoneState = 'error';
-        return;
-      }
-      
-      // AudioManagerから共有リソースを取得（重複取得は安全）
-      const resources = await audioManager.initialize();
-      audioContext = resources.audioContext;
-      mediaStream = resources.mediaStream;
-      sourceNode = resources.sourceNode;
-      
-      console.log('✅ [RandomTraining] AudioManager リソース取得完了');
-      
-      microphoneState = 'granted';
-      trainingPhase = 'setup';
-      
-      // PitchDetector初期化（外部AudioContext方式）
-      setTimeout(async () => {
-        if (pitchDetectorComponent) {
-          logger.audio('[RandomTraining] PitchDetector初期化開始');
-          await pitchDetectorComponent.initialize();
-          logger.audio('[RandomTraining] PitchDetector初期化完了');
-        }
-      }, 200);
-      
-    } catch (error) {
-      logger.error('[RandomTraining] マイク許可エラー:', error);
-      microphoneState = (error?.name === 'NotAllowedError') ? 'denied' : 'error';
-    }
-  }
 
   // ランダム基音選択
   function selectRandomBaseNote() {
@@ -416,30 +380,19 @@
   async function playRandomBaseNote() {
     if (isPlaying || !sampler || isSamplerLoading) return;
     
-    // マイク許可が未取得の場合は先に許可を取得
+    // マイクテスト未完了の場合は実行不可
     if (microphoneState !== 'granted') {
-      console.log('🎤 [RandomTraining] マイク許可が必要です。許可取得を開始...');
-      try {
-        await checkMicrophonePermission();
-        console.log('🎤 [RandomTraining] マイク許可取得完了');
-      } catch (error) {
-        console.error('❌ マイク許可エラー:', error);
-        return;
-      }
+      console.log('🚫 [RandomTraining] マイクテスト未完了のため基音再生不可');
+      return;
     }
     
-    // AudioManagerリソースが初期化されていない場合のみ初期化
-    if (!mediaStream && microphoneState === 'granted') {
-      console.log('🎤 [RandomTraining] AudioManagerリソース未初期化のため取得します');
-      try {
-        await checkMicrophonePermission();
-      } catch (error) {
-        console.error('❌ AudioManagerリソース初期化エラー:', error);
-        return;
-      }
-    } else if (mediaStream) {
-      console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
+    // AudioManagerリソースが初期化されていない場合はエラーログのみ
+    if (!mediaStream) {
+      console.error('❌ [RandomTraining] AudioManagerリソース未初期化');
+      return;
     }
+    
+    console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
     
     // 即座に状態変更
     isPlaying = true;
@@ -463,30 +416,19 @@
   async function playCurrentBaseNote() {
     if (isPlaying || !sampler || isLoading || !currentBaseNote) return;
     
-    // マイク許可が未取得の場合は先に許可を取得
+    // マイクテスト未完了の場合は実行不可
     if (microphoneState !== 'granted') {
-      console.log('🎤 [RandomTraining] マイク許可が必要です。許可取得を開始...');
-      try {
-        await checkMicrophonePermission();
-        console.log('🎤 [RandomTraining] マイク許可取得完了');
-      } catch (error) {
-        console.error('❌ マイク許可エラー:', error);
-        return;
-      }
+      console.log('🚫 [RandomTraining] マイクテスト未完了のため基音再生不可');
+      return;
     }
     
-    // AudioManagerリソースが初期化されていない場合のみ初期化
-    if (!mediaStream && microphoneState === 'granted') {
-      console.log('🎤 [RandomTraining] AudioManagerリソース未初期化のため取得します');
-      try {
-        await checkMicrophonePermission();
-      } catch (error) {
-        console.error('❌ AudioManagerリソース初期化エラー:', error);
-        return;
-      }
-    } else if (mediaStream) {
-      console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
+    // AudioManagerリソースが初期化されていない場合はエラーログのみ
+    if (!mediaStream) {
+      console.error('❌ [RandomTraining] AudioManagerリソース未初期化');
+      return;
     }
+    
+    console.log('🎤 [RandomTraining] AudioManagerリソース既存のため再利用');
     
     // 即座に状態変更
     isPlaying = true;
@@ -758,23 +700,11 @@
     }
   }
   
-  // マイク許可状態確認（取得はしない）
+  // マイク許可状態確認（Pattern B削除により簡素化）
   async function checkExistingMicrophonePermission() {
-    try {
-      // Permissions API でマイク許可状態を確認（ダイアログは出ない）
-      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-      
-      if (permissionStatus.state === 'granted') {
-        // 既に許可済みの場合のみストリーム取得
-        await checkMicrophonePermission();
-      } else {
-        // 未許可の場合はエラー画面表示
-        microphoneState = 'denied';
-      }
-    } catch (error) {
-      // Permissions API 未対応の場合は従来の方法
-      microphoneState = 'denied';
-    }
+    // Pattern B削除により、ダイレクトアクセス時は常に準備画面表示
+    microphoneState = 'denied';
+    console.log('🚫 [RandomTraining] パターンB削除により、マイクテストページ経由が必須');
   }
 
   // 採点エンジン初期化
@@ -1375,18 +1305,8 @@
       trainingPhase = 'setup';
       console.log('🎤 [RandomTraining] microphoneState="granted", trainingPhase="setup" に設定');
       
-      // AudioManagerリソースの事前取得（スムーズな再生のため）
-      setTimeout(async () => {
-        if (!mediaStream) {
-          console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得開始');
-          try {
-            await checkMicrophonePermission();
-            console.log('🎤 [RandomTraining] 事前AudioManagerリソース取得完了');
-          } catch (error) {
-            console.warn('⚠️ 事前AudioManagerリソース取得失敗（後で再試行）:', error);
-          }
-        }
-      }, 100);
+      // AudioManagerリソースは既にマイクテストページで初期化済み
+      console.log('🎤 [RandomTraining] マイクテストページ経由のためAudioManagerリソース利用可能');
       return;
     }
     
@@ -1989,27 +1909,30 @@
     {/if}
 
   {:else}
-    <!-- Direct Access Error State -->
-    <Card class="error-card">
-      <div class="error-content">
-        <div class="error-icon">🎤</div>
-        <h3>マイクテストが必要です</h3>
-        <p>ランダム基音トレーニングを開始する前に、マイクテストページで音声入力の確認をお願いします。</p>
+    <!-- Training Preparation State -->
+    <Card class="preparation-card">
+      <div class="preparation-content">
+        <div class="preparation-icon">🎤</div>
+        <h3 class="preparation-title">トレーニング準備</h3>
+        <p class="preparation-message">
+          トレーニングを開始するには、マイクテストでの準備が必要です。
+        </p>
         
-        <div class="recommendation">
-          <p>このページは<strong>マイクテスト完了後</strong>にご利用いただけます。</p>
-          <p>まずはマイクテストページで音声確認を行ってください。</p>
+        <div class="preparation-benefits">
+          <h4>📚 マイクテストでは以下を行います：</h4>
+          <ul>
+            <li>✓ 音量・周波数感覚の習得</li>
+            <li>✓ 音程検出システムとの相性確認</li>
+            <li>✓ トレーニング成功率の向上</li>
+          </ul>
         </div>
         
-        <div class="action-buttons">
-          <Button variant="primary" on:click={goToMicrophoneTest}>
-            🎤 マイクテストページへ移動
+        <div class="preparation-actions">
+          <Button variant="primary" size="lg" on:click={goToMicrophoneTest}>
+            📚 マイクテストページで準備完了
           </Button>
-          <Button variant="secondary" on:click={checkMicrophonePermission}>
-            🎙️ 直接マイク許可を取得
-          </Button>
-          <Button variant="secondary" on:click={goHome}>
-            🏠 ホームに戻る
+          <Button variant="outline" on:click={goHome}>
+            ホームに戻る
           </Button>
         </div>
       </div>
@@ -2828,6 +2751,74 @@
       flex-direction: column;
       gap: 4px;
       align-items: center;
+    }
+  }
+
+  /* === 新規追加：準備画面スタイル === */
+  .preparation-card {
+    max-width: 600px;
+    margin: 2rem auto;
+  }
+
+  .preparation-content {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .preparation-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .preparation-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .preparation-message {
+    font-size: 1rem;
+    color: var(--color-gray-600);
+    margin-bottom: 1.5rem;
+  }
+
+  .preparation-benefits {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: left;
+  }
+
+  .preparation-benefits h4 {
+    margin-bottom: 0.5rem;
+    color: #0369a1;
+  }
+
+  .preparation-benefits ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+
+  .preparation-benefits li {
+    margin-bottom: 0.5rem;
+    color: #1e40af;
+  }
+
+  .preparation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .preparation-actions {
+      flex-direction: row;
+      justify-content: center;
     }
   }
 </style>
