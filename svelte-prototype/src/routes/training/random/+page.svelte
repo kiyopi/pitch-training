@@ -1741,7 +1741,15 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
-    <!-- セッション進捗表示 -->
+    <div class="debug-info">
+      📱 {buildVersion} | {buildTimestamp}<br/>
+      <small style="font-size: 0.6rem;">{updateStatus}</small>
+    </div>
+  </div>
+
+
+  {#if microphoneState === 'granted'}
+    <!-- セッション進捗表示（マイク許可済みの場合のみ） -->
     {#if !$isLoading}
       <div class="session-progress">
         <div class="progress-info">
@@ -1774,15 +1782,7 @@
         {/if}
       </div>
     {/if}
-    
-    <div class="debug-info">
-      📱 {buildVersion} | {buildTimestamp}<br/>
-      <small style="font-size: 0.6rem;">{updateStatus}</small>
-    </div>
-  </div>
 
-
-  {#if microphoneState === 'granted'}
     <!-- PitchDetector: 常に存在（セッション間で破棄されない） -->
     <div style="display: none;">
       <PitchDetector
