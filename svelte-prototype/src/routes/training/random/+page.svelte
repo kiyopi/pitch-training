@@ -1637,6 +1637,11 @@
   
   // 違う基音で開始
   async function restartDifferentBaseNote() {
+    console.log('🔄 [restartDifferentBaseNote] ===== 関数実行開始 =====');
+    console.log('🔄 [restartDifferentBaseNote] ボタンクリックイベント検出');
+    console.log('🔄 [restartDifferentBaseNote] 現在のtrainingPhase:', trainingPhase);
+    console.log('🔄 [restartDifferentBaseNote] canRestartSession:', canRestartSession);
+    
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
