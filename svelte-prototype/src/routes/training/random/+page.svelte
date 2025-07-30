@@ -377,8 +377,15 @@
       localStorage.setItem('mic-test-completed', 'true');
       console.log('🔒 [DirectAccess] マイクテスト完了フラグを設定');
       
-      // ページをリロードして正常な初期化フローを通す
-      window.location.reload();
+      // リロード前に視覚的フィードバック
+      microphoneState = 'granted';
+      
+      // 少し待ってからページをリロード（ユーザーに成功を認識させるため）
+      console.log('🔄 [DirectAccess] 100ms後にページリロードを実行します');
+      setTimeout(() => {
+        console.log('🔄 [DirectAccess] ページリロード実行中...');
+        window.location.reload();
+      }, 100);
       
     } catch (error) {
       logger.error('[RandomTraining] マイク許可エラー:', error);
@@ -1371,6 +1378,11 @@
       return; // localStorage作成を防ぐため早期リターン
     }
     
+    // 【修正】マイクテスト完了済みの場合は、マイク許可済みとして扱う
+    console.log('✅ [DirectAccess] マイクテスト完了済み → 通常のトレーニング画面を表示');
+    microphoneState = 'granted';
+    trainingPhase = 'setup';
+    
     // localStorage 初期化（マイクテスト完了確認後のみ）
     console.log('📊 [SessionStorage] セッション管理初期化開始');
     try {
@@ -1424,6 +1436,28 @@
     
     // 採点エンジン初期化
     initializeScoringEngine();
+    
+    // 【修正】マイクテスト完了済みの場合、AudioManagerを初期化
+    if (micTestCompleted && !mediaStream) {
+      console.log('🎤 [DirectAccess] マイクテスト完了済み - AudioManager初期化開始');
+      setTimeout(async () => {
+        try {
+          const resources = await audioManager.initialize();
+          audioContext = resources.audioContext;
+          mediaStream = resources.mediaStream;
+          sourceNode = resources.sourceNode;
+          console.log('✅ [DirectAccess] AudioManager初期化完了');
+          
+          // PitchDetector初期化
+          if (pitchDetectorComponent) {
+            await pitchDetectorComponent.initialize();
+            console.log('✅ [DirectAccess] PitchDetector初期化完了');
+          }
+        } catch (error) {
+          console.error('❌ [DirectAccess] AudioManager初期化エラー:', error);
+        }
+      }, 200);
+    }
     
     // マイクテストページから来た場合は許可済みとして扱う
     if ($page.url.searchParams.get('from') === 'microphone-test') {
