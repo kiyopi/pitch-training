@@ -221,6 +221,10 @@
               />
               <span class="note-name-simple">{note.name}（{note.targetFreq}Hz）</span>
               <span class="detection-result">あなた: {note.detectedFreq || 'データ取得中'}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+              <!-- デバッグ用：値の確認 -->
+              <div style="font-size: 10px; color: #666;">
+                DEBUG: detectedFreq={note.detectedFreq}, diff={note.diff}, cents={note.cents}
+              </div>
               {#if isOutlier}
                 <span class="outlier-badge-simple">
                   {Math.abs(note.cents) > 100 ? '重大' : '注意'}
