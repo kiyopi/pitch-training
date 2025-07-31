@@ -506,6 +506,22 @@
     }, 2000);
   }
 
+  // 基音のみ再生（再挑戦ボタン専用 - トレーニング開始なし）
+  async function playBaseNoteOnly() {
+    if (isPlaying || !sampler || $isLoading || !currentBaseNote) {
+      console.log('🔄 [BaseNoteOnly] 再生条件未満: isPlaying:', isPlaying, 'sampler:', !!sampler, 'isLoading:', $isLoading, 'currentBaseNote:', currentBaseNote);
+      return;
+    }
+    
+    console.log('🎵 [BaseNoteOnly] 基音のみ再生開始:', currentBaseNote);
+    
+    // 基音のみ再生（状態変更なし）
+    const note = baseNotes.find(n => n.name === currentBaseNote).note;
+    sampler.triggerAttackRelease(note, 1.5, Tone.now(), 0.7);
+    
+    console.log('🎵 [BaseNoteOnly] 基音再生完了:', note);
+  }
+
   // 基音再生（統合関数 - 状況に応じて適切な関数を呼び分け）
   function playBaseNote() {
     if (currentBaseNote && currentBaseFrequency > 0) {
@@ -1682,17 +1698,13 @@
     resetSessionState();
     // 注意: currentBaseNote と currentBaseFrequency は保持される
     
-    // 6. 同じ基音を再生（再挑戦時の重要な機能）
+    // 6. 同じ基音を再生（再挑戦時の重要な機能 - トレーニング開始なし）
     console.log('🔄 [RestartSame] 同じ基音で再挑戦:', currentBaseNote, currentBaseFrequency + 'Hz');
     console.log('🔄 [RestartSame] 条件確認 - currentBaseNote:', !!currentBaseNote, 'currentBaseFrequency:', currentBaseFrequency, 'currentBaseFrequency > 0:', currentBaseFrequency > 0);
     if (currentBaseNote && currentBaseFrequency > 0) {
-      console.log('🔄 [RestartSame] 条件クリア - setTimeout開始');
-      // 少し待ってから基音再生（UI更新後）
-      setTimeout(() => {
-        console.log('🔄 [RestartSame] playCurrentBaseNote()呼び出し開始');
-        console.log('🔄 [RestartSame] 状態確認 - isPlaying:', isPlaying, 'sampler:', !!sampler, 'isLoading:', $isLoading, 'currentBaseNote:', currentBaseNote);
-        playCurrentBaseNote();
-      }, 100);
+      console.log('🔄 [RestartSame] 条件クリア - playBaseNoteOnly()呼び出し');
+      // 基音のみ再生（トレーニング開始しない）
+      playBaseNoteOnly();
     } else {
       console.warn('⚠️ [RestartSame] 基音情報が不正:', currentBaseNote, currentBaseFrequency);
     }
