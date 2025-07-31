@@ -1398,12 +1398,12 @@
           console.warn('⚠️ AudioManagerリソース取得失敗（後で再試行）:', error);
         }
       }
-      return;
+      // returnを削除 - PitchDetectorコンポーネントのレンダリングを許可
+    } else {
+      // ダイレクトアクセス時のみマイク許可状態確認
+      await new Promise(resolve => setTimeout(resolve, 100));
+      checkExistingMicrophonePermission();
     }
-    
-    // ダイレクトアクセス時のみマイク許可状態確認
-    await new Promise(resolve => setTimeout(resolve, 100));
-    checkExistingMicrophonePermission();
   });
   
   // PitchDetectorコンポーネントからのイベントハンドラー
