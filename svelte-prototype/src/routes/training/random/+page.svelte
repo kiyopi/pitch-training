@@ -1374,8 +1374,16 @@
           // localStorage完全リセット（セッション中断扱い）
           const { SessionStorageManager } = await import('$lib/utils/SessionStorageManager.ts');
           const manager = SessionStorageManager.getInstance();
+          
+          // localStorage削除
           localStorage.removeItem('random-training-progress');
-          console.log('🔄 [SessionStorage] localStorage完全リセット完了');
+          localStorage.removeItem('random-training-progress-backup');
+          
+          // ストア状態もリセット
+          const { resetProgress } = await import('$lib/stores/sessionStorage.ts');
+          await resetProgress();
+          
+          console.log('🔄 [SessionStorage] localStorage + ストア状態完全リセット完了');
           
           // ダイレクトアクセス状態に強制設定（マイクテスト誘導）
           checkExistingMicrophonePermission();
