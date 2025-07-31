@@ -99,9 +99,12 @@
   // カルーセル用 - 最新のセッションから開始
   let currentSessionIndex = 0;
   
-  // セッション履歴が更新された時に最新のセッションに移動
-  $: if (scoreData?.sessionHistory) {
+  // セッション履歴が初期化された時のみ最新セッションに設定
+  let hasInitialized = false;
+  $: if (scoreData?.sessionHistory && !hasInitialized) {
     currentSessionIndex = Math.max(0, scoreData.sessionHistory.length - 1);
+    hasInitialized = true;
+    console.log('🔧 [UnifiedScore] Initial session index set to:', currentSessionIndex);
   }
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
