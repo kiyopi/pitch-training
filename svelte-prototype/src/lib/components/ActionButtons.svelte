@@ -17,6 +17,11 @@
         { type: 'different', label: '違う基音で開始', icon: Play }
       ];
   
+  // デバッグログ
+  $: if (typeof console !== 'undefined') {
+    console.log(`🔲 [ActionButtons-${position}] isCompleted: ${isCompleted}, buttonConfig:`, buttonConfig.map(b => b.label));
+  }
+  
   // イベント処理
   function handleButtonClick(type) {
     dispatch('action', { type });
