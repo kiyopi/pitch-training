@@ -96,8 +96,13 @@
   const iconScale = tweened(0, { duration: 600, easing: cubicOut });
   const bgOpacity = tweened(0, { duration: 300, easing: cubicOut });
   
-  // カルーセル用
+  // カルーセル用 - 最新のセッションから開始
   let currentSessionIndex = 0;
+  
+  // セッション履歴が更新された時に最新のセッションに移動
+  $: if (scoreData?.sessionHistory) {
+    currentSessionIndex = Math.max(0, scoreData.sessionHistory.length - 1);
+  }
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
   function calculateSessionGrade(sessionData) {
