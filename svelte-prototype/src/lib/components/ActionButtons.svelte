@@ -47,16 +47,19 @@
     width: 100%;
     display: flex;
     justify-content: center;
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 1rem; /* 基本padding縮小 */
+    margin: 0; /* 基本margin無効化 */
   }
   
-  /* 位置別マージン調整 - !important で強制適用 */
+  /* 位置別マージン調整 - 完全無効化 */
   .action-buttons-container.top {
-    margin: 0.125rem 0 0.25rem 0 !important; /* より狭く: 上0.125rem 下0.25rem */
+    margin: 0 !important; /* 完全無効化 */
+    padding: 0.125rem 1rem !important;
   }
   
   .action-buttons-container.bottom {
-    margin: 0.25rem 0 !important; /* より狭く: 上下とも0.25rem */
+    margin: 0 !important; /* 完全無効化 */
+    padding: 0.125rem 1rem !important;
   }
   
   .action-buttons {

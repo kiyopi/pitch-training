@@ -2686,20 +2686,34 @@
 
   /* アクションボタン - 新しいActionButtonsコンポーネントで管理 */
   
-  /* 上部アクションボタンのマージン調整 */
+  /* 上部アクションボタンのマージン調整 - 最優先適用 */
   .top-action-buttons {
-    margin: 0.25rem 0 0.5rem 0 !important; /* 上0.25rem 下0.5rem */
+    margin: 0.125rem 0 0.25rem 0 !important; /* 極小マージン */
+    padding: 0 !important;
   }
   
-  /* 下部アクションボタンカードのマージン調整 */
+  /* 下部アクションボタンカードのマージン調整 - 最優先適用 */
   :global(.bottom-action-card) {
-    margin-top: 0.75rem !important;  /* 上マージン縮小 */
-    margin-bottom: 0.75rem !important; /* 下マージン縮小 */
+    margin-top: 0.5rem !important;  /* さらに縮小 */
+    margin-bottom: 0.5rem !important; /* さらに縮小 */
+    padding: 0.25rem !important; /* カード自体のpadding縮小 */
   }
   
-  /* 下部アクションボタンカード内のpadding調整 */
+  /* 下部アクションボタンカード内のpadding調整 - 最優先適用 */
   :global(.bottom-action-card .card-content) {
-    padding: 0.5rem !important; /* カード内padding縮小 */
+    padding: 0.25rem !important; /* さらに縮小 */
+    margin: 0 !important;
+  }
+  
+  /* ActionButtonsコンポーネント内のマージンを強制上書き */
+  :global(.action-buttons-container.top) {
+    margin: 0 !important;
+    padding: 0.25rem 1rem !important;
+  }
+  
+  :global(.action-buttons-container.bottom) {
+    margin: 0 !important; 
+    padding: 0.25rem 1rem !important;
   }
   
   /* 古い共通アクションボタンスタイルは削除（ActionButtonsに統一） */
