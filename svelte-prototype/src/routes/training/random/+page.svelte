@@ -2029,9 +2029,6 @@
           <Button variant="primary" on:click={goToMicrophoneTest}>
             🎤 マイクテストページへ移動
           </Button>
-          <Button variant="secondary" on:click={checkMicrophonePermission}>
-            🎙️ 直接マイク許可を取得
-          </Button>
           <Button variant="secondary" on:click={goHome}>
             🏠 ホームに戻る
           </Button>
