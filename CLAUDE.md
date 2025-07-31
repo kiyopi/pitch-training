@@ -654,15 +654,46 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 - useAudioEngine, TrainingLayout等の高度統合実装
 - 技術債務蓄積の開始（型不整合、依存関係複雑化）
 
-### 現在の状況（2025-07-29更新）
-- **安定版**: 1e44e2e (v1.2.0 OutlierPenalty-Enhanced) 
-- **現在のブランチ**: random-training-tonejs-fixed-001
+### 2025-07-31（午前） **ダイレクトアクセス問題完全解決 & PitchDetector初期化修正**
+- **重要成果**: localStorage実装後のダイレクトアクセス時問題群を完全解決
+- **3ステップ修正完了**: 新セクション作成を一切せずに既存コード修正のみで実現
+  - **Step 1**: onMount処理順序修正（マイクテストフラグ最優先・セッション進捗表示条件修正）
+  - **Step 2**: PitchDetector初期化setTimeout削除 & コンポーネント参照取得タイミング修正
+  - **Step 3**: 直接マイク許可ボタン削除（マイクテスト必須フロー確立）
+- **追加修正**: セッション履歴カウント修正（localStorage履歴統合表示で1/8→2/8正常増加）
+- **技術的解決**: 
+  - PitchDetector初期化エラー「initializeWithExternalAudioContext is not a function」根本解決
+  - コンポーネント参照取得タイミング修正（100ms→300ms + 存在確認強化）
+  - currentUnifiedScoreDataでlocalStorage履歴統合によるセッション進捗正常表示
+- **設計思想実現**: マイクテスト必須フローでアプリ本来の設計（レッスン前準備）を確立
+- **使用ブランチ**: direct-access-fix-clean-final（使い捨てブランチ運用）
+- **重要な学習**: localStorage実装に伴う表示タイミング問題は新UI追加ではなく既存ロジック修正で対応
+
+### 2025-07-31（午後） **セッション途中リロード問題完全解決**
+- **重要成果**: セッション途中でのリロード時にlocalStorage残存問題を根本解決
+- **問題の発見**: セッション5でリロード→localStorage残存→8セッション超過→カルーセル非表示
+- **正しいフロー確立**: セッション途中リロード = 新規セッション1から再開（マイクテスト経由）
+- **段階的修正過程**:
+  - **誤ったアプローチ**: currentSessionId異常値を修正（セッション継続前提）
+  - **正しいアプローチ**: localStorage完全削除＋ダイレクトアクセス誘導
+- **技術的解決**: 
+  - リロード検出機能: `currentSessionId > 1 && !isCompleted`
+  - localStorage完全削除: メイン + バックアップファイル削除
+  - Svelteストアリセット: `resetProgress()`でインメモリ状態もクリア
+  - ダイレクトアクセス誘導: `checkExistingMicrophonePermission()`強制実行
+- **実現フロー**: リロード検出 → localStorage完全削除 → ダイレクトアクセス → マイクテスト → セッション1再開
+- **使用ブランチ**: direct-access-fix-clean-final（継続使用）
+- **重要な学習**: localStorage + Svelteストア両方のリセットが必要、リロード = セッション中断扱いが正しい仕様
+
+### 現在の状況（2025-07-31完了）
+- **安定版**: e614fc2 (localStorage実装) → direct-access-fix-clean-final (36468cc - 最新安定版)
+- **現在のブランチ**: direct-access-fix-clean-final
 - **開発環境**: SvelteKit本格開発（/svelte-prototype → メイン開発）
 - **対象ファイル**: /src/routes/training/random/+page.svelte
 - **技術スタック**: SvelteKit + Tone.js + Salamander Grand Piano
 - **デプロイ状況**: GitHub Pages (https://kiyopi.github.io/pitch-training/training/random)
-- **開発ステータス**: ✅ SvelteKit本格開発に完全移行、統合採点システムクリーンアップ完了
-- **直近のコミット**: 89804cc - 完全クリーンアップ: 5側面評価とフィードバック表示削除
+- **開発ステータス**: ✅ 全問題完全解決 - ダイレクトアクセス・PitchDetector初期化・セッション途中リロード対応完了
+- **最終確認**: セッション途中リロード → localStorage完全削除 → マイクテスト経由 → セッション1再開の正常動作確認済み
 
 ---
 

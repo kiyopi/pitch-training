@@ -1843,9 +1843,18 @@
       const newCycleStarted = await startNewCycleIfCompleted();
       
       if (newCycleStarted) {
-        console.log('✅ [StartNewCycle] 新サイクル開始完了 - ページリロード');
-        // ページリロードして新サイクル状態を完全に反映
-        window.location.reload();
+        console.log('✅ [StartNewCycle] 新サイクル開始完了');
+        
+        // マイクテスト完了フラグが存在することを確認
+        const micTestCompleted = localStorage.getItem('mic-test-completed');
+        if (micTestCompleted) {
+          console.log('✅ [StartNewCycle] マイクテスト完了フラグ確認 - マイクテスト経由として遷移');
+          // マイクテスト経由と同じ状態にするためURLパラメータを付けてリロード
+          window.location.href = window.location.pathname + '?from=microphone-test';
+        } else {
+          // フラグがない場合は通常のリロード
+          window.location.reload();
+        }
       } else {
         console.error('❌ [StartNewCycle] 新サイクル開始失敗');
         // 失敗時はホームに戻る
