@@ -1660,7 +1660,7 @@
   }
   
   // 同じ基音で再挑戦
-  function restartSameBaseNote() {
+  async function restartSameBaseNote() {
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
@@ -1681,6 +1681,17 @@
     // 5. セッション状態リセット（基音は保持）
     resetSessionState();
     // 注意: currentBaseNote と currentBaseFrequency は保持される
+    
+    // 6. 同じ基音を再生（再挑戦時の重要な機能）
+    console.log('🔄 [RestartSame] 同じ基音で再挑戦:', currentBaseNote, currentBaseFrequency + 'Hz');
+    if (currentBaseNote && currentBaseFrequency > 0) {
+      // 少し待ってから基音再生（UI更新後）
+      setTimeout(() => {
+        playCurrentBaseNote();
+      }, 100);
+    } else {
+      console.warn('⚠️ [RestartSame] 基音情報が不正:', currentBaseNote, currentBaseFrequency);
+    }
   }
   
   // 違う基音で開始
