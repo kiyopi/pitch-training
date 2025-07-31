@@ -38,6 +38,9 @@ class HarmonicCorrection {
     // デバッグモード（デフォルトで無効化 - パフォーマンス優先）
     this.debugMode = false;
     
+    // ノイズフィルタリング設定
+    this.volumeThreshold = config.volumeThreshold || 0.01; // 音量閾値（0-1）
+    
     // 現在のコンテキスト（音階情報）
     this.currentContext = {};
     
@@ -47,14 +50,18 @@ class HarmonicCorrection {
   /**
    * メイン倍音補正処理
    * @param {number} detectedFreq - 検出された周波数
+   * @param {number} volume - 音量レベル (0-1、省略可能)
    * @param {boolean} enableDebugLog - デバッグログ有効化
    * @returns {number} - 補正後の基音周波数
    */
-  correctHarmonic(detectedFreq, enableDebugLog = false) {
+  correctHarmonic(detectedFreq, volume = 1.0, enableDebugLog = false) {
     if (!detectedFreq || detectedFreq <= 0) {
       return 0;
     }
 
+    // 音量閾値チェック - ノイズフィルタリング
+    const isValidVolume = volume >= this.volumeThreshold;
+    
     // 基音候補を生成
     const candidates = this.fundamentalCandidates.map(ratio => ({
       frequency: detectedFreq * ratio,
@@ -75,16 +82,18 @@ class HarmonicCorrection {
       current.totalScore > best.totalScore ? current : best
     );
 
-    // 安定化処理適用
-    const stabilizedFreq = this.stabilizeFrequency(bestCandidate.frequency);
+    // 安定化処理適用（音量が閾値以上の場合のみ履歴に反映）
+    const stabilizedFreq = this.stabilizeFrequency(bestCandidate.frequency, isValidVolume);
 
     // デバッグログ出力（明示的指定またはデバッグモード時）
     if (enableDebugLog || this.debugMode) {
-      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq, this.currentContext);
+      this.logHarmonicCorrection(detectedFreq, evaluatedCandidates, bestCandidate, stabilizedFreq, this.currentContext, volume, isValidVolume);
     }
 
-    // 次回比較用に保存
-    this.previousFrequency = stabilizedFreq;
+    // 次回比較用に保存（音量が閾値以上の場合のみ）
+    if (isValidVolume) {
+      this.previousFrequency = stabilizedFreq;
+    }
 
     return stabilizedFreq;
   }
@@ -96,9 +105,14 @@ class HarmonicCorrection {
    * @param {Object} bestCandidate - 選択された最適候補
    * @param {number} finalFreq - 最終補正周波数
    * @param {Object} context - 追加コンテキスト情報
+   * @param {number} volume - 音量レベル
+   * @param {boolean} isValidVolume - 音量閾値チェック結果
    */
-  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}) {
+  logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}, volume = 1.0, isValidVolume = true) {
     console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
+    
+    // 音量情報とフィルタリング状況
+    console.log(`🔊 音量: ${(volume * 100).toFixed(1)}% (閾値: ${(this.volumeThreshold * 100).toFixed(1)}%) ${isValidVolume ? '✅ 有効' : '❌ ノイズ除外'}`);
     
     // 検出周波数の音名表示
     const originalNote = this.frequencyToNote(originalFreq);
@@ -235,15 +249,18 @@ class HarmonicCorrection {
    * 周波数安定化システム
    * 急激な変化を抑制し、中央値ベースで外れ値を除去
    * @param {number} currentFreq - 現在の周波数
+   * @param {boolean} isValidVolume - 音量閾値チェック結果（履歴更新判定用）
    * @returns {number} - 安定化された周波数
    */
-  stabilizeFrequency(currentFreq) {
+  stabilizeFrequency(currentFreq, isValidVolume = true) {
     if (!currentFreq || currentFreq <= 0) {
       return 0;
     }
 
-    // 履歴バッファに追加
-    this.harmonicHistory.push(currentFreq);
+    // 音量が閾値以上の場合のみ履歴バッファに追加（ノイズ除外）
+    if (isValidVolume) {
+      this.harmonicHistory.push(currentFreq);
+    }
     
     // 最大長を超えた場合は古いデータを削除
     if (this.harmonicHistory.length > this.maxHistoryLength) {

@@ -305,8 +305,9 @@
     const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
     if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
-      // 統一倍音補正システム適用
-      const correctedFreq = harmonicCorrection.correctHarmonic(pitch);
+      // 統一倍音補正システム適用（音量情報も渡す）
+      const normalizedVolume = Math.min(currentVolume / 100, 1.0); // 0-1に正規化
+      const correctedFreq = harmonicCorrection.correctHarmonic(pitch, normalizedVolume);
       
       // 補正ログは削除 - ユーザーには補正済み結果のみ表示
       
