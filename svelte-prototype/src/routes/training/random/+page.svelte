@@ -461,7 +461,7 @@
 
   // 現在の基音再生（既存の基音を再利用）
   async function playCurrentBaseNote() {
-    if (isPlaying || !sampler || isLoading || !currentBaseNote) return;
+    if (isPlaying || !sampler || $isLoading || !currentBaseNote) return;
     
     // マイク許可が未取得の場合は先に許可を取得
     if (microphoneState !== 'granted') {
@@ -1690,7 +1690,7 @@
       // 少し待ってから基音再生（UI更新後）
       setTimeout(() => {
         console.log('🔄 [RestartSame] playCurrentBaseNote()呼び出し開始');
-        console.log('🔄 [RestartSame] 状態確認 - isPlaying:', isPlaying, 'sampler:', !!sampler, 'isLoading:', isLoading, 'currentBaseNote:', currentBaseNote);
+        console.log('🔄 [RestartSame] 状態確認 - isPlaying:', isPlaying, 'sampler:', !!sampler, 'isLoading:', $isLoading, 'currentBaseNote:', currentBaseNote);
         playCurrentBaseNote();
       }, 100);
     } else {
