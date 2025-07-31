@@ -45,6 +45,13 @@
     "file": "chunks/exports.js",
     "name": "exports"
   },
+  "_index.js": {
+    "file": "chunks/index.js",
+    "name": "index",
+    "imports": [
+      "_ssr.js"
+    ]
+  },
   "_internal.js": {
     "file": "chunks/internal.js",
     "name": "internal",
@@ -88,7 +95,7 @@
     "imports": [
       "_internal.js",
       "_exports.js",
-      "_ssr.js"
+      "_index.js"
     ]
   },
   "src/routes/+layout.svelte": {
@@ -100,7 +107,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.CpnDy4lQ.css"
+      "_app/immutable/assets/_layout.8dNqf0q3.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -202,10 +209,11 @@
       "_PageLayout.js",
       "_Button.js",
       "_PitchDetectionDisplay.js",
-      "_EnhancedScoringEngine.js"
+      "_EnhancedScoringEngine.js",
+      "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DtoctZSh.css"
+      "_app/immutable/assets/_page.BGesZRJQ.css"
     ]
   }
 }
