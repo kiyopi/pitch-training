@@ -1365,6 +1365,22 @@
         console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
         console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+        
+        // **リロード対応**: セッション中断時の状態正規化
+        if ($currentSessionId > 8) {
+          console.warn('⚠️ [SessionStorage] セッションID異常値検出:', $currentSessionId, '→ 8セッション完了扱いに修正');
+          // 8セッション完了状態に強制設定
+          const currentProgress = $trainingProgress;
+          if (currentProgress && !currentProgress.isCompleted && currentProgress.sessionHistory.length >= 8) {
+            currentProgress.isCompleted = true;
+            currentProgress.currentSessionId = 8;
+            // SessionStorageManagerで再保存
+            const { SessionStorageManager } = await import('$lib/utils/SessionStorageManager.ts');
+            const manager = SessionStorageManager.getInstance();
+            manager.saveProgress(currentProgress);
+            console.log('🔧 [SessionStorage] セッション状態を8セッション完了に正規化しました');
+          }
+        }
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
       }
