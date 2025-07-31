@@ -631,22 +631,26 @@
     
     // 8音階評価データを新コンポーネント用に変換
     // 全8音階を固定表示（測定できなかった音も含む）
-    noteResultsForDisplay = SCALE_NAMES.map(noteName => {
+    console.log('🔍 [CompleteSession] scaleEvaluations状態:', scaleEvaluations.length, scaleEvaluations);
+    
+    const tempNoteResults = SCALE_NAMES.map(noteName => {
       const evaluation = scaleEvaluations.find(evaluation => evaluation.stepName === noteName);
       
       if (evaluation) {
         // 測定できた音
-        return {
+        const result = {
           name: evaluation.stepName,
           cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
           targetFreq: evaluation.expectedFrequency,
-          detectedFreq: evaluation.adjustedFrequency ? Math.round(evaluation.adjustedFrequency) : null,
-          diff: evaluation.adjustedFrequency ? Math.round(evaluation.adjustedFrequency - evaluation.expectedFrequency) : null,
+          detectedFreq: evaluation.adjustedFrequency || null,
+          diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
           accuracy: evaluation.accuracy
         };
+        console.log('✅ [CompleteSession] 測定成功:', noteName, result);
+        return result;
       } else {
         // 測定できなかった音
-        return {
+        const result = {
           name: noteName,
           cents: null,
           targetFreq: null,
@@ -654,16 +658,26 @@
           diff: null,
           accuracy: 'notMeasured'
         };
+        console.log('❌ [CompleteSession] 測定失敗:', noteName, result);
+        return result;
       }
     });
     
-    // 統合採点システムデータを生成
-    generateUnifiedScoreData();
+    console.log('📊 [CompleteSession] 生成された結果:', tempNoteResults);
     
-    // 完全版表示用の追加データ生成
-    generateEnhancedScoringData();
-    
-    trainingPhase = 'results';
+    // 非同期で表示データを更新（データ準備完了後）
+    setTimeout(() => {
+      noteResultsForDisplay = tempNoteResults;
+      
+      // 統合採点システムデータを生成
+      generateUnifiedScoreData();
+      
+      // 完全版表示用の追加データ生成
+      generateEnhancedScoringData();
+      
+      trainingPhase = 'results';
+      console.log('🎯 [CompleteSession] 表示更新完了');
+    }, 100);
   }
   
   // 最終採点結果計算
@@ -1016,11 +1030,11 @@
       name: note.name,
       note: note.note || note.name,
       frequency: note.targetFreq || note.expectedFrequency,
-      detectedFrequency: note.detectedFreq !== null && note.detectedFreq !== undefined ? Math.round(note.detectedFreq) : null,
+      detectedFrequency: note.detectedFreq,
       cents: note.cents,
       grade: calculateNoteGrade(note.cents),
       targetFreq: note.targetFreq,
-      diff: note.detectedFreq !== null && note.detectedFreq !== undefined && note.diff !== null ? Math.round(note.diff) : null
+      diff: note.diff
     }));
     
     // localStorage から既存のセッション履歴を取得
@@ -1075,8 +1089,8 @@
         name: note.name,
         cents: note.cents,
         targetFreq: note.targetFreq || note.expectedFrequency,
-        detectedFreq: note.detectedFreq !== null && note.detectedFreq !== undefined ? Math.round(note.detectedFreq) : null,
-        diff: note.detectedFreq !== null && note.detectedFreq !== undefined && note.diff !== null ? Math.round(note.diff) : null,
+        detectedFreq: note.detectedFreq,
+        diff: note.diff,
         accuracy: typeof note.accuracy === 'number' ? note.accuracy : 0
       }));
       
