@@ -99,12 +99,25 @@
   // カルーセル用 - 最新のセッションから開始
   let currentSessionIndex = 0;
   
-  // セッション履歴が初期化された時のみ最新セッションに設定
-  let hasInitialized = false;
-  $: if (scoreData?.sessionHistory && !hasInitialized) {
-    currentSessionIndex = Math.max(0, scoreData.sessionHistory.length - 1);
-    hasInitialized = true;
-    console.log('🔧 [UnifiedScore] Initial session index set to:', currentSessionIndex);
+  // 新しいセッションが追加された時のみ最新セッションに設定
+  let lastSessionCount = 0;
+  $: if (scoreData?.sessionHistory) {
+    const currentSessionCount = scoreData.sessionHistory.length;
+    
+    // 初回表示時、または新しいセッションが追加された時のみ
+    if (lastSessionCount === 0 || currentSessionCount > lastSessionCount) {
+      // ユーザーが最新セッション付近を見ている場合のみ自動移動
+      const isViewingRecent = currentSessionIndex >= lastSessionCount - 1;
+      
+      if (isViewingRecent) {
+        currentSessionIndex = Math.max(0, currentSessionCount - 1);
+        console.log('🔧 [UnifiedScore] Auto-moved to latest session:', currentSessionIndex);
+      } else {
+        console.log('🔧 [UnifiedScore] User viewing older session, keeping position:', currentSessionIndex);
+      }
+    }
+    
+    lastSessionCount = currentSessionCount;
   }
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
