@@ -640,10 +640,10 @@
         // 測定できた音
         const result = {
           name: evaluation.stepName,
-          cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
+          cents: evaluation.adjustedFrequency != null ? Math.round(evaluation.centDifference) : null,
           targetFreq: evaluation.expectedFrequency,
-          detectedFreq: evaluation.adjustedFrequency || null,
-          diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
+          detectedFreq: evaluation.adjustedFrequency != null ? evaluation.adjustedFrequency : null,
+          diff: evaluation.adjustedFrequency != null ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
           accuracy: evaluation.accuracy
         };
         console.log('✅ [CompleteSession] 測定成功:', noteName, result);
