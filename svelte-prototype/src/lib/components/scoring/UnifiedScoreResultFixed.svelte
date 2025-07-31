@@ -343,24 +343,17 @@
               }}
             >
               <div slot="default" let:session let:index>
-                <div class="carousel-session-header">
-                  <h3 class="carousel-session-title">
-                    セッション{index + 1} - 基音: {session.baseNote}
-                  </h3>
-                  <div class="carousel-session-grade grade-{session.grade}">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
-                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
-                  </div>
-                </div>
-                
-                <!-- 8音階詳細表示 -->
+                <!-- 8音階詳細表示（セッション情報統合版） -->
                 {#if session.noteResults}
                   <RandomModeScoreResult 
                     noteResults={session.noteResults}
+                    sessionIndex={index}
+                    baseNote={session.baseNote}
                     className="carousel-score-result"
                   />
                 {:else}
                   <div class="no-details">
+                    セッション{index + 1} - 基音: {session.baseNote}<br>
                     詳細データがありません
                   </div>
                 {/if}
@@ -413,18 +406,9 @@
               }}
             >
               <div slot="default" let:session let:index>
-                <div class="carousel-session-header">
-                  <h3 class="carousel-session-title">
-                    セッション{index + 1} - 基音: {session.baseNote}
-                  </h3>
-                  <div class="carousel-session-grade grade-{session.grade}">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
-                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
-                  </div>
-                </div>
-                
                 <!-- 連続モード用の詳細表示（将来実装） -->
                 <div class="no-details">
+                  セッション{index + 1} - 基音: {session.baseNote}<br>
                   連続モードの詳細表示は準備中です
                 </div>
               </div>
@@ -476,18 +460,9 @@
               }}
             >
               <div slot="default" let:session let:index>
-                <div class="carousel-session-header">
-                  <h3 class="carousel-session-title">
-                    セッション{index + 1} - 半音階: {session.chromaticNote}
-                  </h3>
-                  <div class="carousel-session-grade grade-{session.grade}">
-                    <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="20" />
-                    <span>{sessionGradeDefinitions[session.grade]?.name || '不明'}</span>
-                  </div>
-                </div>
-                
                 <!-- 12音階モード用の詳細表示（将来実装） -->
                 <div class="no-details">
+                  セッション{index + 1} - 半音階: {session.chromaticNote}<br>
                   12音階モードの詳細表示は準備中です
                 </div>
               </div>
@@ -979,20 +954,6 @@
     margin-top: 1rem;
   }
   
-  .carousel-session-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .carousel-session-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
   
   .carousel-session-grade {
     display: flex;

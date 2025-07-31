@@ -8,6 +8,8 @@
   
   export let noteResults = [];
   export let className = '';
+  export let sessionIndex = null; // セッション番号（0ベース）
+  export let baseNote = null; // 基音名
   
   let showDetails = false;
   let showFrequencyDetails = {};
@@ -118,7 +120,11 @@
         {gradeDefinitions[overallGrade].name}
       </h2>
       <p class="grade-subtitle">
-        平均誤差: {averageError}¢
+        {#if sessionIndex !== null && baseNote}
+          セッション{sessionIndex + 1} - 基音: {baseNote}　平均誤差: {averageError}¢
+        {:else}
+          平均誤差: {averageError}¢
+        {/if}
       </p>
       {#if penalty > 0}
         <p class="penalty-notice" transition:fade>
