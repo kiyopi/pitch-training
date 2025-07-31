@@ -1834,7 +1834,29 @@
     
   }
   
-  
+  // 新サイクル開始（8セッション完了後の「最初から挑戦」ボタン用）
+  async function startNewCycle() {
+    console.log('🚀 [StartNewCycle] 8セッション完了後の最初から挑戦開始');
+    
+    try {
+      // 新サイクル開始処理
+      const newCycleStarted = await startNewCycleIfCompleted();
+      
+      if (newCycleStarted) {
+        console.log('✅ [StartNewCycle] 新サイクル開始完了 - ページリロード');
+        // ページリロードして新サイクル状態を完全に反映
+        window.location.reload();
+      } else {
+        console.error('❌ [StartNewCycle] 新サイクル開始失敗');
+        // 失敗時はホームに戻る
+        goHome();
+      }
+    } catch (error) {
+      console.error('❌ [StartNewCycle] 新サイクル開始エラー:', error);
+      // エラー時もホームに戻る
+      goHome();
+    }
+  }
 
   
   // リアクティブシステム
@@ -2101,6 +2123,12 @@
     <!-- 共通アクションボタン（採点結果エリア外） -->
     {#if trainingPhase === 'results'}
       <div class="common-actions">
+        <!-- 8セッション完了時のみ「最初から挑戦」ボタンを表示 -->
+        {#if $isCompleted}
+          <Button class="primary-button" on:click={startNewCycle}>
+            🔄 最初から挑戦
+          </Button>
+        {/if}
         <Button class="secondary-button">
           🎊 SNS共有
         </Button>
@@ -2661,6 +2689,40 @@
     justify-content: center;
     flex-wrap: wrap;
     margin-top: 1.5rem;
+  }
+
+  /* 共通アクションボタンのスタイル */
+  :global(.primary-button) {
+    background-color: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    min-width: 140px !important;
+  }
+
+  :global(.primary-button:hover) {
+    background-color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  :global(.secondary-button) {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    font-weight: 500 !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    min-width: 120px !important;
+  }
+
+  :global(.secondary-button:hover) {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    transform: translateY(-1px) !important;
   }
 
   /* エラー表示 */
