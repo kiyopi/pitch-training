@@ -667,9 +667,12 @@
     
     console.log('📊 [CompleteSession] 生成された結果:', tempNoteResults);
     
+    // Svelte反応性問題の解決: 強制的な反応性更新
+    noteResultsForDisplay = [];  // 一度クリアして反応性を強制発動
+    
     // 非同期で表示データを更新（データ準備完了後）
     setTimeout(() => {
-      noteResultsForDisplay = tempNoteResults;
+      noteResultsForDisplay = [...tempNoteResults];  // 新しい配列として割り当て
       
       // 統合採点システムデータを生成
       generateUnifiedScoreData();
@@ -679,7 +682,8 @@
       
       trainingPhase = 'results';
       console.log('🎯 [CompleteSession] 表示更新完了');
-    }, 100);
+      console.log('🔍 [反応性確認] noteResultsForDisplay:', noteResultsForDisplay);
+    }, 150);  // タイミングを少し延長
   }
   
   // 最終採点結果計算
