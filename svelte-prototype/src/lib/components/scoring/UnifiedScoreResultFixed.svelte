@@ -240,7 +240,7 @@
       </h2>
       
       <p class="grade-description" in:fade={{ delay: 600 }}>
-        {gradeDef.description} - {scoreData?.sessionHistory?.length || 0}セッション完走おめでとうございます！
+        {gradeDef.description}
       </p>
       
       <!-- 8セッション完走時の総合フィードバック -->

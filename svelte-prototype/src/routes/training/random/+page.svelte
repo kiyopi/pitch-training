@@ -1942,32 +1942,22 @@
     <!-- セッション進捗表示 -->
     {#if microphoneState === 'granted' && !$isLoading}
       <div class="session-progress">
-        <div class="progress-info">
-          <span class="session-count">
-            セッション {$currentSessionId} / 8
-          </span>
-          <span class="progress-bar-container">
+        <div class="session-status">
+          <div class="session-info">
+            <span class="completed-count">{$sessionHistory?.length || 0}/8</span>
+            <span class="remaining-text">残り {8 - ($sessionHistory?.length || 0)} セッション</span>
+          </div>
+          <div class="progress-section">
             <div class="progress-bar">
-              <div class="progress-fill" style="width: {$progressPercentage}%"></div>
+              <div class="progress-fill" style="width: {(($sessionHistory?.length || 0) / 8 * 100)}%"></div>
             </div>
-            <span class="progress-text">{Math.round($progressPercentage)}%</span>
-          </span>
+            <span class="progress-text">{Math.round(($sessionHistory?.length || 0) / 8 * 100)}%</span>
+          </div>
         </div>
         
-        {#if !$isCompleted}
-          <div class="next-session-info">
-            <span class="next-base-note">
-              次の基音: <strong>{$nextBaseName}</strong>
-            </span>
-            <span class="remaining-sessions">
-              残り {$remainingSessions} セッション
-            </span>
-          </div>
-        {:else}
+        {#if $isCompleted}
           <div class="completion-info">
-            <span class="completion-message">
-              🎉 8セッション完了！ S-E級評価: <strong>{$overallGrade}級</strong>
-            </span>
+            <span class="completion-grade">S-E級評価: <strong>{$overallGrade}級</strong></span>
           </div>
         {/if}
       </div>
@@ -2947,93 +2937,96 @@
     background: hsl(0 0% 100%);
     border: 1px solid hsl(214.3 31.8% 91.4%);
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px 16px;
     margin: 16px 0;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   }
   
-  .progress-info {
+  .session-status {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 1rem;
   }
   
-  .session-count {
-    font-weight: 600;
-    color: hsl(222.2 84% 4.9%);
-    font-size: 1.1rem;
-  }
-  
-  .progress-bar-container {
+  .session-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 1rem;
+  }
+  
+  .completed-count {
+    font-weight: 700;
+    color: hsl(222.2 84% 4.9%);
+    font-size: 1.125rem;
+  }
+  
+  .remaining-text {
+    color: hsl(215.4 16.3% 46.9%);
+    font-size: 0.875rem;
+  }
+  
+  .progress-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
   
   .progress-bar {
     width: 120px;
-    height: 8px;
-    background: hsl(210 40% 96%);
-    border-radius: 4px;
+    height: 4px;
+    background: hsl(214.3 31.8% 91.4%);
+    border-radius: 2px;
     overflow: hidden;
+    position: relative;
   }
   
   .progress-fill {
     height: 100%;
-    background: hsl(222.2 47.4% 11.2%);
+    background: hsl(217.2 91.2% 59.8%);
     transition: width 0.3s ease;
   }
   
   .progress-text {
-    font-size: 0.9rem;
-    color: hsl(222.2 84% 4.9%);
     font-weight: 500;
-    min-width: 40px;
+    color: hsl(217.2 91.2% 59.8%);
+    font-size: 0.875rem;
+    min-width: 35px;
+    text-align: right;
   }
   
-  .next-session-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    color: hsl(215.4 16.3% 46.9%);
-  }
-  
-  .next-base-note {
-    color: hsl(222.2 84% 4.9%);
-  }
-  
-  .remaining-sessions {
-    color: hsl(25 95% 53%);
-    font-weight: 500;
-  }
   
   .completion-info {
     text-align: center;
+    padding: 4px 0;
   }
   
-  .completion-message {
-    color: hsl(142.1 76.2% 36.3%);
-    font-weight: 600;
-    font-size: 1.1rem;
+  .completion-grade {
+    font-size: 0.875rem;
+    color: hsl(215.4 16.3% 46.9%);
+    font-weight: 500;
+  }
+  
+  .completion-grade strong {
+    color: hsl(222.2 84% 4.9%);
+    font-weight: 700;
   }
   
   @media (max-width: 768px) {
-    .progress-info {
+    .session-status {
       flex-direction: column;
       gap: 8px;
-      align-items: stretch;
-    }
-    
-    .progress-bar-container {
-      justify-content: space-between;
-    }
-    
-    .next-session-info {
-      flex-direction: column;
-      gap: 4px;
       align-items: center;
+    }
+    
+    .session-info {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .progress-section {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>
