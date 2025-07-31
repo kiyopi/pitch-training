@@ -334,9 +334,13 @@
           <!-- セッションカルーセル -->
           <div class="carousel-wrapper">
             <SessionCarousel 
-              bind:currentIndex={currentSessionIndex}
+              currentIndex={currentSessionIndex}
               sessionHistory={scoreData.sessionHistory}
               className="session-detail-carousel"
+              on:sessionChange={(event) => {
+                console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                currentSessionIndex = event.detail.index;
+              }}
             >
               <div slot="default" let:session let:index>
                 <div class="carousel-session-header">
@@ -400,9 +404,13 @@
           <!-- セッションカルーセル -->
           <div class="carousel-wrapper">
             <SessionCarousel 
-              bind:currentIndex={currentSessionIndex}
+              currentIndex={currentSessionIndex}
               sessionHistory={scoreData.sessionHistory}
               className="session-detail-carousel"
+              on:sessionChange={(event) => {
+                console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                currentSessionIndex = event.detail.index;
+              }}
             >
               <div slot="default" let:session let:index>
                 <div class="carousel-session-header">
@@ -459,9 +467,13 @@
           <!-- セッションカルーセル -->
           <div class="carousel-wrapper">
             <SessionCarousel 
-              bind:currentIndex={currentSessionIndex}
+              currentIndex={currentSessionIndex}
               sessionHistory={scoreData.sessionHistory}
               className="session-detail-carousel"
+              on:sessionChange={(event) => {
+                console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                currentSessionIndex = event.detail.index;
+              }}
             >
               <div slot="default" let:session let:index>
                 <div class="carousel-session-header">

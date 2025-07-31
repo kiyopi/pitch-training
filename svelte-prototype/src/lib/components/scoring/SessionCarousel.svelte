@@ -3,10 +3,13 @@
   import { fade, fly } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
+  import { createEventDispatcher } from 'svelte';
   
   export let sessionHistory = [];
   export let currentIndex = 0;
   export let className = '';
+  
+  const dispatch = createEventDispatcher();
   
   // アニメーション用
   const slidePosition = tweened(0, { duration: 300, easing: cubicOut });
@@ -33,7 +36,8 @@
       isValidIndex: index >= 0 && index < sessionHistory.length 
     });
     if (index >= 0 && index < sessionHistory.length) {
-      currentIndex = index;
+      console.log('🔥 [SessionCarousel] Dispatching sessionChange event:', index);
+      dispatch('sessionChange', { index });
       slidePosition.set(-index * 100);
       console.log('✅ [SessionCarousel] Session switched to:', index);
     } else {
