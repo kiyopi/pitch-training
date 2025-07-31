@@ -1006,7 +1006,22 @@
       diff: note.diff
     }));
     
-    // 統合スコアデータを作成（完全版データ構造）
+    // localStorage から既存のセッション履歴を取得
+    const currentProgress = $trainingProgress;
+    const allSessionHistory = currentProgress?.sessionHistory || [];
+    
+    // 現在のセッション結果を追加
+    const currentSessionResult = {
+      timestamp: new Date(),
+      baseNote: baseNote,
+      baseFrequency: baseFrequency,
+      noteResults: convertedNoteResults,
+      measuredNotes: measuredNotes,
+      accuracy: averageAccuracy,
+      grade: calculateSessionGrade(noteResultsForDisplay)
+    };
+    
+    // 統合スコアデータを作成（localStorage履歴 + 現在セッション）
     currentUnifiedScoreData = {
       mode: 'random',
       timestamp: new Date(),
@@ -1018,16 +1033,8 @@
       baseFrequency: baseFrequency,
       noteResults: convertedNoteResults,
       distribution: calculateGradeDistribution(noteResultsForDisplay),
-      // セッション履歴データを追加（実際のトレーニング結果）
-      sessionHistory: [{
-        timestamp: new Date(),
-        baseNote: baseNote,
-        baseFrequency: baseFrequency,
-        noteResults: convertedNoteResults,
-        measuredNotes: measuredNotes,
-        accuracy: averageAccuracy,
-        grade: calculateSessionGrade(noteResultsForDisplay)
-      }]
+      // セッション履歴：既存履歴 + 現在のセッション
+      sessionHistory: [...allSessionHistory, currentSessionResult]
     };
     
     console.log('[UnifiedScore] 統合採点データ生成完了（完全版）:', currentUnifiedScoreData);
