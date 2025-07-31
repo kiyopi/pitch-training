@@ -220,7 +220,7 @@
                 class="w-4 h-4 {gradeDefinitions[grade].color}" 
               />
               <span class="note-name-simple">{note.name}（{note.targetFreq}Hz）</span>
-              <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+              <span class="detection-result">あなた: {note.detectedFreq !== null && note.detectedFreq !== undefined ? note.detectedFreq : '---'}Hz ({note.diff > 0 ? '+' : ''}{note.diff || 0}Hz) {note.cents > 0 ? '+' : ''}{note.cents || 0}¢</span>
               {#if isOutlier}
                 <span class="outlier-badge-simple">
                   {Math.abs(note.cents) > 100 ? '重大' : '注意'}

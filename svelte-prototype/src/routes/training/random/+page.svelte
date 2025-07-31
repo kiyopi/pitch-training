@@ -640,7 +640,7 @@
           name: evaluation.stepName,
           cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
           targetFreq: evaluation.expectedFrequency,
-          detectedFreq: evaluation.adjustedFrequency || null,
+          detectedFreq: evaluation.adjustedFrequency ? Math.round(evaluation.adjustedFrequency) : null,
           diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
           accuracy: evaluation.accuracy
         };
@@ -1016,7 +1016,7 @@
       name: note.name,
       note: note.note || note.name,
       frequency: note.targetFreq || note.expectedFrequency,
-      detectedFrequency: note.detectedFreq,
+      detectedFrequency: note.detectedFreq !== null && note.detectedFreq !== undefined ? Math.round(note.detectedFreq) : null,
       cents: note.cents,
       grade: calculateNoteGrade(note.cents),
       targetFreq: note.targetFreq,
@@ -1075,7 +1075,7 @@
         name: note.name,
         cents: note.cents,
         targetFreq: note.targetFreq || note.expectedFrequency,
-        detectedFreq: note.detectedFreq,
+        detectedFreq: note.detectedFreq !== null && note.detectedFreq !== undefined ? Math.round(note.detectedFreq) : null,
         diff: note.diff,
         accuracy: typeof note.accuracy === 'number' ? note.accuracy : 0
       }));
