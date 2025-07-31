@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { RefreshCw, Play } from 'lucide-svelte';
+  import { RefreshCw, Play, Home } from 'lucide-svelte';
   
   const dispatch = createEventDispatcher();
   
@@ -11,16 +11,16 @@
   
   // ボタン設定
   $: buttonConfig = isCompleted 
-    ? [{ type: 'restart', label: '初めから挑戦', icon: RefreshCw }]
+    ? [
+        { type: 'restart', label: '初めから挑戦', icon: RefreshCw },
+        { type: 'home', label: 'ホーム', icon: Home }
+      ]
     : [
         { type: 'same', label: '同じ基音で再挑戦', icon: RefreshCw },
         { type: 'different', label: '違う基音で開始', icon: Play }
       ];
   
-  // デバッグログ
-  $: if (typeof console !== 'undefined') {
-    console.log(`🔲 [ActionButtons-${position}] isCompleted: ${isCompleted}, buttonConfig:`, buttonConfig.map(b => b.label));
-  }
+  // デバッグ用ログ（本番では削除済み）
   
   // イベント処理
   function handleButtonClick(type) {
@@ -50,13 +50,13 @@
     padding: 0.5rem 1rem;
   }
   
-  /* 位置別マージン調整 */
+  /* 位置別マージン調整 - !important で強制適用 */
   .action-buttons-container.top {
-    margin: 0.25rem 0 0.5rem 0; /* 上0.25rem 下0.5rem */
+    margin: 0.25rem 0 0.5rem 0 !important; /* 上0.25rem 下0.5rem */
   }
   
   .action-buttons-container.bottom {
-    margin: 0.5rem 0; /* 上下とも0.5rem */
+    margin: 0.5rem 0 !important; /* 上下とも0.5rem */
   }
   
   .action-buttons {
@@ -128,6 +128,16 @@
     border-color: hsl(262.1 83.3% 57.8%);
   }
   
+  .action-btn.home {
+    border-color: hsl(215.4 16.3% 46.9%);
+    color: hsl(215.4 16.3% 46.9%);
+  }
+  
+  .action-btn.home:hover {
+    background: hsl(215.4 16.3% 46.9% / 0.1);
+    border-color: hsl(215.4 16.3% 46.9%);
+  }
+  
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
     .action-buttons {
@@ -147,7 +157,7 @@
     }
     
     .action-buttons-container.top {
-      margin: 0.125rem 0 0.25rem 0; /* さらに狭く */
+      margin: 0.125rem 0 0.25rem 0 !important; /* さらに狭く */
     }
   }
 </style>

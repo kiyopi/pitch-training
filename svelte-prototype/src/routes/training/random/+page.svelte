@@ -1898,6 +1898,9 @@
       case 'restart':
         startNewCycle();
         break;
+      case 'home':
+        goHome();
+        break;
       default:
         console.warn('🚫 [ActionButtons] 未知のアクションタイプ:', type);
     }
@@ -2147,23 +2150,7 @@
       {/if}
     {/if}
 
-    <!-- 共通アクションボタン（採点結果エリア外） -->
-    {#if trainingPhase === 'results'}
-      <div class="common-actions">
-        <!-- 8セッション完了時のみ「最初から挑戦」ボタンを表示 -->
-        {#if $isCompleted}
-          <Button class="primary-button" on:click={startNewCycle}>
-            🔄 最初から挑戦
-          </Button>
-        {/if}
-        <Button class="secondary-button">
-          🎊 SNS共有
-        </Button>
-        <Button class="secondary-button" on:click={goHome}>
-          🏠 ホーム
-        </Button>
-      </div>
-    {/if}
+    <!-- 古い共通アクションボタンは削除（ActionButtonsに統一） -->
 
   {:else}
     <!-- Direct Access Error State -->
@@ -2697,48 +2684,7 @@
 
   /* アクションボタン - 新しいActionButtonsコンポーネントで管理 */
   
-  /* 共通アクションボタン */
-  .common-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 1.5rem;
-  }
-
-  /* 共通アクションボタンのスタイル */
-  :global(.primary-button) {
-    background-color: #2563eb !important;
-    color: white !important;
-    border: none !important;
-    font-weight: 600 !important;
-    padding: 0.75rem 1.5rem !important;
-    border-radius: 6px !important;
-    transition: all 0.2s ease !important;
-    min-width: 140px !important;
-  }
-
-  :global(.primary-button:hover) {
-    background-color: #1d4ed8 !important;
-    transform: translateY(-1px) !important;
-  }
-
-  :global(.secondary-button) {
-    background-color: #f8fafc !important;
-    color: #475569 !important;
-    border: 1px solid #e2e8f0 !important;
-    font-weight: 500 !important;
-    padding: 0.75rem 1.5rem !important;
-    border-radius: 6px !important;
-    transition: all 0.2s ease !important;
-    min-width: 120px !important;
-  }
-
-  :global(.secondary-button:hover) {
-    background-color: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
-    transform: translateY(-1px) !important;
-  }
+  /* 古い共通アクションボタンスタイルは削除（ActionButtonsに統一） */
 
   /* エラー表示 */
   .error-content {
