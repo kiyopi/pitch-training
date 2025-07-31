@@ -12,7 +12,7 @@
   export let isActive = false;
   export let className = '';
   export let debugMode = false; // デバッグモード
-  export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用）
+  export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用、削除済み）
 
   // 状態管理（改訂版）
   let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
@@ -52,9 +52,7 @@
   // デバッグ用
   let debugInterval = null;
   
-  // 倍音補正ログ制御用
-  let lastHarmonicLog = '';
-  let lastLogTime = 0;
+  // 倍音補正ログ制御用変数は削除済み
   
   // 表示状態リセット関数（外部から呼び出し可能）
   export function resetDisplayState() {
@@ -72,10 +70,6 @@
     
     // 統一倍音補正モジュールのリセット
     harmonicCorrection.resetHistory();
-    
-    // 倍音補正ログ状態もリセット
-    lastHarmonicLog = '';
-    lastLogTime = 0;
     
     if (debugMode) {
       console.log('🔄 [PitchDetector] Display state reset');
@@ -314,25 +308,7 @@
       // 統一倍音補正システム適用
       const correctedFreq = harmonicCorrection.correctHarmonic(pitch);
       
-      // 【軽量倍音補正ログ】ガイド期間中のみ出力（重複除去・間隔制限付き）
-      if (correctedFreq !== pitch && Math.abs(correctedFreq - pitch) > 5 && trainingPhase === 'guiding') {
-        const ratio = pitch / correctedFreq;
-        const correctionType = ratio > 1.8 && ratio < 2.2 ? '2x' : 
-                              ratio > 2.8 && ratio < 3.2 ? '3x' : 
-                              ratio > 3.8 && ratio < 4.2 ? '4x' : 
-                              ratio > 0.45 && ratio < 0.55 ? '1/2x' : 'other';
-        const noteOrig = frequencyToNote(pitch);
-        const noteCorrected = frequencyToNote(correctedFreq);
-        const logMessage = `🔧 [Harmonic] ${pitch.toFixed(0)}Hz(${noteOrig}) → ${correctedFreq.toFixed(0)}Hz(${noteCorrected}) [${correctionType}補正]`;
-        
-        // 重複除去と500ms間隔制限
-        const currentTime = Date.now();
-        if (logMessage !== lastHarmonicLog && (currentTime - lastLogTime) > 500) {
-          console.log(logMessage);
-          lastHarmonicLog = logMessage;
-          lastLogTime = currentTime;
-        }
-      }
+      // 補正ログは削除 - ユーザーには補正済み結果のみ表示
       
       // 周波数表示を更新
       currentFrequency = Math.round(correctedFreq);
