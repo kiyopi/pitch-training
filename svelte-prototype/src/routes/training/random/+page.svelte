@@ -25,6 +25,7 @@
     SessionStatistics
   } from '$lib/components/scoring';
   import UnifiedScoreResultFixed from '$lib/components/scoring/UnifiedScoreResultFixed.svelte';
+  import ActionButtons from '$lib/components/ActionButtons.svelte';
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
@@ -1883,6 +1884,25 @@
     }
   }
 
+  // ActionButtons統一イベントハンドラ
+  function handleActionButtonClick(event) {
+    const { type } = event.detail;
+    
+    switch (type) {
+      case 'same':
+        restartSameBaseNote();
+        break;
+      case 'different':
+        restartDifferentBaseNote();
+        break;
+      case 'restart':
+        startNewCycle();
+        break;
+      default:
+        console.warn('🚫 [ActionButtons] 未知のアクションタイプ:', type);
+    }
+  }
+
   
   // リアクティブシステム
   $: canStartTraining = microphoneState === 'granted' && !isSamplerLoading && sampler && microphoneHealthy;
@@ -1956,6 +1976,13 @@
         </div>
         
       </div>
+      
+      <!-- 上部アクションボタン -->
+      <ActionButtons 
+        isCompleted={$isCompleted}
+        position="top"
+        on:action={handleActionButtonClick}
+      />
     {/if}
     
     <div class="debug-info">
@@ -2107,24 +2134,12 @@
       {#if !$isCompleted}
         <Card class="main-card">
           <div class="card-content">
-            <div class="action-buttons">
-              <Button 
-                variant="primary"
-                class="restart-button" 
-                disabled={!canRestartSession}
-                on:click={restartSameBaseNote}
-              >
-                同じ基音で再挑戦
-              </Button>
-              <Button 
-                variant="primary"
-                class="new-base-button" 
-                disabled={!canRestartSession}
-                on:click={restartDifferentBaseNote}
-              >
-                違う基音で開始
-              </Button>
-            </div>
+            <!-- 下部アクションボタン -->
+            <ActionButtons 
+              isCompleted={$isCompleted}
+              position="bottom"
+              on:action={handleActionButtonClick}
+            />
           </div>
         </Card>
       {/if}
@@ -2678,19 +2693,7 @@
     font-size: 1.125rem;
   }
 
-  /* アクションボタン */
-  .action-buttons {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  
-  /* 再挑戦系ボタンのスタイリング */
-  :global(.restart-button), :global(.new-base-button) {
-    min-width: 160px !important;
-    font-weight: 500 !important;
-  }
+  /* アクションボタン - 新しいActionButtonsコンポーネントで管理 */
   
   /* 共通アクションボタン */
   .common-actions {
@@ -2792,9 +2795,7 @@
       gap: 0.5rem;
     }
     
-    .action-buttons {
-      flex-direction: column;
-    }
+    /* アクションボタン - ActionButtonsコンポーネントで管理 */
     
     :global(.primary-button), :global(.secondary-button) {
       min-width: 100% !important;
