@@ -12,7 +12,7 @@ class HarmonicCorrection {
     // 統一パラメータ（全モード共通）
     this.vocalRangeMin = config.vocalRangeMin || 130.81;  // C3 (Hz)
     this.vocalRangeMax = config.vocalRangeMax || 1046.50; // C6 (Hz)
-    this.stabilityThreshold = config.stabilityThreshold || 0.1; // 10%変化制限
+    this.stabilityThreshold = config.stabilityThreshold || 0.3; // 30%変化制限（高音域対応）
     
     // 評価ウェイト（全モード統一）
     this.evaluationWeights = {
