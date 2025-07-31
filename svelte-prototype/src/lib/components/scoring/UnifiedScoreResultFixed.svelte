@@ -99,21 +99,40 @@
   // カルーセル用 - 最新のセッションから開始
   let currentSessionIndex = 0;
   
-  // 新しいセッションが追加された時のみ最新セッションに設定
+  // セッション履歴管理のデバッグを強化
   let lastSessionCount = 0;
+  let preventAutoMove = false; // ユーザー操作中のフラグ
+  
   $: if (scoreData?.sessionHistory) {
     const currentSessionCount = scoreData.sessionHistory.length;
     
+    console.log('🔍 [UnifiedScore] Session history update:', {
+      lastSessionCount,
+      currentSessionCount,
+      currentSessionIndex,
+      preventAutoMove,
+      sessionHistory: scoreData.sessionHistory.length
+    });
+    
     // 初回表示時、または新しいセッションが追加された時のみ
     if (lastSessionCount === 0 || currentSessionCount > lastSessionCount) {
-      // ユーザーが最新セッション付近を見ている場合のみ自動移動
-      const isViewingRecent = currentSessionIndex >= lastSessionCount - 1;
+      console.log('🔍 [UnifiedScore] New session detected. Evaluating auto-move...');
       
-      if (isViewingRecent) {
-        currentSessionIndex = Math.max(0, currentSessionCount - 1);
-        console.log('🔧 [UnifiedScore] Auto-moved to latest session:', currentSessionIndex);
+      // ユーザーが手動操作中でない場合のみ自動移動
+      if (!preventAutoMove) {
+        // ユーザーが最新セッション付近を見ている場合のみ自動移動
+        const isViewingRecent = currentSessionIndex >= lastSessionCount - 1;
+        
+        if (isViewingRecent) {
+          const newIndex = Math.max(0, currentSessionCount - 1);
+          console.log('🔧 [UnifiedScore] Auto-moving to latest session:', newIndex);
+          currentSessionIndex = newIndex;
+        } else {
+          console.log('🔧 [UnifiedScore] User viewing older session, keeping position:', currentSessionIndex);
+        }
       } else {
-        console.log('🔧 [UnifiedScore] User viewing older session, keeping position:', currentSessionIndex);
+        console.log('🔧 [UnifiedScore] Preventing auto-move due to user interaction');
+        preventAutoMove = false; // フラグをリセット
       }
     }
     
@@ -331,7 +350,11 @@
                 <button 
                   class="session-bar-button grade-{session.grade}"
                   class:active={index === currentSessionIndex}
-                  on:click={() => currentSessionIndex = index}
+                  on:click={() => {
+                    console.log('🎯 [UnifiedScore] Session bar clicked:', index);
+                    preventAutoMove = true;
+                    currentSessionIndex = index;
+                  }}
                   title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <span class="session-number">{index + 1}</span>
                   <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
@@ -355,6 +378,7 @@
               className="session-detail-carousel"
               on:sessionChange={(event) => {
                 console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                preventAutoMove = true;
                 currentSessionIndex = event.detail.index;
               }}
             >
@@ -394,7 +418,11 @@
                 <button 
                   class="session-bar-button grade-{session.grade}"
                   class:active={index === currentSessionIndex}
-                  on:click={() => currentSessionIndex = index}
+                  on:click={() => {
+                    console.log('🎯 [UnifiedScore] Session bar clicked:', index);
+                    preventAutoMove = true;
+                    currentSessionIndex = index;
+                  }}
                   title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <span class="session-number">{index + 1}</span>
                   <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
@@ -418,6 +446,7 @@
               className="session-detail-carousel"
               on:sessionChange={(event) => {
                 console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                preventAutoMove = true;
                 currentSessionIndex = event.detail.index;
               }}
             >
@@ -448,7 +477,11 @@
                 <button 
                   class="session-bar-button grade-{session.grade}"
                   class:active={index === currentSessionIndex}
-                  on:click={() => currentSessionIndex = index}
+                  on:click={() => {
+                    console.log('🎯 [UnifiedScore] Session bar clicked:', index);
+                    preventAutoMove = true;
+                    currentSessionIndex = index;
+                  }}
                   title="セッション{index + 1}: {sessionGradeDefinitions[session.grade]?.name} (精度{session.accuracy}%)">
                   <span class="session-number">{index + 1}</span>
                   <svelte:component this={sessionGradeDefinitions[session.grade]?.icon || AlertCircle} size="14" />
@@ -472,6 +505,7 @@
               className="session-detail-carousel"
               on:sessionChange={(event) => {
                 console.log('🎭 [UnifiedScore] Session change received:', event.detail.index);
+                preventAutoMove = true;
                 currentSessionIndex = event.detail.index;
               }}
             >
