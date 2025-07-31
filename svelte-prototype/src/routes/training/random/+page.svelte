@@ -1955,11 +1955,6 @@
           </div>
         </div>
         
-        {#if $isCompleted}
-          <div class="completion-info">
-            <span class="completion-grade">S-E級評価: <strong>{$overallGrade}級</strong></span>
-          </div>
-        {/if}
       </div>
     {/if}
     
@@ -2996,21 +2991,6 @@
   }
   
   
-  .completion-info {
-    text-align: center;
-    padding: 4px 0;
-  }
-  
-  .completion-grade {
-    font-size: 0.875rem;
-    color: hsl(215.4 16.3% 46.9%);
-    font-weight: 500;
-  }
-  
-  .completion-grade strong {
-    color: hsl(222.2 84% 4.9%);
-    font-weight: 700;
-  }
   
   @media (max-width: 768px) {
     .session-status {
