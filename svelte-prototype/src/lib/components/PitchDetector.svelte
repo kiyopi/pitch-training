@@ -304,7 +304,7 @@
     // - 極低音域ノイズ（G-1等）は確実に除外
     const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
-    if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
+    if (pitch && clarity > 0.8 && currentVolume > 30 && isValidVocalRange) {
       // 統一倍音補正システム適用（音量情報も渡す）
       const normalizedVolume = Math.min(currentVolume / 100, 1.0); // 0-1に正規化
       const correctedFreq = harmonicCorrection.correctHarmonic(pitch, normalizedVolume);
