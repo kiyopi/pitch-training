@@ -1848,11 +1848,27 @@
         // マイクテスト完了フラグが存在することを確認
         const micTestCompleted = localStorage.getItem('mic-test-completed');
         if (micTestCompleted) {
-          console.log('✅ [StartNewCycle] マイクテスト完了フラグ確認 - マイクテスト経由として遷移');
-          // マイクテスト経由と同じ状態にするためURLパラメータを付けてリロード
-          window.location.href = window.location.pathname + '?from=microphone-test';
+          console.log('✅ [StartNewCycle] マイクテスト完了フラグ確認 - リロードなしで状態リセット');
+          
+          // リロードせずに状態をリセット（マイクテスト経由と同じ状態に）
+          // 1. ページトップにスクロール
+          scrollToTop();
+          
+          // 2. sessionStorageストアを更新（リアクティブに反映）
+          await loadProgress(); // 新しいセッション状態を読み込み
+          
+          // 3. UI状態をsetupに戻す
+          trainingPhase = 'setup';
+          
+          // 4. セッション状態をリセット
+          resetSessionState();
+          
+          // 5. 新しい基音を選択
+          selectRandomBaseNote();
+          
+          console.log('✅ [StartNewCycle] 状態リセット完了 - セッション1/8から再開');
         } else {
-          // フラグがない場合は通常のリロード
+          // フラグがない場合は通常のリロード（ダイレクトアクセス扱い）
           window.location.reload();
         }
       } else {
