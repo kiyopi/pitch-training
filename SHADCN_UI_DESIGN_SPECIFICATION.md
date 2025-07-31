@@ -224,6 +224,50 @@ const SPACING = {
 - **セクション間**: 32px, 48px
 - **ページパディング**: 16px（モバイル）, 24px（デスクトップ）
 
+## 🔧 ActionButtonsマージン調整（2025-07-31追加）
+
+### 問題と解決策
+ActionButtonsコンポーネントとUnifiedScoreResultFixedコンポーネント間のマージンが過大（28px）であったため、以下の3段階調整を実装：
+
+### 実装手順
+```typescript
+// Step 1: UnifiedScoreResultFixed上部padding削減
+.unified-score-result {
+  padding: 0.5rem 1.5rem 1.5rem 1.5rem; /* 上padding: 1.5rem → 0.5rem */
+}
+
+// Step 2: 上部ActionButtons下マージン最適化  
+.top-action-buttons {
+  margin: 0.125rem 0 0.125rem 0 !important; /* 下マージン: 0.25rem → 0.125rem */
+  padding: 0 !important;
+}
+
+// Step 3: グローバルCSS強制適用
+:global(.unified-score-result) {
+  padding-top: 0.25rem !important; /* さらに縮小: 0.5rem → 0.25rem */
+}
+```
+
+### 効果測定
+- **修正前**: ActionButtons下マージン(0.25rem) + UnifiedScoreResult上padding(1.5rem) = **28px**
+- **修正後**: ActionButtons下マージン(0.125rem) + UnifiedScoreResult上padding(0.25rem) = **6px**  
+- **削減率**: **78%削減**
+
+### 対象コンポーネント
+- `/svelte-prototype/src/lib/components/ActionButtons.svelte`
+- `/svelte-prototype/src/lib/components/scoring/UnifiedScoreResultFixed.svelte`
+- `/svelte-prototype/src/routes/training/random/+page.svelte`
+
+### 適用原則
+1. **コンポーネント内部調整**: 基本paddingの最適化
+2. **親ページでの微調整**: 特定レイアウトでのマージン制御
+3. **グローバル強制適用**: !importantでの最終調整
+
+### 技術ポイント
+- **CSS優先順位**: `:global()`セレクタで親からコンポーネントスタイルを上書き
+- **!important活用**: 確実なスタイル適用のための強制フラグ
+- **計算によるマージン設計**: 合計間隔を事前計算して調整値を決定
+
 ## 🎭 シャドウ
 
 ### 標準シャドウ
