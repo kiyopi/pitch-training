@@ -1977,12 +1977,14 @@
         
       </div>
       
-      <!-- 上部アクションボタン -->
-      <ActionButtons 
-        isCompleted={$isCompleted}
-        position="top"
-        on:action={handleActionButtonClick}
-      />
+      <!-- 上部アクションボタン（基音再生画面では非表示） -->
+      {#if trainingPhase === 'results'}
+        <ActionButtons 
+          isCompleted={$isCompleted}
+          position="top"
+          on:action={handleActionButtonClick}
+        />
+      {/if}
     {/if}
     
     <div class="debug-info">
@@ -2130,8 +2132,8 @@
       
       
       
-      <!-- アクションボタン（8セッション完了時は非表示） -->
-      {#if !$isCompleted}
+      <!-- アクションボタン（常時表示） -->
+      {#if trainingPhase === 'results'}
         <Card class="main-card">
           <div class="card-content">
             <!-- 下部アクションボタン -->

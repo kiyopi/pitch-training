@@ -1,4 +1,4 @@
-import { p as getContext } from "./ssr.js";
+import { h as getContext } from "./ssr.js";
 import "@sveltejs/kit/internal";
 import "./exports.js";
 import { o as onMount } from "./ssr2.js";
