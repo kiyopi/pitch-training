@@ -1684,9 +1684,13 @@
     
     // 6. 同じ基音を再生（再挑戦時の重要な機能）
     console.log('🔄 [RestartSame] 同じ基音で再挑戦:', currentBaseNote, currentBaseFrequency + 'Hz');
+    console.log('🔄 [RestartSame] 条件確認 - currentBaseNote:', !!currentBaseNote, 'currentBaseFrequency:', currentBaseFrequency, 'currentBaseFrequency > 0:', currentBaseFrequency > 0);
     if (currentBaseNote && currentBaseFrequency > 0) {
+      console.log('🔄 [RestartSame] 条件クリア - setTimeout開始');
       // 少し待ってから基音再生（UI更新後）
       setTimeout(() => {
+        console.log('🔄 [RestartSame] playCurrentBaseNote()呼び出し開始');
+        console.log('🔄 [RestartSame] 状態確認 - isPlaying:', isPlaying, 'sampler:', !!sampler, 'isLoading:', isLoading, 'currentBaseNote:', currentBaseNote);
         playCurrentBaseNote();
       }, 100);
     } else {
