@@ -1689,6 +1689,22 @@
   
   // 同じ基音で再挑戦
   async function restartSameBaseNote() {
+    // **8セッション完了状態チェック（重要）**
+    if ($isCompleted) {
+      console.warn('🚫 [RestartSame] 8セッション完了状態では再挑戦不可 - 新サイクル開始が必要');
+      
+      // 新サイクル開始を実行
+      const newCycleStarted = await startNewCycleIfCompleted();
+      if (newCycleStarted) {
+        console.log('✅ [RestartSame] 新サイクル開始完了 - セッション1/8から再開');
+        // ページリロードして新サイクル状態を反映
+        window.location.reload();
+      } else {
+        console.error('❌ [RestartSame] 新サイクル開始失敗');
+      }
+      return;
+    }
+    
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
@@ -1717,7 +1733,23 @@
   }
   
   // 違う基音で開始
-  function restartDifferentBaseNote() {
+  async function restartDifferentBaseNote() {
+    // **8セッション完了状態チェック（重要）**
+    if ($isCompleted) {
+      console.warn('🚫 [RestartDifferent] 8セッション完了状態では再挑戦不可 - 新サイクル開始が必要');
+      
+      // 新サイクル開始を実行
+      const newCycleStarted = await startNewCycleIfCompleted();
+      if (newCycleStarted) {
+        console.log('✅ [RestartDifferent] 新サイクル開始完了 - セッション1/8から再開');
+        // ページリロードして新サイクル状態を反映
+        window.location.reload();
+      } else {
+        console.error('❌ [RestartDifferent] 新サイクル開始失敗');
+      }
+      return;
+    }
+    
     // 1. ページトップにスクロール（強化版）
     scrollToTop();
     
@@ -2039,29 +2071,31 @@
       
       
       
-      <!-- アクションボタン -->
-      <Card class="main-card">
-        <div class="card-content">
-          <div class="action-buttons">
-            <Button 
-              variant="primary"
-              class="restart-button" 
-              disabled={!canRestartSession}
-              on:click={restartSameBaseNote}
-            >
-              同じ基音で再挑戦
-            </Button>
-            <Button 
-              variant="primary"
-              class="new-base-button" 
-              disabled={!canRestartSession}
-              on:click={restartDifferentBaseNote}
-            >
-              違う基音で開始
-            </Button>
+      <!-- アクションボタン（8セッション完了時は非表示） -->
+      {#if !$isCompleted}
+        <Card class="main-card">
+          <div class="card-content">
+            <div class="action-buttons">
+              <Button 
+                variant="primary"
+                class="restart-button" 
+                disabled={!canRestartSession}
+                on:click={restartSameBaseNote}
+              >
+                同じ基音で再挑戦
+              </Button>
+              <Button 
+                variant="primary"
+                class="new-base-button" 
+                disabled={!canRestartSession}
+                on:click={restartDifferentBaseNote}
+              >
+                違う基音で開始
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      {/if}
     {/if}
 
     <!-- 共通アクションボタン（採点結果エリア外） -->
