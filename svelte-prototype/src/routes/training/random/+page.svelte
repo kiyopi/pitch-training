@@ -1366,20 +1366,20 @@
         console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
         
-        // **リロード対応**: セッション中断時の状態正規化
-        if ($currentSessionId > 8) {
-          console.warn('⚠️ [SessionStorage] セッションID異常値検出:', $currentSessionId, '→ 8セッション完了扱いに修正');
-          // 8セッション完了状態に強制設定
-          const currentProgress = $trainingProgress;
-          if (currentProgress && !currentProgress.isCompleted && currentProgress.sessionHistory.length >= 8) {
-            currentProgress.isCompleted = true;
-            currentProgress.currentSessionId = 8;
-            // SessionStorageManagerで再保存
-            const { SessionStorageManager } = await import('$lib/utils/SessionStorageManager.ts');
-            const manager = SessionStorageManager.getInstance();
-            manager.saveProgress(currentProgress);
-            console.log('🔧 [SessionStorage] セッション状態を8セッション完了に正規化しました');
-          }
+        // **リロード検出・セッション中断対応**: セッション進行中のリロードを検出
+        if ($currentSessionId > 1 && !$isCompleted) {
+          console.warn('🔄 [SessionStorage] セッション途中でのリロード検出 - セッション1から再開');
+          console.warn('🔄 [SessionStorage] 現在:', $currentSessionId, 'セッション目 → ダイレクトアクセス誘導');
+          
+          // localStorage完全リセット（セッション中断扱い）
+          const { SessionStorageManager } = await import('$lib/utils/SessionStorageManager.ts');
+          const manager = SessionStorageManager.getInstance();
+          localStorage.removeItem('random-training-progress');
+          console.log('🔄 [SessionStorage] localStorage完全リセット完了');
+          
+          // ダイレクトアクセス状態に強制設定（マイクテスト誘導）
+          checkExistingMicrophonePermission();
+          return; // マイクテスト誘導のため処理終了
         }
       } else {
         console.log('📊 [SessionStorage] 新規セッション開始');
