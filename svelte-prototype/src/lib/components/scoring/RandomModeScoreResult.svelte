@@ -51,6 +51,19 @@
   }
   
   // 結果の集計
+  $: if (noteResults.length > 0) {
+    console.log('🔍 Phase1: データ構造確認', noteResults[0]);
+    console.log('🔍 Phase1: 利用可能プロパティ', Object.keys(noteResults[0]));
+    noteResults.forEach((note, i) => {
+      console.log(`🔍 Phase1: Note ${i}:`, {
+        name: note.name,
+        detectedFreq: note.detectedFreq,
+        adjustedFrequency: note.adjustedFrequency,
+        detectedFrequency: note.detectedFrequency
+      });
+    });
+  }
+  
   $: results = noteResults.reduce((acc, note) => {
     const grade = calculateGrade(note.cents);
     acc[grade] = (acc[grade] || 0) + 1;
@@ -226,7 +239,7 @@
                 class="w-4 h-4 {gradeDefinitions[grade].color}" 
               />
               <span class="note-name-simple">{note.name}（{note.targetFreq}Hz）</span>
-              <span class="detection-result">あなた: {note.detectedFreq}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
+              <span class="detection-result">あなた: {note.detectedFreq || note.adjustedFrequency || note.detectedFrequency || 'データなし'}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
               {#if isOutlier}
                 <span class="outlier-badge-simple">
                   {Math.abs(note.cents) > 100 ? '重大' : '注意'}
