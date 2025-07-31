@@ -52,11 +52,11 @@
   
   /* 位置別マージン調整 - !important で強制適用 */
   .action-buttons-container.top {
-    margin: 0.25rem 0 0.5rem 0 !important; /* 上0.25rem 下0.5rem */
+    margin: 0.125rem 0 0.25rem 0 !important; /* より狭く: 上0.125rem 下0.25rem */
   }
   
   .action-buttons-container.bottom {
-    margin: 0.5rem 0 !important; /* 上下とも0.5rem */
+    margin: 0.25rem 0 !important; /* より狭く: 上下とも0.25rem */
   }
   
   .action-buttons {

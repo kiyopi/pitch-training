@@ -1982,11 +1982,13 @@
       
       <!-- 上部アクションボタン（基音再生画面では非表示） -->
       {#if trainingPhase === 'results'}
-        <ActionButtons 
-          isCompleted={$isCompleted}
-          position="top"
-          on:action={handleActionButtonClick}
-        />
+        <div class="top-action-buttons">
+          <ActionButtons 
+            isCompleted={$isCompleted}
+            position="top"
+            on:action={handleActionButtonClick}
+          />
+        </div>
       {/if}
     {/if}
     
@@ -2137,7 +2139,7 @@
       
       <!-- アクションボタン（常時表示） -->
       {#if trainingPhase === 'results'}
-        <Card class="main-card">
+        <Card class="main-card bottom-action-card">
           <div class="card-content">
             <!-- 下部アクションボタン -->
             <ActionButtons 
@@ -2683,6 +2685,22 @@
   }
 
   /* アクションボタン - 新しいActionButtonsコンポーネントで管理 */
+  
+  /* 上部アクションボタンのマージン調整 */
+  .top-action-buttons {
+    margin: 0.25rem 0 0.5rem 0 !important; /* 上0.25rem 下0.5rem */
+  }
+  
+  /* 下部アクションボタンカードのマージン調整 */
+  :global(.bottom-action-card) {
+    margin-top: 0.75rem !important;  /* 上マージン縮小 */
+    margin-bottom: 0.75rem !important; /* 下マージン縮小 */
+  }
+  
+  /* 下部アクションボタンカード内のpadding調整 */
+  :global(.bottom-action-card .card-content) {
+    padding: 0.5rem !important; /* カード内padding縮小 */
+  }
   
   /* 古い共通アクションボタンスタイルは削除（ActionButtonsに統一） */
 
