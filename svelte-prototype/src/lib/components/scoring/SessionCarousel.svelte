@@ -16,11 +16,28 @@
   $: hasNext = currentIndex < sessionHistory.length - 1;
   $: hasPrev = currentIndex > 0;
   
+  // デバッグ：ナビゲーション状態をログ出力
+  $: console.log('🔍 [SessionCarousel] Navigation state:', { 
+    currentIndex, 
+    sessionHistoryLength: sessionHistory.length, 
+    hasNext, 
+    hasPrev 
+  });
+  
   // ナビゲーション関数
   function goToSession(index) {
+    console.log('🎯 [SessionCarousel] goToSession called:', { 
+      targetIndex: index, 
+      currentIndex, 
+      sessionHistoryLength: sessionHistory.length,
+      isValidIndex: index >= 0 && index < sessionHistory.length 
+    });
     if (index >= 0 && index < sessionHistory.length) {
       currentIndex = index;
       slidePosition.set(-index * 100);
+      console.log('✅ [SessionCarousel] Session switched to:', index);
+    } else {
+      console.log('❌ [SessionCarousel] Invalid session index:', index);
     }
   }
   
@@ -36,8 +53,12 @@
   }
   
   function prevSession() {
+    console.log('🔄 [SessionCarousel] prevSession clicked:', { currentIndex, hasPrev, sessionHistory: sessionHistory.length });
     if (hasPrev) {
+      console.log('✅ [SessionCarousel] Moving to previous session:', currentIndex - 1);
       goToSession(currentIndex - 1);
+    } else {
+      console.log('⚠️ [SessionCarousel] Cannot go to previous session - at first session');
     }
   }
   
