@@ -39,7 +39,7 @@ class HarmonicCorrection {
     this.debugMode = false;
     
     // ノイズフィルタリング設定
-    this.volumeThreshold = config.volumeThreshold || 0.01; // 音量閾値（0-1）
+    this.volumeThreshold = config.volumeThreshold || 0.02; // 音量閾値（0-1）を2%に厳格化
     
     // 現在のコンテキスト（音階情報）
     this.currentContext = {};
