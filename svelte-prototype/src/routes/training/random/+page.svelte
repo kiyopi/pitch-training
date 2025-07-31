@@ -1398,6 +1398,19 @@
           console.warn('⚠️ AudioManagerリソース取得失敗（後で再試行）:', error);
         }
       }
+      
+      // PitchDetectorの明示的初期化（マイクテスト経由時）
+      await new Promise(resolve => setTimeout(resolve, 100)); // DOM更新待ち
+      if (pitchDetectorComponent && !pitchDetectorComponent.getIsInitialized()) {
+        try {
+          console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
+          await pitchDetectorComponent.initializeWithExternalAudioContext();
+          console.log('✅ [RandomTraining] PitchDetector初期化完了');
+        } catch (error) {
+          console.warn('⚠️ PitchDetector初期化失敗:', error);
+        }
+      }
+      
       // returnを削除 - PitchDetectorコンポーネントのレンダリングを許可
     } else {
       // ダイレクトアクセス時のみマイク許可状態確認
