@@ -337,7 +337,7 @@
     dispatch('pitchUpdate', {
       frequency: currentFrequency,
       note: detectedNote,
-      volume: currentVolume,
+      volume: displayVolume, // displayVolumeに統一（無音時は0）
       rawVolume: displayVolume,
       clarity: pitchClarity
     });
