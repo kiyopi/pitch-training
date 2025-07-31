@@ -579,7 +579,7 @@
 
 <style>
   .unified-score-result {
-    padding: 1.5rem;
+    padding: 0.5rem 1.5rem 1.5rem 1.5rem; /* 上padding縮小: 1.5rem → 0.5rem */
   }
   
   .grade-display {

@@ -2688,7 +2688,7 @@
   
   /* 上部アクションボタンのマージン調整 - 最優先適用 */
   .top-action-buttons {
-    margin: 0.125rem 0 0.25rem 0 !important; /* 極小マージン */
+    margin: 0.125rem 0 0.125rem 0 !important; /* 下マージンをさらに縮小: 0.25rem → 0.125rem */
     padding: 0 !important;
   }
   
@@ -2714,6 +2714,11 @@
   :global(.action-buttons-container.bottom) {
     margin: 0 !important; 
     padding: 0.25rem 1rem !important;
+  }
+  
+  /* UnifiedScoreResultFixed上部padding強制削減 */
+  :global(.unified-score-result) {
+    padding-top: 0.25rem !important; /* さらに縮小: 0.5rem → 0.25rem */
   }
   
   /* 古い共通アクションボタンスタイルは削除（ActionButtonsに統一） */
