@@ -48,7 +48,8 @@
     loadProgress,
     saveSessionResult,
     resetProgress,
-    createNewProgress
+    createNewProgress,
+    startNewCycleIfCompleted
   } from '$lib/stores/sessionStorage';
   
   // Force GitHub Actions trigger: 2025-07-29 06:30
@@ -1381,6 +1382,17 @@
         console.log('📊 [SessionStorage] 現在のセッション:', $currentSessionId, '/ 8');
         console.log('📊 [SessionStorage] 次の基音:', $nextBaseNote, '(', $nextBaseName, ')');
         console.log('📊 [SessionStorage] 完了状況:', $isCompleted ? '8セッション完了' : `残り${$remainingSessions}セッション`);
+        
+        // **8セッション完了後の新サイクル自動開始チェック**
+        if ($isCompleted) {
+          console.log('🔄 [SessionStorage] 8セッション完了検出 - 新サイクル開始処理');
+          const newCycleStarted = await startNewCycleIfCompleted();
+          if (newCycleStarted) {
+            console.log('✅ [SessionStorage] 新サイクル開始完了 - セッション1/8から再開');
+          } else {
+            console.warn('⚠️ [SessionStorage] 新サイクル開始処理が失敗');
+          }
+        }
         
         // **リロード検出・セッション中断対応**: セッション進行中のリロードを検出
         if ($currentSessionId > 1 && !$isCompleted) {

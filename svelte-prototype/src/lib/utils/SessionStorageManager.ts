@@ -206,15 +206,18 @@ export class SessionStorageManager {
         progress.usedBaseNotes.push(sessionResult.baseNote);
       }
 
-      // 次セッションID更新
-      progress.currentSessionId = Math.min(progress.currentSessionId + 1, 9);
-
       // 8セッション完了チェック
       if (progress.sessionHistory.length >= 8) {
         progress.isCompleted = true;
         progress.overallGrade = this.calculateOverallGrade(progress.sessionHistory);
         progress.overallAccuracy = this.calculateOverallAccuracy(progress.sessionHistory);
         progress.totalPlayTime = progress.sessionHistory.reduce((sum, session) => sum + session.duration, 0);
+        // 8セッション完了時はセッションIDを増加させない
+        console.info('[SessionStorageManager] 8セッション完了: isCompleted=true, currentSessionId維持');
+      } else {
+        // 8セッション未完了の場合のみセッションID更新
+        progress.currentSessionId = progress.currentSessionId + 1;
+        console.info(`[SessionStorageManager] 次セッションに進行: ${progress.currentSessionId}`);
       }
 
       // 保存
@@ -494,5 +497,47 @@ export class SessionStorageManager {
    */
   public getBaseNoteName(baseNote: BaseNote): string {
     return BASE_NOTE_NAMES[baseNote] || baseNote;
+  }
+
+  /**
+   * 8セッション完了後の新サイクル開始（自動リセット）
+   */
+  public startNewCycleIfCompleted(): boolean {
+    const progress = this.progress || this.loadProgress();
+    
+    if (progress && progress.isCompleted && progress.sessionHistory.length >= 8) {
+      console.info('[SessionStorageManager] 8セッション完了検出: 新サイクル開始');
+      
+      // 統合評価データをバックアップ
+      const completedCycleData = this.generateUnifiedScoreData();
+      if (completedCycleData) {
+        this.createCompletedCycleBackup(completedCycleData);
+      }
+      
+      // 新しい進行状況を作成
+      const newProgress = this.createNewProgress();
+      console.info('[SessionStorageManager] 新サイクル開始完了: セッション1/8から再開');
+      
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * 完了サイクルのバックアップ作成
+   */
+  private createCompletedCycleBackup(completedData: UnifiedScoreData): void {
+    try {
+      const backupKey = `completed-cycle-${Date.now()}`;
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        cycleData: completedData
+      };
+      localStorage.setItem(backupKey, JSON.stringify(backupData));
+      console.info('[SessionStorageManager] 完了サイクルバックアップ作成:', backupKey);
+    } catch (error) {
+      console.warn('[SessionStorageManager] 完了サイクルバックアップ失敗:', error);
+    }
   }
 }

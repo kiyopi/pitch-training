@@ -347,6 +347,34 @@ export async function restoreFromBackup(): Promise<boolean> {
   }, 'Failed to restore from backup') !== null;
 }
 
+/**
+ * 8セッション完了後の新サイクル自動開始
+ */
+export async function startNewCycleIfCompleted(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const success = manager.startNewCycleIfCompleted();
+    
+    if (success) {
+      // ストア再初期化
+      const newProgress = manager.loadProgress();
+      if (newProgress) {
+        trainingProgress.set(newProgress);
+        currentSessionId.set(1);
+        
+        const nextNote = manager.getNextBaseNote();
+        nextBaseNote.set(nextNote);
+        nextBaseName.set(manager.getBaseNoteName(nextNote));
+        
+        console.info('[SessionStorage] 新サイクル開始: 8セッション完了から自動リセット');
+        return true;
+      }
+    }
+    
+    return false;
+  }, 'Failed to start new cycle') !== null;
+}
+
 // =============================================================================
 // ユーティリティ関数
 // =============================================================================
