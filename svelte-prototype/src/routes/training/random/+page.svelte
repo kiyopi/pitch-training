@@ -1698,16 +1698,10 @@
     resetSessionState();
     // 注意: currentBaseNote と currentBaseFrequency は保持される
     
-    // 6. 同じ基音を再生（再挑戦時の重要な機能 - トレーニング開始なし）
+    // 6. 基音情報保持（再生はユーザー操作まで待機）
     console.log('🔄 [RestartSame] 同じ基音で再挑戦:', currentBaseNote, currentBaseFrequency + 'Hz');
-    console.log('🔄 [RestartSame] 条件確認 - currentBaseNote:', !!currentBaseNote, 'currentBaseFrequency:', currentBaseFrequency, 'currentBaseFrequency > 0:', currentBaseFrequency > 0);
-    if (currentBaseNote && currentBaseFrequency > 0) {
-      console.log('🔄 [RestartSame] 条件クリア - playBaseNoteOnly()呼び出し');
-      // 基音のみ再生（トレーニング開始しない）
-      playBaseNoteOnly();
-    } else {
-      console.warn('⚠️ [RestartSame] 基音情報が不正:', currentBaseNote, currentBaseFrequency);
-    }
+    console.log('🔄 [RestartSame] 基音情報保持完了 - ユーザー操作待機');
+    // 注意: 基音は自動再生せず、ユーザーが「基音を聞く」ボタンを押すまで待機
   }
   
   // 違う基音で開始
