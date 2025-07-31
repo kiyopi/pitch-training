@@ -641,7 +641,7 @@
           cents: evaluation.adjustedFrequency ? Math.round(evaluation.centDifference) : null,
           targetFreq: evaluation.expectedFrequency,
           detectedFreq: evaluation.adjustedFrequency ? Math.round(evaluation.adjustedFrequency) : null,
-          diff: evaluation.adjustedFrequency ? evaluation.adjustedFrequency - evaluation.expectedFrequency : null,
+          diff: evaluation.adjustedFrequency ? Math.round(evaluation.adjustedFrequency - evaluation.expectedFrequency) : null,
           accuracy: evaluation.accuracy
         };
       } else {
@@ -1020,7 +1020,7 @@
       cents: note.cents,
       grade: calculateNoteGrade(note.cents),
       targetFreq: note.targetFreq,
-      diff: note.diff
+      diff: note.detectedFreq !== null && note.detectedFreq !== undefined && note.diff !== null ? Math.round(note.diff) : null
     }));
     
     // localStorage から既存のセッション履歴を取得
@@ -1076,7 +1076,7 @@
         cents: note.cents,
         targetFreq: note.targetFreq || note.expectedFrequency,
         detectedFreq: note.detectedFreq !== null && note.detectedFreq !== undefined ? Math.round(note.detectedFreq) : null,
-        diff: note.diff,
+        diff: note.detectedFreq !== null && note.detectedFreq !== undefined && note.diff !== null ? Math.round(note.diff) : null,
         accuracy: typeof note.accuracy === 'number' ? note.accuracy : 0
       }));
       
