@@ -1400,11 +1400,11 @@
       }
       
       // PitchDetectorの明示的初期化（マイクテスト経由時）
-      await new Promise(resolve => setTimeout(resolve, 100)); // DOM更新待ち
-      if (pitchDetectorComponent && !pitchDetectorComponent.getIsInitialized()) {
+      await new Promise(resolve => setTimeout(resolve, 300)); // DOM更新・参照取得待ち
+      if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
         try {
           console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
-          await pitchDetectorComponent.initializeWithExternalAudioContext();
+          await pitchDetectorComponent.initialize();
           console.log('✅ [RandomTraining] PitchDetector初期化完了');
         } catch (error) {
           console.warn('⚠️ PitchDetector初期化失敗:', error);
