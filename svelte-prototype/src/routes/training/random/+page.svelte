@@ -647,6 +647,8 @@
           accuracy: evaluation.accuracy
         };
         console.log('✅ [CompleteSession] 測定成功:', noteName, result);
+        console.log('🔍 [DEBUG] evaluation.adjustedFrequency:', evaluation.adjustedFrequency);
+        console.log('🔍 [DEBUG] result.detectedFreq:', result.detectedFreq);
         return result;
       } else {
         // 測定できなかった音
