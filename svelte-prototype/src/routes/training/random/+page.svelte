@@ -1392,24 +1392,64 @@
     const measuredCount = results.filter(n => n.accuracy !== 'notMeasured').length;
     const averageAccuracy = currentUnifiedScoreData?.averageAccuracy || 0;
     
-    let type, primary, summary;
+    // S-E級判定に基づいたメッセージ生成
+    let type, primary, summary, icon;
     
-    if (averageAccuracy >= 85) {
-      type = 'excellent';
-      primary = 'すばらしい演奏でした！';
-      summary = '高い精度で音程を捉えています。この調子で練習を続けてください。';
-    } else if (averageAccuracy >= 70) {
-      type = 'improvement';
-      primary = '良い進歩が見られます！';
-      summary = '音程の認識精度が向上しています。継続的な練習で更なる向上が期待できます。';
-    } else if (averageAccuracy >= 50) {
-      type = 'practice';
-      primary = '練習を重ねましょう';
-      summary = '基本的な音程感覚は身についています。より正確な音程を意識して練習してみてください。';
-    } else {
-      type = 'encouragement';
-      primary = '継続が大切です';
-      summary = '音程トレーニングは継続が重要です。焦らずに基本から練習していきましょう。';
+    // unifiedGradeから適切なメッセージを生成（統計値を含む）
+    const grade = currentUnifiedScoreData?.unifiedGrade || 'E';
+    const sessionHistory = sessionProgressStore || [];
+    const totalSessions = sessionHistory.length;
+    
+    // 統計値の計算
+    let excellentCount = 0, goodCount = 0, passCount = 0;
+    sessionHistory.forEach(session => {
+      if (session.grade === 'excellent') excellentCount++;
+      else if (session.grade === 'good') goodCount++;
+      else if (session.grade === 'pass') passCount++;
+    });
+    
+    const excellentRate = totalSessions > 0 ? Math.round((excellentCount / totalSessions) * 100) : 0;
+    const goodRate = totalSessions > 0 ? Math.round(((excellentCount + goodCount + passCount) / totalSessions) * 100) : 0;
+    const passRate = totalSessions > 0 ? Math.round(((excellentCount + goodCount + passCount) / totalSessions) * 100) : 0;
+    
+    switch (grade) {
+      case 'S':
+        type = 'excellent';
+        primary = '音楽家レベルの相対音感を達成！';
+        summary = `優秀率${excellentRate}%超えの実力を証明されました。`;
+        icon = 'Trophy';
+        break;
+      case 'A':
+        type = 'excellent';
+        primary = 'エキスパートレベル到達！';
+        summary = `優秀率${excellentRate}%の安定した音感能力です。`;
+        icon = 'Crown';
+        break;
+      case 'B':
+        type = 'improvement';
+        primary = 'プロフィシエント級達成！';
+        summary = `良好率${goodRate}%の確実な進歩を示しています。`;
+        icon = 'Star';
+        break;
+      case 'C':
+        type = 'improvement';
+        primary = 'アドバンス級到達！';
+        summary = `合格率${passRate}%で着実に成長中です。`;
+        icon = 'Award';
+        break;
+      case 'D':
+        type = 'practice';
+        primary = '継続練習で必ず上達！';
+        summary = `現在の合格率${passRate}%から目標70%へ向けて練習を続けましょう。`;
+        icon = 'Target';
+        break;
+      case 'E':
+      default:
+        type = 'encouragement';
+        primary = 'スタート地点から成長開始！';
+        summary = '練習量を増やして40%突破を目指しましょう。基礎から着実に積み上げていきます。';
+        icon = 'TrendingUp';
+        break;
     }
     
     return {
