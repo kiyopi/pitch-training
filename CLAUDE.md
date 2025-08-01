@@ -685,15 +685,22 @@ echo "⚠️ ユーザー承認なしにマージ禁止"
 - **使用ブランチ**: direct-access-fix-clean-final（継続使用）
 - **重要な学習**: localStorage + Svelteストア両方のリセットが必要、リロード = セッション中断扱いが正しい仕様
 
-### 現在の状況（2025-07-31完了）
-- **安定版**: e614fc2 (localStorage実装) → direct-access-fix-clean-final (36468cc - 最新安定版)
-- **現在のブランチ**: direct-access-fix-clean-final
+### 2025-08-01 **技術誤差対応評価システム改善開始**
+- **重要な洞察**: 技術誤差（±20-50¢）により1セッション外れ値ペナルティが過剰作動
+- **改善方針決定**: 1セッション評価簡素化 + 8セッション総合評価での統計的誤差吸収
+- **既存資産活用**: S-E級統合評価、IntervalProgressTracker、ConsistencyGraph等を活用
+- **設計戦略**: 外れ値判定を8セッション後送りし、統計的手法で技術誤差と真の実力を分離
+- **期待効果**: 継続モチベーション向上、公正な評価実現、科学的根拠による納得感
+
+### 現在の状況（2025-08-01更新）
+- **安定版**: e614fc2 (localStorage実装) → stable-rollback-002 (d72dfaf - 評価統合完了版)
+- **現在のブランチ**: stable-rollback-002 
 - **開発環境**: SvelteKit本格開発（/svelte-prototype → メイン開発）
-- **対象ファイル**: /src/routes/training/random/+page.svelte
+- **対象ファイル**: 評価システム関連複数ファイル
 - **技術スタック**: SvelteKit + Tone.js + Salamander Grand Piano
 - **デプロイ状況**: GitHub Pages (https://kiyopi.github.io/pitch-training/training/random)
-- **開発ステータス**: ✅ 全問題完全解決 - ダイレクトアクセス・PitchDetector初期化・セッション途中リロード対応完了
-- **最終確認**: セッション途中リロード → localStorage完全削除 → マイクテスト経由 → セッション1再開の正常動作確認済み
+- **開発ステータス**: ✅ 評価・表示システム統合完了、🔄 技術誤差対応評価改善実装中
+- **直近のコミット**: d72dfaf - 評価システム完全統一: ノイズリダクション追加+ユーザー切り替えUI削除
 
 ---
 
