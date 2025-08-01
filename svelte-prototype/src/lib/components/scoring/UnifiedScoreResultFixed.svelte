@@ -545,6 +545,86 @@
     };
   }
 
+  // 基音別分析データ生成（新規追加）
+  function analyzeByBaseNote(sessionHistory) {
+    const baseNoteGroups = {};
+    
+    sessionHistory.forEach(session => {
+      const baseNote = session.baseNote || 'Unknown';
+      if (!baseNoteGroups[baseNote]) {
+        baseNoteGroups[baseNote] = {
+          sessions: [],
+          grades: [],
+          gradeCount: { excellent: 0, good: 0, pass: 0, needWork: 0 },
+          passRate: 0,
+          averageAccuracy: 0
+        };
+      }
+      
+      baseNoteGroups[baseNote].sessions.push(session);
+      baseNoteGroups[baseNote].grades.push(session.grade);
+      baseNoteGroups[baseNote].gradeCount[session.grade]++;
+      
+      // 合格率計算（±40¢以内）
+      if (session.noteResults) {
+        const passCount = session.noteResults.filter(note => 
+          Math.abs(note.cents || 0) <= 40
+        ).length;
+        baseNoteGroups[baseNote].passRate = (passCount / session.noteResults.length) * 100;
+      }
+      
+      // 精度データがあれば追加
+      if (session.accuracy) {
+        baseNoteGroups[baseNote].averageAccuracy = session.accuracy;
+      }
+    });
+    
+    // 得意・苦手基音の判定
+    let bestBaseNote = null;
+    let worstBaseNote = null;
+    let bestScore = -1;
+    let worstScore = 101;
+    
+    const gradeToScore = { 'excellent': 95, 'good': 80, 'pass': 65, 'needWork': 30 };
+    
+    Object.entries(baseNoteGroups).forEach(([baseNote, data]) => {
+      const gradeScore = gradeToScore[data.grades[0]] || 0;
+      if (gradeScore > bestScore) {
+        bestScore = gradeScore;
+        bestBaseNote = baseNote;
+      }
+      if (gradeScore < worstScore) {
+        worstScore = gradeScore;
+        worstBaseNote = baseNote;
+      }
+    });
+    
+    return {
+      groups: baseNoteGroups,
+      bestBaseNote,
+      worstBaseNote,
+      consistency: calculateBaseNoteConsistency(baseNoteGroups)
+    };
+  }
+  
+  // 基音間の一貫性計算
+  function calculateBaseNoteConsistency(baseNoteGroups) {
+    const gradeToScore = { 'excellent': 4, 'good': 3, 'pass': 2, 'needWork': 1 };
+    const scores = Object.values(baseNoteGroups).map(group => 
+      gradeToScore[group.grades[0]] || 1
+    );
+    
+    if (scores.length < 2) return 100;
+    
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // 標準偏差が小さいほど一貫性が高い（0-1を0-100%に変換）
+    const consistency = Math.max(0, 100 - (stdDev * 50));
+    return Math.round(consistency);
+  }
+
   // 総合統計データ生成
   function generateComprehensiveStatistics(sessionHistory, allCentData, robustStats) {
     console.log('\n=== DEBUG: セッション統計計算開始 ===');
@@ -732,6 +812,11 @@
     }
     
     console.log('📈 改善率:', improvementRate + '%');
+    
+    // 基音別分析の実行
+    const baseNoteAnalysis = analyzeByBaseNote(sessionHistory);
+    console.log('🎵 基音別分析:', baseNoteAnalysis);
+    
     console.log('=== DEBUG: セッション統計計算終了 ===\n');
 
     // 最高・最低スコア計算の修正
@@ -753,6 +838,8 @@
       maxConsecutiveCorrect,
       improvementRate,
       improvementText, // グレード変化の説明
+      // 基音別分析結果（新規追加）
+      baseNoteAnalysis,
       // デバッグ用追加情報
       sessionCount: sessionHistory.length,
       validScoreCount: sessionScores.length,
@@ -1456,11 +1543,20 @@
                         </span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-label">グレード向上:</span>
-                        <span class="stat-value text-blue-600">
-                          {#if detailedAnalysisData.comprehensiveStatistics.improvementText}
-                            {detailedAnalysisData.comprehensiveStatistics.improvementText}
-                            ({detailedAnalysisData.comprehensiveStatistics.improvementRate > 0 ? '+' : ''}{detailedAnalysisData.comprehensiveStatistics.improvementRate}%)
+                        <span class="stat-label">基音別成績:</span>
+                        <span class="stat-value">
+                          {#if detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis}
+                            <span class="text-green-600">
+                              得意: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.bestBaseNote}
+                            </span>
+                            /
+                            <span class="text-red-600">
+                              苦手: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.worstBaseNote}
+                            </span>
+                            <br>
+                            <span class="text-sm text-gray-600">
+                              一貫性: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.consistency}%
+                            </span>
                           {:else}
                             -
                           {/if}
