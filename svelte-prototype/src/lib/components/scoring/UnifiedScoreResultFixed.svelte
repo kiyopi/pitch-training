@@ -191,9 +191,232 @@
     activeTab = tab;
   }
   
-  // セッション履歴からS-E級統合評価を算出
+  // 📋 MODE_SPECIFICATIONS: 仕様書通りのモード定義
+  const MODE_SPECIFICATIONS = {
+    random: {
+      name: 'ランダム基音モード',
+      maxSessions: 8,
+      notesPerSession: 8,
+      totalNotes: 64,
+      scaleType: 'diatonic',
+      difficulty: 'basic',
+      evaluationFocus: '相対音感基礎'
+    },
+    
+    continuous: {
+      name: '連続チャレンジモード', 
+      maxSessions: 8,
+      notesPerSession: 8,
+      totalNotes: 64,
+      scaleType: 'diatonic',
+      difficulty: 'intermediate',
+      evaluationFocus: '持続的集中力'
+    },
+    
+    chromatic: {
+      name: '12音階モード',
+      maxSessions: 12,
+      notesPerSession: 12,
+      totalNotes: 144,
+      scaleType: 'chromatic',
+      difficulty: 'advanced',
+      evaluationFocus: '半音階精密認識'
+    }
+  };
+
+  // 🔬 Phase 1-1: 適応的パラメータ取得（仕様書準拠）
+  function getAdaptiveThresholds(mode) {
+    const spec = MODE_SPECIFICATIONS[mode] || MODE_SPECIFICATIONS.random;
+    
+    return {
+      // データ量基準
+      minDataThreshold: spec.notesPerSession,     // 最小分析データ数
+      mediumDataRatio: 0.25,                      // 中信頼度データ比率
+      highDataRatio: 0.5,                         // 高信頼度データ比率
+      
+      // 完走ボーナス基準
+      completionThreshold: 0.8,                   // 80%完走でボーナス
+      masteryThreshold: 1.0,                      // 100%完走でマスター認定
+      
+      // 精度補正係数
+      basicPrecisionFactor: 1.0,                  // 基本補正なし
+      enhancedPrecisionFactor: mode === 'chromatic' ? 1.2 : 1.1,  // モード別強化
+      masteryBonus: mode === 'chromatic' ? 1.3 : 1.2              // 完走ボーナス
+    };
+  }
+
+  // 🔬 Phase 1-2: ハイブリッド統計分析（仕様書準拠 + shadcn/ui想定）
+  function performHybridStatisticalAnalysis(sessionHistory, mode) {
+    const thresholds = getAdaptiveThresholds(mode);
+    const spec = MODE_SPECIFICATIONS[mode] || MODE_SPECIFICATIONS.random;
+    
+    // Step 1: 全centデータ収集
+    const allCentData = extractAllCentData(sessionHistory);
+    
+    // Step 2: データ充足性判定
+    const dataRatio = allCentData.length / spec.totalNotes;
+    const progressRatio = sessionHistory.length / spec.maxSessions;
+    
+    if (allCentData.length < thresholds.minDataThreshold) {
+      return createInsufficientDataResult();
+    }
+    
+    // Step 3: 基本統計計算
+    const stats = calculateBasicStatistics(allCentData);
+    
+    // Step 4: 外れ値検出（3σ法則）
+    const outliers = detectOutliers(allCentData, stats);
+    
+    // Step 5: 堅牢平均計算（外れ値除外）
+    const robustStats = calculateRobustStatistics(allCentData, outliers);
+    
+    // Step 6: 信頼度レベル判定
+    const confidenceLevel = determineConfidenceLevel(dataRatio, outliers.rate);
+    
+    // Step 7: モード特化補正適用
+    const correctedAccuracy = applyModeSpecificCorrection(
+      robustStats.accuracy, 
+      mode, 
+      progressRatio, 
+      confidenceLevel
+    );
+    
+    return {
+      // 基本指標
+      totalMeasurements: allCentData.length,
+      averageError: Math.round(robustStats.mean),
+      technicalErrorRate: Math.round((stats.stdDev / 50) * 100),
+      
+      // 品質指標
+      confidenceLevel: confidenceLevel,
+      outlierCount: outliers.count,
+      outlierRate: outliers.rate,
+      
+      // 補正結果
+      robustAccuracy: Math.round(correctedAccuracy),
+      correctionFactor: calculateCorrectionFactor(mode, progressRatio, confidenceLevel),
+      
+      // メタデータ
+      measurement: 'complete',
+      analysisMode: mode,
+      progressRatio: progressRatio,
+      dataCompleteness: dataRatio
+    };
+  }
+
+  // 🔬 補助関数群（仕様書準拠）
+  function extractAllCentData(sessionHistory) {
+    const allCentData = [];
+    sessionHistory.forEach(session => {
+      if (session.noteResults) {
+        session.noteResults.forEach(note => {
+          if (note.cents !== null && note.cents !== undefined && !isNaN(note.cents)) {
+            allCentData.push(Math.abs(note.cents));
+          }
+        });
+      }
+    });
+    return allCentData;
+  }
+
+  function createInsufficientDataResult() {
+    return {
+      technicalErrorRate: 0,
+      robustAccuracy: 0,
+      confidenceLevel: 'low',
+      outlierCount: 0,
+      totalMeasurements: 0,
+      averageError: 0,
+      measurement: 'insufficient_data'
+    };
+  }
+
+  function calculateBasicStatistics(data) {
+    const mean = data.reduce((a, b) => a + b, 0) / data.length;
+    const variance = data.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / data.length;
+    const stdDev = Math.sqrt(variance);
+    return { mean, variance, stdDev };
+  }
+
+  function detectOutliers(data, stats) {
+    const outlierThreshold = stats.mean + (3 * stats.stdDev);
+    const outlierData = data.filter(cent => cent > outlierThreshold);
+    return {
+      threshold: outlierThreshold,
+      data: outlierData,
+      count: outlierData.length,
+      rate: outlierData.length / data.length
+    };
+  }
+
+  function calculateRobustStatistics(data, outliers) {
+    const cleanData = data.filter(cent => cent <= outliers.threshold);
+    const mean = cleanData.length > 0 ? cleanData.reduce((a, b) => a + b, 0) / cleanData.length : 0;
+    const accuracy = Math.max(0, 100 - mean);
+    return { mean, accuracy, cleanDataCount: cleanData.length };
+  }
+
+  function determineConfidenceLevel(dataRatio, outlierRate) {
+    if (dataRatio >= 0.5 && outlierRate <= 0.2) return 'high';
+    if (dataRatio >= 0.25 && outlierRate <= 0.4) return 'medium';
+    return 'low';
+  }
+
+  function applyModeSpecificCorrection(baseAccuracy, mode, progressRatio, confidenceLevel) {
+    const thresholds = getAdaptiveThresholds(mode);
+    let correctedAccuracy = baseAccuracy;
+    
+    // 基本信頼度補正
+    const confidenceMultiplier = {
+      'high': 1.1,
+      'medium': 1.05,
+      'low': 1.0
+    }[confidenceLevel];
+    
+    correctedAccuracy *= confidenceMultiplier;
+    
+    // プログレス補正
+    if (progressRatio >= thresholds.completionThreshold) {
+      correctedAccuracy *= thresholds.enhancedPrecisionFactor;
+    }
+    
+    // 完走マスターボーナス
+    if (progressRatio >= thresholds.masteryThreshold) {
+      correctedAccuracy *= thresholds.masteryBonus;
+    }
+    
+    // 12音階モード特別ボーナス
+    if (mode === 'chromatic' && progressRatio >= 0.8) {
+      correctedAccuracy *= 1.15;
+    }
+    
+    return Math.min(correctedAccuracy, 100);
+  }
+
+  function calculateCorrectionFactor(mode, progressRatio, confidenceLevel) {
+    const thresholds = getAdaptiveThresholds(mode);
+    let factor = 1.0;
+    
+    if (confidenceLevel === 'high') factor *= 1.1;
+    else if (confidenceLevel === 'medium') factor *= 1.05;
+    
+    if (progressRatio >= thresholds.completionThreshold) {
+      factor *= thresholds.enhancedPrecisionFactor;
+    }
+    
+    if (progressRatio >= thresholds.masteryThreshold) {
+      factor *= thresholds.masteryBonus;
+    }
+    
+    return factor;
+  }
+  
+  // セッション履歴からS-E級統合評価を算出（ハイブリッド技術誤差補正版）
   $: unifiedGrade = (() => {
     if (!scoreData?.sessionHistory || scoreData.sessionHistory.length === 0) return 'E';
+    
+    // 🔬 ハイブリッド技術誤差分析
+    const errorAnalysis = performHybridStatisticalAnalysis(scoreData.sessionHistory, scoreData?.mode || 'random');
     
     const sessionGrades = scoreData.sessionHistory.map(session => session.grade);
     const excellentCount = sessionGrades.filter(g => g === 'excellent').length;
@@ -201,17 +424,75 @@
     const passCount = sessionGrades.filter(g => g === 'pass').length;
     const totalGoodSessions = excellentCount + goodCount + passCount;
     
-    // 統合評価の計算（S-E級システム）
+    // 統合評価の計算（ハイブリッド技術誤差補正版）
     const totalSessions = scoreData.sessionHistory.length;
-    const excellentRatio = excellentCount / totalSessions;
-    const goodRatio = totalGoodSessions / totalSessions;
+    let excellentRatio = excellentCount / totalSessions;
+    let goodRatio = totalGoodSessions / totalSessions;
     
+    // 🔬 ハイブリッド技術誤差補正の適用
+    if (errorAnalysis.measurement === 'complete' && errorAnalysis.confidenceLevel !== 'low') {
+      excellentRatio *= errorAnalysis.correctionFactor;
+      goodRatio *= errorAnalysis.correctionFactor;
+      
+      // 上限を1.0に制限
+      excellentRatio = Math.min(excellentRatio, 1.0);
+      goodRatio = Math.min(goodRatio, 1.0);
+    }
+    
+    // S-E級判定（補正後の値で判定）
     if (excellentRatio >= 0.9 && goodRatio >= 0.95) return 'S';
     if (excellentRatio >= 0.7 && goodRatio >= 0.85) return 'A';
     if (excellentRatio >= 0.5 && goodRatio >= 0.75) return 'B';
     if (goodRatio >= 0.65) return 'C';
     if (goodRatio >= 0.50) return 'D';
     return 'E';
+  })();
+  
+  // 🔬 ハイブリッド技術誤差分析結果
+  $: technicalAnalysis = performHybridStatisticalAnalysis(scoreData?.sessionHistory || [], scoreData?.mode || 'random');
+  
+  // 📋 段階的メッセージシステム（仕様書準拠）
+  const PROGRESSIVE_MESSAGES = {
+    // セッション数に応じたメッセージ
+    session_1_3: "データ蓄積中... より正確な評価のために練習を続けましょう",
+    session_4_7: "統計分析開始！ 技術誤差を考慮した評価を表示しています", 
+    session_8: "8セッション完走！ あなたの真の音感能力が明らかになりました",
+    session_12: "🎹 12音階マスター認定！ 半音階の精密な音感能力を証明しました",
+    
+    // モード別完走メッセージ  
+    random_complete: "ランダム基音モード完走！ 基礎的な相対音感能力を習得",
+    continuous_complete: "連続チャレンジ完走！ 持続的な集中力と音感の両立達成",
+    chromatic_complete: "🏆 12音階モード制覇！ 真の音感マスターの称号を獲得"
+  };
+  
+  // 📋 現在の進捗に応じたメッセージ取得
+  $: progressMessage = (() => {
+    if (!scoreData?.sessionHistory) return null;
+    
+    const sessionCount = scoreData.sessionHistory.length;
+    const mode = scoreData.mode || 'random';
+    const maxSessions = MODE_SPECIFICATIONS[mode].maxSessions;
+    
+    // 完走判定
+    if (sessionCount >= maxSessions) {
+      return PROGRESSIVE_MESSAGES[`${mode}_complete`];
+    }
+    
+    // セッション数に応じたメッセージ
+    if (mode === 'chromatic' && sessionCount === 12) {
+      return PROGRESSIVE_MESSAGES.session_12;
+    }
+    if (sessionCount === 8) {
+      return PROGRESSIVE_MESSAGES.session_8;
+    }
+    if (sessionCount >= 4 && sessionCount <= 7) {
+      return PROGRESSIVE_MESSAGES.session_4_7;
+    }
+    if (sessionCount >= 1 && sessionCount <= 3) {
+      return PROGRESSIVE_MESSAGES.session_1_3;
+    }
+    
+    return null;
   })();
   
   // 現在の統計情報を計算
@@ -333,6 +614,60 @@
     </div>
   {/if}
   
+  <!-- 📋 段階的進捗メッセージ表示 -->
+  {#if progressMessage && scoreData?.sessionHistory}
+    <div class="progress-message-section" in:fly={{ y: 20, duration: 500, delay: 700 }}>
+      <div class="progress-message">
+        <div class="progress-icon">🎵</div>
+        <div class="progress-text">{progressMessage}</div>
+        <div class="progress-counter">
+          {scoreData.sessionHistory.length}/{MODE_SPECIFICATIONS[scoreData.mode || 'random'].maxSessions} セッション
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- 🔬 技術誤差分析結果表示 -->
+  {#if technicalAnalysis.measurement === 'complete' && scoreData?.sessionHistory && scoreData.sessionHistory.length >= 4}
+    <div class="technical-analysis-section" in:fly={{ y: 20, duration: 500, delay: 900 }}>
+      <h4 class="analysis-title">🔬 技術分析結果</h4>
+      <div class="analysis-grid">
+        <div class="analysis-item">
+          <span class="analysis-label">測定精度</span>
+          <span class="analysis-value confidence-{technicalAnalysis.confidenceLevel}">
+            {technicalAnalysis.confidenceLevel === 'high' ? '高精度' : 
+             technicalAnalysis.confidenceLevel === 'medium' ? '中精度' : '低精度'}
+          </span>
+        </div>
+        <div class="analysis-item">
+          <span class="analysis-label">技術誤差</span>
+          <span class="analysis-value">±{technicalAnalysis.averageError}¢</span>
+        </div>
+        <div class="analysis-item">
+          <span class="analysis-label">真の音感能力</span>
+          <span class="analysis-value grade-indicator">{unifiedGradeDefinitions[unifiedGrade]?.name}</span>
+        </div>
+        <div class="analysis-item">
+          <span class="analysis-label">総測定回数</span>
+          <span class="analysis-value">{technicalAnalysis.totalMeasurements}回</span>
+        </div>
+      </div>
+      <div class="analysis-explanation">
+        💡 <strong>評価について:</strong> 
+        {technicalAnalysis.totalMeasurements}回の測定データから統計的に分析し、技術的な誤差を考慮した真の音感能力を評価しています。
+        
+        {#if scoreData.mode === 'chromatic'}
+          <br><strong>🎹 12音階モード:</strong> 
+          半音階144音の高精度分析により、より正確な音感能力を測定しています。
+        {/if}
+        
+        {#if technicalAnalysis.outlierCount > 0}
+          <br>({technicalAnalysis.outlierCount}回の外れ値を検出・補正済み)
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   <!-- モード別サマリー -->
   <div class="mode-summary" in:fly={{ y: 20, duration: 500, delay: 800 }}>
     {#if scoreData?.mode === 'random'}
@@ -1099,6 +1434,122 @@
     padding: 1.5rem;
   }
   
+  /* 🔬 技術誤差分析UIスタイル */
+  .technical-analysis-section {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .analysis-title {
+    color: #0c4a6e;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .analysis-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0f2fe;
+  }
+  
+  .analysis-label {
+    font-size: 0.75rem;
+    color: #0c4a6e;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .analysis-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  
+  .analysis-value.confidence-high {
+    color: #059669;
+  }
+  
+  .analysis-value.confidence-medium {
+    color: #d97706;
+  }
+  
+  .analysis-value.confidence-low {
+    color: #dc2626;
+  }
+  
+  .analysis-value.grade-indicator {
+    color: #8b5cf6;
+    font-size: 1rem;
+  }
+  
+  .analysis-explanation {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #0f172a;
+    border-left: 4px solid #3b82f6;
+  }
+  
+  /* 📋 段階的進捗メッセージスタイル */
+  .progress-message-section {
+    margin: 1rem 0;
+  }
+  
+  .progress-message {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+  
+  .progress-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+  }
+  
+  .progress-text {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #166534;
+    line-height: 1.5;
+  }
+  
+  .progress-counter {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #059669;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
     .unified-score-result {
@@ -1162,6 +1613,21 @@
     
     .scoring-tab:last-child {
       border-bottom: none;
+    }
+    
+    /* 📋 進捗メッセージのレスポンシブ対応 */
+    .progress-message {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+    
+    .progress-text {
+      font-size: 0.875rem;
+    }
+    
+    .progress-counter {
+      align-self: center;
     }
   }
 </style>
