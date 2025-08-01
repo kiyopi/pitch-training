@@ -1320,8 +1320,7 @@
   $: availableTabs = [
     { id: 'technical', label: '技術分析', icon: Activity },
     { id: 'intervals', label: '音程別精度', icon: Music },
-    { id: 'consistency', label: '一貫性グラフ', icon: BarChart3 },
-    { id: 'statistics', label: 'セッション統計', icon: PieChart }
+    { id: 'consistency', label: '一貫性グラフ', icon: BarChart3 }
   ];
   
   onMount(() => {
@@ -1930,125 +1929,6 @@
                   consistencyData={consistencyData}
                   showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
                   correctedData={detailedAnalysisData?.consistencyAnalysis?.correctedScores || []}
-                />
-              {/if}
-            </div>
-          {/if}
-          
-          <!-- セッション統計タブ -->
-          {#if activeTab === 'statistics' && (detailedAnalysisData?.comprehensiveStatistics || sessionStatistics)}
-            <div class="tab-panel">
-              {#if detailedAnalysisData?.comprehensiveStatistics}
-                <!-- 技術誤差考慮版の総合統計 -->
-                <div class="comprehensive-statistics-enhanced">
-                  <h4 class="analysis-title"><PieChart size={20} class="inline mr-2" />セッション統計（技術誤差補正版）</h4>
-                  
-                  <!-- 総合結果セクション -->
-                  <div class="stats-section">
-                    <h5 class="section-title"><Hash size={18} class="inline mr-2" />{scoreData?.mode === 'chromatic' ? '12' : '8'}セッション総合結果</h5>
-                    <div class="stats-grid">
-                      <div class="stat-item">
-                        <span class="stat-label">総挑戦回数:</span>
-                        <span class="stat-value">
-                          {detailedAnalysisData.comprehensiveStatistics.totalAttempts}回
-                          （{scoreData?.mode === 'chromatic' ? '12' : '8'}セッション完了）
-                        </span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">合格率:</span>
-                        <span class="stat-value">
-                          {detailedAnalysisData.comprehensiveStatistics.rawSuccessRate}% → 
-                          <span class="text-green-600 font-bold">{detailedAnalysisData.comprehensiveStatistics.correctedSuccessRate}%</span>
-                        </span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">平均評価:</span>
-                        <span class="stat-value">
-                          {detailedAnalysisData.comprehensiveStatistics.rawAverageScore}点 → 
-                          <span class="text-green-600 font-bold">{detailedAnalysisData.comprehensiveStatistics.correctedAverageScore}点</span>
-                        </span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">基音別成績:</span>
-                        <span class="stat-value">
-                          {#if detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis}
-                            <span class="text-green-600">
-                              得意: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.bestBaseNote}
-                            </span>
-                            /
-                            <span class="text-red-600">
-                              苦手: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.worstBaseNote}
-                            </span>
-                            <br>
-                            <span class="text-sm text-gray-600">
-                              一貫性: {detailedAnalysisData.comprehensiveStatistics.baseNoteAnalysis.consistency}%
-                            </span>
-                          {:else}
-                            -
-                          {/if}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 練習効率セクション -->
-                  <div class="stats-section">
-                    <h5 class="section-title">⏱️ 練習効率指標</h5>
-                    <div class="stats-grid">
-                      <div class="stat-item">
-                        <span class="stat-label">総練習時間:</span>
-                        <span class="stat-value">{Math.floor(detailedAnalysisData.comprehensiveStatistics.totalPracticeTime / 60000)}分{Math.floor((detailedAnalysisData.comprehensiveStatistics.totalPracticeTime % 60000) / 1000)}秒</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">平均セッション時間:</span>
-                        <span class="stat-value">{Math.floor(detailedAnalysisData.comprehensiveStatistics.averageSessionTime / 1000)}秒</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">最大連続正解:</span>
-                        <span class="stat-value">{detailedAnalysisData.comprehensiveStatistics.maxConsecutiveCorrect}回</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-label">最高/最低スコア:</span>
-                        <span class="stat-value">{detailedAnalysisData.comprehensiveStatistics.bestSessionScore}点 / {detailedAnalysisData.comprehensiveStatistics.worstSessionScore}点</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- レベル判定セクション -->
-                  <div class="stats-section">
-                    <h5 class="section-title">🎯 相対音感レベル診断</h5>
-                    <div class="level-assessment">
-                      <div class="current-level">
-                        <span class="level-label">技術誤差補正後レベル:</span>
-                        <span class="level-value grade-indicator">{unifiedGradeDefinitions[unifiedGrade]?.name}</span>
-                      </div>
-                      <div class="level-description">
-                        {unifiedGrade === 'S' ? '音楽家レベルの相対音感を達成されました！' :
-                         unifiedGrade === 'A' ? '優秀な音感能力です。継続練習でS級到達が期待できます。' :
-                         unifiedGrade === 'B' ? '良好な音感基礎が確立されています。' :
-                         unifiedGrade === 'C' ? '基本的な音程認識ができています。' :
-                         unifiedGrade === 'D' ? '発展途上です。継続練習が重要です。' :
-                         '良いスタートです。焦らず継続することが大切です。'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="analysis-explanation">
-                    <AlertCircle size={16} class="inline mr-1" /><strong>統計分析:</strong> 
-                    技術誤差を統計的に補正することで、真の相対音感能力をより正確に評価しています。
-                    {#if scoreData?.mode === 'chromatic'}
-                      12音階モードでの完了は特に高い音感能力の証明であり、音楽的な応用への準備が整っています。
-                    {:else}
-                      継続練習により、さらなる向上が期待できます。
-                    {/if}
-                  </div>
-                </div>
-              {:else}
-                <!-- 従来版（8セッション未完了時） -->
-                <SessionStatistics 
-                  statistics={sessionStatistics}
-                  showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
-                  correctedStatistics={detailedAnalysisData?.comprehensiveStatistics || {}}
                 />
               {/if}
             </div>
