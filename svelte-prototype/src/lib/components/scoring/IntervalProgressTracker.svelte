@@ -22,71 +22,63 @@
     'octave': { name: 'オクターブ', color: 'from-pink-400 to-pink-600' }
   };
   
-  // 習得レベルに応じたメッセージ
-  const getMasteryMessage = (mastery) => {
-    if (mastery >= 90) return '得意';
-    if (mastery >= 70) return '良好';
-    if (mastery >= 50) return '普通';
-    if (mastery >= 30) return '苦手';
+  // 平均誤差に応じたメッセージ
+  const getMasteryMessage = (averageError) => {
+    if (averageError === null) return '未測定';
+    if (averageError <= 15) return '得意';
+    if (averageError <= 25) return '良好';
+    if (averageError <= 40) return '普通';
+    if (averageError <= 60) return '苦手';
     return '要練習';
   };
   
-  // 習得レベルに応じたアイコンコンポーネント
-  const getMasteryIcon = (mastery) => {
-    if (mastery >= 90) return Crown;
-    if (mastery >= 70) return Star;
-    if (mastery >= 50) return TrendingUp;
-    if (mastery >= 30) return AlertCircle;
+  // 平均誤差に応じたアイコンコンポーネント
+  const getMasteryIcon = (averageError) => {
+    if (averageError === null) return Music;
+    if (averageError <= 15) return Crown;
+    if (averageError <= 25) return Star;
+    if (averageError <= 40) return TrendingUp;
+    if (averageError <= 60) return AlertCircle;
     return BookOpen;
   };
 
-  // 習得レベルに応じた色
-  const getMasteryColor = (mastery) => {
-    if (mastery >= 90) return 'text-yellow-500';   // 得意 - ゴールド
-    if (mastery >= 70) return 'text-blue-500';     // 良好 - ブルー
-    if (mastery >= 50) return 'text-green-500';    // 普通 - グリーン
-    if (mastery >= 30) return 'text-orange-500';   // 苦手 - オレンジ
-    return 'text-red-500';                         // 要練習 - レッド
+  // 平均誤差に応じた色
+  const getMasteryColor = (averageError) => {
+    if (averageError === null) return 'text-gray-500';    // 未測定 - グレー
+    if (averageError <= 15) return 'text-yellow-500';     // 得意 - ゴールド
+    if (averageError <= 25) return 'text-blue-500';       // 良好 - ブルー
+    if (averageError <= 40) return 'text-green-500';      // 普通 - グリーン
+    if (averageError <= 60) return 'text-orange-500';     // 苦手 - オレンジ
+    return 'text-red-500';                                 // 要練習 - レッド
   };
 </script>
 
 <div class="interval-progress-tracker {className}">
-  <h3 class="tracker-title">音程別習得状況</h3>
-  
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {#each intervalData as interval}
       <div class="interval-card">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <svelte:component 
-              this={getMasteryIcon(interval.mastery)} 
-              size="20" 
-              class={getMasteryColor(interval.mastery)}
-            />
-            <div>
-              <div class="font-medium text-gray-800">
-                {intervalInfo[interval.type]?.name || interval.type}
-              </div>
-              <div class="text-xs text-gray-500">
-                {getMasteryMessage(interval.mastery)}
-              </div>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="font-bold text-lg text-gray-800">
-              {interval.mastery}%
-            </div>
-            <div class="text-xs text-gray-500">
-              {interval.attempts}回挑戦
-            </div>
-          </div>
-        </div>
-        
-        <div class="progress-bar-bg">
-          <div 
-            class="progress-bar-fill bg-gradient-to-r {intervalInfo[interval.type]?.color || 'from-gray-400 to-gray-600'}"
-            style="width: {interval.mastery}%"
+        <div class="flex items-center gap-3">
+          <svelte:component 
+            this={getMasteryIcon(interval.averageError)} 
+            size="24" 
+            class={getMasteryColor(interval.averageError)}
           />
+          <div class="flex-1">
+            <div class="font-medium text-gray-800">
+              {interval.scale || intervalInfo[interval.type]?.name || interval.type}
+              {#if interval.intervalName}
+                <span class="text-sm text-gray-600">（{interval.intervalName}）</span>
+              {/if}
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+              {interval.attempts}回
+              {#if interval.averageError !== null}
+                　平均誤差 ±{interval.averageError}¢
+              {:else}
+                　未測定
+              {/if}
+            </div>
+          </div>
         </div>
         
         <!-- 技術誤差補正データ表示 -->
@@ -108,10 +100,6 @@
                 <span>{interval.recommendation}</span>
               </div>
             {/if}
-          </div>
-        {:else if interval.accuracy !== undefined}
-          <div class="mt-2 text-xs text-gray-600">
-            平均精度: {interval.accuracy.toFixed(1)}%
           </div>
         {/if}
       </div>
@@ -156,20 +144,6 @@
     transform: translateY(-1px);
   }
 
-  .progress-bar-bg {
-    width: 100%;
-    background-color: var(--color-gray-200);
-    border-radius: 9999px;
-    height: 12px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    transition: all 0.5s ease-in-out;
-    border-radius: 9999px;
-  }
 
   .empty-state {
     text-align: center;

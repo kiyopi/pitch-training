@@ -1329,7 +1329,7 @@
 
   $: availableTabs = [
     { id: 'technical', label: '技術分析', icon: Activity },
-    { id: 'intervals', label: '音程別進捗', icon: Music },
+    { id: 'intervals', label: '音程別精度', icon: Music },
     { id: 'consistency', label: '一貫性グラフ', icon: BarChart3 },
     { id: 'statistics', label: 'セッション統計', icon: PieChart }
   ];
@@ -1814,8 +1814,6 @@
               {#if detailedAnalysisData?.intervalAnalysis && detailedAnalysisData?.intervalMastery}
                 <!-- 技術誤差考慮版の音程別進捗（強化版） -->
                 <div class="interval-analysis-enhanced">
-                  <h4 class="analysis-title"><Music size={20} class="inline mr-2" />音程別習得状況（技術誤差補正版）</h4>
-                  
                   <!-- 習得済み音程セクション -->
                   {#if detailedAnalysisData.intervalMastery.mastered.length > 0}
                     <div class="mastery-section mastered">

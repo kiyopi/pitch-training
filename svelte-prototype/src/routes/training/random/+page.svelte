@@ -1229,50 +1229,83 @@
     };
   }
 
-  // 実際のトレーニング結果から音程データを生成
+  // 実際のトレーニング結果から音階別データを生成
   function generateIntervalDataFromResults(results) {
-    const intervals = ['unison', 'major_second', 'major_third', 'perfect_fourth', 'perfect_fifth', 'major_sixth', 'major_seventh', 'octave'];
-    return intervals.map(interval => {
-      const attempts = Math.floor(Math.random() * 3) + 1; // 1-3回の試行
-      const accuracy = Math.floor(Math.random() * 40) + 60; // 60-100%の精度
-      return {
-        type: interval,
-        mastery: accuracy,
-        attempts: attempts,
-        accuracy: accuracy
-      };
+    // 音階名と音程名の対応
+    const scaleData = [
+      { scale: 'ド', interval: 'unison', intervalName: 'ユニゾン' },
+      { scale: 'レ', interval: 'major_second', intervalName: '長2度' },
+      { scale: 'ミ', interval: 'major_third', intervalName: '長3度' },
+      { scale: 'ファ', interval: 'perfect_fourth', intervalName: '完全4度' },
+      { scale: 'ソ', interval: 'perfect_fifth', intervalName: '完全5度' },
+      { scale: 'ラ', interval: 'major_sixth', intervalName: '長6度' },
+      { scale: 'シ', interval: 'major_seventh', intervalName: '長7度' },
+      { scale: 'ド（高）', interval: 'octave', intervalName: 'オクターブ' }
+    ];
+    
+    return scaleData.map((item, index) => {
+      // 実際の結果から該当する音階のデータを取得
+      const noteResult = results.find(r => r.targetNote && r.targetNote.includes(item.scale)) || results[index];
+      
+      if (noteResult && noteResult.accuracy !== 'notMeasured') {
+        // 実際の誤差をセント単位で計算（精度から逆算）
+        const accuracyValue = parseFloat(noteResult.accuracy) || 0;
+        const errorCents = Math.round((100 - accuracyValue) * 0.5); // 簡易的な変換
+        
+        return {
+          type: item.interval,
+          scale: item.scale,
+          intervalName: item.intervalName,
+          attempts: 1, // 1セッションでは1回
+          averageError: errorCents,
+          accuracy: accuracyValue
+        };
+      } else {
+        // 測定できなかった場合
+        return {
+          type: item.interval,
+          scale: item.scale,
+          intervalName: item.intervalName,
+          attempts: 0,
+          averageError: null,
+          accuracy: 0
+        };
+      }
     });
   }
 
-  // localStorage セッション履歴から音程別データを生成（8セッション完了時用）
+  // localStorage セッション履歴から音階別データを生成（8セッション完了時用）
   function generateIntervalDataFromSessionHistory(sessionHistory) {
     if (!sessionHistory || !Array.isArray(sessionHistory)) {
       console.warn('⚠️ [RandomTraining] sessionHistory が無効です');
       return [];
     }
 
-    // 音程タイプの定義（ドレミファソラシド↑の8音階）
-    const intervalTypes = [
-      { type: 'unison', name: 'ユニゾン（ド）', noteIndex: 0 },
-      { type: 'major_second', name: '長2度（レ）', noteIndex: 1 },
-      { type: 'major_third', name: '長3度（ミ）', noteIndex: 2 },
-      { type: 'perfect_fourth', name: '完全4度（ファ）', noteIndex: 3 },
-      { type: 'perfect_fifth', name: '完全5度（ソ）', noteIndex: 4 },
-      { type: 'major_sixth', name: '長6度（ラ）', noteIndex: 5 },
-      { type: 'major_seventh', name: '長7度（シ）', noteIndex: 6 },
-      { type: 'octave', name: 'オクターブ（ド↑）', noteIndex: 7 }
+    // 音階データの定義（ドレミファソラシド↑の8音階）
+    const scaleData = [
+      { type: 'unison', scale: 'ド', intervalName: 'ユニゾン', noteIndex: 0 },
+      { type: 'major_second', scale: 'レ', intervalName: '長2度', noteIndex: 1 },
+      { type: 'major_third', scale: 'ミ', intervalName: '長3度', noteIndex: 2 },
+      { type: 'perfect_fourth', scale: 'ファ', intervalName: '完全4度', noteIndex: 3 },
+      { type: 'perfect_fifth', scale: 'ソ', intervalName: '完全5度', noteIndex: 4 },
+      { type: 'major_sixth', scale: 'ラ', intervalName: '長6度', noteIndex: 5 },
+      { type: 'major_seventh', scale: 'シ', intervalName: '長7度', noteIndex: 6 },
+      { type: 'octave', scale: 'ド（高）', intervalName: 'オクターブ', noteIndex: 7 }
     ];
 
     const intervalStats = {};
 
-    // 各音程の統計を初期化
-    intervalTypes.forEach(interval => {
-      intervalStats[interval.type] = {
-        type: interval.type,
+    // 各音階の統計を初期化
+    scaleData.forEach(item => {
+      intervalStats[item.type] = {
+        type: item.type,
+        scale: item.scale,
+        intervalName: item.intervalName,
         attempts: 0,
         successCount: 0,
         accuracySum: 0,
-        accuracyValues: []
+        accuracyValues: [],
+        errorValues: []  // セント単位の誤差を記録
       };
     });
 
@@ -1283,9 +1316,9 @@
       }
 
       session.noteResults.forEach((noteResult, noteIndex) => {
-        if (noteIndex >= intervalTypes.length) return;
+        if (noteIndex >= scaleData.length) return;
 
-        const intervalType = intervalTypes[noteIndex].type;
+        const intervalType = scaleData[noteIndex].type;
         const stats = intervalStats[intervalType];
 
         stats.attempts++;
@@ -1293,6 +1326,10 @@
         if (noteResult.accuracy !== 'notMeasured' && typeof noteResult.accuracy === 'number') {
           stats.accuracyValues.push(noteResult.accuracy);
           stats.accuracySum += noteResult.accuracy;
+          
+          // 精度から誤差セントを計算（簡易的な変換）
+          const errorCents = Math.round((100 - noteResult.accuracy) * 0.5);
+          stats.errorValues.push(errorCents);
           
           // 70%以上を成功とみなす
           if (noteResult.accuracy >= 70) {
@@ -1303,14 +1340,16 @@
     });
 
     // 統計からintervalDataを生成
-    return intervalTypes.map(interval => {
-      const stats = intervalStats[interval.type];
+    return scaleData.map(item => {
+      const stats = intervalStats[item.type];
       
       if (stats.attempts === 0) {
         return {
-          type: interval.type,
-          mastery: 0,
+          type: item.type,
+          scale: item.scale,
+          intervalName: item.intervalName,
           attempts: 0,
+          averageError: null,
           accuracy: 0
         };
       }
@@ -1319,14 +1358,21 @@
         ? Math.round(stats.accuracySum / stats.accuracyValues.length)
         : 0;
       
+      const averageError = stats.errorValues.length > 0
+        ? Math.round(stats.errorValues.reduce((a, b) => a + b, 0) / stats.errorValues.length)
+        : null;
+      
       const mastery = stats.accuracyValues.length > 0
         ? Math.round((stats.successCount / stats.accuracyValues.length) * 100)
         : 0;
 
       return {
-        type: interval.type,
+        type: item.type,
+        scale: item.scale,
+        intervalName: item.intervalName,
         mastery: mastery,
         attempts: stats.attempts,
+        averageError: averageError,
         accuracy: averageAccuracy
       };
     });
