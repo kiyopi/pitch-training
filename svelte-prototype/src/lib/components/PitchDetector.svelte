@@ -13,6 +13,7 @@
   export let className = '';
   export let debugMode = false; // デバッグモード
   export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用、削除済み）
+  export let disableHarmonicCorrection = false; // ハーモニック補正無効化フラグ（230Hz固着問題対策）
 
   // 状態管理（改訂版）
   let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
@@ -305,14 +306,19 @@
     const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
     if (pitch && clarity > 0.8 && currentVolume > 30 && isValidVocalRange) {
-      // 統一倍音補正システム適用（音量情報も渡す）
-      const normalizedVolume = Math.min(currentVolume / 100, 1.0); // 0-1に正規化
-      const correctedFreq = harmonicCorrection.correctHarmonic(pitch, normalizedVolume);
+      let finalFreq = pitch;
       
-      // 補正ログは削除 - ユーザーには補正済み結果のみ表示
+      // ハーモニック補正の有効/無効を制御（230Hz固着問題デバッグ用）
+      if (!disableHarmonicCorrection) {
+        // 統一倍音補正システム適用（音量情報も渡す）
+        const normalizedVolume = Math.min(currentVolume / 100, 1.0); // 0-1に正規化
+        finalFreq = harmonicCorrection.correctHarmonic(pitch, normalizedVolume);
+      } else if (debugMode) {
+        console.log('🔧 [PitchDetector] ハーモニック補正無効化中 - 生値使用:', pitch);
+      }
       
       // 周波数表示を更新
-      currentFrequency = Math.round(correctedFreq);
+      currentFrequency = Math.round(finalFreq);
       detectedNote = frequencyToNote(currentFrequency);
       pitchClarity = clarity;
       
