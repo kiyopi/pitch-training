@@ -981,6 +981,8 @@ export class EnhancedScoringEngine {
       consistency: statistics.analyzers.consistency
     };
     
+    // 改善提案
+    const improvements = this.generateImprovementSuggestions();
     
     // セッション統計
     const sessionStats = {
@@ -992,8 +994,11 @@ export class EnhancedScoringEngine {
     };
     
     // ランダムトレーニングページが期待する形式に適合
-    // feedbackはgenerateFeedbackFromResults関数で生成するため、ここではnullを返す
-    const feedback = null;
+    const feedback = {
+      primary: improvements.length > 0 ? improvements[0].message : '良好な演奏です！',
+      detailed: improvements.map(imp => imp.message),
+      suggestions: improvements.map(imp => imp.actions).flat()
+    };
 
     // 5側面の採点結果
     const componentScores = [
@@ -1040,6 +1045,56 @@ export class EnhancedScoringEngine {
     };
   }
   
+  /**
+   * 改善提案を生成
+   * @returns {Array} - 改善提案リスト
+   */
+  generateImprovementSuggestions() {
+    const suggestions = [];
+    const stats = this.getStatistics();
+    
+    // 音程習得度の分析
+    if (stats.analyzers.interval.averageAccuracy < 70) {
+      suggestions.push({
+        category: 'interval',
+        priority: 'high',
+        message: '音程の正確性向上が必要です。基本的な音程（完全5度、オクターブ）から練習を始めましょう。',
+        actions: ['基本音程の集中練習', '楽器での確認', '歌唱練習']
+      });
+    }
+    
+    // 方向性の分析
+    if (stats.analyzers.direction.accuracy < 80) {
+      suggestions.push({
+        category: 'direction',
+        priority: 'medium',
+        message: '音程の上行・下行の判断精度を向上させましょう。',
+        actions: ['音階練習', '聴音練習', 'インターバル識別']
+      });
+    }
+    
+    // 一貫性の分析
+    if (stats.analyzers.consistency.score < 75) {
+      suggestions.push({
+        category: 'consistency',
+        priority: 'medium',
+        message: '安定した精度を保つため、継続的な練習が効果的です。',
+        actions: ['定期的な練習', '集中力向上', '疲労管理']
+      });
+    }
+    
+    // セッション分析
+    if (this.sessionData.totalAttempts < 5) {
+      suggestions.push({
+        category: 'session',
+        priority: 'low',
+        message: 'より多くの練習で正確な評価が可能になります。',
+        actions: ['練習量の増加', '多様な音程での練習']
+      });
+    }
+    
+    return suggestions;
+  }
 
   /**
    * 統計データの取得
