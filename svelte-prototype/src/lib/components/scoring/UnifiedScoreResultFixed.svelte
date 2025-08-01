@@ -583,16 +583,15 @@
       }
     });
     
-    // 成功率計算の修正（複数の正解判定方式対応）
+    // 成功率計算の修正（centsベースで直接判定）
     const totalCorrect = sessionHistory.reduce((sum, session) => {
       if (session.noteResults && Array.isArray(session.noteResults)) {
         const correctInSession = session.noteResults.filter(note => {
-          // 複数の正解判定方式に対応
-          return note.correct || note.isCorrect || note.success || 
-                 (note.accuracy && note.accuracy >= 70) || // 70%以上を正解とする
-                 (note.centDifference && Math.abs(note.centDifference) <= 50); // ±50¢以内を正解とする
+          // centsから直接判定（合格以上 = ±40¢以内）
+          const absCents = Math.abs(note.cents || 0);
+          return absCents <= 40;
         }).length;
-        console.log(`📊 セッション正解数: ${correctInSession} (判定方式: correct/isCorrect/success/accuracy≥70%/cent≤50)`);
+        console.log(`📊 セッション正解数: ${correctInSession}/${session.noteResults.length} (±40¢以内)`);
         return sum + correctInSession;
       }
       return sum;
@@ -605,11 +604,25 @@
     
     console.log('📊 成功率:', rawSuccessRate, '% → 補正後:', correctedSuccessRate, '%');
 
-    // セッションスコア計算の修正
+    // セッションスコア計算の修正（グレードベース）
+    const gradeToScore = {
+      'excellent': 95,  // 優秀
+      'good': 80,       // 良好
+      'pass': 65,       // 合格
+      'needWork': 30    // 要練習
+    };
+    
     const sessionScores = sessionHistory.map((s, i) => {
-      // 複数のスコアフィールドをチェック
-      const score = s.score || s.sessionScore || s.totalScore || 0;
-      console.log(`📊 セッション${i+1}スコア:`, score, '(元データ:', {score: s.score, sessionScore: s.sessionScore, totalScore: s.totalScore}, ')');
+      // 方法1: グレードから変換
+      const gradeScore = gradeToScore[s.grade] || 0;
+      // 方法2: 精度を使用（accuracyフィールドがある場合）
+      const accuracyScore = s.accuracy || 0;
+      // 最終的なスコア決定
+      const score = gradeScore || accuracyScore;
+      
+      console.log(`📊 セッション${i+1}スコア:`, score, 
+        '(グレード:', s.grade, '→', gradeScore, 
+        ', 精度:', s.accuracy, ')');
       return score;
     }).filter(score => !isNaN(score) && score >= 0);
     
@@ -682,19 +695,40 @@
     
     console.log('🎯 連続正解配列:', streakCounts, '→ 最大:', maxConsecutiveCorrect);
 
-    // 改善率計算の修正（NaN対策）
+    // 改善率計算の修正（グレード変化ベース）
     let improvementRate = 0;
-    if (sessionScores.length > 1) {
-      const firstScore = sessionScores[0];
-      const lastScore = sessionScores[sessionScores.length - 1];
+    let improvementText = '';
+    
+    if (sessionHistory.length > 1) {
+      const firstGrade = sessionHistory[0].grade;
+      const lastGrade = sessionHistory[sessionHistory.length - 1].grade;
       
-      console.log('📈 改善率計算:', firstScore, '→', lastScore);
+      // グレード変化を評価
+      const gradeValue = { 'needWork': 1, 'pass': 2, 'good': 3, 'excellent': 4 };
+      const firstValue = gradeValue[firstGrade] || 1;
+      const lastValue = gradeValue[lastGrade] || 1;
+      const gradeDiff = lastValue - firstValue;
       
-      if (firstScore > 0) {
-        improvementRate = Math.round(((lastScore - firstScore) / firstScore) * 100);
-      } else if (lastScore > 0) {
-        improvementRate = 100; // 0からの改善は100%とする
+      // 改善率計算
+      if (gradeDiff > 0) {
+        improvementRate = gradeDiff * 25; // 1段階上昇で25%
+        improvementText = `${firstGrade} → ${lastGrade}`;
+      } else if (gradeDiff === 0) {
+        // 同じグレードでもスコアで判定
+        const firstScore = sessionScores[0];
+        const lastScore = sessionScores[sessionScores.length - 1];
+        if (lastScore > firstScore) {
+          improvementRate = Math.round(((lastScore - firstScore) / firstScore) * 100);
+          improvementText = '同グレード内での向上';
+        } else {
+          improvementText = '変化なし';
+        }
+      } else {
+        improvementRate = gradeDiff * 25; // マイナス値
+        improvementText = `${firstGrade} → ${lastGrade} (低下)`;
       }
+      
+      console.log('📈 改善率計算:', improvementText, '=', improvementRate, '%');
     }
     
     console.log('📈 改善率:', improvementRate + '%');
@@ -718,6 +752,7 @@
       averageSessionTime: sessionHistory.length > 0 ? Math.round(totalPracticeTime / sessionHistory.length) : 0,
       maxConsecutiveCorrect,
       improvementRate,
+      improvementText, // グレード変化の説明
       // デバッグ用追加情報
       sessionCount: sessionHistory.length,
       validScoreCount: sessionScores.length,
@@ -1407,22 +1442,29 @@
                         </span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-label">成功率:</span>
+                        <span class="stat-label">合格率:</span>
                         <span class="stat-value">
                           {detailedAnalysisData.comprehensiveStatistics.rawSuccessRate}% → 
                           <span class="text-green-600 font-bold">{detailedAnalysisData.comprehensiveStatistics.correctedSuccessRate}%</span>
                         </span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-label">平均スコア:</span>
+                        <span class="stat-label">平均評価:</span>
                         <span class="stat-value">
                           {detailedAnalysisData.comprehensiveStatistics.rawAverageScore}点 → 
                           <span class="text-green-600 font-bold">{detailedAnalysisData.comprehensiveStatistics.correctedAverageScore}点</span>
                         </span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-label">セッション改善率:</span>
-                        <span class="stat-value text-blue-600">+{detailedAnalysisData.comprehensiveStatistics.improvementRate}%</span>
+                        <span class="stat-label">グレード向上:</span>
+                        <span class="stat-value text-blue-600">
+                          {#if detailedAnalysisData.comprehensiveStatistics.improvementText}
+                            {detailedAnalysisData.comprehensiveStatistics.improvementText}
+                            ({detailedAnalysisData.comprehensiveStatistics.improvementRate > 0 ? '+' : ''}{detailedAnalysisData.comprehensiveStatistics.improvementRate}%)
+                          {:else}
+                            -
+                          {/if}
+                        </span>
                       </div>
                     </div>
                   </div>
