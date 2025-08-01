@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight, CheckCircle, Zap, BookOpen, Activity, PieChart, Hash } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -1013,7 +1013,7 @@
     // モード別完走メッセージ  
     random_complete: "ランダム基音モード完走！ 基礎的な相対音感能力を習得",
     continuous_complete: "連続チャレンジ完走！ 持続的な集中力と音感の両立達成",
-    chromatic_complete: "🏆 12音階モード制覇！ 真の音感マスターの称号を獲得"
+    chromatic_complete: "12音階モード制覇！ 真の音感マスターの称号を獲得"
   };
   
   // 📋 現在の進捗に応じたメッセージ取得
@@ -1085,10 +1085,10 @@
   $: showDetailedAnalysis = scoreData?.sessionHistory && scoreData.sessionHistory.length >= 8;
 
   $: availableTabs = [
-    { id: 'technical', label: '🔬 技術分析' },
-    { id: 'intervals', label: '🎵 音程別進捗' },
-    { id: 'consistency', label: '📊 一貫性グラフ' },
-    { id: 'statistics', label: '📈 セッション統計' }
+    { id: 'technical', label: '技術分析', icon: Activity },
+    { id: 'intervals', label: '音程別進捗', icon: Music },
+    { id: 'consistency', label: '一貫性グラフ', icon: BarChart3 },
+    { id: 'statistics', label: 'セッション統計', icon: PieChart }
   ];
   
   onMount(() => {
@@ -1179,7 +1179,7 @@
   {#if progressMessage && scoreData?.sessionHistory}
     <div class="progress-message-section" in:fly={{ y: 20, duration: 500, delay: 700 }}>
       <div class="progress-message">
-        <div class="progress-icon">🎵</div>
+        <div class="progress-icon"><Music size={20} /></div>
         <div class="progress-text">{progressMessage}</div>
         <div class="progress-counter">
           {scoreData.sessionHistory.length}/{MODE_SPECIFICATIONS[scoreData.mode || 'random'].maxSessions} セッション
@@ -1199,7 +1199,7 @@
         {#if scoreData.sessionHistory && scoreData.sessionHistory.length > 0}
           <div class="session-history-section compact">
             <div class="session-title">
-              🎵 セッション履歴 ({scoreData.sessionHistory.length}/{scoreData.mode === 'chromatic' ? 12 : 8})
+              <Music size={16} class="inline mr-1" />セッション履歴 ({scoreData.sessionHistory.length}/{scoreData.mode === 'chromatic' ? 12 : 8})
             </div>
             <div class="session-bars compact">
               {#each scoreData.sessionHistory as session, index}
@@ -1396,6 +1396,7 @@
                 class:active={activeTab === tab.id}
                 on:click={() => switchTab(tab.id)}
               >
+                <svelte:component this={tab.icon} class="tab-icon" size={16} />
                 {tab.label}
               </button>
             {/each}
@@ -1405,11 +1406,11 @@
           {#if activeTab === 'technical' && detailedAnalysisData?.technicalAnalysis && scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData?.mode === 'chromatic' ? 12 : 8)}
             <div class="tab-panel">
               <div class="technical-analysis-content">
-                <h4 class="analysis-title">🔬 技術分析結果</h4>
+                <h4 class="analysis-title"><Activity size={20} class="inline mr-2" />技術分析結果</h4>
                 
                 <!-- 技術誤差統計セクション -->
                 <div class="analysis-section">
-                  <h5 class="section-title">🎯 測定精度分析</h5>
+                  <h5 class="section-title"><Target size={18} class="inline mr-2" />測定精度分析</h5>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">標準偏差</span>
@@ -1428,7 +1429,7 @@
 
                 <!-- 誤差パターン分析セクション -->
                 <div class="analysis-section">
-                  <h5 class="section-title">📊 誤差分布</h5>
+                  <h5 class="section-title"><BarChart3 size={18} class="inline mr-2" />誤差分布</h5>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">高精度測定</span>
@@ -1451,7 +1452,7 @@
 
                 <!-- 補正後評価セクション -->
                 <div class="analysis-section">
-                  <h5 class="section-title">🔍 技術誤差補正結果</h5>
+                  <h5 class="section-title"><AlertCircle size={18} class="inline mr-2" />技術誤差補正結果</h5>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">補正前平均</span>
@@ -1473,14 +1474,14 @@
                 </div>
 
                 <div class="analysis-explanation">
-                  💡 <strong>評価について:</strong> 
+                  <AlertCircle size={16} class="inline mr-1" /><strong>評価について:</strong> 
                   {detailedAnalysisData.technicalAnalysis.errorDistribution.highPrecision + detailedAnalysisData.technicalAnalysis.errorDistribution.mediumPrecision + detailedAnalysisData.technicalAnalysis.errorDistribution.lowPrecision}回の測定データから統計的に分析し、技術的な誤差を考慮した真の音感能力を評価しています。
                   
                   {#if scoreData.mode === 'chromatic'}
-                    <br><strong>🎹 12音階モード:</strong> 
+                    <br><strong><Piano size={16} class="inline mr-1" />12音階モード:</strong> 
                     {scoreData.sessionHistory.length}セッション × 12音 = {scoreData.sessionHistory.length * 12}回の高精度半音階分析により、最も正確な音感能力測定を実現しています。
                   {:else}
-                    <br><strong>🎵 8音階モード:</strong>
+                    <br><strong><Music size={16} class="inline mr-1" />8音階モード:</strong>
                     {scoreData.sessionHistory.length}セッション × 8音 = {scoreData.sessionHistory.length * 8}回の測定による統計的分析です。
                   {/if}
                   
@@ -1498,18 +1499,18 @@
               {#if detailedAnalysisData?.intervalAnalysis && detailedAnalysisData?.intervalMastery}
                 <!-- 技術誤差考慮版の音程別進捗（強化版） -->
                 <div class="interval-analysis-enhanced">
-                  <h4 class="analysis-title">🎵 音程別習得状況（技術誤差補正版）</h4>
+                  <h4 class="analysis-title"><Music size={20} class="inline mr-2" />音程別習得状況（技術誤差補正版）</h4>
                   
                   <!-- 習得済み音程セクション -->
                   {#if detailedAnalysisData.intervalMastery.mastered.length > 0}
                     <div class="mastery-section mastered">
-                      <h5 class="mastery-section-title text-green-600">✅ 習得済み音程（80%以上）</h5>
+                      <h5 class="mastery-section-title text-green-600"><CheckCircle size={20} class="inline mr-2" />習得済み音程（80%以上）</h5>
                       <div class="interval-grid">
                         {#each detailedAnalysisData.intervalMastery.mastered as interval}
                           <div class="interval-card mastered-card">
                             <div class="interval-header">
                               <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge excellent">⭐ {interval.mastery}%</div>
+                              <div class="mastery-badge excellent"><Star size={14} class="inline mr-1" />{interval.mastery}%</div>
                             </div>
                             <div class="interval-stats">
                               <div class="stat-row">
@@ -1531,13 +1532,13 @@
                   <!-- 習得中音程セクション -->
                   {#if detailedAnalysisData.intervalMastery.learning.length > 0}
                     <div class="mastery-section learning">
-                      <h5 class="mastery-section-title text-blue-600">🌟 習得中音程（60-79%）</h5>
+                      <h5 class="mastery-section-title text-blue-600"><Star size={20} class="inline mr-2" />習得中音程（60-79%）</h5>
                       <div class="interval-grid">
                         {#each detailedAnalysisData.intervalMastery.learning as interval}
                           <div class="interval-card learning-card">
                             <div class="interval-header">
                               <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge good">🌟 {interval.mastery}%</div>
+                              <div class="mastery-badge good"><Zap size={14} class="inline mr-1" />{interval.mastery}%</div>
                             </div>
                             <div class="interval-stats">
                               <div class="stat-row">
@@ -1562,13 +1563,13 @@
                   <!-- 練習必要音程セクション -->
                   {#if detailedAnalysisData.intervalMastery.needsPractice.length > 0}
                     <div class="mastery-section needs-practice">
-                      <h5 class="mastery-section-title text-red-600">📈 重点練習音程（60%未満）</h5>
+                      <h5 class="mastery-section-title text-red-600"><TrendingUp size={20} class="inline mr-2" />重点練習音程（60%未満）</h5>
                       <div class="interval-grid">
                         {#each detailedAnalysisData.intervalMastery.needsPractice as interval}
                           <div class="interval-card practice-card">
                             <div class="interval-header">
                               <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge needs-work">💪 {interval.mastery}%</div>
+                              <div class="mastery-badge needs-work"><BookOpen size={14} class="inline mr-1" />{interval.mastery}%</div>
                             </div>
                             <div class="interval-stats">
                               <div class="stat-row">
@@ -1592,7 +1593,7 @@
 
                   <!-- 習得統計サマリー -->
                   <div class="mastery-summary">
-                    <h5 class="section-title">📊 音程習得統計</h5>
+                    <h5 class="section-title"><PieChart size={18} class="inline mr-2" />音程習得統計</h5>
                     <div class="summary-grid">
                       <div class="summary-item mastered">
                         <span class="summary-label">習得済み</span>
@@ -1610,7 +1611,7 @@
                   </div>
                   
                   <div class="analysis-explanation">
-                    💡 <strong>音程習得分析:</strong> 
+                    <AlertCircle size={16} class="inline mr-1" /><strong>音程習得分析:</strong> 
                     技術誤差を統計的に分離し、真の音程習得レベルを評価しています。
                     習得済み音程の維持と、重点練習音程の集中強化をお勧めします。
                   </div>
@@ -1630,7 +1631,7 @@
               {#if detailedAnalysisData?.consistencyAnalysis}
                 <!-- 技術誤差考慮版の一貫性分析 -->
                 <div class="consistency-analysis-enhanced">
-                  <h4 class="analysis-title">📊 一貫性グラフ（技術誤差補正版）</h4>
+                  <h4 class="analysis-title"><BarChart3 size={20} class="inline mr-2" />一貫性グラフ（技術誤差補正版）</h4>
                   
                   <div class="consistency-stats">
                     <div class="stat-item">
@@ -1647,14 +1648,14 @@
                     <div class="stat-item">
                       <span class="stat-label">トレンド:</span>
                       <span class="stat-value">
-                        {detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'improving' ? '📈 改善中' :
-                         detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'declining' ? '📉 低下中' : '➡️ 安定'}
+                        {detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'improving' ? '改善中' :
+                         detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'declining' ? '低下中' : '安定'}
                       </span>
                     </div>
                   </div>
                   
                   <div class="analysis-explanation">
-                    💡 <strong>一貫性分析:</strong> 
+                    <AlertCircle size={16} class="inline mr-1" /><strong>一貫性分析:</strong> 
                     技術誤差を考慮すると、実際のパフォーマンスは補正前より安定しています。
                     {detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'improving' ? 
                       '継続練習により確実に向上しています。' :
@@ -1678,11 +1679,11 @@
               {#if detailedAnalysisData?.comprehensiveStatistics}
                 <!-- 技術誤差考慮版の総合統計 -->
                 <div class="comprehensive-statistics-enhanced">
-                  <h4 class="analysis-title">📈 セッション統計（技術誤差補正版）</h4>
+                  <h4 class="analysis-title"><PieChart size={20} class="inline mr-2" />セッション統計（技術誤差補正版）</h4>
                   
                   <!-- 総合結果セクション -->
                   <div class="stats-section">
-                    <h5 class="section-title">📊 {scoreData?.mode === 'chromatic' ? '12' : '8'}セッション総合結果</h5>
+                    <h5 class="section-title"><Hash size={18} class="inline mr-2" />{scoreData?.mode === 'chromatic' ? '12' : '8'}セッション総合結果</h5>
                     <div class="stats-grid">
                       <div class="stat-item">
                         <span class="stat-label">総挑戦回数:</span>
@@ -1760,18 +1761,18 @@
                         <span class="level-value grade-indicator">{unifiedGradeDefinitions[unifiedGrade]?.name}</span>
                       </div>
                       <div class="level-description">
-                        {unifiedGrade === 'S' ? '🏆 音楽家レベルの相対音感を達成されました！' :
-                         unifiedGrade === 'A' ? '🌟 優秀な音感能力です。継続練習でS級到達が期待できます。' :
-                         unifiedGrade === 'B' ? '💪 良好な音感基礎が確立されています。' :
-                         unifiedGrade === 'C' ? '🌱 基本的な音程認識ができています。' :
-                         unifiedGrade === 'D' ? '📚 発展途上です。継続練習が重要です。' :
-                         '🌰 良いスタートです。焦らず継続することが大切です。'}
+                        {unifiedGrade === 'S' ? '音楽家レベルの相対音感を達成されました！' :
+                         unifiedGrade === 'A' ? '優秀な音感能力です。継続練習でS級到達が期待できます。' :
+                         unifiedGrade === 'B' ? '良好な音感基礎が確立されています。' :
+                         unifiedGrade === 'C' ? '基本的な音程認識ができています。' :
+                         unifiedGrade === 'D' ? '発展途上です。継続練習が重要です。' :
+                         '良いスタートです。焦らず継続することが大切です。'}
                       </div>
                     </div>
                   </div>
                   
                   <div class="analysis-explanation">
-                    💡 <strong>統計分析:</strong> 
+                    <AlertCircle size={16} class="inline mr-1" /><strong>統計分析:</strong> 
                     技術誤差を統計的に補正することで、真の相対音感能力をより正確に評価しています。
                     {#if scoreData?.mode === 'chromatic'}
                       12音階モードでの完了は特に高い音感能力の証明であり、音楽的な応用への準備が整っています。
@@ -2608,6 +2609,14 @@
     cursor: pointer;
     transition: all 0.2s;
     border-right: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .tab-icon {
+    flex-shrink: 0;
   }
   
   .scoring-tab:last-child {
