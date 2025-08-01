@@ -529,6 +529,32 @@
   $: isCompleted = scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8);
   
   $: gradeDef = isCompleted ? unifiedGradeDefinitions[unifiedGrade] : sessionGradeDefinitions[scoreData?.sessionHistory?.[scoreData.sessionHistory.length - 1]?.grade || 'needWork'];
+
+  // 段階的表示ロジック
+  $: showDetailedAnalysis = scoreData?.sessionHistory && (
+    (scoreData.sessionHistory.length >= 4 && scoreData.sessionHistory.length < 8) || // 4-7セッション: 技術分析のみ
+    (scoreData.sessionHistory.length >= 8) // 8セッション: 全タブ
+  );
+
+  $: availableTabs = (() => {
+    if (!scoreData?.sessionHistory || scoreData.sessionHistory.length < 4) {
+      return [];
+    }
+    
+    const baseTabs = [
+      { id: 'technical', label: '🔬 技術分析' }
+    ];
+    
+    if (scoreData.sessionHistory.length >= 8) {
+      baseTabs.push(
+        { id: 'intervals', label: '🎵 音程別進捗' },
+        { id: 'consistency', label: '📊 一貫性グラフ' },
+        { id: 'statistics', label: '📈 セッション統計' }
+      );
+    }
+    
+    return baseTabs;
+  })();
   
   onMount(() => {
     // アニメーション開始
@@ -819,44 +845,25 @@
     
   </div>
   
-  <!-- デバッグエリア完成機能の統合表示 -->
-  {#if currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics}
-    <div class="debug-integration-section" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
+  <!-- 詳細分析ダッシュボード -->
+  {#if showDetailedAnalysis && (currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics)}
+    <div class="detailed-analysis-dashboard" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
       
       
       
       <!-- 詳細統計（タブ形式） -->
-      {#if intervalData.length > 0 || consistencyData.length > 0 || sessionStatistics}
+      {#if availableTabs.length > 0}
         <div class="scoring-tabs-container">
           <div class="scoring-tabs">
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'technical'}
-              on:click={() => switchTab('technical')}
-            >
-              技術分析
-            </button>
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'intervals'}
-              on:click={() => switchTab('intervals')}
-            >
-              音程別進捗
-            </button>
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'consistency'}
-              on:click={() => switchTab('consistency')}
-            >
-              一貫性グラフ
-            </button>
-            <button 
-              class="scoring-tab"
-              class:active={activeTab === 'statistics'}
-              on:click={() => switchTab('statistics')}
-            >
-              セッション統計
-            </button>
+            {#each availableTabs as tab}
+              <button 
+                class="scoring-tab"
+                class:active={activeTab === tab.id}
+                on:click={() => switchTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            {/each}
           </div>
           
           <!-- 技術分析タブ -->
@@ -1391,8 +1398,8 @@
     font-size: 0.875rem;
   }
   
-  /* デバッグエリア統合スタイル */
-  .debug-integration-section {
+  /* 詳細分析ダッシュボードスタイル */
+  .detailed-analysis-dashboard {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #e5e7eb;
