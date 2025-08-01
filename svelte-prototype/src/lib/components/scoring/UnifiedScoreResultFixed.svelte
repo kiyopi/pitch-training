@@ -547,41 +547,94 @@
 
   // 総合統計データ生成
   function generateComprehensiveStatistics(sessionHistory, allCentData, robustStats) {
+    console.log('\n=== DEBUG: セッション統計計算開始 ===');
+    console.log('📊 sessionHistory length:', sessionHistory.length);
+    console.log('📊 allCentData length:', allCentData.length);
+    console.log('📊 robustStats:', robustStats);
+    
     const totalAttempts = allCentData.length;
+    
+    // セッション構造詳細ログ
+    sessionHistory.forEach((session, index) => {
+      console.log(`\n--- セッション ${index + 1} 詳細 ---`);
+      console.log('🎵 基音:', session.baseNote);
+      console.log('📈 スコア関連:', {
+        score: session.score,
+        sessionScore: session.sessionScore,
+        totalScore: session.totalScore,
+        accuracy: session.accuracy
+      });
+      console.log('⏱️ 時間関連:', {
+        duration: session.duration,
+        sessionDuration: session.sessionDuration,
+        time: session.time,
+        timestamp: session.timestamp
+      });
+      console.log('🎯 成績関連:', {
+        streakCount: session.streakCount,
+        maxStreak: session.maxStreak,
+        consecutiveCorrect: session.consecutiveCorrect,
+        grade: session.grade
+      });
+      console.log('🎼 音程結果:', session.noteResults ? session.noteResults.length : 'なし');
+      if (session.noteResults) {
+        const correctCount = session.noteResults.filter(note => note.correct).length;
+        console.log('✅ 正解数:', correctCount, '/', session.noteResults.length);
+      }
+    });
     
     // 成功率計算の修正（空配列対策）
     const totalCorrect = sessionHistory.reduce((sum, session) => {
       if (session.noteResults && Array.isArray(session.noteResults)) {
-        return sum + session.noteResults.filter(note => note.correct).length;
+        const correctInSession = session.noteResults.filter(note => note.correct).length;
+        console.log(`📊 セッション正解数: ${correctInSession}`);
+        return sum + correctInSession;
       }
       return sum;
     }, 0);
     
+    console.log('📊 総正解数:', totalCorrect, '/ 総挑戦数:', totalAttempts);
+    
     const rawSuccessRate = totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
     const correctedSuccessRate = Math.min(100, rawSuccessRate * 1.15);
+    
+    console.log('📊 成功率:', rawSuccessRate, '% → 補正後:', correctedSuccessRate, '%');
 
     // セッションスコア計算の修正
-    const sessionScores = sessionHistory.map(s => {
+    const sessionScores = sessionHistory.map((s, i) => {
       // 複数のスコアフィールドをチェック
-      return s.score || s.sessionScore || s.totalScore || 0;
+      const score = s.score || s.sessionScore || s.totalScore || 0;
+      console.log(`📊 セッション${i+1}スコア:`, score, '(元データ:', {score: s.score, sessionScore: s.sessionScore, totalScore: s.totalScore}, ')');
+      return score;
     }).filter(score => !isNaN(score) && score >= 0);
+    
+    console.log('📊 有効スコア配列:', sessionScores);
     
     const rawAverageScore = sessionScores.length > 0 ? 
       sessionScores.reduce((sum, s) => sum + s, 0) / sessionScores.length : 0;
     const correctedAverageScore = Math.min(100, rawAverageScore + (robustStats.accuracy - rawAverageScore) * 0.3);
+    
+    console.log('📊 平均スコア:', rawAverageScore, '→ 補正後:', correctedAverageScore);
 
     // 練習時間計算の修正
-    const totalPracticeTime = sessionHistory.reduce((sum, session) => {
+    const totalPracticeTime = sessionHistory.reduce((sum, session, i) => {
       const duration = session.duration || session.sessionDuration || session.time || 0;
+      console.log(`⏱️ セッション${i+1}時間:`, duration, '(元データ:', {duration: session.duration, sessionDuration: session.sessionDuration, time: session.time}, ')');
       return sum + (typeof duration === 'number' ? duration : 0);
     }, 0);
+    
+    console.log('⏱️ 総練習時間:', totalPracticeTime, 'ms');
 
     // 連続正解計算の修正
-    const streakCounts = sessionHistory.map(session => 
-      session.streakCount || session.maxStreak || session.consecutiveCorrect || 0
-    ).filter(count => !isNaN(count) && count >= 0);
+    const streakCounts = sessionHistory.map((session, i) => {
+      const count = session.streakCount || session.maxStreak || session.consecutiveCorrect || 0;
+      console.log(`🎯 セッション${i+1}連続正解:`, count, '(元データ:', {streakCount: session.streakCount, maxStreak: session.maxStreak, consecutiveCorrect: session.consecutiveCorrect}, ')');
+      return count;
+    }).filter(count => !isNaN(count) && count >= 0);
     
     const maxConsecutiveCorrect = streakCounts.length > 0 ? Math.max(...streakCounts) : 0;
+    
+    console.log('🎯 連続正解配列:', streakCounts, '→ 最大:', maxConsecutiveCorrect);
 
     // 改善率計算の修正（NaN対策）
     let improvementRate = 0;
@@ -589,12 +642,17 @@
       const firstScore = sessionScores[0];
       const lastScore = sessionScores[sessionScores.length - 1];
       
+      console.log('📈 改善率計算:', firstScore, '→', lastScore);
+      
       if (firstScore > 0) {
         improvementRate = Math.round(((lastScore - firstScore) / firstScore) * 100);
       } else if (lastScore > 0) {
         improvementRate = 100; // 0からの改善は100%とする
       }
     }
+    
+    console.log('📈 改善率:', improvementRate, '%');
+    console.log('=== DEBUG: セッション統計計算終了 ===\n');
 
     return {
       totalAttempts,
