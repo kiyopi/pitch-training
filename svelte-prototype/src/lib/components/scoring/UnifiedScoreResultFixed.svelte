@@ -530,31 +530,15 @@
   
   $: gradeDef = isCompleted ? unifiedGradeDefinitions[unifiedGrade] : sessionGradeDefinitions[scoreData?.sessionHistory?.[scoreData.sessionHistory.length - 1]?.grade || 'needWork'];
 
-  // 段階的表示ロジック
-  $: showDetailedAnalysis = scoreData?.sessionHistory && (
-    (scoreData.sessionHistory.length >= 4 && scoreData.sessionHistory.length < 8) || // 4-7セッション: 技術分析のみ
-    (scoreData.sessionHistory.length >= 8) // 8セッション: 全タブ
-  );
+  // 8セッション完走時の詳細分析表示
+  $: showDetailedAnalysis = scoreData?.sessionHistory && scoreData.sessionHistory.length >= 8;
 
-  $: availableTabs = (() => {
-    if (!scoreData?.sessionHistory || scoreData.sessionHistory.length < 4) {
-      return [];
-    }
-    
-    const baseTabs = [
-      { id: 'technical', label: '🔬 技術分析' }
-    ];
-    
-    if (scoreData.sessionHistory.length >= 8) {
-      baseTabs.push(
-        { id: 'intervals', label: '🎵 音程別進捗' },
-        { id: 'consistency', label: '📊 一貫性グラフ' },
-        { id: 'statistics', label: '📈 セッション統計' }
-      );
-    }
-    
-    return baseTabs;
-  })();
+  $: availableTabs = [
+    { id: 'technical', label: '🔬 技術分析' },
+    { id: 'intervals', label: '🎵 音程別進捗' },
+    { id: 'consistency', label: '📊 一貫性グラフ' },
+    { id: 'statistics', label: '📈 セッション統計' }
+  ];
   
   onMount(() => {
     // アニメーション開始
@@ -852,7 +836,7 @@
       
       
       <!-- 詳細統計（タブ形式） -->
-      {#if availableTabs.length > 0}
+      {#if showDetailedAnalysis}
         <div class="scoring-tabs-container">
           <div class="scoring-tabs">
             {#each availableTabs as tab}
@@ -867,7 +851,7 @@
           </div>
           
           <!-- 技術分析タブ -->
-          {#if activeTab === 'technical' && technicalAnalysis.measurement === 'complete' && scoreData?.sessionHistory && scoreData.sessionHistory.length >= 4}
+          {#if activeTab === 'technical' && technicalAnalysis.measurement === 'complete' && scoreData?.sessionHistory && scoreData.sessionHistory.length >= 8}
             <div class="tab-panel">
               <div class="technical-analysis-content">
                 <h4 class="analysis-title">🔬 技術分析結果</h4>
