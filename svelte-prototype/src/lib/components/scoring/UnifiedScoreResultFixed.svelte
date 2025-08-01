@@ -962,41 +962,74 @@
     return errorAnalysis.measurement === 'complete' ? errorAnalysis : null;
   })();
 
-  // セッション履歴からS-E級統合評価を算出（ハイブリッド技術誤差補正版）
+  // セッション履歴からS-E級統合評価を算出（改良版）
   $: unifiedGrade = (() => {
     if (!scoreData?.sessionHistory || scoreData.sessionHistory.length === 0) return 'E';
     
-    // 🔬 ハイブリッド技術誤差分析
+    // 🔬 技術誤差分析（デバッグログ追加）
     const errorAnalysis = detailedAnalysisData || performHybridStatisticalAnalysis(scoreData.sessionHistory, scoreData?.mode || 'random');
     
     const sessionGrades = scoreData.sessionHistory.map(session => session.grade);
     const excellentCount = sessionGrades.filter(g => g === 'excellent').length;
     const goodCount = sessionGrades.filter(g => g === 'good').length;
     const passCount = sessionGrades.filter(g => g === 'pass').length;
+    const needWorkCount = sessionGrades.filter(g => g === 'needWork').length;
     const totalGoodSessions = excellentCount + goodCount + passCount;
-    
-    // 統合評価の計算（ハイブリッド技術誤差補正版）
     const totalSessions = scoreData.sessionHistory.length;
-    let excellentRatio = excellentCount / totalSessions;
-    let goodRatio = totalGoodSessions / totalSessions;
     
-    // 🔬 ハイブリッド技術誤差補正の適用
-    if (errorAnalysis.measurement === 'complete' && errorAnalysis.confidenceLevel !== 'low') {
-      excellentRatio *= errorAnalysis.correctionFactor;
-      goodRatio *= errorAnalysis.correctionFactor;
+    // 📊 基本比率計算
+    const excellentRatio = excellentCount / totalSessions;
+    const goodRatio = totalGoodSessions / totalSessions;
+    const passRatio = (excellentCount + goodCount + passCount) / totalSessions;
+    
+    // 🔬 改良版技術誤差補正システム
+    let correctedExcellentRatio = excellentRatio;
+    let correctedGoodRatio = goodRatio;
+    let correctedPassRatio = passRatio;
+    
+    if (errorAnalysis.measurement === 'complete') {
+      // 技術誤差による判定向上（より保守的なアプローチ）
+      const improvementFactor = Math.min(errorAnalysis.correctionFactor - 1.0, 0.2); // 最大20%の向上
       
-      // 上限を1.0に制限
-      excellentRatio = Math.min(excellentRatio, 1.0);
-      goodRatio = Math.min(goodRatio, 1.0);
+      if (improvementFactor > 0) {
+        correctedExcellentRatio = Math.min(excellentRatio + (improvementFactor * 0.3), 0.95);
+        correctedGoodRatio = Math.min(goodRatio + (improvementFactor * 0.5), 0.98);
+        correctedPassRatio = Math.min(passRatio + improvementFactor, 1.0);
+      }
     }
     
-    // S-E級判定（補正後の値で判定）
-    if (excellentRatio >= 0.9 && goodRatio >= 0.95) return 'S';
-    if (excellentRatio >= 0.7 && goodRatio >= 0.85) return 'A';
-    if (excellentRatio >= 0.5 && goodRatio >= 0.75) return 'B';
-    if (goodRatio >= 0.65) return 'C';
-    if (goodRatio >= 0.50) return 'D';
-    return 'E';
+    // 📊 S-E級判定（改良版基準）
+    console.log('\n=== 🎯 S-E級判定デバッグ ===');
+    console.log('📊 基本統計:', {
+      excellentCount, goodCount, passCount, needWorkCount, totalSessions
+    });
+    console.log('📊 基本比率:', {
+      excellentRatio: Math.round(excellentRatio * 100) + '%',
+      goodRatio: Math.round(goodRatio * 100) + '%',
+      passRatio: Math.round(passRatio * 100) + '%'
+    });
+    console.log('🔬 補正後比率:', {
+      correctedExcellentRatio: Math.round(correctedExcellentRatio * 100) + '%',
+      correctedGoodRatio: Math.round(correctedGoodRatio * 100) + '%',
+      correctedPassRatio: Math.round(correctedPassRatio * 100) + '%'
+    });
+    
+    // 改良された判定基準（より現実的な基準）
+    let grade = 'E';
+    if (correctedExcellentRatio >= 0.75 && correctedGoodRatio >= 0.90) {
+      grade = 'S';
+    } else if (correctedExcellentRatio >= 0.50 && correctedGoodRatio >= 0.80) {
+      grade = 'A';
+    } else if (correctedExcellentRatio >= 0.30 && correctedGoodRatio >= 0.70) {
+      grade = 'B';
+    } else if (correctedGoodRatio >= 0.50 || correctedPassRatio >= 0.65) {
+      grade = 'C';
+    } else if (correctedPassRatio >= 0.40) {
+      grade = 'D';
+    }
+    
+    console.log('🎯 最終判定:', grade);
+    return grade;
   })();
   
   // 🔬 ハイブリッド技術誤差分析結果
@@ -1146,27 +1179,27 @@
             <div class="grade-table">
               <div class="grade-row">
                 <span class="grade-label">S級マスター</span>
-                <span class="grade-condition">優秀90%以上 + 良好以上95%以上</span>
+                <span class="grade-condition">優秀75%以上 + 良好以上90%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">A級エキスパート</span>
-                <span class="grade-condition">優秀70%以上 + 良好以上85%以上</span>
+                <span class="grade-condition">優秀50%以上 + 良好以上80%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">B級プロフィシエント</span>
-                <span class="grade-condition">優秀50%以上 + 良好以上75%以上</span>
+                <span class="grade-condition">優秀30%以上 + 良好以上70%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">C級アドバンス</span>
-                <span class="grade-condition">良好以上65%以上</span>
+                <span class="grade-condition">良好以上50%以上 または 合格以上65%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">D級ビギナー</span>
-                <span class="grade-condition">良好以上50%以上</span>
+                <span class="grade-condition">合格以上40%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">E級スターター</span>
-                <span class="grade-condition">良好以上50%未満</span>
+                <span class="grade-condition">合格以上40%未満</span>
               </div>
             </div>
           </div>
@@ -1735,11 +1768,11 @@
                     <div class="stats-grid">
                       <div class="stat-item">
                         <span class="stat-label">総練習時間:</span>
-                        <span class="stat-value">{Math.floor(detailedAnalysisData.comprehensiveStatistics.totalPracticeTime / 60)}時間{detailedAnalysisData.comprehensiveStatistics.totalPracticeTime % 60}分</span>
+                        <span class="stat-value">{Math.floor(detailedAnalysisData.comprehensiveStatistics.totalPracticeTime / 60000)}分{Math.floor((detailedAnalysisData.comprehensiveStatistics.totalPracticeTime % 60000) / 1000)}秒</span>
                       </div>
                       <div class="stat-item">
                         <span class="stat-label">平均セッション時間:</span>
-                        <span class="stat-value">{detailedAnalysisData.comprehensiveStatistics.averageSessionTime}分</span>
+                        <span class="stat-value">{Math.floor(detailedAnalysisData.comprehensiveStatistics.averageSessionTime / 1000)}秒</span>
                       </div>
                       <div class="stat-item">
                         <span class="stat-label">最大連続正解:</span>
