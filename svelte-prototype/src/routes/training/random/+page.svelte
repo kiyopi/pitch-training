@@ -1244,6 +1244,94 @@
     });
   }
 
+  // localStorage セッション履歴から音程別データを生成（8セッション完了時用）
+  function generateIntervalDataFromSessionHistory(sessionHistory) {
+    if (!sessionHistory || !Array.isArray(sessionHistory)) {
+      console.warn('⚠️ [RandomTraining] sessionHistory が無効です');
+      return [];
+    }
+
+    // 音程タイプの定義（ドレミファソラシド↑の8音階）
+    const intervalTypes = [
+      { type: 'unison', name: 'ユニゾン（ド）', noteIndex: 0 },
+      { type: 'major_second', name: '長2度（レ）', noteIndex: 1 },
+      { type: 'major_third', name: '長3度（ミ）', noteIndex: 2 },
+      { type: 'perfect_fourth', name: '完全4度（ファ）', noteIndex: 3 },
+      { type: 'perfect_fifth', name: '完全5度（ソ）', noteIndex: 4 },
+      { type: 'major_sixth', name: '長6度（ラ）', noteIndex: 5 },
+      { type: 'major_seventh', name: '長7度（シ）', noteIndex: 6 },
+      { type: 'octave', name: 'オクターブ（ド↑）', noteIndex: 7 }
+    ];
+
+    const intervalStats = {};
+
+    // 各音程の統計を初期化
+    intervalTypes.forEach(interval => {
+      intervalStats[interval.type] = {
+        type: interval.type,
+        attempts: 0,
+        successCount: 0,
+        accuracySum: 0,
+        accuracyValues: []
+      };
+    });
+
+    // セッション履歴を解析
+    sessionHistory.forEach(session => {
+      if (!session.noteResults || !Array.isArray(session.noteResults)) {
+        return;
+      }
+
+      session.noteResults.forEach((noteResult, noteIndex) => {
+        if (noteIndex >= intervalTypes.length) return;
+
+        const intervalType = intervalTypes[noteIndex].type;
+        const stats = intervalStats[intervalType];
+
+        stats.attempts++;
+
+        if (noteResult.accuracy !== 'notMeasured' && typeof noteResult.accuracy === 'number') {
+          stats.accuracyValues.push(noteResult.accuracy);
+          stats.accuracySum += noteResult.accuracy;
+          
+          // 70%以上を成功とみなす
+          if (noteResult.accuracy >= 70) {
+            stats.successCount++;
+          }
+        }
+      });
+    });
+
+    // 統計からintervalDataを生成
+    return intervalTypes.map(interval => {
+      const stats = intervalStats[interval.type];
+      
+      if (stats.attempts === 0) {
+        return {
+          type: interval.type,
+          mastery: 0,
+          attempts: 0,
+          accuracy: 0
+        };
+      }
+
+      const averageAccuracy = stats.accuracyValues.length > 0 
+        ? Math.round(stats.accuracySum / stats.accuracyValues.length)
+        : 0;
+      
+      const mastery = stats.accuracyValues.length > 0
+        ? Math.round((stats.successCount / stats.accuracyValues.length) * 100)
+        : 0;
+
+      return {
+        type: interval.type,
+        mastery: mastery,
+        attempts: stats.attempts,
+        accuracy: averageAccuracy
+      };
+    });
+  }
+
   // 実際のトレーニング結果から一貫性データを生成
   function generateConsistencyDataFromResults(results) {
     const baseScore = currentUnifiedScoreData?.averageAccuracy || 70;
@@ -1976,6 +2064,12 @@
   // リアクティブシステム
   $: canStartTraining = microphoneState === 'granted' && !isSamplerLoading && sampler && microphoneHealthy;
   $: canRestartSession = trainingPhase === 'results';
+
+  // 8セッション完了時：localStorageデータから音程別データを生成
+  $: if ($unifiedScoreData && $isCompleted && $unifiedScoreData.sessionHistory) {
+    intervalData = generateIntervalDataFromSessionHistory($unifiedScoreData.sessionHistory);
+    console.log('🎵 [RandomTraining] intervalData生成完了:', intervalData.length, '件');
+  }
   
   // 状態変化時の自動スクロール（ダイレクトアクセス、マイク許可後の画面遷移時）
   $: if (trainingPhase === 'setup' && microphoneState === 'granted') {
