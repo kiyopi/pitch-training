@@ -1,5 +1,5 @@
 <script>
-  import { AlertCircle, TrendingUp, Zap } from 'lucide-svelte';
+  import { AlertCircle, TrendingUp, Zap, Crown, Star, BookOpen, Music } from 'lucide-svelte';
   
   export let intervalData = [];
   export let className = '';
@@ -24,32 +24,45 @@
   
   // 習得レベルに応じたメッセージ
   const getMasteryMessage = (mastery) => {
-    if (mastery >= 90) return 'マスター';
-    if (mastery >= 70) return '習得中';
-    if (mastery >= 50) return '練習中';
-    if (mastery >= 30) return '初級';
-    return '未習得';
+    if (mastery >= 90) return '得意';
+    if (mastery >= 70) return '良好';
+    if (mastery >= 50) return '普通';
+    if (mastery >= 30) return '苦手';
+    return '要練習';
   };
   
-  // 習得レベルに応じたアイコン
+  // 習得レベルに応じたアイコンコンポーネント
   const getMasteryIcon = (mastery) => {
-    if (mastery >= 90) return '⭐';
-    if (mastery >= 70) return '🌟';
-    if (mastery >= 50) return '💪';
-    if (mastery >= 30) return '🌱';
-    return '🌰';
+    if (mastery >= 90) return Crown;
+    if (mastery >= 70) return Star;
+    if (mastery >= 50) return TrendingUp;
+    if (mastery >= 30) return AlertCircle;
+    return BookOpen;
+  };
+
+  // 習得レベルに応じた色
+  const getMasteryColor = (mastery) => {
+    if (mastery >= 90) return 'text-yellow-500';   // 得意 - ゴールド
+    if (mastery >= 70) return 'text-blue-500';     // 良好 - ブルー
+    if (mastery >= 50) return 'text-green-500';    // 普通 - グリーン
+    if (mastery >= 30) return 'text-orange-500';   // 苦手 - オレンジ
+    return 'text-red-500';                         // 要練習 - レッド
   };
 </script>
 
-<div class="interval-progress-tracker {className} bg-white rounded-xl shadow-lg p-6">
-  <h3 class="text-lg font-semibold text-gray-800 mb-4">音程別習得状況</h3>
+<div class="interval-progress-tracker {className}">
+  <h3 class="tracker-title">音程別習得状況</h3>
   
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {#each intervalData as interval}
-      <div class="interval-card bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200">
+      <div class="interval-card">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <span class="text-2xl">{getMasteryIcon(interval.mastery)}</span>
+            <svelte:component 
+              this={getMasteryIcon(interval.mastery)} 
+              size="20" 
+              class={getMasteryColor(interval.mastery)}
+            />
             <div>
               <div class="font-medium text-gray-800">
                 {intervalInfo[interval.type]?.name || interval.type}
@@ -69,9 +82,9 @@
           </div>
         </div>
         
-        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div class="progress-bar-bg">
           <div 
-            class="bg-gradient-to-r {intervalInfo[interval.type]?.color || 'from-gray-400 to-gray-600'} h-3 transition-all duration-500"
+            class="progress-bar-fill bg-gradient-to-r {intervalInfo[interval.type]?.color || 'from-gray-400 to-gray-600'}"
             style="width: {interval.mastery}%"
           />
         </div>
@@ -106,20 +119,70 @@
   </div>
   
   {#if intervalData.length === 0}
-    <div class="text-center py-8 text-gray-500">
-      <div class="text-4xl mb-2">🎵</div>
-      <div>まだ音程データがありません</div>
+    <div class="empty-state">
+      <Music size="48" class="empty-icon" />
+      <div class="empty-text">まだ音程データがありません</div>
     </div>
   {/if}
 </div>
 
 <style>
+  .interval-progress-tracker {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    padding: var(--space-6);
+  }
+
+  .tracker-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: var(--space-4);
+  }
+
   .interval-card {
-    border: 1px solid transparent;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    padding: var(--space-4);
+    transition: all 0.2s ease-in-out;
   }
   
   .interval-card:hover {
-    border-color: #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: var(--color-gray-300);
     transform: translateY(-1px);
+  }
+
+  .progress-bar-bg {
+    width: 100%;
+    background-color: var(--color-gray-200);
+    border-radius: 9999px;
+    height: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    transition: all 0.5s ease-in-out;
+    border-radius: 9999px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-8) 0;
+    color: var(--color-gray-500);
+  }
+
+  .empty-icon {
+    margin: 0 auto var(--space-2);
+    color: var(--color-gray-400);
+  }
+
+  .empty-text {
+    font-size: var(--text-sm);
   }
 </style>
