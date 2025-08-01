@@ -764,15 +764,35 @@
       }
     });
     
-    // 成功率計算の修正（centsベースで直接判定）
+    // 成功率計算の修正（グレードベースで確実な判定）
     const totalCorrect = sessionHistory.reduce((sum, session) => {
       if (session.noteResults && Array.isArray(session.noteResults)) {
         const correctInSession = session.noteResults.filter(note => {
-          // centsから直接判定（合格以上 = ±40¢以内）
-          const absCents = Math.abs(note.cents || 0);
-          return absCents <= 40;
+          // 複数の判定基準を使用（合格以上 = pass, good, excellent）
+          if (note.grade) {
+            return ['pass', 'good', 'excellent'].includes(note.grade);
+          }
+          // centsベース判定（±40¢以内）
+          if (note.cents !== undefined && note.cents !== null) {
+            const absCents = Math.abs(note.cents);
+            return absCents <= 40;
+          }
+          // centDifferenceベース判定
+          if (note.centDifference !== undefined && note.centDifference !== null) {
+            const absCents = Math.abs(note.centDifference);
+            return absCents <= 40;
+          }
+          // isCorrect直接判定
+          if (note.correct !== undefined) {
+            return note.correct;
+          }
+          // accuracy判定（70%以上を合格とする）
+          if (note.accuracy !== undefined) {
+            return note.accuracy >= 70;
+          }
+          return false;
         }).length;
-        console.log(`📊 セッション正解数: ${correctInSession}/${session.noteResults.length} (±40¢以内)`);
+        console.log(`📊 セッション正解数: ${correctInSession}/${session.noteResults.length} (合格以上)`);
         return sum + correctInSession;
       }
       return sum;
@@ -781,11 +801,11 @@
     console.log('📊 総正解数:', totalCorrect, '/ 総挑戦数:', totalAttempts);
     
     const rawSuccessRate = totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
-    const correctedSuccessRate = Math.min(100, rawSuccessRate * 1.15);
+    const correctedSuccessRate = Math.min(100, rawSuccessRate * 1.1); // より保守的な補正
     
     console.log('📊 成功率:', rawSuccessRate, '% → 補正後:', correctedSuccessRate, '%');
 
-    // セッションスコア計算の修正（グレードベース）
+    // セッションスコア計算の修正（複数データソース対応）
     const gradeToScore = {
       'excellent': 95,  // 優秀
       'good': 80,       // 良好
@@ -794,17 +814,41 @@
     };
     
     const sessionScores = sessionHistory.map((s, i) => {
-      // 方法1: グレードから変換
-      const gradeScore = gradeToScore[s.grade] || 0;
-      // 方法2: 精度を使用（accuracyフィールドがある場合）
-      const accuracyScore = s.accuracy || 0;
-      // 最終的なスコア決定
-      const score = gradeScore || accuracyScore;
+      let score = 0;
       
-      console.log(`📊 セッション${i+1}スコア:`, score, 
-        '(グレード:', s.grade, '→', gradeScore, 
-        ', 精度:', s.accuracy, ')');
-      return score;
+      // 方法1: 既存のscoreフィールドを使用
+      if (s.score && s.score > 0) {
+        score = s.score;
+        console.log(`📊 セッション${i+1}スコア: ${score} (既存score使用)`);
+      }
+      // 方法2: グレードから変換
+      else if (s.grade && gradeToScore[s.grade]) {
+        score = gradeToScore[s.grade];
+        console.log(`📊 セッション${i+1}スコア: ${score} (グレード ${s.grade} から変換)`);
+      }
+      // 方法3: 精度を使用（accuracyフィールドがある場合）
+      else if (s.accuracy && s.accuracy > 0) {
+        score = s.accuracy;
+        console.log(`📊 セッション${i+1}スコア: ${score} (accuracy使用)`);
+      }
+      // 方法4: noteResultsから算出
+      else if (s.noteResults && Array.isArray(s.noteResults) && s.noteResults.length > 0) {
+        const correctCount = s.noteResults.filter(note => {
+          if (note.grade) return ['pass', 'good', 'excellent'].includes(note.grade);
+          if (note.cents !== undefined) return Math.abs(note.cents) <= 40;
+          if (note.correct !== undefined) return note.correct;
+          return false;
+        }).length;
+        score = Math.round((correctCount / s.noteResults.length) * 100);
+        console.log(`📊 セッション${i+1}スコア: ${score} (noteResultsから算出: ${correctCount}/${s.noteResults.length})`);
+      }
+      // 方法5: デフォルト値（要練習として扱う）
+      else {
+        score = 30; // needWorkのデフォルトスコア
+        console.log(`📊 セッション${i+1}スコア: ${score} (デフォルト値)`);
+      }
+      
+      return Math.max(0, Math.min(100, score)); // 0-100の範囲内に制限
     }).filter(score => !isNaN(score) && score >= 0);
     
     console.log('📊 有効スコア配列:', sessionScores);
@@ -817,43 +861,71 @@
 
     // 練習時間計算の修正（推定値も使用）
     const totalPracticeTime = sessionHistory.reduce((sum, session, i) => {
-      // 複数のフィールドから時間を取得、推定値も使用
-      let duration = session.duration || session.sessionDuration || session.time || 
-                    session.elapsedTime || session.totalTime;
+      let duration = 0;
       
-      // 時間データがない場合は推定（1セッション = 平均2-3分）
-      if (!duration || duration === 0) {
-        if (session.noteResults && session.noteResults.length > 0) {
-          // 音程数 × 平均15秒 で推定
-          duration = session.noteResults.length * 15 * 1000; // ms単位
-          console.log(`⏱️ セッション${i+1}時間: 推定 ${duration}ms (音程数${session.noteResults.length} × 15秒)`);
-        } else {
-          // デフォルトで2分を想定
-          duration = 2 * 60 * 1000; // 2分
-          console.log(`⏱️ セッション${i+1}時間: デフォルト推定 ${duration}ms (2分)`);
+      // 複数のフィールドから時間を取得
+      const timeFields = [
+        session.duration, session.sessionDuration, session.time,
+        session.elapsedTime, session.totalTime, session.practiceTime
+      ];
+      
+      // 有効な時間データを探す
+      for (const timeField of timeFields) {
+        if (timeField && typeof timeField === 'number' && timeField > 0) {
+          duration = timeField;
+          console.log(`⏱️ セッション${i+1}時間: ${duration}ms (データから取得)`);
+          break;
         }
-      } else {
-        console.log(`⏱️ セッション${i+1}時間:`, duration, '(元データ:', {duration: session.duration, sessionDuration: session.sessionDuration, time: session.time}, ')');
       }
       
-      return sum + (typeof duration === 'number' ? duration : 0);
+      // 時間データがない場合は推定
+      if (duration === 0) {
+        if (session.noteResults && Array.isArray(session.noteResults) && session.noteResults.length > 0) {
+          // 音程数 × 平均20秒 で推定（実際の操作時間を考慮）
+          duration = session.noteResults.length * 20 * 1000; // ms単位
+          console.log(`⏱️ セッション${i+1}時間: 推定 ${duration}ms (音程数${session.noteResults.length} × 20秒)`);
+        } else {
+          // デフォルトで2.5分を想定（8音程の標準時間）
+          duration = 2.5 * 60 * 1000; // 2.5分
+          console.log(`⏱️ セッション${i+1}時間: デフォルト推定 ${duration}ms (2.5分)`);
+        }
+      }
+      
+      return sum + duration;
     }, 0);
     
     console.log('⏱️ 総練習時間:', totalPracticeTime, 'ms', '=', Math.round(totalPracticeTime / 60000), '分');
 
     // 連続正解計算の修正（noteResultsから算出）
     const streakCounts = sessionHistory.map((session, i) => {
-      let count = session.streakCount || session.maxStreak || session.consecutiveCorrect || 0;
+      let count = 0;
       
-      // データがない場合はnoteResultsから連続正解を計算
-      if (count === 0 && session.noteResults && Array.isArray(session.noteResults)) {
+      // 方法1: 既存の連続正解データを使用
+      const existingStreak = session.streakCount || session.maxStreak || session.consecutiveCorrect;
+      if (existingStreak && existingStreak > 0) {
+        count = existingStreak;
+        console.log(`🎯 セッション${i+1}連続正解: ${count} (既存データ使用)`);
+      }
+      // 方法2: noteResultsから連続正解を計算
+      else if (session.noteResults && Array.isArray(session.noteResults) && session.noteResults.length > 0) {
         let maxStreak = 0;
         let currentStreak = 0;
         
-        session.noteResults.forEach(note => {
-          const isCorrect = note.correct || note.isCorrect || note.success || 
-                           (note.accuracy && note.accuracy >= 70) ||
-                           (note.centDifference && Math.abs(note.centDifference) <= 50);
+        session.noteResults.forEach((note, noteIndex) => {
+          let isCorrect = false;
+          
+          // 複数の判定基準を使用
+          if (note.grade) {
+            isCorrect = ['pass', 'good', 'excellent'].includes(note.grade);
+          } else if (note.cents !== undefined && note.cents !== null) {
+            isCorrect = Math.abs(note.cents) <= 40;
+          } else if (note.centDifference !== undefined && note.centDifference !== null) {
+            isCorrect = Math.abs(note.centDifference) <= 40;
+          } else if (note.correct !== undefined) {
+            isCorrect = note.correct;
+          } else if (note.accuracy !== undefined) {
+            isCorrect = note.accuracy >= 70;
+          }
           
           if (isCorrect) {
             currentStreak++;
@@ -864,13 +936,15 @@
         });
         
         count = maxStreak;
-        console.log(`🎯 セッション${i+1}連続正解: noteResultsから算出 ${count}`);
-      } else {
-        console.log(`🎯 セッション${i+1}連続正解:`, count, '(元データ:', {streakCount: session.streakCount, maxStreak: session.maxStreak, consecutiveCorrect: session.consecutiveCorrect}, ')');
+        console.log(`🎯 セッション${i+1}連続正解: ${count} (noteResultsから算出)`);
+      }
+      // 方法3: デフォルト値（0）
+      else {
+        console.log(`🎯 セッション${i+1}連続正解: ${count} (データなし)`);
       }
       
-      return count;
-    }).filter(count => !isNaN(count) && count >= 0);
+      return Math.max(0, count); // 負の値を防ぐ
+    }).filter(count => !isNaN(count));
     
     const maxConsecutiveCorrect = streakCounts.length > 0 ? Math.max(...streakCounts) : 0;
     
