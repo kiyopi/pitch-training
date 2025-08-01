@@ -438,8 +438,9 @@
       }
     };
 
-    // Tab 2: 音程別分析データ  
+    // Tab 2: 音程別分析データ（強化版）
     const intervalAnalysis = generateIntervalAnalysis(sessionHistory);
+    const intervalMastery = analyzeIntervalMastery(intervalAnalysis);
 
     // Tab 3: 一貫性分析データ
     const consistencyAnalysis = generateConsistencyAnalysis(sessionHistory, stats, robustStats);
@@ -450,18 +451,20 @@
     return {
       technicalAnalysis,
       intervalAnalysis,
+      intervalMastery,
       consistencyAnalysis,
       comprehensiveStatistics
     };
   }
 
-  // 音程別分析データ生成
+  // 音程別分析データ生成（強化版 - 基音別分析と同レベル）
   function generateIntervalAnalysis(sessionHistory) {
     const intervalData = {};
     const intervalTypes = ['unison', 'minor_second', 'major_second', 'minor_third', 'major_third', 
                           'perfect_fourth', 'tritone', 'perfect_fifth', 'minor_sixth', 'major_sixth', 
                           'minor_seventh', 'major_seventh', 'octave'];
 
+    // 📊 音程別詳細分析
     intervalTypes.forEach(intervalType => {
       const intervalResults = [];
       sessionHistory.forEach(session => {
@@ -470,7 +473,9 @@
             if (note.intervalType === intervalType && note.cents !== null) {
               intervalResults.push({
                 cents: Math.abs(note.cents),
-                correct: note.correct
+                correct: note.correct,
+                sessionId: session.sessionId || 1,
+                baseNote: session.baseNote || 'Unknown'
               });
             }
           });
@@ -482,17 +487,113 @@
         const averageError = intervalResults.reduce((sum, r) => sum + r.cents, 0) / intervalResults.length;
         const technicalErrorRate = Math.round(averageError);
         
+        // 📈 グレード分布計算
+        const gradeCount = { excellent: 0, good: 0, pass: 0, needWork: 0 };
+        intervalResults.forEach(result => {
+          if (result.cents <= 15) gradeCount.excellent++;
+          else if (result.cents <= 25) gradeCount.good++;
+          else if (result.cents <= 40) gradeCount.pass++;
+          else gradeCount.needWork++;
+        });
+
         intervalData[intervalType] = {
           mastery: Math.round((correctCount / intervalResults.length) * 100),
           attempts: intervalResults.length,
           technicalErrorRate,
           trueAccuracy: Math.max(0, Math.round(100 - averageError)),
-          averageError: Math.round(averageError * 10) / 10
+          averageError: Math.round(averageError * 10) / 10,
+          gradeCount,
+          passRate: Math.round(((gradeCount.excellent + gradeCount.good + gradeCount.pass) / intervalResults.length) * 100),
+          averageAccuracy: Math.round((intervalResults.reduce((sum, r) => sum + (40 - Math.min(40, r.cents)), 0) / intervalResults.length / 40) * 100)
         };
       }
     });
 
     return intervalData;
+  }
+
+  // 🎵 音程習得レベル判定（強化版分析）
+  function analyzeIntervalMastery(intervalData) {
+    const masteredIntervals = [];   // 80%以上
+    const learningIntervals = [];   // 60-79%
+    const practiceIntervals = [];   // 60%未満
+    
+    Object.entries(intervalData).forEach(([intervalType, data]) => {
+      const intervalInfo = {
+        type: intervalType,
+        name: getIntervalDisplayName(intervalType),
+        mastery: data.mastery,
+        passRate: data.passRate,
+        attempts: data.attempts,
+        averageError: data.averageError,
+        recommendation: generateIntervalRecommendation(intervalType, data)
+      };
+      
+      if (data.mastery >= 80) {
+        masteredIntervals.push(intervalInfo);
+      } else if (data.mastery >= 60) {
+        learningIntervals.push(intervalInfo);
+      } else {
+        practiceIntervals.push(intervalInfo);
+      }
+    });
+
+    // 📊 習得率によるソート
+    masteredIntervals.sort((a, b) => b.mastery - a.mastery);
+    learningIntervals.sort((a, b) => b.mastery - a.mastery);  
+    practiceIntervals.sort((a, b) => a.mastery - b.mastery); // 苦手順
+
+    return {
+      mastered: masteredIntervals,
+      learning: learningIntervals,
+      needsPractice: practiceIntervals,
+      totalIntervals: Object.keys(intervalData).length,
+      masteryDistribution: {
+        mastered: masteredIntervals.length,
+        learning: learningIntervals.length,
+        practice: practiceIntervals.length
+      }
+    };
+  }
+
+  // 音程表示名取得
+  function getIntervalDisplayName(intervalType) {
+    const names = {
+      'unison': 'ユニゾン',
+      'minor_second': '短2度',
+      'major_second': '長2度', 
+      'minor_third': '短3度',
+      'major_third': '長3度',
+      'perfect_fourth': '完全4度',
+      'tritone': 'トライトーン',
+      'perfect_fifth': '完全5度',
+      'minor_sixth': '短6度',
+      'major_sixth': '長6度',
+      'minor_seventh': '短7度',
+      'major_seventh': '長7度',
+      'octave': 'オクターブ'
+    };
+    return names[intervalType] || intervalType;
+  }
+
+  // 音程別練習推奨生成
+  function generateIntervalRecommendation(intervalType, data) {
+    if (data.mastery >= 80) {
+      return '安定した習得状態。維持練習を推奨';
+    } else if (data.mastery >= 60) {
+      return '良好な進捗。継続練習で習得完了へ';
+    } else {
+      // 音程特性に基づく個別アドバイス
+      const advice = {
+        'minor_second': '狭い音程幅の判別に集中練習',
+        'major_seventh': '高音域での精度向上練習',
+        'tritone': '不協和音程への慣れ練習',
+        'perfect_fourth': '協和音程の基礎固め',
+        'perfect_fifth': '音楽理論との関連学習',
+        'octave': '周波数比の理論理解'
+      };
+      return advice[intervalType] || '基礎的な音程練習を重点的に';
+    }
   }
 
   // 一貫性分析データ生成
@@ -1394,62 +1495,124 @@
           <!-- 音程別進捗タブ -->
           {#if activeTab === 'intervals' && (detailedAnalysisData?.intervalAnalysis || intervalData.length > 0)}
             <div class="tab-panel">
-              {#if detailedAnalysisData?.intervalAnalysis}
-                <!-- 技術誤差考慮版の音程別進捗 -->
+              {#if detailedAnalysisData?.intervalAnalysis && detailedAnalysisData?.intervalMastery}
+                <!-- 技術誤差考慮版の音程別進捗（強化版） -->
                 <div class="interval-analysis-enhanced">
                   <h4 class="analysis-title">🎵 音程別習得状況（技術誤差補正版）</h4>
                   
-                  <div class="interval-grid">
-                    {#each Object.entries(detailedAnalysisData.intervalAnalysis) as [intervalType, data]}
-                      <div class="interval-card">
-                        <div class="interval-header">
-                          <div class="interval-name">
-                            {intervalType === 'unison' ? 'ユニゾン' :
-                             intervalType === 'minor_second' ? '短2度' :
-                             intervalType === 'major_second' ? '長2度' :
-                             intervalType === 'minor_third' ? '短3度' :
-                             intervalType === 'major_third' ? '長3度' :
-                             intervalType === 'perfect_fourth' ? '完全4度' :
-                             intervalType === 'tritone' ? 'トライトーン' :
-                             intervalType === 'perfect_fifth' ? '完全5度' :
-                             intervalType === 'minor_sixth' ? '短6度' :
-                             intervalType === 'major_sixth' ? '長6度' :
-                             intervalType === 'minor_seventh' ? '短7度' :
-                             intervalType === 'major_seventh' ? '長7度' :
-                             intervalType === 'octave' ? 'オクターブ' : intervalType}
+                  <!-- 習得済み音程セクション -->
+                  {#if detailedAnalysisData.intervalMastery.mastered.length > 0}
+                    <div class="mastery-section mastered">
+                      <h5 class="mastery-section-title text-green-600">✅ 習得済み音程（80%以上）</h5>
+                      <div class="interval-grid">
+                        {#each detailedAnalysisData.intervalMastery.mastered as interval}
+                          <div class="interval-card mastered-card">
+                            <div class="interval-header">
+                              <div class="interval-name">{interval.name}</div>
+                              <div class="mastery-badge excellent">⭐ {interval.mastery}%</div>
+                            </div>
+                            <div class="interval-stats">
+                              <div class="stat-row">
+                                <span class="stat-label">挑戦回数:</span>
+                                <span class="stat-value">{interval.attempts}回</span>
+                              </div>
+                              <div class="stat-row">
+                                <span class="stat-label">合格率:</span>
+                                <span class="stat-value text-green-600 font-bold">{interval.passRate}%</span>
+                              </div>
+                              <div class="recommendation">{interval.recommendation}</div>
+                            </div>
                           </div>
-                          <div class="mastery-badge">
-                            {data.mastery >= 90 ? '⭐' : data.mastery >= 70 ? '🌟' : data.mastery >= 50 ? '💪' : data.mastery >= 30 ? '🌱' : '🌰'}
-                            {data.mastery}%
-                          </div>
-                        </div>
-                        
-                        <div class="interval-stats">
-                          <div class="stat-row">
-                            <span class="stat-label">挑戦回数:</span>
-                            <span class="stat-value">{data.attempts}回</span>
-                          </div>
-                          <div class="stat-row">
-                            <span class="stat-label">技術誤差:</span>
-                            <span class="stat-value text-amber-600">±{data.technicalErrorRate}¢</span>
-                          </div>
-                          <div class="stat-row">
-                            <span class="stat-label">真の精度:</span>
-                            <span class="stat-value text-green-600 font-bold">{data.trueAccuracy}%</span>
-                          </div>
-                        </div>
-                        
-                        <div class="progress-bar">
-                          <div class="progress-fill" style="width: {data.mastery}%; background: linear-gradient(90deg, #3b82f6, #10b981)"></div>
-                        </div>
+                        {/each}
                       </div>
-                    {/each}
+                    </div>
+                  {/if}
+
+                  <!-- 習得中音程セクション -->
+                  {#if detailedAnalysisData.intervalMastery.learning.length > 0}
+                    <div class="mastery-section learning">
+                      <h5 class="mastery-section-title text-blue-600">🌟 習得中音程（60-79%）</h5>
+                      <div class="interval-grid">
+                        {#each detailedAnalysisData.intervalMastery.learning as interval}
+                          <div class="interval-card learning-card">
+                            <div class="interval-header">
+                              <div class="interval-name">{interval.name}</div>
+                              <div class="mastery-badge good">🌟 {interval.mastery}%</div>
+                            </div>
+                            <div class="interval-stats">
+                              <div class="stat-row">
+                                <span class="stat-label">挑戦回数:</span>
+                                <span class="stat-value">{interval.attempts}回</span>
+                              </div>
+                              <div class="stat-row">
+                                <span class="stat-label">平均誤差:</span>
+                                <span class="stat-value text-amber-600">±{interval.averageError}¢</span>
+                              </div>
+                              <div class="recommendation text-blue-600">{interval.recommendation}</div>
+                            </div>
+                            <div class="progress-bar">
+                              <div class="progress-fill" style="width: {interval.mastery}%; background: linear-gradient(90deg, #3b82f6, #06b6d4)"></div>
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+
+                  <!-- 練習必要音程セクション -->
+                  {#if detailedAnalysisData.intervalMastery.needsPractice.length > 0}
+                    <div class="mastery-section needs-practice">
+                      <h5 class="mastery-section-title text-red-600">📈 重点練習音程（60%未満）</h5>
+                      <div class="interval-grid">
+                        {#each detailedAnalysisData.intervalMastery.needsPractice as interval}
+                          <div class="interval-card practice-card">
+                            <div class="interval-header">
+                              <div class="interval-name">{interval.name}</div>
+                              <div class="mastery-badge needs-work">💪 {interval.mastery}%</div>
+                            </div>
+                            <div class="interval-stats">
+                              <div class="stat-row">
+                                <span class="stat-label">挑戦回数:</span>
+                                <span class="stat-value">{interval.attempts}回</span>
+                              </div>
+                              <div class="stat-row">
+                                <span class="stat-label">平均誤差:</span>
+                                <span class="stat-value text-red-600">±{interval.averageError}¢</span>
+                              </div>
+                              <div class="recommendation text-red-600 font-semibold">{interval.recommendation}</div>
+                            </div>
+                            <div class="progress-bar">
+                              <div class="progress-fill" style="width: {interval.mastery}%; background: linear-gradient(90deg, #ef4444, #f97316)"></div>
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+
+                  <!-- 習得統計サマリー -->
+                  <div class="mastery-summary">
+                    <h5 class="section-title">📊 音程習得統計</h5>
+                    <div class="summary-grid">
+                      <div class="summary-item mastered">
+                        <span class="summary-label">習得済み</span>
+                        <span class="summary-value text-green-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.mastered}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
+                      </div>
+                      <div class="summary-item learning">
+                        <span class="summary-label">習得中</span>
+                        <span class="summary-value text-blue-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.learning}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
+                      </div>
+                      <div class="summary-item practice">
+                        <span class="summary-label">要練習</span>
+                        <span class="summary-value text-red-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.practice}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
+                      </div>
+                    </div>
                   </div>
                   
                   <div class="analysis-explanation">
-                    💡 <strong>音程別分析:</strong> 
-                    各音程の技術誤差を統計的に分離し、真の習得度を表示しています。
-                    技術誤差が大きい音程は測定環境の改善で向上が期待できます。
+                    💡 <strong>音程習得分析:</strong> 
+                    技術誤差を統計的に分離し、真の音程習得レベルを評価しています。
+                    習得済み音程の維持と、重点練習音程の集中強化をお勧めします。
                   </div>
                 </div>
               {:else}
@@ -2019,6 +2182,132 @@
     height: 100%;
     transition: width 0.5s ease;
     border-radius: 4px;
+  }
+
+  /* 🎵 音程習得レベル判定機能（強化版） */
+  .mastery-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .mastery-section.mastered {
+    background: linear-gradient(135deg, #f0fdf4, #ffffff);
+    border-color: #10b981;
+  }
+
+  .mastery-section.learning {
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    border-color: #3b82f6;
+  }
+
+  .mastery-section.needs-practice {
+    background: linear-gradient(135deg, #fef2f2, #ffffff);
+    border-color: #ef4444;
+  }
+
+  .mastery-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* 習得レベル別カードスタイル */
+  .interval-card.mastered-card {
+    border-left: 4px solid #10b981;
+    background: linear-gradient(135deg, #ecfdf5, #ffffff);
+  }
+
+  .interval-card.learning-card {
+    border-left: 4px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+  }
+
+  .interval-card.practice-card {
+    border-left: 4px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2, #ffffff);
+  }
+
+  /* 習得レベル別マスタリーバッジ */
+  .mastery-badge.excellent {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .mastery-badge.good {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+  }
+
+  .mastery-badge.needs-work {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+  }
+
+  /* 習得統計サマリー */
+  .mastery-summary {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8fafc, #ffffff);
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .summary-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .summary-item.mastered {
+    background: linear-gradient(135deg, #ecfdf5, #ffffff);
+    border-color: #10b981;
+  }
+
+  .summary-item.learning {
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    border-color: #3b82f6;
+  }
+
+  .summary-item.practice {
+    background: linear-gradient(135deg, #fef2f2, #ffffff);
+    border-color: #ef4444;
+  }
+
+  .summary-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  /* 練習推奨セクション */
+  .recommendation {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-style: italic;
+    line-height: 1.4;
   }
 
   /* 一貫性分析強化版 */
