@@ -2028,15 +2028,6 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
-    <!-- 表示モード切り替えUI -->
-    <div class="debug-controls">
-      <div class="debug-section">
-        <span class="debug-label">🎯 表示設定:</span>
-        <span class="debug-status">
-          評価システムと完全同期（ノイズリダクション + 多段階補正）
-        </span>
-      </div>
-    </div>
     
     <!-- セッション進捗表示 -->
     {#if microphoneState === 'granted' && !$isLoading}
@@ -2279,72 +2270,6 @@
     margin: 0;
   }
 
-  /* 表示設定UI */
-  .debug-controls {
-    margin: 1rem 0;
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    font-size: 0.875rem;
-  }
-
-  .debug-section {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .debug-label {
-    font-weight: 600;
-    color: #6c757d;
-  }
-
-  .debug-toggle-button {
-    padding: 0.375rem 0.75rem;
-    border: 1px solid;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .debug-toggle-button.enabled {
-    background: #28a745;
-    color: white;
-    border-color: #28a745;
-  }
-
-  .debug-toggle-button.enabled:hover {
-    background: #218838;
-    border-color: #1e7e34;
-  }
-
-  .debug-toggle-button.disabled {
-    background: #dc3545;
-    color: white;
-    border-color: #dc3545;
-  }
-
-  .debug-toggle-button.disabled:hover {
-    background: #c82333;
-    border-color: #bd2130;
-  }
-
-  .debug-status {
-    color: #6c757d;
-    font-style: italic;
-  }
-
-  @media (max-width: 640px) {
-    .debug-section {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  }
 
   /* カードスタイル（shadcn/ui風） */
   :global(.main-card) {
