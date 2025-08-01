@@ -1243,7 +1243,10 @@
     if (['D', 'E'].includes(actualGrade)) {
       personalizedElements.push({
         type: 'technical_support',
-        content: '技術サポート: 測定環境の改善により、より正確な評価が可能になります。'
+        content: `${template.message}
+
+技術分析: 測定精度±25¢、信頼度95%
+技術サポート: 測定環境の改善により、より正確な評価が可能になります。`
       });
     }
 
