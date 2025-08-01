@@ -28,7 +28,7 @@
   export let sessionStatistics = null;
   
   // タブ管理
-  let activeTab = 'intervals';
+  let activeTab = 'technical';
   
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
@@ -627,46 +627,6 @@
     </div>
   {/if}
 
-  <!-- 🔬 技術誤差分析結果表示 -->
-  {#if technicalAnalysis.measurement === 'complete' && scoreData?.sessionHistory && scoreData.sessionHistory.length >= 4}
-    <div class="technical-analysis-section" in:fly={{ y: 20, duration: 500, delay: 900 }}>
-      <h4 class="analysis-title">🔬 技術分析結果</h4>
-      <div class="analysis-grid">
-        <div class="analysis-item">
-          <span class="analysis-label">測定精度</span>
-          <span class="analysis-value confidence-{technicalAnalysis.confidenceLevel}">
-            {technicalAnalysis.confidenceLevel === 'high' ? '高精度' : 
-             technicalAnalysis.confidenceLevel === 'medium' ? '中精度' : '低精度'}
-          </span>
-        </div>
-        <div class="analysis-item">
-          <span class="analysis-label">技術誤差</span>
-          <span class="analysis-value">±{technicalAnalysis.averageError}¢</span>
-        </div>
-        <div class="analysis-item">
-          <span class="analysis-label">真の音感能力</span>
-          <span class="analysis-value grade-indicator">{unifiedGradeDefinitions[unifiedGrade]?.name}</span>
-        </div>
-        <div class="analysis-item">
-          <span class="analysis-label">総測定回数</span>
-          <span class="analysis-value">{technicalAnalysis.totalMeasurements}回</span>
-        </div>
-      </div>
-      <div class="analysis-explanation">
-        💡 <strong>評価について:</strong> 
-        {technicalAnalysis.totalMeasurements}回の測定データから統計的に分析し、技術的な誤差を考慮した真の音感能力を評価しています。
-        
-        {#if scoreData.mode === 'chromatic'}
-          <br><strong>🎹 12音階モード:</strong> 
-          半音階144音の高精度分析により、より正確な音感能力を測定しています。
-        {/if}
-        
-        {#if technicalAnalysis.outlierCount > 0}
-          <br>({technicalAnalysis.outlierCount}回の外れ値を検出・補正済み)
-        {/if}
-      </div>
-    </div>
-  {/if}
 
   <!-- モード別サマリー -->
   <div class="mode-summary" in:fly={{ y: 20, duration: 500, delay: 800 }}>
@@ -871,6 +831,13 @@
           <div class="scoring-tabs">
             <button 
               class="scoring-tab"
+              class:active={activeTab === 'technical'}
+              on:click={() => switchTab('technical')}
+            >
+              技術分析
+            </button>
+            <button 
+              class="scoring-tab"
               class:active={activeTab === 'intervals'}
               on:click={() => switchTab('intervals')}
             >
@@ -891,6 +858,49 @@
               セッション統計
             </button>
           </div>
+          
+          <!-- 技術分析タブ -->
+          {#if activeTab === 'technical' && technicalAnalysis.measurement === 'complete' && scoreData?.sessionHistory && scoreData.sessionHistory.length >= 4}
+            <div class="tab-panel">
+              <div class="technical-analysis-content">
+                <h4 class="analysis-title">🔬 技術分析結果</h4>
+                <div class="analysis-grid">
+                  <div class="analysis-item">
+                    <span class="analysis-label">測定精度</span>
+                    <span class="analysis-value confidence-{technicalAnalysis.confidenceLevel}">
+                      {technicalAnalysis.confidenceLevel === 'high' ? '高精度' : 
+                       technicalAnalysis.confidenceLevel === 'medium' ? '中精度' : '低精度'}
+                    </span>
+                  </div>
+                  <div class="analysis-item">
+                    <span class="analysis-label">技術誤差</span>
+                    <span class="analysis-value">±{technicalAnalysis.averageError}¢</span>
+                  </div>
+                  <div class="analysis-item">
+                    <span class="analysis-label">真の音感能力</span>
+                    <span class="analysis-value grade-indicator">{unifiedGradeDefinitions[unifiedGrade]?.name}</span>
+                  </div>
+                  <div class="analysis-item">
+                    <span class="analysis-label">総測定回数</span>
+                    <span class="analysis-value">{technicalAnalysis.totalMeasurements}回</span>
+                  </div>
+                </div>
+                <div class="analysis-explanation">
+                  💡 <strong>評価について:</strong> 
+                  {technicalAnalysis.totalMeasurements}回の測定データから統計的に分析し、技術的な誤差を考慮した真の音感能力を評価しています。
+                  
+                  {#if scoreData.mode === 'chromatic'}
+                    <br><strong>🎹 12音階モード:</strong> 
+                    半音階144音の高精度分析により、より正確な音感能力を測定しています。
+                  {/if}
+                  
+                  {#if technicalAnalysis.outlierCount > 0}
+                    <br>({technicalAnalysis.outlierCount}回の外れ値を検出・補正済み)
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {/if}
           
           <!-- 音程別進捗タブ -->
           {#if activeTab === 'intervals' && intervalData.length > 0}
@@ -1434,13 +1444,12 @@
     padding: 1.5rem;
   }
   
-  /* 🔬 技術誤差分析UIスタイル */
-  .technical-analysis-section {
+  /* 技術分析タブスタイル */
+  .technical-analysis-content {
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     border: 1px solid #bae6fd;
     border-radius: 12px;
     padding: 1.5rem;
-    margin: 1rem 0;
   }
   
   .analysis-title {
@@ -1510,6 +1519,7 @@
     color: #0f172a;
     border-left: 4px solid #3b82f6;
   }
+  
   
   /* 📋 段階的進捗メッセージスタイル */
   .progress-message-section {
