@@ -290,6 +290,9 @@
 
   // デバッグ用：ハーモニック補正切り替え
   let disableHarmonicCorrection = false;
+  
+  // デバッグ用：表示モード切り替え
+  let useEvaluationDisplay = true; // true: 判定同期表示, false: リアルタイム表示
   let currentScoreData = {
     totalScore: 0,
     grade: 'C',
@@ -1486,24 +1489,82 @@
   function handlePitchUpdate(event) {
     const { frequency, note, volume, rawVolume, clarity } = event.detail;
     
-    currentFrequency = frequency;
-    detectedNote = note;
+    // 初期値設定（生の値）
+    let displayFrequency = frequency;
+    let displayNote = note;
+    
+    // 表示モード切り替え: 判定同期表示 vs リアルタイム表示
+    if (useEvaluationDisplay && trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0 && frequency > 0) {
+      const correctedResult = getEvaluationCorrectedFrequency(frequency);
+      if (correctedResult) {
+        displayFrequency = correctedResult.frequency;
+        displayNote = correctedResult.note;
+      }
+    }
+    
+    currentFrequency = displayFrequency;
+    detectedNote = displayNote;
     currentVolume = volume;
     
-    // 基音との相対音程を計算
-    if (currentBaseFrequency > 0 && frequency > 0) {
-      pitchDifference = Math.round(1200 * Math.log2(frequency / currentBaseFrequency));
+    // 基音との相対音程を計算（補正後の値で）
+    if (currentBaseFrequency > 0 && displayFrequency > 0) {
+      pitchDifference = Math.round(1200 * Math.log2(displayFrequency / currentBaseFrequency));
     } else {
       pitchDifference = 0;
     }
     
-    // ガイドアニメーション中の評価蓄積
+    // ガイドアニメーション中の評価蓄積（元の周波数で実行）
     evaluateScaleStep(frequency, note);
     
     // 採点エンジンへのデータ送信
     if (scoringEngine && frequency > 0 && currentBaseFrequency > 0) {
       updateScoringEngine(frequency, note);
     }
+  }
+
+  // 評価システムと同じ補正を周波数表示に適用する関数
+  function getEvaluationCorrectedFrequency(frequency) {
+    if (!frequency || frequency <= 0 || !isGuideAnimationActive || !currentBaseFrequency) {
+      return null;
+    }
+    
+    // 現在ハイライト中のステップを取得
+    const activeStepIndex = currentScaleIndex - 1;
+    if (activeStepIndex < 0 || activeStepIndex >= scaleSteps.length) {
+      return null;
+    }
+    
+    // 期待周波数を計算
+    const expectedFrequency = calculateExpectedFrequency(currentBaseFrequency, activeStepIndex);
+    if (!expectedFrequency || expectedFrequency <= 0) {
+      return null;
+    }
+    
+    // 多段階オクターブ補正を適用
+    const correctionResult = multiStageOctaveCorrection(frequency, expectedFrequency);
+    const adjustedFrequency = correctionResult.correctedFrequency;
+    
+    // 周波数から音程名に変換
+    const adjustedNote = frequencyToNote(adjustedFrequency);
+    
+    return {
+      frequency: Math.round(adjustedFrequency),
+      note: adjustedNote
+    };
+  }
+
+  // 周波数から音程名に変換（PitchDetectorと同じロジック）
+  function frequencyToNote(frequency) {
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const A4 = 440;
+    
+    if (frequency <= 0) return 'ーー';
+    
+    const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+    const noteIndex = (semitonesFromA4 + 9 + 120) % 12;
+    const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+    
+    return noteNames[noteIndex] + octave;
   }
   
   // 【プロトタイプ式】多段階オクターブ補正関数
@@ -1975,8 +2036,14 @@
         >
           ハーモニック補正: {disableHarmonicCorrection ? 'OFF' : 'ON'}
         </button>
+        <button 
+          class="debug-toggle-button {useEvaluationDisplay ? 'enabled' : 'disabled'}"
+          on:click={() => useEvaluationDisplay = !useEvaluationDisplay}
+        >
+          表示モード: {useEvaluationDisplay ? '判定同期' : 'リアルタイム'}
+        </button>
         <span class="debug-status">
-          {disableHarmonicCorrection ? '生の検出値を使用中' : '補正済み値を使用中'}
+          {useEvaluationDisplay ? '評価システムと同じ補正値を表示' : '即座反応の生値を表示'}
         </span>
       </div>
     </div>
