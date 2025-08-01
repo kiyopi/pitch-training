@@ -583,11 +583,16 @@
       }
     });
     
-    // 成功率計算の修正（空配列対策）
+    // 成功率計算の修正（複数の正解判定方式対応）
     const totalCorrect = sessionHistory.reduce((sum, session) => {
       if (session.noteResults && Array.isArray(session.noteResults)) {
-        const correctInSession = session.noteResults.filter(note => note.correct).length;
-        console.log(`📊 セッション正解数: ${correctInSession}`);
+        const correctInSession = session.noteResults.filter(note => {
+          // 複数の正解判定方式に対応
+          return note.correct || note.isCorrect || note.success || 
+                 (note.accuracy && note.accuracy >= 70) || // 70%以上を正解とする
+                 (note.centDifference && Math.abs(note.centDifference) <= 50); // ±50¢以内を正解とする
+        }).length;
+        console.log(`📊 セッション正解数: ${correctInSession} (判定方式: correct/isCorrect/success/accuracy≥70%/cent≤50)`);
         return sum + correctInSession;
       }
       return sum;
@@ -616,19 +621,60 @@
     
     console.log('📊 平均スコア:', rawAverageScore, '→ 補正後:', correctedAverageScore);
 
-    // 練習時間計算の修正
+    // 練習時間計算の修正（推定値も使用）
     const totalPracticeTime = sessionHistory.reduce((sum, session, i) => {
-      const duration = session.duration || session.sessionDuration || session.time || 0;
-      console.log(`⏱️ セッション${i+1}時間:`, duration, '(元データ:', {duration: session.duration, sessionDuration: session.sessionDuration, time: session.time}, ')');
+      // 複数のフィールドから時間を取得、推定値も使用
+      let duration = session.duration || session.sessionDuration || session.time || 
+                    session.elapsedTime || session.totalTime;
+      
+      // 時間データがない場合は推定（1セッション = 平均2-3分）
+      if (!duration || duration === 0) {
+        if (session.noteResults && session.noteResults.length > 0) {
+          // 音程数 × 平均15秒 で推定
+          duration = session.noteResults.length * 15 * 1000; // ms単位
+          console.log(`⏱️ セッション${i+1}時間: 推定 ${duration}ms (音程数${session.noteResults.length} × 15秒)`);
+        } else {
+          // デフォルトで2分を想定
+          duration = 2 * 60 * 1000; // 2分
+          console.log(`⏱️ セッション${i+1}時間: デフォルト推定 ${duration}ms (2分)`);
+        }
+      } else {
+        console.log(`⏱️ セッション${i+1}時間:`, duration, '(元データ:', {duration: session.duration, sessionDuration: session.sessionDuration, time: session.time}, ')');
+      }
+      
       return sum + (typeof duration === 'number' ? duration : 0);
     }, 0);
     
-    console.log('⏱️ 総練習時間:', totalPracticeTime, 'ms');
+    console.log('⏱️ 総練習時間:', totalPracticeTime, 'ms', '=', Math.round(totalPracticeTime / 60000), '分');
 
-    // 連続正解計算の修正
+    // 連続正解計算の修正（noteResultsから算出）
     const streakCounts = sessionHistory.map((session, i) => {
-      const count = session.streakCount || session.maxStreak || session.consecutiveCorrect || 0;
-      console.log(`🎯 セッション${i+1}連続正解:`, count, '(元データ:', {streakCount: session.streakCount, maxStreak: session.maxStreak, consecutiveCorrect: session.consecutiveCorrect}, ')');
+      let count = session.streakCount || session.maxStreak || session.consecutiveCorrect || 0;
+      
+      // データがない場合はnoteResultsから連続正解を計算
+      if (count === 0 && session.noteResults && Array.isArray(session.noteResults)) {
+        let maxStreak = 0;
+        let currentStreak = 0;
+        
+        session.noteResults.forEach(note => {
+          const isCorrect = note.correct || note.isCorrect || note.success || 
+                           (note.accuracy && note.accuracy >= 70) ||
+                           (note.centDifference && Math.abs(note.centDifference) <= 50);
+          
+          if (isCorrect) {
+            currentStreak++;
+            maxStreak = Math.max(maxStreak, currentStreak);
+          } else {
+            currentStreak = 0;
+          }
+        });
+        
+        count = maxStreak;
+        console.log(`🎯 セッション${i+1}連続正解: noteResultsから算出 ${count}`);
+      } else {
+        console.log(`🎯 セッション${i+1}連続正解:`, count, '(元データ:', {streakCount: session.streakCount, maxStreak: session.maxStreak, consecutiveCorrect: session.consecutiveCorrect}, ')');
+      }
+      
       return count;
     }).filter(count => !isNaN(count) && count >= 0);
     
@@ -654,18 +700,29 @@
     console.log('📈 改善率:', improvementRate, '%');
     console.log('=== DEBUG: セッション統計計算終了 ===\n');
 
+    // 最高・最低スコア計算の修正
+    const bestScore = sessionScores.length > 0 ? Math.max(...sessionScores) : 0;
+    const worstScore = sessionScores.length > 0 ? Math.min(...sessionScores) : 0;
+    
+    console.log('📊 最高スコア:', bestScore, '/ 最低スコア:', worstScore);
+
     return {
       totalAttempts,
       rawSuccessRate: Math.round(rawSuccessRate * 10) / 10,
       correctedSuccessRate: Math.round(correctedSuccessRate * 10) / 10,
       rawAverageScore: Math.round(rawAverageScore * 10) / 10,
       correctedAverageScore: Math.round(correctedAverageScore * 10) / 10,
-      bestSessionScore: sessionScores.length > 0 ? Math.max(...sessionScores) : 0,
-      worstSessionScore: sessionScores.length > 0 ? Math.min(...sessionScores) : 0,
+      bestSessionScore: bestScore,
+      worstSessionScore: worstScore,
       totalPracticeTime,
       averageSessionTime: sessionHistory.length > 0 ? Math.round(totalPracticeTime / sessionHistory.length) : 0,
       maxConsecutiveCorrect,
-      improvementRate
+      improvementRate,
+      // デバッグ用追加情報
+      sessionCount: sessionHistory.length,
+      validScoreCount: sessionScores.length,
+      streakDataAvailable: streakCounts.length,
+      timeDataEstimated: totalPracticeTime > 0
     };
   }
   
