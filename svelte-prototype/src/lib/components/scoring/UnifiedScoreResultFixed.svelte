@@ -1239,16 +1239,6 @@
       });
     }
     
-    // 技術サポート（D-E級の場合）
-    if (['D', 'E'].includes(actualGrade)) {
-      personalizedElements.push({
-        type: 'technical_support',
-        content: `${template.message}
-
-技術分析: 測定精度±25¢、信頼度95%
-技術サポート: 測定環境の改善により、より正確な評価が可能になります。`
-      });
-    }
 
     return {
       ...template,
@@ -1399,51 +1389,7 @@
                   {technicalFeedback.message}
                 </p>
                 
-                <!-- 個別化要素の表示 -->
-                {#if technicalFeedback.personalizedElements && technicalFeedback.personalizedElements.length > 0}
-                  <div class="space-y-2">
-                    {#each technicalFeedback.personalizedElements as element}
-                      <div class="text-sm">
-                        {#if element.type === 'technical'}
-                          <div class="flex items-center gap-2 text-gray-600">
-                            <Zap size="14" class="text-blue-500" />
-                            <span>{element.content}</span>
-                          </div>
-                        {:else if element.type === 'practice'}
-                          <div class="bg-green-100 text-green-700 p-2 rounded">
-                            <div class="font-medium">{element.content}</div>
-                            {#if element.detail}
-                              <div class="text-xs mt-1">{element.detail}</div>
-                            {/if}
-                          </div>
-                        {:else if element.type === 'technical_improvement'}
-                          <div class="flex items-start gap-2 text-blue-600">
-                            <TrendingUp size="14" class="mt-0.5" />
-                            <span>{element.content}</span>
-                          </div>
-                        {:else if element.type === 'technical_support'}
-                          <div class="flex items-start gap-2 text-green-600">
-                            <AlertCircle size="14" class="mt-0.5" />
-                            <span>{element.content}</span>
-                          </div>
-                        {/if}
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
                 
-                <!-- 級の変更情報 -->
-                {#if technicalFeedback.correctionApplied}
-                  <div class="mt-3 text-sm bg-blue-50 text-blue-600 p-2 rounded border border-blue-200">
-                    <div class="flex items-center gap-2">
-                      <TrendingUp size="14" />
-                      <span>技術誤差補正: {technicalFeedback.originalGrade}級 → {technicalFeedback.grade}級</span>
-                    </div>
-                    <div class="text-xs mt-1 text-blue-500">
-                      Web Audio APIの技術的制約を統計的に補正した結果、より高い評価となりました。
-                    </div>
-                  </div>
-                {/if}
               </div>
             </div>
           </div>
