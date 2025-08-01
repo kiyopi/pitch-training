@@ -1084,14 +1084,16 @@ export class EnhancedScoringEngine {
     }
     
     // セッション分析
-    if (this.sessionData.totalAttempts < 5) {
-      suggestions.push({
-        category: 'session',
-        priority: 'low',
-        message: 'より多くの練習で正確な評価が可能になります。',
-        actions: ['練習量の増加', '多様な音程での練習']
-      });
-    }
+    // セッション途中では練習量メッセージを一切表示しない
+    // 完了後の総合評価ではgenerateFeedbackFromResultsのカスタムメッセージを使用
+    // if (this.sessionData.totalAttempts < 5) {
+    //   suggestions.push({
+    //     category: 'session',
+    //     priority: 'low',
+    //     message: 'より多くの練習で正確な評価が可能になります。',
+    //     actions: ['練習量の増加', '多様な音程での練習']
+    //   });
+    // }
     
     return suggestions;
   }

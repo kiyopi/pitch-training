@@ -1193,7 +1193,8 @@
       </p>
       
       <!-- 8セッション完走時の総合フィードバック -->
-      {#if feedbackData && Object.keys(feedbackData).length > 0}
+      <!-- 8セッション（またはChromatic12セッション）完了時のみフィードバック表示 -->
+      {#if feedbackData && Object.keys(feedbackData).length > 0 && isCompleted}
         <div class="completion-feedback" in:fade={{ delay: 800 }}>
           <FeedbackDisplay 
             feedback={feedbackData}

@@ -1392,12 +1392,22 @@
     const measuredCount = results.filter(n => n.accuracy !== 'notMeasured').length;
     const averageAccuracy = currentUnifiedScoreData?.averageAccuracy || 0;
     
-    // S-E級判定に基づいたメッセージ生成
+    // モード別完了判定
+    const mode = 'random'; // 現在はランダムモード固定、将来的にはpropsから取得
+    const requiredSessions = mode === 'chromatic' ? 12 : 8;
+    const sessionHistory = sessionProgressStore || [];
+    const completedSessions = sessionHistory.length;
+    
+    // セッション完了前は何もメッセージを表示しない
+    if (completedSessions < requiredSessions) {
+      return null; // フィードバックなし
+    }
+    
+    // S-E級判定に基づいたメッセージ生成（完了後のみ）
     let type, primary, summary, icon;
     
     // unifiedGradeから適切なメッセージを生成（統計値を含む）
     const grade = currentUnifiedScoreData?.unifiedGrade || 'E';
-    const sessionHistory = sessionProgressStore || [];
     const totalSessions = sessionHistory.length;
     
     // 統計値の計算
