@@ -57,26 +57,26 @@
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {#each intervalData as interval}
       <div class="interval-card">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
           <svelte:component 
             this={getMasteryIcon(interval.averageError)} 
             size="24" 
             class={getMasteryColor(interval.averageError)}
           />
           <div class="flex-1">
-            <div class="font-medium text-gray-800">
+            <div class="font-medium text-gray-800 text-base">
               {interval.scale || intervalInfo[interval.type]?.name || interval.type}
               {#if interval.intervalName}
-                <span class="text-sm text-gray-600">（{interval.intervalName}）</span>
+                <span class="text-sm text-gray-600 ml-1">（{interval.intervalName}）</span>
               {/if}
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-              {interval.attempts}回
-              {#if interval.averageError !== null}
-                　平均誤差 ±{interval.averageError}¢
-              {:else}
-                　未測定
-              {/if}
+              <span class="text-sm text-gray-600 ml-3">
+                {interval.attempts}回
+                {#if interval.averageError !== null}
+                  　平均誤差 ±{interval.averageError}¢
+                {:else}
+                  　未測定
+                {/if}
+              </span>
             </div>
           </div>
         </div>
