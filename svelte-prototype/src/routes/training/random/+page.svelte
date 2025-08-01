@@ -288,8 +288,7 @@
   // 採点システム関連
   let scoringEngine = null;
 
-  // デバッグ用：表示モード切り替え
-  let useEvaluationDisplay = true; // true: 判定同期表示, false: リアルタイム表示
+  // 表示は常に評価システムと同じ処理を使用
   let currentScoreData = {
     totalScore: 0,
     grade: 'C',
@@ -1490,8 +1489,8 @@
     let displayFrequency = frequency;
     let displayNote = note;
     
-    // 表示モード切り替え: 判定同期表示 vs リアルタイム表示
-    if (useEvaluationDisplay && trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0 && frequency > 0) {
+    // 表示は常に評価システムと同じ補正を適用
+    if (trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0 && frequency > 0) {
       const correctedResult = getEvaluationCorrectedFrequency(frequency);
       if (correctedResult) {
         displayFrequency = correctedResult.frequency;
@@ -1523,6 +1522,12 @@
   function getEvaluationCorrectedFrequency(frequency) {
     if (!frequency || frequency <= 0 || !isGuideAnimationActive || !currentBaseFrequency) {
       return null;
+    }
+    
+    // 【統一】音量チェック（評価システムと同じ）
+    const minVolumeForDisplay = 25;
+    if (currentVolume < minVolumeForDisplay) {
+      return null; // ノイズ除外
     }
     
     // 現在ハイライト中のステップを取得
@@ -2027,14 +2032,8 @@
     <div class="debug-controls">
       <div class="debug-section">
         <span class="debug-label">🎯 表示設定:</span>
-        <button 
-          class="debug-toggle-button {useEvaluationDisplay ? 'enabled' : 'disabled'}"
-          on:click={() => useEvaluationDisplay = !useEvaluationDisplay}
-        >
-          表示モード: {useEvaluationDisplay ? '判定同期' : 'リアルタイム'}
-        </button>
         <span class="debug-status">
-          {useEvaluationDisplay ? '評価システムと同じ補正値を表示' : '即座反応の生値を表示'}
+          評価システムと完全同期（ノイズリダクション + 多段階補正）
         </span>
       </div>
     </div>
