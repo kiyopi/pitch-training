@@ -697,7 +697,7 @@
       }
     }
     
-    console.log('📈 改善率:', improvementRate, '%');
+    console.log('📈 改善率:', improvementRate + '%');
     console.log('=== DEBUG: セッション統計計算終了 ===\n');
 
     // 最高・最低スコア計算の修正
