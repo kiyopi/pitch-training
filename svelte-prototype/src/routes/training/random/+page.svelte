@@ -287,6 +287,9 @@
   
   // 採点システム関連
   let scoringEngine = null;
+
+  // デバッグ用：ハーモニック補正切り替え
+  let disableHarmonicCorrection = false;
   let currentScoreData = {
     totalScore: 0,
     grade: 'C',
@@ -1962,6 +1965,22 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
+    <!-- デバッグUI区画（230Hz固着問題対策） -->
+    <div class="debug-controls">
+      <div class="debug-section">
+        <span class="debug-label">🔧 デバッグ:</span>
+        <button 
+          class="debug-toggle-button {disableHarmonicCorrection ? 'disabled' : 'enabled'}"
+          on:click={() => disableHarmonicCorrection = !disableHarmonicCorrection}
+        >
+          ハーモニック補正: {disableHarmonicCorrection ? 'OFF' : 'ON'}
+        </button>
+        <span class="debug-status">
+          {disableHarmonicCorrection ? '生の検出値を使用中' : '補正済み値を使用中'}
+        </span>
+      </div>
+    </div>
+    
     <!-- セッション進捗表示 -->
     {#if microphoneState === 'granted' && !$isLoading}
       <div class="session-progress">
@@ -2012,6 +2031,7 @@
         on:microphoneHealthChange={handleMicrophoneHealthChange}
         className="pitch-detector-content"
         debugMode={true}
+        disableHarmonicCorrection={disableHarmonicCorrection}
       />
     </div>
 
@@ -2200,6 +2220,73 @@
     color: hsl(215.4 16.3% 46.9%);
     font-size: 1rem;
     margin: 0;
+  }
+
+  /* デバッグUI */
+  .debug-controls {
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.875rem;
+  }
+
+  .debug-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .debug-label {
+    font-weight: 600;
+    color: #6c757d;
+  }
+
+  .debug-toggle-button {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .debug-toggle-button.enabled {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+  }
+
+  .debug-toggle-button.enabled:hover {
+    background: #218838;
+    border-color: #1e7e34;
+  }
+
+  .debug-toggle-button.disabled {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+  }
+
+  .debug-toggle-button.disabled:hover {
+    background: #c82333;
+    border-color: #bd2130;
+  }
+
+  .debug-status {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  @media (max-width: 640px) {
+    .debug-section {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
   }
 
   /* カードスタイル（shadcn/ui風） */
