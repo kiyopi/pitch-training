@@ -1,6 +1,10 @@
 <script>
+  import { Zap, TrendingUp, AlertCircle, Clock, Target, BarChart3 } from 'lucide-svelte';
+  
   export let statistics = {};
   export let className = '';
+  export let showTechnicalErrorCorrection = false; // 技術誤差補正表示フラグ
+  export let correctedStatistics = {}; // 技術誤差補正後統計
   
   // デフォルト値の設定
   const stats = {
@@ -15,6 +19,15 @@
     mostSuccessfulInterval: statistics.mostSuccessfulInterval || '-',
     averageResponseTime: statistics.averageResponseTime || 0
   };
+
+  // 技術誤差補正後統計
+  const correctedStats = showTechnicalErrorCorrection ? {
+    successRate: correctedStatistics.correctedSuccessRate || correctedStatistics.successRate || stats.successRate,
+    averageScore: correctedStatistics.correctedAverageScore || correctedStatistics.averageScore || stats.averageScore,
+    reliabilityScore: correctedStatistics.reliabilityScore || 95,
+    technicalErrorImpact: correctedStatistics.technicalErrorImpact || 'low',
+    measurementAccuracy: correctedStatistics.measurementAccuracy || 90
+  } : {};
   
   // セッション時間をフォーマット
   function formatDuration(minutes) {
@@ -40,17 +53,39 @@
   $: statCategories = [
     {
       title: 'パフォーマンス',
-      icon: '📊',
+      icon: BarChart3,
       stats: [
-        { label: '総挑戦回数', value: `${(stats?.totalAttempts || 0)}回`, highlight: (stats?.totalAttempts || 0) > 20 },
-        { label: '成功率', value: `${((stats?.successRate || 0).toFixed(1))}%`, highlight: (stats?.successRate || 0) > 70 },
-        { label: '平均スコア', value: `${((stats?.averageScore || 0).toFixed(1))}点`, highlight: (stats?.averageScore || 0) > 75 },
-        { label: '最高スコア', value: `${(stats?.bestScore || 0)}点`, highlight: (stats?.bestScore || 0) > 90 }
+        { 
+          label: '総挑戦回数', 
+          value: `${(stats?.totalAttempts || 0)}回`, 
+          highlight: (stats?.totalAttempts || 0) > 20 
+        },
+        { 
+          label: '成功率', 
+          value: showTechnicalErrorCorrection && correctedStats.successRate 
+            ? `${stats.successRate.toFixed(1)}% → ${correctedStats.successRate.toFixed(1)}%`
+            : `${((stats?.successRate || 0).toFixed(1))}%`, 
+          highlight: (showTechnicalErrorCorrection ? correctedStats.successRate : stats?.successRate || 0) > 70,
+          corrected: showTechnicalErrorCorrection && correctedStats.successRate !== stats.successRate
+        },
+        { 
+          label: '平均スコア', 
+          value: showTechnicalErrorCorrection && correctedStats.averageScore 
+            ? `${stats.averageScore.toFixed(1)}点 → ${correctedStats.averageScore.toFixed(1)}点`
+            : `${((stats?.averageScore || 0).toFixed(1))}点`, 
+          highlight: (showTechnicalErrorCorrection ? correctedStats.averageScore : stats?.averageScore || 0) > 75,
+          corrected: showTechnicalErrorCorrection && correctedStats.averageScore !== stats.averageScore
+        },
+        { 
+          label: '最高スコア', 
+          value: `${(stats?.bestScore || 0)}点`, 
+          highlight: (stats?.bestScore || 0) > 90 
+        }
       ]
     },
     {
       title: 'セッション情報',
-      icon: '⏱️',
+      icon: Clock,
       stats: [
         { label: '練習時間', value: formatDuration(stats?.sessionDuration || 0) },
         { label: '連続正解', value: `${(stats?.streakCount || 0)}回`, highlight: (stats?.streakCount || 0) > 5 },
@@ -65,7 +100,7 @@
     },
     {
       title: '音程分析',
-      icon: '🎵',
+      icon: Target,
       stats: [
         { 
           label: '最も難しい音程', 
@@ -78,7 +113,33 @@
           customClass: 'text-green-600'
         }
       ]
-    }
+    },
+    // 技術誤差補正カテゴリ（条件付き表示）
+    ...(showTechnicalErrorCorrection ? [{
+      title: '技術誤差分析',
+      icon: Zap,
+      stats: [
+        { 
+          label: '測定信頼度', 
+          value: `${correctedStats.reliabilityScore || 95}%`,
+          highlight: (correctedStats.reliabilityScore || 95) > 90,
+          icon: TrendingUp
+        },
+        { 
+          label: '技術誤差影響', 
+          value: correctedStats.technicalErrorImpact === 'high' ? '高' : 
+                 correctedStats.technicalErrorImpact === 'medium' ? '中' : '低',
+          customClass: correctedStats.technicalErrorImpact === 'high' ? 'text-red-600' : 
+                      correctedStats.technicalErrorImpact === 'medium' ? 'text-yellow-600' : 'text-green-600',
+          icon: AlertCircle
+        },
+        { 
+          label: '測定精度', 
+          value: `${correctedStats.measurementAccuracy || 90}%`,
+          highlight: (correctedStats.measurementAccuracy || 90) > 85
+        }
+      ]
+    }] : [])
   ];
 </script>
 
@@ -89,7 +150,11 @@
     {#each statCategories as category}
       <div class="stat-category bg-gray-50 rounded-lg p-4">
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-2xl">{category.icon}</span>
+          {#if typeof category.icon === 'string'}
+            <span class="text-2xl">{category.icon}</span>
+          {:else}
+            <svelte:component this={category.icon} size="20" class="text-gray-600" />
+          {/if}
           <h4 class="font-medium text-gray-700">{category.title}</h4>
         </div>
         
@@ -97,11 +162,22 @@
           {#each category.stats as stat}
             <div class="stat-item flex justify-between items-center">
               <span class="text-sm text-gray-600">{stat.label}</span>
-              <span class="font-semibold {stat.customClass || (stat.highlight ? 'text-blue-600' : 'text-gray-800')}">
+              <span class="font-semibold {stat.customClass || (stat.highlight ? 'text-blue-600' : 'text-gray-800')} flex items-center gap-1">
                 {#if stat.icon}
-                  <span class="mr-1">{stat.icon}</span>
+                  {#if typeof stat.icon === 'string'}
+                    <span>{stat.icon}</span>
+                  {:else}
+                    <svelte:component this={stat.icon} size="14" />
+                  {/if}
                 {/if}
-                {stat.value}
+                {#if stat.corrected}
+                  <span class="flex items-center gap-1">
+                    <span>{stat.value}</span>
+                    <TrendingUp size="12" class="text-green-500" />
+                  </span>
+                {:else}
+                  {stat.value}
+                {/if}
               </span>
             </div>
           {/each}

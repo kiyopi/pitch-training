@@ -1,10 +1,17 @@
 <script>
+  import { TrendingUp, TrendingDown, Minus } from 'lucide-svelte';
+  
   export let consistencyData = [];
   export let className = '';
   export let height = 200;
+  export let showTechnicalErrorCorrection = false; // 技術誤差補正表示フラグ
+  export let correctedData = []; // 技術誤差補正後データ
   
   // グラフ表示用のデータを準備
   $: graphData = prepareGraphData(consistencyData);
+  $: correctedGraphData = showTechnicalErrorCorrection && correctedData.length > 0 
+    ? prepareGraphData(correctedData) 
+    : null;
   
   function prepareGraphData(data) {
     if (!data || data.length === 0) return { points: '', max: 100, min: 0 };
@@ -123,12 +130,13 @@
             fill="url(#consistency-gradient)"
           />
           
-          <!-- グラフ線 -->
+          <!-- グラフ線（生データ） -->
           <polyline
             points="{graphData.points}"
             fill="none"
-            stroke="#3b82f6"
-            stroke-width="2"
+            stroke="{showTechnicalErrorCorrection ? '#94a3b8' : '#3b82f6'}"
+            stroke-width="{showTechnicalErrorCorrection ? 1.5 : 2}"
+            stroke-dasharray="{showTechnicalErrorCorrection ? '4,2' : 'none'}"
           />
           
           <!-- データポイント -->
@@ -143,7 +151,56 @@
             />
           {/each}
         {/if}
+
+        <!-- 技術誤差補正後グラフ -->
+        {#if showTechnicalErrorCorrection && correctedGraphData?.points}
+          <defs>
+            <linearGradient id="corrected-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity="0.1" />
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          
+          <polygon
+            points="0,{height} {correctedGraphData.points} 400,{height}"
+            fill="url(#corrected-gradient)"
+          />
+          <polyline
+            points="{correctedGraphData.points}"
+            fill="none"
+            stroke="#10b981"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          
+          <!-- 補正後データポイント -->
+          {#each correctedData as point, i}
+            <circle
+              cx="{(i / (correctedData.length - 1)) * 400}"
+              cy="{height - ((point.score - correctedGraphData.min) / (correctedGraphData.max - correctedGraphData.min)) * height}"
+              r="3"
+              fill="#10b981"
+              stroke="white"
+              stroke-width="1.5"
+            />
+          {/each}
+        {/if}
       </svg>
+      
+      <!-- 凡例（技術誤差補正表示時） -->
+      {#if showTechnicalErrorCorrection}
+        <div class="mt-2 flex items-center gap-4 text-xs text-gray-600">
+          <div class="flex items-center gap-1">
+            <div class="w-4 h-0.5 bg-gray-400" style="border-top: 1.5px dashed #94a3b8;"></div>
+            <span>生データ</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-4 h-0.5 bg-green-500"></div>
+            <span>技術誤差補正後</span>
+          </div>
+        </div>
+      {/if}
     </div>
     
     <!-- 最近のデータポイント -->

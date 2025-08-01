@@ -1,6 +1,9 @@
 <script>
+  import { AlertCircle, TrendingUp, Zap } from 'lucide-svelte';
+  
   export let intervalData = [];
   export let className = '';
+  export let showTechnicalErrorCorrection = false; // 技術誤差補正表示フラグ
   
   // 音程の表示名と色の定義
   const intervalInfo = {
@@ -73,7 +76,27 @@
           />
         </div>
         
-        {#if interval.accuracy !== undefined}
+        <!-- 技術誤差補正データ表示 -->
+        {#if showTechnicalErrorCorrection && interval.technicalErrorRate !== undefined}
+          <div class="mt-2 space-y-1">
+            <div class="flex items-center gap-1 text-xs text-gray-600">
+              <Zap size="12" class="text-blue-500" />
+              <span>技術誤差: ±{interval.technicalErrorRate.toFixed(1)}¢</span>
+            </div>
+            {#if interval.trueAccuracy !== undefined}
+              <div class="flex items-center gap-1 text-xs text-green-600">
+                <TrendingUp size="12" />
+                <span>補正後精度: {interval.trueAccuracy.toFixed(1)}%</span>
+              </div>
+            {/if}
+            {#if interval.recommendation}
+              <div class="flex items-start gap-1 text-xs text-blue-600">
+                <AlertCircle size="12" class="mt-0.5 flex-shrink-0" />
+                <span>{interval.recommendation}</span>
+              </div>
+            {/if}
+          </div>
+        {:else if interval.accuracy !== undefined}
           <div class="mt-2 text-xs text-gray-600">
             平均精度: {interval.accuracy.toFixed(1)}%
           </div>

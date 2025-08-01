@@ -1152,6 +1152,139 @@
     
     return null;
   })();
+
+  // 🎯 技術誤差考慮型S-E級別アドバイス生成
+  function generateTechnicalErrorAwareFeedback(grade, correctedGrade, analysisData, sessionHistory) {
+    const actualGrade = correctedGrade || grade;
+    
+    // 基本メッセージテンプレート
+    const feedbackTemplates = {
+      'S': {
+        title: '🏆 素晴らしい成果です！',
+        message: '音楽家レベルの相対音感を獲得されました。技術的制約を克服し、真の音感能力を発揮できています。この能力を活かして、より高度な音楽理論学習や楽器演奏に挑戦してください。',
+        icon: '🏆',
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-50'
+      },
+      'A': {
+        title: '🌟 優秀な結果です！',
+        message: '相対音感の基礎が確立されています。技術誤差の影響を最小化し、安定した実力を発揮されています。継続練習により、S級到達が十分に期待できます。',
+        icon: '🌟',
+        color: 'text-green-600',
+        bgColor: 'bg-green-50'
+      },
+      'B': {
+        title: '💪 着実な進歩です！',
+        message: '基本的な音程認識ができており、技術誤差を考慮すると実際の能力はより高いレベルにあります。毎日の短時間練習で、確実に上級レベルへ到達できます。',
+        icon: '💪',
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50'
+      },
+      'C': {
+        title: '💪 着実な進歩です！',
+        message: '基本的な音程認識ができており、技術誤差を考慮すると実際の能力はより高いレベルにあります。毎日の短時間練習で、確実に上級レベルへ到達できます。',
+        icon: '💪',
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50'
+      },
+      'D': {
+        title: '🌱 良いスタートです！',
+        message: '音感は練習で必ず向上します。現在の測定値は技術的制約の影響を受けている可能性があります。焦らず継続することが最も重要です。まずは協和音程（4度・5度）から確実に身につけていきましょう。',
+        icon: '🌱',
+        color: 'text-green-600',
+        bgColor: 'bg-green-50'
+      },
+      'E': {
+        title: '🌱 良いスタートです！',
+        message: '音感は練習で必ず向上します。現在の測定値は技術的制約の影響を受けている可能性があります。焦らず継続することが最も重要です。まずは協和音程（4度・5度）から確実に身につけていきましょう。',
+        icon: '🌱',
+        color: 'text-green-600',
+        bgColor: 'bg-green-50'
+      }
+    };
+
+    const template = feedbackTemplates[actualGrade] || feedbackTemplates['E'];
+    
+    // 個別化要素の追加
+    let personalizedElements = [];
+    
+    // 技術分析情報
+    if (analysisData?.measurement === 'complete') {
+      personalizedElements.push({
+        type: 'technical',
+        content: `技術分析: 測定精度±${analysisData.standardDeviation?.toFixed(1) || '25'}¢、信頼度${analysisData.reliabilityScore?.toFixed(1) || '95'}%`
+      });
+    }
+    
+    // 重点練習音程（A級の場合）
+    if (actualGrade === 'A' && analysisData?.intervalAnalysis) {
+      const weakestInterval = Object.entries(analysisData.intervalAnalysis)
+        .sort(([,a], [,b]) => a.correctedAccuracy - b.correctedAccuracy)[0];
+      
+      if (weakestInterval) {
+        const intervalName = getIntervalDisplayName(weakestInterval[0]);
+        personalizedElements.push({
+          type: 'practice',
+          content: `重点練習音程: ${intervalName}`,
+          detail: '推定到達期間: 2-3週間の継続練習'
+        });
+      }
+    }
+    
+    // 技術的改善点（B-C級の場合）
+    if (['B', 'C'].includes(actualGrade)) {
+      personalizedElements.push({
+        type: 'technical_improvement',
+        content: '技術的改善点: マイク環境の最適化により、さらなる向上が期待できます。'
+      });
+    }
+    
+    // 技術サポート（D-E級の場合）
+    if (['D', 'E'].includes(actualGrade)) {
+      personalizedElements.push({
+        type: 'technical_support',
+        content: '技術サポート: 測定環境の改善により、より正確な評価が可能になります。'
+      });
+    }
+
+    return {
+      ...template,
+      grade: actualGrade,
+      originalGrade: grade,
+      correctionApplied: correctedGrade && correctedGrade !== grade,
+      personalizedElements
+    };
+  }
+
+  // 補正後の級を計算
+  function calculateCorrectedGrade(analysisData) {
+    if (!analysisData.comprehensiveStatistics) return null;
+    
+    const correctedScore = analysisData.comprehensiveStatistics.correctedAverageScore;
+    if (correctedScore >= 90) return 'S';
+    if (correctedScore >= 80) return 'A';
+    if (correctedScore >= 70) return 'B';
+    if (correctedScore >= 60) return 'C';
+    if (correctedScore >= 50) return 'D';
+    return 'E';
+  }
+
+
+  // S-E級別フィードバックデータ生成
+  $: technicalFeedback = (() => {
+    if (!detailedAnalysisData || !unifiedGrade) return null;
+    
+    // 技術誤差補正により級が変わった場合の補正級を計算
+    const correctedGrade = detailedAnalysisData.measurement === 'complete' ? 
+      calculateCorrectedGrade(detailedAnalysisData) : null;
+    
+    return generateTechnicalErrorAwareFeedback(
+      unifiedGrade, 
+      correctedGrade, 
+      detailedAnalysisData, 
+      scoreData?.sessionHistory
+    );
+  })();
   
   // 現在の統計情報を計算
   $: currentStats = (() => {
@@ -1239,6 +1372,78 @@
             feedback={feedbackData}
             className="mt-6 completion-feedback-display"
           />
+        </div>
+      {/if}
+      
+      <!-- 技術誤差考慮型S-E級別アドバイス -->
+      {#if technicalFeedback && detailedAnalysisData?.measurement === 'complete'}
+        <div class="technical-feedback-section" in:fade={{ delay: 900 }}>
+          <div class="technical-feedback-card {technicalFeedback.bgColor} border-l-4 border-{technicalFeedback.color.replace('text-', '')} p-4 rounded-r-lg">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 text-2xl">
+                {technicalFeedback.icon}
+              </div>
+              <div class="flex-1">
+                <h3 class="font-semibold {technicalFeedback.color} text-lg mb-2">
+                  {technicalFeedback.title}
+                  {#if technicalFeedback.correctionApplied}
+                    <span class="ml-2 text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                      技術誤差補正適用
+                    </span>
+                  {/if}
+                </h3>
+                <p class="text-gray-700 mb-3 leading-relaxed">
+                  {technicalFeedback.message}
+                </p>
+                
+                <!-- 個別化要素の表示 -->
+                {#if technicalFeedback.personalizedElements && technicalFeedback.personalizedElements.length > 0}
+                  <div class="space-y-2">
+                    {#each technicalFeedback.personalizedElements as element}
+                      <div class="text-sm">
+                        {#if element.type === 'technical'}
+                          <div class="flex items-center gap-2 text-gray-600">
+                            <Zap size="14" class="text-blue-500" />
+                            <span>{element.content}</span>
+                          </div>
+                        {:else if element.type === 'practice'}
+                          <div class="bg-green-100 text-green-700 p-2 rounded">
+                            <div class="font-medium">{element.content}</div>
+                            {#if element.detail}
+                              <div class="text-xs mt-1">{element.detail}</div>
+                            {/if}
+                          </div>
+                        {:else if element.type === 'technical_improvement'}
+                          <div class="flex items-start gap-2 text-blue-600">
+                            <TrendingUp size="14" class="mt-0.5" />
+                            <span>{element.content}</span>
+                          </div>
+                        {:else if element.type === 'technical_support'}
+                          <div class="flex items-start gap-2 text-green-600">
+                            <AlertCircle size="14" class="mt-0.5" />
+                            <span>{element.content}</span>
+                          </div>
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+                
+                <!-- 級の変更情報 -->
+                {#if technicalFeedback.correctionApplied}
+                  <div class="mt-3 text-sm bg-blue-50 text-blue-600 p-2 rounded border border-blue-200">
+                    <div class="flex items-center gap-2">
+                      <TrendingUp size="14" />
+                      <span>技術誤差補正: {technicalFeedback.originalGrade}級 → {technicalFeedback.grade}級</span>
+                    </div>
+                    <div class="text-xs mt-1 text-blue-500">
+                      Web Audio APIの技術的制約を統計的に補正した結果、より高い評価となりました。
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
         </div>
       {/if}
       
@@ -1727,6 +1932,7 @@
                 <!-- 従来版（8セッション未完了時） -->
                 <IntervalProgressTracker 
                   intervalData={intervalData}
+                  showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
                 />
               {/if}
             </div>
@@ -1775,6 +1981,8 @@
                 <!-- 従来版（8セッション未完了時） -->
                 <ConsistencyGraph 
                   consistencyData={consistencyData}
+                  showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
+                  correctedData={detailedAnalysisData?.consistencyAnalysis?.correctedScores || []}
                 />
               {/if}
             </div>
@@ -1892,6 +2100,8 @@
                 <!-- 従来版（8セッション未完了時） -->
                 <SessionStatistics 
                   statistics={sessionStatistics}
+                  showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
+                  correctedStatistics={detailedAnalysisData?.comprehensiveStatistics || {}}
                 />
               {/if}
             </div>
@@ -2485,6 +2695,40 @@
     font-size: 0.875rem;
     line-height: 1.6;
     color: #374151;
+  }
+
+  /* 技術誤差考慮型フィードバックスタイル */
+  .technical-feedback-section {
+    margin-top: 1.5rem;
+  }
+
+  .technical-feedback-card {
+    animation: slideInFromBottom 0.5s ease-out;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 動的なborder-colorクラス */
+  .border-yellow-600 {
+    border-color: #d97706 !important;
+  }
+
+  .border-green-600 {
+    border-color: #059669 !important;
+  }
+
+  .border-blue-600 {
+    border-color: #2563eb !important;
   }
   
   
