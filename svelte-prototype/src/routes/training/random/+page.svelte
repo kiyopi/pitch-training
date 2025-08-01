@@ -288,9 +288,6 @@
   // 採点システム関連
   let scoringEngine = null;
 
-  // デバッグ用：ハーモニック補正切り替え
-  let disableHarmonicCorrection = false;
-  
   // デバッグ用：表示モード切り替え
   let useEvaluationDisplay = true; // true: 判定同期表示, false: リアルタイム表示
   let currentScoreData = {
@@ -2026,16 +2023,10 @@
     <h1 class="page-title">🎵 ランダム基音トレーニング</h1>
     <p class="page-description">10種類の基音からランダムに選択してドレミファソラシドを練習</p>
     
-    <!-- デバッグUI区画（230Hz固着問題対策） -->
+    <!-- 表示モード切り替えUI -->
     <div class="debug-controls">
       <div class="debug-section">
-        <span class="debug-label">🔧 デバッグ:</span>
-        <button 
-          class="debug-toggle-button {disableHarmonicCorrection ? 'disabled' : 'enabled'}"
-          on:click={() => disableHarmonicCorrection = !disableHarmonicCorrection}
-        >
-          ハーモニック補正: {disableHarmonicCorrection ? 'OFF' : 'ON'}
-        </button>
+        <span class="debug-label">🎯 表示設定:</span>
         <button 
           class="debug-toggle-button {useEvaluationDisplay ? 'enabled' : 'disabled'}"
           on:click={() => useEvaluationDisplay = !useEvaluationDisplay}
@@ -2098,7 +2089,7 @@
         on:microphoneHealthChange={handleMicrophoneHealthChange}
         className="pitch-detector-content"
         debugMode={true}
-        disableHarmonicCorrection={disableHarmonicCorrection}
+        disableHarmonicCorrection={false}
       />
     </div>
 
@@ -2289,7 +2280,7 @@
     margin: 0;
   }
 
-  /* デバッグUI */
+  /* 表示設定UI */
   .debug-controls {
     margin: 1rem 0;
     padding: 0.75rem;
