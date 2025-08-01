@@ -548,18 +548,53 @@
   // 総合統計データ生成
   function generateComprehensiveStatistics(sessionHistory, allCentData, robustStats) {
     const totalAttempts = allCentData.length;
-    const rawSuccessRate = sessionHistory.reduce((sum, session) => {
-      return sum + (session.noteResults ? session.noteResults.filter(note => note.correct).length : 0);
-    }, 0) / totalAttempts * 100;
+    
+    // 成功率計算の修正（空配列対策）
+    const totalCorrect = sessionHistory.reduce((sum, session) => {
+      if (session.noteResults && Array.isArray(session.noteResults)) {
+        return sum + session.noteResults.filter(note => note.correct).length;
+      }
+      return sum;
+    }, 0);
+    
+    const rawSuccessRate = totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
+    const correctedSuccessRate = Math.min(100, rawSuccessRate * 1.15);
 
-    const correctedSuccessRate = Math.min(100, rawSuccessRate * 1.15); // 補正係数適用
-
-    const sessionScores = sessionHistory.map(s => s.score || 0);
-    const rawAverageScore = sessionScores.reduce((sum, s) => sum + s, 0) / sessionScores.length;
+    // セッションスコア計算の修正
+    const sessionScores = sessionHistory.map(s => {
+      // 複数のスコアフィールドをチェック
+      return s.score || s.sessionScore || s.totalScore || 0;
+    }).filter(score => !isNaN(score) && score >= 0);
+    
+    const rawAverageScore = sessionScores.length > 0 ? 
+      sessionScores.reduce((sum, s) => sum + s, 0) / sessionScores.length : 0;
     const correctedAverageScore = Math.min(100, rawAverageScore + (robustStats.accuracy - rawAverageScore) * 0.3);
 
-    const totalPracticeTime = sessionHistory.reduce((sum, session) => sum + (session.duration || 0), 0);
-    const maxConsecutiveCorrect = Math.max(...sessionHistory.map(session => session.streakCount || 0));
+    // 練習時間計算の修正
+    const totalPracticeTime = sessionHistory.reduce((sum, session) => {
+      const duration = session.duration || session.sessionDuration || session.time || 0;
+      return sum + (typeof duration === 'number' ? duration : 0);
+    }, 0);
+
+    // 連続正解計算の修正
+    const streakCounts = sessionHistory.map(session => 
+      session.streakCount || session.maxStreak || session.consecutiveCorrect || 0
+    ).filter(count => !isNaN(count) && count >= 0);
+    
+    const maxConsecutiveCorrect = streakCounts.length > 0 ? Math.max(...streakCounts) : 0;
+
+    // 改善率計算の修正（NaN対策）
+    let improvementRate = 0;
+    if (sessionScores.length > 1) {
+      const firstScore = sessionScores[0];
+      const lastScore = sessionScores[sessionScores.length - 1];
+      
+      if (firstScore > 0) {
+        improvementRate = Math.round(((lastScore - firstScore) / firstScore) * 100);
+      } else if (lastScore > 0) {
+        improvementRate = 100; // 0からの改善は100%とする
+      }
+    }
 
     return {
       totalAttempts,
@@ -567,13 +602,12 @@
       correctedSuccessRate: Math.round(correctedSuccessRate * 10) / 10,
       rawAverageScore: Math.round(rawAverageScore * 10) / 10,
       correctedAverageScore: Math.round(correctedAverageScore * 10) / 10,
-      bestSessionScore: Math.max(...sessionScores),
-      worstSessionScore: Math.min(...sessionScores),
+      bestSessionScore: sessionScores.length > 0 ? Math.max(...sessionScores) : 0,
+      worstSessionScore: sessionScores.length > 0 ? Math.min(...sessionScores) : 0,
       totalPracticeTime,
-      averageSessionTime: Math.round(totalPracticeTime / sessionHistory.length),
+      averageSessionTime: sessionHistory.length > 0 ? Math.round(totalPracticeTime / sessionHistory.length) : 0,
       maxConsecutiveCorrect,
-      improvementRate: sessionScores.length > 1 ? 
-        Math.round(((sessionScores[sessionScores.length - 1] - sessionScores[0]) / sessionScores[0]) * 100) : 0
+      improvementRate
     };
   }
   
