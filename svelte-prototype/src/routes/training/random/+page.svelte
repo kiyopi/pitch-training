@@ -1531,30 +1531,33 @@
     // 音程精度の評価（70%以上で優秀）
     const intervalAccuracy = statistics.analyzers?.interval?.averageAccuracy || 0;
     const isIntervalGood = intervalAccuracy >= 70;
-    if (intervalAccuracy > 0) {
+    // データが存在する場合は常に表示（0以上で表示）
+    if (intervalAccuracy >= 0) {
       technicalAnalysis.push({
         category: isIntervalGood ? 'strengths' : 'improvements',
-        text: `音程精度:  ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
+        text: `音程精度: ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
       });
     }
     
     // 方向性精度の評価（80%以上で優秀）
     const directionAccuracy = statistics.analyzers?.direction?.accuracy || 0;
     const isDirectionGood = directionAccuracy >= 80;
-    if (directionAccuracy > 0) {
+    // データが存在する場合は常に表示（0以上で表示）
+    if (directionAccuracy >= 0) {
       technicalAnalysis.push({
         category: isDirectionGood ? 'strengths' : 'improvements',
-        text: `方向性:  ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
+        text: `方向性: ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
       });
     }
     
     // 一貫性の評価（75%以上で優秀）
     const consistencyScore = statistics.analyzers?.consistency?.score || 0;
     const isConsistencyGood = consistencyScore >= 75;
-    if (consistencyScore > 0) {
+    // データが存在する場合は常に表示（0以上で表示）
+    if (consistencyScore >= 0) {
       technicalAnalysis.push({
         category: isConsistencyGood ? 'strengths' : 'improvements',
-        text: `一貫性:  ${Math.round(consistencyScore)}%の${isConsistencyGood ? '安定した演奏パフォーマンス' : '演奏で安定性向上が必要です'}`
+        text: `一貫性: ${Math.round(consistencyScore)}%の${isConsistencyGood ? '安定した演奏パフォーマンス' : '演奏で安定性向上が必要です'}`
       });
     }
     
