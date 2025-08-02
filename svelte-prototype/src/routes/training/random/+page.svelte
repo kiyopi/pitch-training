@@ -1125,12 +1125,10 @@
       if (scoringEngine) {
         // sessionHistoryデータをEnhancedScoringEngineに渡す
         const currentSessionHistory = $sessionHistory || [];
-        console.log('🔧 [EnhancedScoringEngine] sessionHistory渡し開始:', currentSessionHistory.length, 'セッション');
         
         // 各セッションの各音程データをanalyzePerformanceで処理
         for (const [sessionIndex, session] of currentSessionHistory.entries()) {
           if (session.noteResults && session.noteResults.length > 0) {
-            console.log(`🔧 [EnhancedScoringEngine] セッション${sessionIndex + 1}データ処理:`, session.noteResults.length, '音程');
             
             const baseFreq = session.baseFrequency || 262;
             
@@ -1150,7 +1148,6 @@
           }
         }
         
-        console.log('🔧 [EnhancedScoringEngine] 全セッションデータ処理完了');
         const results = scoringEngine.generateDetailedReport();
         
         // スコアデータ更新
@@ -1529,20 +1526,14 @@
   
   // 技術分析結果用のフィードバック生成（8セッション完了時のみ）
   function generateTechnicalFeedbackFromEnhancedEngine(enhancedResults) {
-    console.log('🔍 [TechnicalFeedback] 関数呼び出し開始');
-    console.log('🔍 [TechnicalFeedback] sessionHistory:', $sessionHistory);
-    
     // モード別完了判定
     const mode = 'random'; // 現在はランダムモード固定、将来的にはpropsから取得
     const requiredSessions = mode === 'chromatic' ? 12 : 8;
     const currentSessionHistory = $sessionHistory || [];
     const completedSessions = currentSessionHistory.length;
     
-    console.log('🔍 [TechnicalFeedback] completedSessions:', completedSessions, 'requiredSessions:', requiredSessions);
-    
     // セッション完了前は技術分析結果なし
     if (completedSessions < requiredSessions || !enhancedResults) {
-      console.log('🔍 [TechnicalFeedback] 早期リターン - 条件未満またはデータなし');
       return null;
     }
     
@@ -1550,35 +1541,8 @@
     const improvements = enhancedResults.improvements || [];
     const statistics = enhancedResults.detailed?.statistics || {};
     
-    // デバッグ: データ構造確認
-    console.log('🔍 [TechnicalFeedback] enhancedResults:', enhancedResults);
-    console.log('🔍 [TechnicalFeedback] improvements:', improvements);
-    console.log('🔍 [TechnicalFeedback] statistics:', statistics);
-    console.log('🔍 [TechnicalFeedback] statistics.analyzers:', statistics.analyzers);
-    
-    // さらに詳細なデバッグ - enhancedResultsの全構造を確認
-    if (enhancedResults.detailed) {
-      console.log('🔍 [TechnicalFeedback] enhancedResults.detailed:', enhancedResults.detailed);
-      console.log('🔍 [TechnicalFeedback] enhancedResults.detailed.statistics:', enhancedResults.detailed.statistics);
-    }
-    
     // 技術分析データを整理（アイコン度合い表示）
     const technicalAnalysis = [];
-    
-    // 音程精度の評価（70%以上で優秀）- 正しいデータパスに修正
-    console.log('='.repeat(60));
-    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed:', enhancedResults.detailed);
-    
-    // 個別にJSONで詳細表示
-    if (enhancedResults.detailed?.intervals) {
-      console.log('🚨🚨🚨 [intervals JSON]:', JSON.stringify(enhancedResults.detailed.intervals, null, 2));
-    }
-    if (enhancedResults.detailed?.directions) {
-      console.log('🚨🚨🚨 [directions JSON]:', JSON.stringify(enhancedResults.detailed.directions, null, 2));
-    }
-    if (enhancedResults.detailed?.consistency) {
-      console.log('🚨🚨🚨 [consistency JSON]:', JSON.stringify(enhancedResults.detailed.consistency, null, 2));
-    }
     
     // 正しいフィールドを使用して値を取得
     let intervalAccuracy = 0;
@@ -1601,7 +1565,6 @@
         
         intervalAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
       }
-      console.log('🚨🚨🚨 [intervals] totalAnalyses:', intervalsData.totalAnalyses, 'calculated accuracy:', intervalAccuracy);
     }
     
     if (enhancedResults.detailed?.directions) {
@@ -1620,20 +1583,12 @@
         
         directionAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
       }
-      console.log('🚨🚨🚨 [directions] totalAnalyses:', directionsData.totalAnalyses, 'calculated accuracy:', directionAccuracy);
     }
     
     if (enhancedResults.detailed?.consistency) {
       // 一貫性: overallConsistencyを使用
       consistencyScore = enhancedResults.detailed.consistency.overallConsistency || 0;
-      console.log('🚨🚨🚨 [consistency] overallConsistency:', consistencyScore);
     }
-    
-    console.log('🚨🚨🚨 [技術分析DEBUG] 最終値:');
-    console.log('intervalAccuracy:', intervalAccuracy);
-    console.log('directionAccuracy:', directionAccuracy); 
-    console.log('consistencyScore:', consistencyScore);
-    console.log('='.repeat(60));
     
     const isIntervalGood = intervalAccuracy >= 70;
     const isDirectionGood = directionAccuracy >= 80;
