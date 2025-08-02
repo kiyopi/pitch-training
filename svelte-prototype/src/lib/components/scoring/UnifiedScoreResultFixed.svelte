@@ -2661,6 +2661,9 @@
   /* 技術分析インライン表示スタイル */
   .technical-feedback-inline {
     margin-top: 1rem;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
   }
   
   .technical-feedback-display-inline {
@@ -2681,7 +2684,16 @@
   }
   
   .technical-feedback-display-inline ul {
-    margin-left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 600px;
+    text-align: left;
+  }
+  
+  /* 技術分析のメインタイトルとサブタイトルを中央寄せ */
+  .technical-feedback-display-inline h3,
+  .technical-feedback-display-inline > div > p {
+    text-align: center;
   }
   
   /* 技術分析タブスタイル */
