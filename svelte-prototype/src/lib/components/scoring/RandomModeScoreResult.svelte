@@ -84,13 +84,19 @@
   $: overallGrade = (() => {
     // 測定不可が多い場合は要練習
     if (results.notMeasured > 3) return 'needWork';
-    if (results.needWork > 2) return 'needWork';
-    if (results.needWork > 0 && outliers.length > 0) return 'needWork';
     // 測定できた音のみで評価
     if (results.measuredCount === 0) return 'needWork';
+    
+    // ポジティブ評価を優先（技術的ブレ耐性）
     if (averageError <= 20 && results.excellent >= 6) return 'excellent';
     if (averageError <= 30 && passCount >= 7) return 'good';
     if (passCount >= 5) return 'pass';
+    
+    // 要練習が圧倒的多数（75%以上）の場合のみ要練習判定
+    if (results.needWork >= 6) return 'needWork';
+    // 外れ値が多い場合も要練習
+    if (results.needWork > 0 && outliers.length > 2) return 'needWork';
+    
     return 'needWork';
   })();
   
