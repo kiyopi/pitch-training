@@ -1536,9 +1536,11 @@
     const technicalAnalysis = [];
     
     // 音程精度の評価（70%以上で優秀）
+    console.log('🔍 [Debug] statistics全体:', statistics);
+    console.log('🔍 [Debug] statistics.analyzers:', statistics.analyzers);
     const intervalAccuracy = statistics.analyzers?.interval?.averageAccuracy || 0;
+    console.log('🔍 [Debug] intervalAccuracy:', intervalAccuracy);
     const isIntervalGood = intervalAccuracy >= 70;
-    console.log('🔍 [TechnicalFeedback] intervalAccuracy:', intervalAccuracy, 'isIntervalGood:', isIntervalGood);
     
     // 常に音程精度を追加（テスト用）
     technicalAnalysis.push({
@@ -1549,7 +1551,6 @@
     // 方向性精度の評価（80%以上で優秀）
     const directionAccuracy = statistics.analyzers?.direction?.accuracy || 0;
     const isDirectionGood = directionAccuracy >= 80;
-    console.log('🔍 [TechnicalFeedback] directionAccuracy:', directionAccuracy, 'isDirectionGood:', isDirectionGood);
     
     // 常に方向性を追加（テスト用）
     technicalAnalysis.push({
@@ -1560,7 +1561,6 @@
     // 一貫性の評価（75%以上で優秀）
     const consistencyScore = statistics.analyzers?.consistency?.score || 0;
     const isConsistencyGood = consistencyScore >= 75;
-    console.log('🔍 [TechnicalFeedback] consistencyScore:', consistencyScore, 'isConsistencyGood:', isConsistencyGood);
     
     // 常に一貫性を追加（テスト用）
     technicalAnalysis.push({
@@ -1582,13 +1582,7 @@
       }))
     );
     
-    // デバッグ: 生成されたデータを確認
-    console.log('🔍 [TechnicalFeedback] technicalAnalysis:', technicalAnalysis);
-    console.log('🔍 [TechnicalFeedback] adviceItems:', adviceItems);
-    console.log('🔍 [TechnicalFeedback] practiceItems:', practiceItems);
-    
     const finalDetails = [...technicalAnalysis, ...adviceItems, ...practiceItems];
-    console.log('🔍 [TechnicalFeedback] finalDetails:', finalDetails);
     
     return {
       type: 'info',
