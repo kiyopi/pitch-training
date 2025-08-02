@@ -1580,12 +1580,56 @@
       console.log('🚨🚨🚨 [consistency JSON]:', JSON.stringify(enhancedResults.detailed.consistency, null, 2));
     }
     
-    // データ不足の場合はデフォルト値を使用
-    const intervalAccuracy = enhancedResults.detailed?.intervals?.overallConsistency || 0;
-    const directionAccuracy = enhancedResults.detailed?.directions?.overallConsistency || 0; 
-    const consistencyScore = enhancedResults.detailed?.consistency?.overallConsistency || 0;
+    // 正しいフィールドを使用して値を取得
+    let intervalAccuracy = 0;
+    let directionAccuracy = 0;
+    let consistencyScore = 0;
     
-    console.log('🚨🚨🚨 [技術分析DEBUG] 修正後の値:');
+    if (enhancedResults.detailed?.intervals) {
+      // 音程精度: 平均精度を計算
+      const intervalsData = enhancedResults.detailed.intervals;
+      if (intervalsData.totalAnalyses > 0) {
+        let totalAccuracy = 0;
+        let totalAttempts = 0;
+        
+        for (const [intervalType, data] of Object.entries(intervalsData.masteryLevels)) {
+          if (data.attempts > 0) {
+            totalAccuracy += data.averageAccuracy * data.attempts;
+            totalAttempts += data.attempts;
+          }
+        }
+        
+        intervalAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+      }
+      console.log('🚨🚨🚨 [intervals] totalAnalyses:', intervalsData.totalAnalyses, 'calculated accuracy:', intervalAccuracy);
+    }
+    
+    if (enhancedResults.detailed?.directions) {
+      // 方向性精度: 平均精度を計算
+      const directionsData = enhancedResults.detailed.directions;
+      if (directionsData.totalAnalyses > 0) {
+        let totalAccuracy = 0;
+        let totalAttempts = 0;
+        
+        for (const [directionType, data] of Object.entries(directionsData.masteryData)) {
+          if (data.attempts > 0) {
+            totalAccuracy += data.averageAccuracy * data.attempts;
+            totalAttempts += data.attempts;
+          }
+        }
+        
+        directionAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+      }
+      console.log('🚨🚨🚨 [directions] totalAnalyses:', directionsData.totalAnalyses, 'calculated accuracy:', directionAccuracy);
+    }
+    
+    if (enhancedResults.detailed?.consistency) {
+      // 一貫性: overallConsistencyを使用
+      consistencyScore = enhancedResults.detailed.consistency.overallConsistency || 0;
+      console.log('🚨🚨🚨 [consistency] overallConsistency:', consistencyScore);
+    }
+    
+    console.log('🚨🚨🚨 [技術分析DEBUG] 最終値:');
     console.log('intervalAccuracy:', intervalAccuracy);
     console.log('directionAccuracy:', directionAccuracy); 
     console.log('consistencyScore:', consistencyScore);
