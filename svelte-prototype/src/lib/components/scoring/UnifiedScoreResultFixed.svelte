@@ -1192,14 +1192,17 @@
         {gradeDef.description}
       </p>
       
-      <!-- 8セッション完走時の総合フィードバック -->
-      <!-- 8セッション（またはChromatic12セッション）完了時のみフィードバック表示 -->
-      {#if feedbackData && Object.keys(feedbackData).length > 0 && isCompleted}
-        <div class="completion-feedback" in:fade={{ delay: 800 }}>
-          <FeedbackDisplay 
-            feedback={feedbackData}
-            className="mt-6 completion-feedback-display"
-          />
+      <!-- S-E級メッセージ表示（8セッション完了時のみ） -->
+      {#if feedbackData?.primary && isCompleted}
+        <div class="grade-feedback-messages" in:fade={{ delay: 800 }}>
+          <p class="grade-primary-message">
+            {feedbackData.primary}
+          </p>
+          {#if feedbackData.summary}
+            <p class="grade-summary-message">
+              {feedbackData.summary}
+            </p>
+          {/if}
         </div>
       {/if}
       
@@ -1780,6 +1783,28 @@
   .grade-description {
     font-size: 1rem;
     color: #6b7280;
+  }
+  
+  /* S-E級メッセージスタイル */
+  .grade-feedback-messages {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f9fafb, #ffffff);
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .grade-primary-message {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+  
+  .grade-summary-message {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
   }
   
   /* 評価の見方スタイル（shadcn/ui風） */

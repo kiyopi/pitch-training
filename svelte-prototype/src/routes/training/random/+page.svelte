@@ -1157,8 +1157,8 @@
           consistencyData = generateConsistencyDataFromResults(noteResultsForDisplay);
         }
         
-        // フィードバックデータ更新
-        feedbackData = results.feedback || generateFeedbackFromResults(noteResultsForDisplay);
+        // フィードバックデータ更新（8セッション完了時はカスタムメッセージを優先）
+        feedbackData = generateFeedbackFromResults(noteResultsForDisplay) || results.feedback;
         
         // セッション統計更新
         sessionStatistics = {
