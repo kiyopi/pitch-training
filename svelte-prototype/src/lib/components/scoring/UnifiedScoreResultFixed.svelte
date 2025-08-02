@@ -1257,8 +1257,8 @@
     </div>
   {/if}
 
-  <!-- 8セッション完走時の技術分析結果 -->
-  {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
+  <!-- 8セッション完走時の技術分析結果 (デバッグ用: isCompleted強制true) -->
+  {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && true}
     <div class="technical-feedback-section" in:fade={{ delay: 1200 }}>
       <FeedbackDisplay 
         feedback={technicalFeedbackData}
