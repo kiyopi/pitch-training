@@ -1507,38 +1507,62 @@
       return null;
     }
     
-    // EnhancedScoringEngineからの技術分析データを整理
+    // EnhancedScoringEngineの実装済みimprovements配列を活用
+    const improvements = enhancedResults.improvements || [];
+    const statistics = enhancedResults.detailed?.statistics || {};
+    
+    // 技術分析データを整理（アイコン度合い表示）
     const technicalAnalysis = [];
     
-    // 音程精度分析
-    if (enhancedResults.intervalAnalysis) {
+    // 音程精度の評価（70%以上で優秀）
+    const intervalAccuracy = statistics.analyzers?.interval?.averageAccuracy || 0;
+    const isIntervalGood = intervalAccuracy >= 70;
+    if (intervalAccuracy > 0) {
       technicalAnalysis.push({
-        category: 'strengths',
-        text: `音程精度: 平均誤差±${Math.round(enhancedResults.averageError || 0)}¢で測定`
+        category: isIntervalGood ? 'strengths' : 'improvements',
+        text: `音程精度:  ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
       });
     }
     
-    // 認識速度分析
-    if (enhancedResults.responseTimeAnalysis) {
+    // 方向性精度の評価（80%以上で優秀）
+    const directionAccuracy = statistics.analyzers?.direction?.accuracy || 0;
+    const isDirectionGood = directionAccuracy >= 80;
+    if (directionAccuracy > 0) {
       technicalAnalysis.push({
-        category: 'improvements', 
-        text: `認識速度: 平均${enhancedResults.averageResponseTime || '1.2'}秒で判定`
+        category: isDirectionGood ? 'strengths' : 'improvements',
+        text: `方向性:  ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
       });
     }
     
-    // 一貫性分析
-    if (enhancedResults.consistencyScore !== undefined) {
+    // 一貫性の評価（75%以上で優秀）
+    const consistencyScore = statistics.analyzers?.consistency?.score || 0;
+    const isConsistencyGood = consistencyScore >= 75;
+    if (consistencyScore > 0) {
       technicalAnalysis.push({
-        category: 'tips',
-        text: `一貫性: ${enhancedResults.consistencyScore}%の安定した演奏パフォーマンス`
+        category: isConsistencyGood ? 'strengths' : 'improvements',
+        text: `一貫性:  ${Math.round(consistencyScore)}%の${isConsistencyGood ? '安定した演奏パフォーマンス' : '演奏で安定性向上が必要です'}`
       });
     }
+    
+    // アドバイス（改善提案のメッセージ部分）
+    const adviceItems = improvements.map(imp => ({
+      category: 'tips',
+      text: imp.message
+    }));
+    
+    // 練習提案（改善提案のアクション部分）
+    const practiceItems = improvements.flatMap(imp => 
+      (imp.actions || []).map(action => ({
+        category: 'practice',
+        text: action
+      }))
+    );
     
     return {
       type: 'info',
-      primary: '📊 技術分析結果',
-      summary: 'EnhancedScoringEngineによる専門分析',
-      details: technicalAnalysis
+      primary: '詳細分析結果',
+      summary: '音程精度・一貫性・方向性の総合分析',
+      details: [...technicalAnalysis, ...adviceItems, ...practiceItems]
     };
   }
   

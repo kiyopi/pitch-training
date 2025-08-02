@@ -102,22 +102,41 @@
       {#each Object.entries(categorizedFeedback) as [category, items]}
         {#if items.length > 0}
           <div class="category-section">
-            <div class="flex items-center gap-2 mb-2">
-              <svelte:component this={categoryInfo[category].icon} size="16" class="{style.titleColor}" />
-              <h4 class="font-medium {style.titleColor}">
-                {categoryInfo[category].title}
-              </h4>
-            </div>
-            <ul class="space-y-2 ml-7">
-              {#each items as item}
-                <li class="flex items-start gap-2">
-                  <span class="{style.contentColor} mt-1">•</span>
-                  <span class="{style.contentColor} text-sm">
-                    {item.text}
-                  </span>
-                </li>
-              {/each}
-            </ul>
+            <!-- カテゴリ別見出し表示（tips・practiceのみ） -->
+            {#if category === 'tips' || category === 'practice'}
+              <div class="flex items-center gap-2 mb-2">
+                <svelte:component this={categoryInfo[category].icon} size="16" class="{style.titleColor}" />
+                <h4 class="font-medium {style.titleColor}">
+                  {categoryInfo[category].title}
+                </h4>
+              </div>
+              <ul class="space-y-2 ml-7">
+                {#each items as item}
+                  <li class="flex items-start gap-2">
+                    <span class="{style.contentColor} mt-1">•</span>
+                    <span class="{style.contentColor} text-sm">
+                      {item.text}
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <!-- strengths・improvementsはアイコン度合い表示 -->
+              <ul class="space-y-2">
+                {#each items as item}
+                  <li class="flex items-start gap-2">
+                    <svelte:component 
+                      this={categoryInfo[category].icon} 
+                      size="16" 
+                      class="{style.titleColor} mt-1 flex-shrink-0" 
+                    />
+                    <span class="{style.contentColor} text-sm">
+                      {item.text}
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
           </div>
         {/if}
       {/each}
