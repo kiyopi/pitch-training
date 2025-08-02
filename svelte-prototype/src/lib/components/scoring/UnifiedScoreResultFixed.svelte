@@ -25,6 +25,7 @@
   export let intervalData = [];
   export let consistencyData = [];
   export let feedbackData = null;
+  export let technicalFeedbackData = null;
   export let sessionStatistics = null;
   
   // タブ管理
@@ -1203,6 +1204,16 @@
               {feedbackData.summary}
             </p>
           {/if}
+        </div>
+      {/if}
+      
+      <!-- 8セッション完走時の技術分析結果 -->
+      {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
+        <div class="technical-feedback" in:fade={{ delay: 1000 }}>
+          <FeedbackDisplay 
+            feedback={technicalFeedbackData}
+            className="mt-6 technical-feedback-display"
+          />
         </div>
       {/if}
       
