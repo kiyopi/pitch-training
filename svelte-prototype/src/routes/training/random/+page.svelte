@@ -1511,6 +1511,11 @@
     const improvements = enhancedResults.improvements || [];
     const statistics = enhancedResults.detailed?.statistics || {};
     
+    // デバッグ: データ構造確認
+    console.log('🔍 [TechnicalFeedback] enhancedResults:', enhancedResults);
+    console.log('🔍 [TechnicalFeedback] improvements:', improvements);
+    console.log('🔍 [TechnicalFeedback] statistics:', statistics);
+    
     // 技術分析データを整理（アイコン度合い表示）
     const technicalAnalysis = [];
     
@@ -1558,11 +1563,19 @@
       }))
     );
     
+    // デバッグ: 生成されたデータを確認
+    console.log('🔍 [TechnicalFeedback] technicalAnalysis:', technicalAnalysis);
+    console.log('🔍 [TechnicalFeedback] adviceItems:', adviceItems);
+    console.log('🔍 [TechnicalFeedback] practiceItems:', practiceItems);
+    
+    const finalDetails = [...technicalAnalysis, ...adviceItems, ...practiceItems];
+    console.log('🔍 [TechnicalFeedback] finalDetails:', finalDetails);
+    
     return {
       type: 'info',
       primary: '詳細分析結果',
       summary: '音程精度・一貫性・方向性の総合分析',
-      details: [...technicalAnalysis, ...adviceItems, ...practiceItems]
+      details: finalDetails
     };
   }
   
