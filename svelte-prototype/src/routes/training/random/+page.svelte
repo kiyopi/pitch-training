@@ -1535,12 +1535,11 @@
     // 技術分析データを整理（アイコン度合い表示）
     const technicalAnalysis = [];
     
-    // 音程精度の評価（70%以上で優秀）
+    // 音程精度の評価（70%以上で優秀）- 正しいデータパスに修正
     console.log('='.repeat(60));
-    console.log('🚨🚨🚨 [技術分析DEBUG] statistics全体:', statistics);
-    console.log('🚨🚨🚨 [技術分析DEBUG] statistics.analyzers:', statistics.analyzers);
-    const intervalAccuracy = statistics.analyzers?.interval?.averageAccuracy || 0;
-    console.log('🚨🚨🚨 [技術分析DEBUG] intervalAccuracy:', intervalAccuracy);
+    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed:', enhancedResults.detailed);
+    const intervalAccuracy = enhancedResults.detailed?.intervals?.accuracy || 0;
+    console.log('🚨🚨🚨 [技術分析DEBUG] intervalAccuracy (修正後):', intervalAccuracy);
     console.log('='.repeat(60));
     const isIntervalGood = intervalAccuracy >= 70;
     
@@ -1550,8 +1549,8 @@
       text: `音程精度: ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
     });
     
-    // 方向性精度の評価（80%以上で優秀）
-    const directionAccuracy = statistics.analyzers?.direction?.accuracy || 0;
+    // 方向性精度の評価（80%以上で優秀）- 正しいデータパスに修正
+    const directionAccuracy = enhancedResults.detailed?.directions?.accuracy || 0;
     const isDirectionGood = directionAccuracy >= 80;
     
     // 常に方向性を追加（テスト用）
@@ -1560,8 +1559,8 @@
       text: `方向性: ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
     });
     
-    // 一貫性の評価（75%以上で優秀）
-    const consistencyScore = statistics.analyzers?.consistency?.score || 0;
+    // 一貫性の評価（75%以上で優秀）- 正しいデータパスに修正
+    const consistencyScore = enhancedResults.detailed?.consistency?.score || 0;
     const isConsistencyGood = consistencyScore >= 75;
     
     // 常に一貫性を追加（テスト用）
