@@ -1046,6 +1046,51 @@ export class EnhancedScoringEngine {
   }
   
   /**
+   * パフォーマンス推奨事項を生成
+   * @param {string} level - パフォーマンスレベル
+   * @param {Array} strengths - 強み
+   * @param {Array} weaknesses - 弱点
+   * @returns {string} - 推奨事項
+   */
+  generatePerformanceRecommendation(level, strengths, weaknesses) {
+    const recommendations = [];
+    
+    // レベル別基本推奨事項
+    switch (level) {
+      case 'excellent':
+        recommendations.push('素晴らしい演奏です！この精度を維持しながら、より難しい音程にチャレンジしてみましょう。');
+        break;
+      case 'good':
+        recommendations.push('良好な精度です。安定した演奏を継続し、弱点分野の向上を図りましょう。');
+        break;
+      case 'average':
+        recommendations.push('基本的な能力は身についています。継続的な練習で更なる向上が期待できます。');
+        break;
+      case 'needs_improvement':
+        recommendations.push('基礎練習を重点的に行い、音程感覚の向上を図りましょう。');
+        break;
+      default:
+        recommendations.push('基本的な音程から段階的に練習を重ねて、音感を育てていきましょう。');
+    }
+    
+    // 弱点に基づく具体的推奨事項
+    if (weaknesses.includes('interval')) {
+      recommendations.push('音程の正確性向上のため、楽器での確認を併用した練習をお勧めします。');
+    }
+    if (weaknesses.includes('direction')) {
+      recommendations.push('音程の上行・下行判定の精度向上のため、音階練習を取り入れましょう。');
+    }
+    if (weaknesses.includes('consistency')) {
+      recommendations.push('安定した精度を保つため、集中力を維持した継続的な練習が効果的です。');
+    }
+    if (weaknesses.includes('speed')) {
+      recommendations.push('認識速度向上のため、短時間での集中的な判定練習を行いましょう。');
+    }
+    
+    return recommendations.join(' ');
+  }
+
+  /**
    * 改善提案を生成
    * @returns {Array} - 改善提案リスト
    */
