@@ -1398,9 +1398,28 @@
     const sessionHistory = sessionProgressStore || [];
     const completedSessions = sessionHistory.length;
     
-    // セッション完了前は何もメッセージを表示しない
+    // 基本オブジェクトを常に生成（1442行の条件文を満たすため）
+    const baseFeedback = {
+      type: 'info',
+      categories: [
+        {
+          name: '音程精度',
+          icon: 'Target',
+          score: averageAccuracy,
+          message: `${averageAccuracy}%の精度で音程を捉えています`
+        },
+        {
+          name: '測定成功率',
+          icon: 'Mic',
+          score: Math.round((measuredCount / results.length) * 100),
+          message: `${results.length}音中${measuredCount}音を正常に測定`
+        }
+      ]
+    };
+    
+    // セッション完了前はS-E級メッセージなしの基本オブジェクトのみ
     if (completedSessions < requiredSessions) {
-      return null; // フィードバックなし
+      return baseFeedback;
     }
     
     // S-E級判定に基づいたメッセージ生成（完了後のみ）
@@ -1462,24 +1481,12 @@
         break;
     }
     
+    // 完了時：baseFeedbackにS-E級メッセージを追加
     return {
+      ...baseFeedback,
       type,
       primary,
-      summary,
-      categories: [
-        {
-          name: '音程精度',
-          icon: 'Target',
-          score: averageAccuracy,
-          message: `${averageAccuracy}%の精度で音程を捉えています`
-        },
-        {
-          name: '測定成功率',
-          icon: 'Mic',
-          score: Math.round((measuredCount / results.length) * 100),
-          message: `${results.length}音中${measuredCount}音を正常に測定`
-        }
-      ]
+      summary
     };
   }
   
