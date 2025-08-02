@@ -158,13 +158,18 @@
     const averageError = results.measuredCount > 0 ? results.totalError / results.measuredCount : 100;
     const passCount = results.excellent + results.good + results.pass;
     
-    // RandomModeScoreResultと同じ判定ロジック
+    // 修正された判定ロジック（要練習以上の成績でも正しく評価）
     if (results.notMeasured > 3) return 'needWork';
-    if (results.needWork > 2) return 'needWork';
     if (results.measuredCount === 0) return 'needWork';
+    
+    // 優秀・良好・合格の総数で判定（要練習の個数は参考程度）
     if (averageError <= 20 && results.excellent >= 6) return 'excellent';
     if (averageError <= 30 && passCount >= 7) return 'good';
     if (passCount >= 5) return 'pass';
+    
+    // 要練習が圧倒的に多い場合のみ要練習判定
+    if (results.needWork >= 6) return 'needWork';
+    
     return 'needWork';
   }
   

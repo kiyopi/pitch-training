@@ -94,8 +94,8 @@
     
     // 要練習が圧倒的多数（75%以上）の場合のみ要練習判定
     if (results.needWork >= 6) return 'needWork';
-    // 外れ値が多い場合も要練習
-    if (results.needWork > 0 && outliers.length > 2) return 'needWork';
+    // 技術的ブレ検証中のため外れ値判定を一時的に無効化
+    // if (results.needWork > 0 && outliers.length > 2) return 'needWork';
     
     return 'needWork';
   })();
@@ -109,7 +109,8 @@
   // アニメーション実行
   $: if (noteResults.length > 0) {
     const baseScore = Math.max(0, 100 - Math.round(averageError / 10));
-    displayScore.set(baseScore - penalty);
+    // 技術的ブレ検証中のためペナルティを一時的に除外
+    displayScore.set(baseScore); // - penalty
     
     // 評価分布バーのアニメーション開始
     setTimeout(() => {
@@ -145,11 +146,13 @@
           平均誤差: {averageError}¢
         {/if}
       </p>
+      <!-- 技術的ブレ検証中のため一時的に非表示
       {#if penalty > 0}
         <p class="penalty-notice" transition:fade>
           外れ値ペナルティ: -{penalty}点
         </p>
       {/if}
+      -->
     </div>
   </div>
   
@@ -273,7 +276,7 @@
     {/each}
   </div>
   
-  <!-- 外れ値警告 -->
+  <!-- 技術的ブレ検証中のため一時的に非表示
   {#if outliers.length > 0}
     <div class="outlier-section" in:fade={{ delay: 500 }}>
       <h4>
@@ -293,6 +296,7 @@
       </div>
     </div>
   {/if}
+  -->
   
   <!-- 改善アドバイス -->
   <div class="advice-section" in:fade={{ delay: 600 }}>
@@ -342,7 +346,17 @@
       {/each}
       <div class="info-note">
         <p>¢（セント）: 音程の精度単位。100¢ = 半音1つ分</p>
+        <!-- 技術的ブレ検証中のため一時的に非表示
         <p>外れ値ペナルティ: ±50セント超の大きな外れがあると評価が下がります</p>
+        -->
+      </div>
+      <div class="session-evaluation-info">
+        <h4>セッション総合評価の基準</h4>
+        <p><strong>優秀</strong>: 優秀な音程が6個以上かつ平均誤差±20¢以内</p>
+        <p><strong>良好</strong>: 合格以上が7個以上かつ平均誤差±30¢以内</p>
+        <p><strong>合格</strong>: 合格以上が5個以上（8音中62.5%）</p>
+        <p><strong>要練習</strong>: 要練習が6個以上または測定不可が4個以上</p>
+        <p class="note">※技術的ブレを考慮し、ポジティブ評価を優先する判定システムです</p>
       </div>
     </div>
   </details>
@@ -949,6 +963,34 @@
   
   .info-note p {
     margin: 0.25rem 0;
+  }
+  
+  .session-evaluation-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+  }
+  
+  .session-evaluation-info h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0369a1;
+  }
+  
+  .session-evaluation-info p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #374151;
+  }
+  
+  .session-evaluation-info p.note {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
   }
   
   /* アニメーション */
