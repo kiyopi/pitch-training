@@ -1536,10 +1536,12 @@
     const technicalAnalysis = [];
     
     // 音程精度の評価（70%以上で優秀）
-    console.log('🔍 [Debug] statistics全体:', statistics);
-    console.log('🔍 [Debug] statistics.analyzers:', statistics.analyzers);
+    console.log('='.repeat(60));
+    console.log('🚨🚨🚨 [技術分析DEBUG] statistics全体:', statistics);
+    console.log('🚨🚨🚨 [技術分析DEBUG] statistics.analyzers:', statistics.analyzers);
     const intervalAccuracy = statistics.analyzers?.interval?.averageAccuracy || 0;
-    console.log('🔍 [Debug] intervalAccuracy:', intervalAccuracy);
+    console.log('🚨🚨🚨 [技術分析DEBUG] intervalAccuracy:', intervalAccuracy);
+    console.log('='.repeat(60));
     const isIntervalGood = intervalAccuracy >= 70;
     
     // 常に音程精度を追加（テスト用）
