@@ -1538,13 +1538,32 @@
     // 音程精度の評価（70%以上で優秀）- 正しいデータパスに修正
     console.log('='.repeat(60));
     console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed:', enhancedResults.detailed);
-    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.intervals:', enhancedResults.detailed?.intervals);
-    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.directions:', enhancedResults.detailed?.directions);
-    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.consistency:', enhancedResults.detailed?.consistency);
-    const intervalAccuracy = enhancedResults.detailed?.intervals?.accuracy || 0;
-    console.log('🚨🚨🚨 [技術分析DEBUG] intervalAccuracy (修正後):', intervalAccuracy);
+    
+    // 個別にJSONで詳細表示
+    if (enhancedResults.detailed?.intervals) {
+      console.log('🚨🚨🚨 [intervals JSON]:', JSON.stringify(enhancedResults.detailed.intervals, null, 2));
+    }
+    if (enhancedResults.detailed?.directions) {
+      console.log('🚨🚨🚨 [directions JSON]:', JSON.stringify(enhancedResults.detailed.directions, null, 2));
+    }
+    if (enhancedResults.detailed?.consistency) {
+      console.log('🚨🚨🚨 [consistency JSON]:', JSON.stringify(enhancedResults.detailed.consistency, null, 2));
+    }
+    
+    // データ不足の場合はデフォルト値を使用
+    const intervalAccuracy = enhancedResults.detailed?.intervals?.overallConsistency || 0;
+    const directionAccuracy = enhancedResults.detailed?.directions?.overallConsistency || 0; 
+    const consistencyScore = enhancedResults.detailed?.consistency?.overallConsistency || 0;
+    
+    console.log('🚨🚨🚨 [技術分析DEBUG] 修正後の値:');
+    console.log('intervalAccuracy:', intervalAccuracy);
+    console.log('directionAccuracy:', directionAccuracy); 
+    console.log('consistencyScore:', consistencyScore);
     console.log('='.repeat(60));
+    
     const isIntervalGood = intervalAccuracy >= 70;
+    const isDirectionGood = directionAccuracy >= 80;
+    const isConsistencyGood = consistencyScore >= 75;
     
     // 常に音程精度を追加（テスト用）
     technicalAnalysis.push({
@@ -1552,19 +1571,13 @@
       text: `音程精度: ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
     });
     
-    // 方向性精度の評価（80%以上で優秀）- 正しいデータパスに修正
-    const directionAccuracy = enhancedResults.detailed?.directions?.accuracy || 0;
-    const isDirectionGood = directionAccuracy >= 80;
-    
     // 常に方向性を追加（テスト用）
     technicalAnalysis.push({
       category: isDirectionGood ? 'strengths' : 'improvements',
       text: `方向性: ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
     });
     
-    // 一貫性の評価（75%以上で優秀）- 正しいデータパスに修正
-    const consistencyScore = enhancedResults.detailed?.consistency?.score || 0;
-    const isConsistencyGood = consistencyScore >= 75;
+    // 一貫性の評価（テスト用）
     
     // 常に一貫性を追加（テスト用）
     technicalAnalysis.push({
