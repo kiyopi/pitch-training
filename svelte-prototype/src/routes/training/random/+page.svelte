@@ -1162,7 +1162,10 @@
         feedbackData = generateFeedbackFromResults(noteResultsForDisplay) || results.feedback;
         
         // 技術分析結果データ更新（8セッション完了時のみ）
+        console.log('🎯 [generateEnhancedScoringData] 技術分析結果生成を開始');
+        console.log('🎯 [generateEnhancedScoringData] results:', results);
         technicalFeedbackData = generateTechnicalFeedbackFromEnhancedEngine(results);
+        console.log('🎯 [generateEnhancedScoringData] technicalFeedbackData結果:', technicalFeedbackData);
         
         // セッション統計更新
         sessionStatistics = {
@@ -1496,14 +1499,20 @@
   
   // 技術分析結果用のフィードバック生成（8セッション完了時のみ）
   function generateTechnicalFeedbackFromEnhancedEngine(enhancedResults) {
+    console.log('🔍 [TechnicalFeedback] 関数呼び出し開始');
+    console.log('🔍 [TechnicalFeedback] sessionHistory:', $sessionHistory);
+    
     // モード別完了判定
     const mode = 'random'; // 現在はランダムモード固定、将来的にはpropsから取得
     const requiredSessions = mode === 'chromatic' ? 12 : 8;
     const currentSessionHistory = $sessionHistory || [];
     const completedSessions = currentSessionHistory.length;
     
+    console.log('🔍 [TechnicalFeedback] completedSessions:', completedSessions, 'requiredSessions:', requiredSessions);
+    
     // セッション完了前は技術分析結果なし
     if (completedSessions < requiredSessions || !enhancedResults) {
+      console.log('🔍 [TechnicalFeedback] 早期リターン - 条件未満またはデータなし');
       return null;
     }
     
