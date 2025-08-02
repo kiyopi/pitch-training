@@ -1210,10 +1210,20 @@
       <!-- 8セッション完走時の技術分析結果（S-E級メッセージの直下） -->
       {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
         <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
-          <FeedbackDisplay 
-            feedback={technicalFeedbackData}
-            className="technical-feedback-display-inline"
-          />
+          <div class="technical-analysis-content">
+            <h3 class="technical-analysis-title">{technicalFeedbackData.primary}</h3>
+            <p class="technical-analysis-subtitle">{technicalFeedbackData.summary}</p>
+            
+            <div class="technical-analysis-list">
+              {#if technicalFeedbackData.details && technicalFeedbackData.details.length > 0}
+                {#each technicalFeedbackData.details as item}
+                  <div class="technical-analysis-item">
+                    {item.text}
+                  </div>
+                {/each}
+              {/if}
+            </div>
+          </div>
         </div>
       {/if}
       
@@ -2667,52 +2677,39 @@
     border: 1px solid #e5e7eb;
   }
   
-  .technical-feedback-display-inline {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-  }
-  
-  .technical-feedback-display-inline .feedback-display {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-  }
-  
-  .technical-feedback-display-inline .category-section {
-    margin-top: 0.5rem;
-  }
-  
-  .technical-feedback-display-inline ul,
-  .technical-feedback-display-inline .category-section ul {
-    margin-left: auto !important;
-    margin-right: auto !important;
-    max-width: 600px;
-    text-align: left;
-    display: block;
-  }
-  
-  /* 技術分析のメインタイトルとサブタイトルを中央寄せ */
-  .technical-feedback-display-inline h3,
-  .technical-feedback-display-inline > div > p {
+  /* 技術分析コンテンツスタイル */
+  .technical-analysis-content {
     text-align: center;
   }
   
-  /* 技術分析の左上アイコン（！）を非表示 */
-  .technical-feedback-display-inline .feedback-display .feedback-icon,
-  .technical-feedback-display-inline .category-icon {
-    display: none !important;
+  .technical-analysis-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
   }
   
-  /* 技術分析のホバー効果（浮き影）を無効化 */
-  .technical-feedback-display-inline .feedback-display:hover {
-    transform: none !important;
-    box-shadow: none !important;
+  .technical-analysis-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
   }
   
-  /* 技術分析タブスタイル */
-  .technical-analysis-content {
+  .technical-analysis-list {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+  }
+  
+  .technical-analysis-item {
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.5;
+  }
+  
+  /* 技術分析タブスタイル（別の場所で使用） */
+  .technical-analysis-tab-content {
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     border: 1px solid #bae6fd;
     border-radius: 12px;
