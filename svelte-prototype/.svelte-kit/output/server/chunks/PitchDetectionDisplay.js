@@ -408,7 +408,39 @@ class HarmonicCorrection {
    * @param {boolean} isValidVolume - 音量閾値チェック結果
    */
   logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}, volume = 1, isValidVolume = true) {
-    return;
+    console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
+    console.log(`🔊 音量: ${(volume * 100).toFixed(1)}% (閾値: ${(this.volumeThreshold * 100).toFixed(1)}%) ${isValidVolume ? "✅ 有効" : "❌ ノイズ除外"}`);
+    const originalNote = this.frequencyToNote(originalFreq);
+    const finalNote = this.frequencyToNote(finalFreq);
+    console.log(`📝 音程変換: ${originalNote} → ${finalNote}`);
+    const correctionType = this.getCorrectionType(bestCandidate.ratio);
+    console.log(`🎯 補正タイプ: ${correctionType}`);
+    if (context.baseFrequency && context.currentScale && context.targetFrequency) {
+      console.log(`🎵 音階コンテキスト:`);
+      console.log(`   基音: ${context.baseFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.baseFrequency)})`);
+      console.log(`   現在の音階: ${context.currentScale}`);
+      console.log(`   目標周波数: ${context.targetFrequency.toFixed(1)}Hz (${this.frequencyToNote(context.targetFrequency)})`);
+      const targetDiff = finalFreq - context.targetFrequency;
+      const targetDiffCents = 1200 * Math.log2(finalFreq / context.targetFrequency);
+      console.log(`   目標との差: ${targetDiff > 0 ? "+" : ""}${targetDiff.toFixed(1)}Hz (${targetDiffCents > 0 ? "+" : ""}${targetDiffCents.toFixed(0)}セント)`);
+      const accuracy = Math.abs(targetDiffCents) <= 50 ? "🎯 高精度" : Math.abs(targetDiffCents) <= 100 ? "✅ 良好" : Math.abs(targetDiffCents) <= 200 ? "⚠️ 要改善" : "❌ 不正確";
+      console.log(`   精度評価: ${accuracy} (${Math.abs(targetDiffCents).toFixed(0)}セント差)`);
+    }
+    console.table(candidates.map((c) => ({
+      "倍率": `${c.ratio.toFixed(3)}x`,
+      "周波数": `${c.frequency.toFixed(1)}Hz`,
+      "音名": this.frequencyToNote(c.frequency),
+      "音域": c.vocalRangeScore.toFixed(2),
+      "連続性": c.continuityScore.toFixed(2),
+      "音楽性": c.musicalScore.toFixed(2),
+      "総合": c.totalScore.toFixed(3),
+      "選択": c === bestCandidate ? "✅" : ""
+    })));
+    const stabilizationDiff = Math.abs(finalFreq - bestCandidate.frequency);
+    if (stabilizationDiff > 0.5) {
+      console.log(`🔄 安定化: ${bestCandidate.frequency.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz (${stabilizationDiff.toFixed(1)}Hz調整)`);
+    }
+    console.groupEnd();
   }
   /**
    * 補正タイプの判定

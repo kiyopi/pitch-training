@@ -109,8 +109,6 @@ class HarmonicCorrection {
    * @param {boolean} isValidVolume - 音量閾値チェック結果
    */
   logHarmonicCorrection(originalFreq, candidates, bestCandidate, finalFreq, context = {}, volume = 1.0, isValidVolume = true) {
-    // 一時的にログを無効化（技術分析デバッグのため）
-    return;
     console.group(`🔧 [HarmonicCorrection] ${originalFreq.toFixed(1)}Hz → ${finalFreq.toFixed(1)}Hz`);
     
     // 音量情報とフィルタリング状況
