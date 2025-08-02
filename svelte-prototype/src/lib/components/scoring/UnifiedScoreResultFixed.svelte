@@ -2661,9 +2661,10 @@
   /* 技術分析インライン表示スタイル */
   .technical-feedback-inline {
     margin-top: 1rem;
-    background: white;
-    padding: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f9fafb, #ffffff);
     border-radius: 8px;
+    border: 1px solid #e5e7eb;
   }
   
   .technical-feedback-display-inline {
@@ -2683,17 +2684,31 @@
     margin-top: 0.5rem;
   }
   
-  .technical-feedback-display-inline ul {
-    margin-left: auto;
-    margin-right: auto;
+  .technical-feedback-display-inline ul,
+  .technical-feedback-display-inline .category-section ul {
+    margin-left: auto !important;
+    margin-right: auto !important;
     max-width: 600px;
     text-align: left;
+    display: block;
   }
   
   /* 技術分析のメインタイトルとサブタイトルを中央寄せ */
   .technical-feedback-display-inline h3,
   .technical-feedback-display-inline > div > p {
     text-align: center;
+  }
+  
+  /* 技術分析の左上アイコン（！）を非表示 */
+  .technical-feedback-display-inline .feedback-display .feedback-icon,
+  .technical-feedback-display-inline .category-icon {
+    display: none !important;
+  }
+  
+  /* 技術分析のホバー効果（浮き影）を無効化 */
+  .technical-feedback-display-inline .feedback-display:hover {
+    transform: none !important;
+    box-shadow: none !important;
   }
   
   /* 技術分析タブスタイル */

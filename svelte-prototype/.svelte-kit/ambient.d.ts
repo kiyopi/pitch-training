@@ -41,6 +41,7 @@ declare module '$env/static/private' {
 	export const ORIGINAL_XDG_CURRENT_DESKTOP: string;
 	export const MallocNanoZone: string;
 	export const COLOR: string;
+	export const VIPSHOME: string;
 	export const npm_config_noproxy: string;
 	export const npm_config_local_prefix: string;
 	export const ENABLE_IDE_INTEGRATION: string;
@@ -140,6 +141,7 @@ declare module '$env/dynamic/private' {
 		ORIGINAL_XDG_CURRENT_DESKTOP: string;
 		MallocNanoZone: string;
 		COLOR: string;
+		VIPSHOME: string;
 		npm_config_noproxy: string;
 		npm_config_local_prefix: string;
 		ENABLE_IDE_INTEGRATION: string;
