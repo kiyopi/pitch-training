@@ -1207,6 +1207,16 @@
         </div>
       {/if}
       
+      <!-- 8セッション完走時の技術分析結果（S-E級メッセージの直下） -->
+      {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
+        <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
+          <FeedbackDisplay 
+            feedback={technicalFeedbackData}
+            className="technical-feedback-display-inline"
+          />
+        </div>
+      {/if}
+      
       <!-- 評価の見方（簡潔版） -->
       <div class="grade-explanation" in:fade={{ delay: 1000 }}>
         <details class="grade-details">
