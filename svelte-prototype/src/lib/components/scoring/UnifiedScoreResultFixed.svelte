@@ -1257,15 +1257,6 @@
     </div>
   {/if}
 
-  <!-- 8セッション完走時の技術分析結果 -->
-  {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
-    <div class="technical-feedback-section" in:fade={{ delay: 1200 }}>
-      <FeedbackDisplay 
-        feedback={technicalFeedbackData}
-        className="technical-feedback-display"
-      />
-    </div>
-  {/if}
 
   <!-- モード別サマリー -->
   <div class="mode-summary" in:fly={{ y: 20, duration: 500, delay: 800 }}>
@@ -2665,6 +2656,32 @@
   
   .tab-panel {
     padding: 1.5rem;
+  }
+  
+  /* 技術分析インライン表示スタイル */
+  .technical-feedback-inline {
+    margin-top: 1rem;
+  }
+  
+  .technical-feedback-display-inline {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  .technical-feedback-display-inline .feedback-display {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+  
+  .technical-feedback-display-inline .category-section {
+    margin-top: 0.5rem;
+  }
+  
+  .technical-feedback-display-inline ul {
+    margin-left: 0;
   }
   
   /* 技術分析タブスタイル */

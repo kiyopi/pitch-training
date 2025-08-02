@@ -1639,24 +1639,20 @@
     const isDirectionGood = directionAccuracy >= 80;
     const isConsistencyGood = consistencyScore >= 75;
     
-    // 常に音程精度を追加（テスト用）
+    // 技術分析結果のフォーマット（基準値と説明付き）
     technicalAnalysis.push({
-      category: isIntervalGood ? 'strengths' : 'improvements',
-      text: `音程精度: ${Math.round(intervalAccuracy)}%の${isIntervalGood ? '正確性で安定した演奏' : '精度で改善の余地があります'}`
+      category: 'improvements',
+      text: `音程精度: ${Math.round(intervalAccuracy)}%　（音の高さを捉える正確性　目標基準：70〜85%）`
     });
     
-    // 常に方向性を追加（テスト用）
     technicalAnalysis.push({
-      category: isDirectionGood ? 'strengths' : 'improvements',
-      text: `方向性: ${Math.round(directionAccuracy)}%の${isDirectionGood ? '高い判断精度' : '判断精度で向上が必要です'}`
+      category: 'improvements',
+      text: `方向性: ${Math.round(directionAccuracy)}%　（音程の上下判断の精度　目標基準：80〜90%）`
     });
     
-    // 一貫性の評価（テスト用）
-    
-    // 常に一貫性を追加（テスト用）
     technicalAnalysis.push({
-      category: isConsistencyGood ? 'strengths' : 'improvements',
-      text: `一貫性: ${Math.round(consistencyScore)}%の${isConsistencyGood ? '安定した演奏パフォーマンス' : '演奏で安定性向上が必要です'}`
+      category: 'improvements',
+      text: `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`
     });
     
     // アドバイス（改善提案のメッセージ部分）
@@ -1679,7 +1675,7 @@
       type: 'info',
       primary: '詳細分析結果',
       summary: '音程精度・一貫性・方向性の総合分析',
-      details: finalDetails
+      details: technicalAnalysis  // アドバイスと練習提案を除外し、技術分析のみ表示
     };
   }
   
