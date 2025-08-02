@@ -598,7 +598,9 @@
         currentScaleIndex++;
         
         // 0.6秒後に次のステップ（テンポアップ）
-        guideAnimationTimer = setTimeout(animateNextStep, 600);
+        guideAnimationTimer = setTimeout(() => {
+          animateNextStep();
+        }, 600);
       } else {
         // アニメーション完了
         finishGuideAnimation();
@@ -664,7 +666,7 @@
     // 統合採点システムデータを生成
     generateUnifiedScoreData();
     
-    // 完全版表示用の追加データ生成
+    // 完全版表示用の追加データ生成（バックグラウンド処理）
     generateEnhancedScoringData();
     
     trainingPhase = 'results';
@@ -1117,10 +1119,38 @@
   }
 
   // 実際のトレーニングデータから追加採点データを生成
-  function generateEnhancedScoringData() {
+  async function generateEnhancedScoringData() {
     try {
       // EnhancedScoringEngine を使用してスコアデータを生成
       if (scoringEngine) {
+        // sessionHistoryデータをEnhancedScoringEngineに渡す
+        const currentSessionHistory = $sessionHistory || [];
+        console.log('🔧 [EnhancedScoringEngine] sessionHistory渡し開始:', currentSessionHistory.length, 'セッション');
+        
+        // 各セッションの各音程データをanalyzePerformanceで処理
+        for (const [sessionIndex, session] of currentSessionHistory.entries()) {
+          if (session.noteResults && session.noteResults.length > 0) {
+            console.log(`🔧 [EnhancedScoringEngine] セッション${sessionIndex + 1}データ処理:`, session.noteResults.length, '音程');
+            
+            const baseFreq = session.baseFrequency || 262;
+            
+            // 各音程データを個別に分析
+            for (const note of session.noteResults) {
+              if (note.detectedFreq && note.targetFreq) {
+                await scoringEngine.analyzePerformance({
+                  baseFreq: baseFreq,
+                  targetFreq: note.targetFreq,
+                  detectedFreq: note.detectedFreq,
+                  responseTime: 2000, // デフォルト反応時間
+                  volume: 50,
+                  harmonicCorrection: null
+                });
+              }
+            }
+          }
+        }
+        
+        console.log('🔧 [EnhancedScoringEngine] 全セッションデータ処理完了');
         const results = scoringEngine.generateDetailedReport();
         
         // スコアデータ更新
