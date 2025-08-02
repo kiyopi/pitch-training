@@ -2699,7 +2699,7 @@
     max-width: 600px;
     margin: 0 auto;
     text-align: left;
-    padding-left: 2rem;
+    padding-left: 3rem;
   }
   
   .technical-analysis-item {
