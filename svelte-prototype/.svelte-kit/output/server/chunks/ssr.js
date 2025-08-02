@@ -15,11 +15,6 @@ function is_function(thing) {
 function safe_not_equal(a, b) {
   return a != a ? b == b : a !== b || a && typeof a === "object" || typeof a === "function";
 }
-function validate_store(store, name) {
-  if (store != null && typeof store.subscribe !== "function") {
-    throw new Error(`'${name}' is not a store with a 'subscribe' method`);
-  }
-}
 function subscribe(store, ...callbacks) {
   if (store == null) {
     for (const callback of callbacks) {
@@ -152,16 +147,15 @@ function add_attribute(name, value, boolean) {
   return ` ${name}${assignment}`;
 }
 export {
-  validate_store as a,
-  subscribe as b,
+  subscribe as a,
+  each as b,
   create_ssr_component as c,
-  each as d,
+  safe_not_equal as d,
   escape as e,
-  safe_not_equal as f,
-  add_attribute as g,
-  createEventDispatcher as h,
+  add_attribute as f,
+  createEventDispatcher as g,
+  getContext as h,
   is_function as i,
-  getContext as j,
   missing_component as m,
   noop as n,
   onDestroy as o,

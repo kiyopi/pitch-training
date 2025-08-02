@@ -1207,16 +1207,6 @@
         </div>
       {/if}
       
-      <!-- 8セッション完走時の技術分析結果 -->
-      {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
-        <div class="technical-feedback" in:fade={{ delay: 1000 }}>
-          <FeedbackDisplay 
-            feedback={technicalFeedbackData}
-            className="mt-6 technical-feedback-display"
-          />
-        </div>
-      {/if}
-      
       <!-- 評価の見方（簡潔版） -->
       <div class="grade-explanation" in:fade={{ delay: 1000 }}>
         <details class="grade-details">
@@ -1257,6 +1247,15 @@
     </div>
   {/if}
 
+  <!-- 8セッション完走時の技術分析結果 -->
+  {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
+    <div class="technical-feedback-section" in:fade={{ delay: 1200 }}>
+      <FeedbackDisplay 
+        feedback={technicalFeedbackData}
+        className="technical-feedback-display"
+      />
+    </div>
+  {/if}
 
   <!-- モード別サマリー -->
   <div class="mode-summary" in:fly={{ y: 20, duration: 500, delay: 800 }}>
@@ -1816,6 +1815,17 @@
     font-size: 0.875rem;
     color: #6b7280;
     line-height: 1.5;
+  }
+  
+  /* 技術分析結果セクションスタイル */
+  .technical-feedback-section {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  :global(.technical-feedback-display) {
+    max-width: 100%;
+    margin: 0 auto;
   }
   
   /* 評価の見方スタイル（shadcn/ui風） */
