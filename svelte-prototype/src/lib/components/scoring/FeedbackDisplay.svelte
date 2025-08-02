@@ -53,13 +53,6 @@
   // 詳細フィードバックをカテゴリ別に整理
   $: categorizedFeedback = categorizeFeedback(feedback.details || []);
   
-  // デバッグ: FeedbackDisplayで処理されるデータを確認
-  $: {
-    console.log('🔍 [FeedbackDisplay] feedback:', feedback);
-    console.log('🔍 [FeedbackDisplay] feedback.details:', feedback.details);
-    console.log('🔍 [FeedbackDisplay] categorizedFeedback:', categorizedFeedback);
-  }
-  
   function categorizeFeedback(details) {
     const categories = {
       strengths: [],
@@ -103,13 +96,6 @@
     </div>
   </div>
   
-  <!-- デバッグ表示: FeedbackDisplayコンポーネント内 -->
-  <div class="debug-feedback-display p-2 bg-yellow-50 border border-yellow-200 rounded text-xs mb-4">
-    <strong>FeedbackDisplay Debug:</strong>
-    <div>feedback.details length: {feedback.details?.length || 0}</div>
-    <div>categorizedFeedback: {JSON.stringify(categorizedFeedback)}</div>
-  </div>
-
   <!-- 詳細フィードバック -->
   {#if feedback.details && feedback.details.length > 0}
     <div class="space-y-4 mt-6">
