@@ -1218,7 +1218,7 @@
               {#if technicalFeedbackData.details && technicalFeedbackData.details.length > 0}
                 {#each technicalFeedbackData.details as item}
                   <div class="technical-analysis-item">
-                    {item.text}
+                    - {item.text}
                   </div>
                 {/each}
               {/if}
@@ -2699,6 +2699,7 @@
     max-width: 600px;
     margin: 0 auto;
     text-align: left;
+    padding-left: 2rem;
   }
   
   .technical-analysis-item {
