@@ -1395,8 +1395,8 @@
     // モード別完了判定
     const mode = 'random'; // 現在はランダムモード固定、将来的にはpropsから取得
     const requiredSessions = mode === 'chromatic' ? 12 : 8;
-    const sessionHistory = sessionProgressStore || [];
-    const completedSessions = sessionHistory.length;
+    const currentSessionHistory = $sessionHistory || [];
+    const completedSessions = currentSessionHistory.length;
     
     // 基本オブジェクトを常に生成（1442行の条件文を満たすため）
     const baseFeedback = {
@@ -1427,11 +1427,11 @@
     
     // unifiedGradeから適切なメッセージを生成（統計値を含む）
     const grade = currentUnifiedScoreData?.unifiedGrade || 'E';
-    const totalSessions = sessionHistory.length;
+    const totalSessions = currentSessionHistory.length;
     
     // 統計値の計算
     let excellentCount = 0, goodCount = 0, passCount = 0;
-    sessionHistory.forEach(session => {
+    currentSessionHistory.forEach(session => {
       if (session.grade === 'excellent') excellentCount++;
       else if (session.grade === 'good') goodCount++;
       else if (session.grade === 'pass') passCount++;
