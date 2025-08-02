@@ -1210,6 +1210,11 @@
       <!-- 8セッション完走時の技術分析結果（S-E級メッセージの直下） -->
       {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
         <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
+          <!-- デバッグ用の技術分析データ表示 -->
+          <div class="debug-technical-data mb-4 p-4 bg-gray-50 rounded-lg text-sm">
+            <strong>Debug - 技術分析データ:</strong>
+            <pre>{JSON.stringify(technicalFeedbackData, null, 2)}</pre>
+          </div>
           <FeedbackDisplay 
             feedback={technicalFeedbackData}
             className="technical-feedback-display-inline"
