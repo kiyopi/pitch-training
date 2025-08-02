@@ -3,9 +3,11 @@ name: Deploy Svelte Prototype to Pages
 
 on:
   push:
-    branches: ["svelte-prototype-001", "random-training-tonejs-fixed-001"]
+    branches: ["svelte-prototype-001", "random-training-*", "enhanced-scoring-*", "direct-access-fix-clean-final", "stable-rollback-*"]
     paths: ["svelte-prototype/**"]
   workflow_dispatch:
+
+# このワークフローはSvelteKitプロジェクト専用
 
 permissions:
   contents: read
@@ -13,8 +15,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages-svelte"
-  cancel-in-progress: false
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build:

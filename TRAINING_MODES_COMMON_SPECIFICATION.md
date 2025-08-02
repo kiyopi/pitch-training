@@ -19,9 +19,10 @@
 - **特徴**: 同一基音での反復練習、速度・精度向上
 
 ### **Chromatic Mode** (`/training/chromatic`)
-- **基音**: 12音階すべて
-- **音階**: クロマチック（半音階）対応
-- **特徴**: 上級者向け、微細な音程差の識別
+- **基音**: C3から半音ずつ上昇（C3, C#3, D3, D#3, E3, F3, F#3, G3, G#3, A3, A#3, B3）
+- **練習内容**: 各基音からオクターブ上を歌う（例: C3→C4, C#3→C#4...）
+- **特徴**: 音域別オクターブ精度の測定、どの音域でオクターブが取りにくいかを分析
+- **データ分析**: 低音域・中音域・高音域でのオクターブ精度の違い、黒鍵での精度傾向
 
 ---
 
@@ -92,22 +93,28 @@ interface ScaleGuideProps {
 type ScaleState = 'inactive' | 'active' | 'correct' | 'incorrect' | 'completed';
 ```
 
-### **4. PitchDetectionDisplay** (音程検出表示)
+### **4. PitchDetectionDisplay** (音程検出表示) ✅ **実装完了**
+
+**実装状況**: `/src/lib/components/PitchDetectionDisplay.svelte` 完成
+**適用済み**: ランダム基音ページ、マイクテストページ
 
 ```typescript
+// 実装済みProps
 interface PitchDetectionProps {
-  isActive: boolean;
-  detectedFrequency: number | null;
-  targetFrequency: number | null;
-  accuracy: number; // 0-100%
-  showVisualFeedback: boolean;
+  frequency: number;      // 検出周波数
+  note: string;          // 検出音名
+  volume: number;        // 音量
+  isMuted: boolean;      // ミュート状態
+  muteMessage: string;   // ミュート時メッセージ
+  className?: string;    // 追加CSSクラス
 }
 
-// 共通ビジュアル要素
-// - リアルタイム周波数表示
-// - 音量バー
-// - 精度インジケーター
-// - 音程差表示
+// 実装済み機能
+// ✅ リアルタイム周波数表示（中央寄せ統一）
+// ✅ 音量バー表示
+// ✅ ミュート機能（表示制御）
+// ✅ カスタマイズ可能なメッセージ
+// ✅ 3モード共通で使用可能
 ```
 
 ### **5. ResultsDisplay** (結果表示)

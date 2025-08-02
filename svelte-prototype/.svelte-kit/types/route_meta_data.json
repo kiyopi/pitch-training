@@ -9,6 +9,9 @@
 	"/microphone-test": [
 		"src/routes/+layout.ts"
 	],
+	"/scoring-test": [
+		"src/routes/+layout.ts"
+	],
 	"/training/chromatic": [
 		"src/routes/+layout.ts"
 	],

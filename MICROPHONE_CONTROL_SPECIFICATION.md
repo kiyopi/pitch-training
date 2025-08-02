@@ -1,354 +1,519 @@
-# マイクロフォン制御仕様書 v1.0
+# マイク制御完全仕様書
+
+**作成日**: 2025-07-27  
+**バージョン**: v2.0.0  
+**対象**: SvelteKit相対音感トレーニングアプリ  
+**技術スタック**: PitchDetector.svelte + 3層状態管理
 
 ## 📋 概要
 
-### 目的
-相対音感トレーニングアプリにおけるマイクロフォンのON/OFF制御システムを定義し、ユーザーの歌唱入力を高精度でリアルタイム処理する。
+この仕様書は、相対音感トレーニングアプリにおけるマイク制御システムの完全な技術仕様を定義します。3層の状態管理アーキテクチャを採用し、リアルタイム音程検出とエラー処理を実現しています。
 
-### 基本原則
-- **ユーザー主導**: 明示的な許可・制御
-- **状態管理**: 確実な状態追跡
-- **エラーハンドリング**: 安全な異常処理
-- **iPhone Safari対応**: 制限事項への対応
+## 🏗️ 3層状態管理アーキテクチャ
 
----
+### **Layer 1: Page Level State (ページレベル状態)**
+- **責任範囲**: UI表示制御、ユーザーフロー管理
+- **管理ファイル**: `/routes/training/random/+page.svelte`
+- **主要状態**: `trainingPhase`, `microphoneState`
+
+### **Layer 2: Component Level State (コンポーネントレベル状態)**
+- **責任範囲**: PitchDetector内部状態、初期化管理
+- **管理ファイル**: `/lib/components/PitchDetector.svelte`
+- **主要状態**: `componentState`, `isActive`, `isInitialized`
+
+### **Layer 3: Health Monitoring State (健康監視レベル状態)**
+- **責任範囲**: MediaStream監視、AudioContext監視、エラー検知
+- **管理ファイル**: PitchDetector内部 `checkMicrophoneStatus()`
+- **主要状態**: `microphoneHealthy`, `errorDetails`
 
 ## 🎯 マイクロフォン制御仕様
 
-### 1. 制御状態定義
+## 🎯 Layer 1: Page Level State
 
-#### **基本状態**
+### **State Definition**
 ```typescript
-interface MicrophoneState {
-  isRecording: boolean;      // 録音中フラグ
-  isInitialized: boolean;    // 初期化完了フラグ
-  error: string | null;      // エラーメッセージ
-  audioLevel: number;        // 音量レベル (0-100)
-  permission: 'granted' | 'denied' | 'prompt' | 'unknown';
+// ページレベル状態
+let trainingPhase = 'setup';           // 'setup' | 'listening' | 'waiting' | 'guiding' | 'results'
+let microphoneState = 'checking';      // 'checking' | 'granted' | 'denied' | 'error'
+let microphoneHealthy = true;          // マイクの健康状態
+let microphoneError = null;            // エラー詳細
+let canStartTraining = false;          // トレーニング開始可能フラグ
+```
+
+### **State Transitions**
+```mermaid
+flowchart TD
+    Setup[setup] --> |基音再生ボタン押下| Listening[listening]
+    Listening --> |2秒経過| Waiting[waiting]
+    Waiting --> |0.5秒経過| Guiding[guiding]
+    Guiding --> |8音階完了| Results[results]
+    Results --> |同じ基音で再挑戦| Setup
+    Results --> |違う基音で開始| Setup
+    
+    %% マイク状態による強制遷移
+    Listening --> |マイク異常| Setup
+    Waiting --> |マイク異常| Setup
+    Guiding --> |マイク異常| Setup
+```
+
+### **Microphone State Management**
+```typescript
+// マイク状態確認
+$: canStartTraining = microphoneState === 'granted' && microphoneHealthy;
+
+// マイク健康状態監視イベント
+function handleMicrophoneHealthChange(event) {
+  const { healthy, errors, details } = event.detail;
+  
+  microphoneHealthy = healthy;
+  microphoneError = errors.length > 0 ? errors : null;
+  
+  // 重大な問題の場合はトレーニング停止
+  if (!healthy && (trainingPhase === 'listening' || trainingPhase === 'waiting' || trainingPhase === 'guiding')) {
+    console.warn('🚨 [Page] Microphone health issue detected, stopping training', details);
+    trainingPhase = 'setup';
+  }
 }
 ```
 
-#### **状態遷移**
-```
-未初期化 → 許可要求 → 初期化完了 → 録音中 → 停止 → 初期化完了
-   ↓           ↓           ↓
- エラー    拒否        エラー
-```
+## 🎛️ Layer 2: Component Level State
 
-### 2. 制御フロー
-
-#### **2.1 マイクロフォンON (startRecording)**
-
-**フロー**:
-1. **許可状態確認**
-   - 既存許可の確認
-   - 必要に応じて再許可要求
-   
-2. **MediaStream取得**
-   ```typescript
-   const stream = await navigator.mediaDevices.getUserMedia({
-     audio: {
-       echoCancellation: false,    // エコーキャンセル無効
-       noiseSuppression: false,    // ノイズ抑制無効  
-       autoGainControl: false,     // 自動ゲイン調整無効
-       sampleRate: 44100,          // 高品質サンプリング
-       channelCount: 1,            // モノラル入力
-       latency: 0.01,              // 低遅延設定
-     }
-   });
-   ```
-
-3. **AudioContext初期化**
-   ```typescript
-   const audioContext = new AudioContext({
-     sampleRate: 44100,
-     latencyHint: 'interactive'    // 低遅延優先
-   });
-   ```
-
-4. **音声処理チェーン構築**
-   ```typescript
-   // マイク → ノイズフィルター → アナライザー → 音程検出
-   microphone.connect(noiseFilter);
-   noiseFilter.connect(analyser);
-   ```
-
-5. **状態更新**
-   ```typescript
-   setMicrophoneState({
-     isRecording: true,
-     isInitialized: true,
-     error: null,
-     audioLevel: 0,
-     permission: 'granted'
-   });
-   ```
-
-#### **2.2 マイクロフォンOFF (stopRecording)**
-
-**フロー**:
-1. **音声処理停止**
-   - AnimationFrame停止
-   - リアルタイム処理停止
-
-2. **MediaStream終了**
-   ```typescript
-   if (streamRef.current) {
-     streamRef.current.getTracks().forEach(track => {
-       track.stop();           // トラック停止
-       track.enabled = false;  // トラック無効化
-     });
-     streamRef.current = null;
-   }
-   ```
-
-3. **AudioContext終了**
-   ```typescript
-   if (audioContextRef.current) {
-     await audioContextRef.current.close();
-     audioContextRef.current = null;
-   }
-   ```
-
-4. **リソース解放**
-   ```typescript
-   // 全参照をクリア
-   analyserRef.current = null;
-   microphoneRef.current = null;
-   filterRef.current = null;
-   dataArrayRef.current = null;
-   ```
-
-5. **状態リセット**
-   ```typescript
-   setMicrophoneState({
-     isRecording: false,
-     isInitialized: false,
-     error: null,
-     audioLevel: 0,
-     permission: 'granted'  // 許可状態は保持
-   });
-   ```
-
-### 3. 許可管理システム
-
-#### **3.1 許可状態確認**
+### **State Definition**
 ```typescript
-const checkPermission = async (): Promise<PermissionState> => {
-  try {
-    const permission = await navigator.permissions.query({
-      name: 'microphone' as PermissionName
-    });
-    return permission.state;
-  } catch (error) {
-    // iPhone Safari等での非対応時
-    return 'unknown';
-  }
-};
+// コンポーネント内部状態
+let componentState = 'uninitialized';  // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
+let isInitialized = false;             // 初期化完了フラグ
+let isDetecting = false;               // 検出実行中フラグ
+let lastError = null;                  // 最後のエラー
 ```
 
-#### **3.2 許可要求**
-```typescript
-const requestPermission = async (): Promise<boolean> => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true
-    });
+### **State Transitions**
+```mermaid
+flowchart TD
+    Uninitialized[uninitialized] --> |initialize()| Initializing[initializing]
+    Initializing --> |成功| Ready[ready]
+    Initializing --> |失敗| Error[error]
+    Ready --> |startDetection()| Detecting[detecting]
+    Detecting --> |stopDetection()| Ready
+    Error --> |reinitialize()| Initializing
     
-    // テスト用ストリーム即座停止
-    stream.getTracks().forEach(track => track.stop());
-    return true;
-  } catch (error) {
-    if (error.name === 'NotAllowedError') {
-      setMicrophoneState(prev => ({
-        ...prev,
-        permission: 'denied',
-        error: 'マイクロフォンへのアクセスが拒否されました'
-      }));
+    %% 外部からの制御
+    Ready --> |isActive=true| Detecting
+    Detecting --> |isActive=false| Ready
+```
+
+### **Core APIs**
+```typescript
+// 初期化API
+export async function initialize(stream) {
+  try {
+    componentState = 'initializing';
+    
+    // MediaStream設定
+    mediaStream = stream;
+    
+    // AudioContext作成・再開
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    
+    // 3段階ノイズリダクション設定
+    setupNoiseReduction();
+    
+    // PitchDetector設定
+    pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
+    
+    componentState = 'ready';
+    isInitialized = true;
+    
+    dispatch('stateChange', { state: componentState });
+    
+  } catch (error) {
+    componentState = 'error';
+    lastError = error;
+    dispatch('error', { error, context: 'initialization' });
+    throw error;
+  }
+}
+
+// 検出開始API
+export function startDetection() {
+  if (componentState !== 'ready') {
+    const error = new Error(`Cannot start detection: component state is ${componentState}`);
+    dispatch('error', { error, context: 'start-detection' });
     return false;
   }
-};
-```
+  
+  componentState = 'detecting';
+  isDetecting = true;
+  dispatch('stateChange', { state: componentState });
+  detectPitch();
+  return true;
+}
 
-### 4. iPhone Safari対応
-
-#### **4.1 制限事項**
-- **AudioContext起動**: ユーザー操作後のみ可能
-- **許可API**: navigator.permissions未対応
-- **自動再生**: 制限あり
-
-#### **4.2 対応策**
-```typescript
-// AudioContext起動確認
-const ensureAudioContext = async (audioContext: AudioContext) => {
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
-  }
-};
-
-// ユーザー操作検証
-const isUserGestureRequired = () => {
-  return /iPhone|iPad|iPod|Safari/i.test(navigator.userAgent);
-};
-```
-
-### 5. エラーハンドリング
-
-#### **5.1 エラー分類**
-```typescript
-enum MicrophoneError {
-  PERMISSION_DENIED = 'NotAllowedError',
-  DEVICE_NOT_FOUND = 'NotFoundError', 
-  CONSTRAINT_ERROR = 'ConstraintNotSatisfiedError',
-  ABORT_ERROR = 'AbortError',
-  UNKNOWN_ERROR = 'UnknownError'
+// 表示状態リセットAPI
+export function resetDisplayState() {
+  currentVolume = 0;
+  rawVolume = 0;
+  currentFrequency = 0;
+  detectedNote = 'ーー';
+  pitchClarity = 0;
+  
+  // バッファクリア
+  frequencyHistory = [];
+  volumeHistory = [];
+  harmonicHistory = [];
 }
 ```
 
-#### **5.2 エラー処理**
+## 🔍 Layer 3: Health Monitoring State
+
+### **Monitoring System**
 ```typescript
-const handleMicrophoneError = (error: Error): string => {
-  switch (error.name) {
-    case MicrophoneError.PERMISSION_DENIED:
-      return 'マイクロフォンへのアクセスが拒否されました。ブラウザの設定を確認してください。';
-    case MicrophoneError.DEVICE_NOT_FOUND:
-      return 'マイクロフォンが見つかりません。デバイスを確認してください。';
-    case MicrophoneError.CONSTRAINT_ERROR:
-      return 'マイクロフォンの設定に問題があります。';
-    case MicrophoneError.ABORT_ERROR:
-      return 'マイクロフォンの取得が中断されました。';
-    default:
-      return `マイクロフォンエラー: ${error.message}`;
+// マイク健康状態監視（3秒間隔）
+function checkMicrophoneStatus() {
+  if (!debugMode) return;
+  
+  const timestamp = new Date().toLocaleTimeString();
+  let microphoneHealthy = true;
+  let errorDetails = [];
+  
+  // MediaStream状態チェック
+  if (mediaStream && !mediaStream.active) {
+    console.warn(`⚠️ [PitchDetector] MediaStream is inactive!`, mediaStream);
+    microphoneHealthy = false;
+    errorDetails.push('MediaStream inactive');
   }
-};
-```
-
-### 6. 音量レベル監視
-
-#### **6.1 リアルタイム音量計算**
-```typescript
-const updateAudioLevel = useCallback(() => {
-  if (!analyserRef.current || !dataArrayRef.current) return;
   
-  analyserRef.current.getFloatTimeDomainData(dataArrayRef.current);
-  
-  // RMS (Root Mean Square) 計算
-  let sum = 0;
-  for (let i = 0; i < dataArrayRef.current.length; i++) {
-    sum += dataArrayRef.current[i] * dataArrayRef.current[i];
+  // AudioContext状態チェック
+  if (audioContext && audioContext.state === 'suspended') {
+    console.warn(`⚠️ [PitchDetector] AudioContext is suspended!`, audioContext);
+    microphoneHealthy = false;
+    errorDetails.push('AudioContext suspended');
   }
-  const rms = Math.sqrt(sum / dataArrayRef.current.length);
-  const audioLevel = Math.min(Math.max(rms * 100, 0), 100);
   
-  setMicrophoneState(prev => ({
-    ...prev,
-    audioLevel
-  }));
-}, []);
-```
-
-#### **6.2 音量閾値制御**
-```typescript
-interface AudioLevelConfig {
-  silenceThreshold: 5;      // 無音判定閾値
-  normalThreshold: 30;      // 通常音量閾値
-  loudThreshold: 80;        // 大音量閾値
-  clipThreshold: 95;        // クリッピング閾値
+  // Track状態チェック
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track, index) => {
+      if (track.readyState === 'ended') {
+        console.error(`❌ [PitchDetector] Track ${index} has ended!`, track);
+        microphoneHealthy = false;
+        errorDetails.push(`Track ${index} ended`);
+      }
+    });
+  }
+  
+  // 親コンポーネントに通知
+  dispatch('microphoneHealthChange', {
+    healthy: microphoneHealthy,
+    errors: errorDetails,
+    details: {
+      timestamp,
+      componentState,
+      isActive,
+      isDetecting,
+      isInitialized,
+      mediaStreamActive: mediaStream ? mediaStream.active : null,
+      audioContextState: audioContext ? audioContext.state : null
+    }
+  });
 }
 ```
 
-### 7. UI制御仕様
+### **Health Check Items**
+| チェック項目 | 正常状態 | 異常検知条件 | 影響レベル |
+|-------------|----------|-------------|-----------|
+| MediaStream.active | true | false | 重大 |
+| AudioContext.state | 'running' | 'suspended', 'closed' | 重大 |
+| Track.readyState | 'live' | 'ended' | 重大 |
+| Track.enabled | true | false | 中程度 |
+| Track.muted | false | true | 軽微 |
 
-#### **7.1 制御ボタン**
+## 🔄 初期化パターン
+
+### **Pattern 1: マイクテスト経由 (推奨)**
+```mermaid
+sequenceDiagram
+    participant User
+    participant MicTest
+    participant TrainingPage
+    participant PitchDetector
+    
+    User->>MicTest: アクセス
+    MicTest->>MicTest: getUserMedia()
+    MicTest->>MicTest: AudioContext作成
+    MicTest->>MicTest: 音量・音程テスト
+    User->>MicTest: トレーニング開始ボタン
+    MicTest->>TrainingPage: 遷移 (?from=microphone-test)
+    TrainingPage->>PitchDetector: initialize(existingStream)
+    PitchDetector->>PitchDetector: クイック初期化
+    PitchDetector->>TrainingPage: 初期化完了
+```
+
+### **Pattern 2: ダイレクトアクセス**
+```mermaid
+sequenceDiagram
+    participant User
+    participant TrainingPage
+    participant PitchDetector
+    
+    User->>TrainingPage: 直接アクセス
+    TrainingPage->>TrainingPage: マイク状態確認
+    TrainingPage->>User: ダイレクトアクセス画面表示
+    User->>TrainingPage: マイク許可ボタン
+    TrainingPage->>PitchDetector: getUserMedia() + initialize()
+    PitchDetector->>PitchDetector: 完全初期化
+    PitchDetector->>TrainingPage: 初期化完了
+```
+
+## 🎤 3段階ノイズリダクションシステム
+
+### **Filter Chain Architecture**
+```
+[MediaStreamSource] 
+    ↓
+[Raw Analyser] ← フィルター前解析（比較用）
+    ↓
+[High-pass Filter] ← 80Hz以下カット（低周波ノイズ除去）
+    ↓  
+[Low-pass Filter] ← 800Hz以上カット（高周波ノイズ除去）
+    ↓
+[Notch Filter] ← 60Hz電源ノイズ除去
+    ↓
+[Main Analyser] ← フィルター後解析（音程検出用）
+```
+
+### **Filter Configuration**
 ```typescript
-interface MicrophoneControlProps {
-  onMicrophoneOn: () => Promise<void>;
-  onMicrophoneOff: () => void;
-  isRecording: boolean;
-  isInitialized: boolean;
-  error: string | null;
-  audioLevel: number;
+// 1. ハイパスフィルター（低周波ノイズ除去）
+highpassFilter = audioContext.createBiquadFilter();
+highpassFilter.type = 'highpass';
+highpassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
+highpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+
+// 2. ローパスフィルター（高周波ノイズ除去）
+lowpassFilter = audioContext.createBiquadFilter();
+lowpassFilter.type = 'lowpass';
+lowpassFilter.frequency.setValueAtTime(800, audioContext.currentTime);
+lowpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+
+// 3. ノッチフィルター（電源ノイズ除去）
+notchFilter = audioContext.createBiquadFilter();
+notchFilter.type = 'notch';
+notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
+notchFilter.Q.setValueAtTime(10, audioContext.currentTime);
+```
+
+## 🎵 高精度音程検出システム
+
+### **Detection Pipeline**
+```
+[Float32Array Buffer] 
+    ↓
+[Volume Calculation] ← RMS音量計算
+    ↓
+[Pitch Detection] ← Pitchy (McLeod Pitch Method)
+    ↓
+[Vocal Range Filter] ← 65Hz-1200Hz人間音域フィルタリング
+    ↓
+[Harmonic Correction] ← 倍音補正システム
+    ↓
+[Frequency Stabilization] ← 基音安定化システム
+    ↓
+[Note Conversion] ← 周波数→音程名変換
+```
+
+### **Human Vocal Range Filtering**
+```typescript
+// 人間音域フィルタリング（実用調整）
+const isValidVocalRange = pitch >= 65 && pitch <= 1200;
+
+// 検出条件
+if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
+  // 有効な音程として処理
 }
 ```
 
-#### **7.2 視覚的フィードバック**
-- **録音中**: 赤色インジケーター + 音量バー
-- **待機中**: グレーインジケーター
-- **エラー**: 警告色 + エラーメッセージ
-- **音量レベル**: リアルタイム音量バー
-
-### 8. パフォーマンス最適化
-
-#### **8.1 メモリ管理**
+### **Harmonic Correction System**
 ```typescript
-const optimizeMemory = useCallback(() => {
-  // 不要なバッファクリア
-  if (dataArrayRef.current) {
-    dataArrayRef.current.fill(0);
-  }
+function correctHarmonicFrequency(detectedFreq, previousFreq) {
+  // 基音候補生成
+  const fundamentalCandidates = [
+    detectedFreq,          // そのまま（基音）
+    detectedFreq / 2.0,    // 2倍音 → 基音
+    detectedFreq / 3.0,    // 3倍音 → 基音
+    detectedFreq / 4.0,    // 4倍音 → 基音
+    detectedFreq * 2.0,    // 1オクターブ上
+  ];
   
-  // ガベージコレクション促進
-  if (window.gc) {
-    window.gc();
-  }
-}, []);
+  // 妥当性評価（人間音域40% + 連続性40% + 音楽性20%）
+  const evaluateFundamental = (freq) => {
+    const vocalRangeScore = (freq >= 130.81 && freq <= 1046.50) ? 1.0 : 0.0;
+    const continuityScore = previousFreq > 0 
+      ? 1.0 - Math.min(Math.abs(freq - previousFreq) / previousFreq, 1.0)
+      : 0.5;
+    const musicalScore = calculateMusicalScore(freq);
+    
+    return (vocalRangeScore * 0.4) + (continuityScore * 0.4) + (musicalScore * 0.2);
+  };
+  
+  // 最高スコア候補を採用
+  const bestCandidate = fundamentalCandidates
+    .map(freq => ({ freq, score: evaluateFundamental(freq) }))
+    .reduce((best, current) => current.score > best.score ? current : best);
+    
+  return bestCandidate.freq;
+}
 ```
 
-#### **8.2 CPU最適化**
-```typescript
-const optimizeCPU = useCallback(() => {
-  // 処理間隔調整
-  const targetFPS = 60;
-  const processingInterval = 1000 / targetFPS;
-  
-  // 適応的処理負荷調整
-  if (performance.now() - lastProcessTime > processingInterval * 2) {
-    // 処理負荷軽減
-    analyser.smoothingTimeConstant = 0.8;
-  }
-}, []);
+## 🚨 エラーハンドリング体系
+
+### **Error Classification**
+| エラーレベル | 例 | 対応方法 | 復旧戦略 |
+|-------------|----|---------|---------| 
+| **Critical** | MediaStream切断 | トレーニング停止 | 手動復旧 |
+| **Warning** | AudioContext suspend | 警告表示 | 自動復旧 |
+| **Info** | 一時的音量低下 | ログ出力のみ | 継続監視 |
+
+### **Error Recovery Flow**
+```mermaid
+flowchart TD
+    Error[エラー検知] --> Classify{エラー分類}
+    
+    Classify --> |Critical| StopTraining[トレーニング停止]
+    Classify --> |Warning| ShowWarning[警告表示]
+    Classify --> |Info| LogOnly[ログ出力のみ]
+    
+    StopTraining --> UserAction[ユーザー操作待ち]
+    ShowWarning --> AutoRecover[自動復旧試行]
+    
+    AutoRecover --> |成功| Resume[トレーニング継続]
+    AutoRecover --> |失敗| UserAction
+    
+    UserAction --> |再試行| Initialize[再初期化]
+    UserAction --> |マイクテストへ| MicTest[マイクテストページ]
 ```
 
+## 🔧 デバッグ機能
+
+### **Debug Mode Activation**
+```svelte
+<!-- デバッグモード有効化 -->
+<PitchDetector 
+  bind:this={pitchDetectorComponent} 
+  isActive={trainingPhase === 'waiting' || trainingPhase === 'guiding'}
+  debugMode={true}
+  on:pitchUpdate={handlePitchUpdate}
+  on:microphoneHealthChange={handleMicrophoneHealthChange}
+/>
+```
+
+### **Debug Output Example**
+```
+🎤 [PitchDetector] 14:35:22: {
+  timestamp: "14:35:22",
+  componentState: "detecting",
+  isActive: true,
+  isDetecting: true,
+  isInitialized: true,
+  mediaStreamActive: true,
+  mediaStreamTracks: 1,
+  trackStates: [{
+    kind: "audio",
+    enabled: true,
+    readyState: "live",
+    muted: false
+  }],
+  audioContextState: "running",
+  hasAnalyser: true,
+  currentVolume: 45.3,
+  currentFrequency: 261
+}
+```
+
+## 📱 クロスブラウザ対応
+
+### **WebKit (Safari) 特殊対応**
+```typescript
+// AudioContext作成時のWebKit対応
+audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// getUserMedia WebKit対応
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  // 標準API使用
+} else if (navigator.webkitGetUserMedia) {
+  // WebKit fallback
+}
+```
+
+### **Browser Compatibility Matrix**
+| 機能 | Chrome | Firefox | Safari | Edge |
+|------|--------|---------|--------|------|
+| MediaStream | ✅ | ✅ | ✅ | ✅ |
+| AudioContext | ✅ | ✅ | ⚠️* | ✅ |
+| BiquadFilter | ✅ | ✅ | ✅ | ✅ |
+| Float32Array | ✅ | ✅ | ✅ | ✅ |
+
+*Safari: AudioContext自動suspendあり
+
+## 🔄 コンポーネント生存管理
+
+### **使い回し設計**
+```typescript
+// onDestroy時の特殊処理
+onDestroy(() => {
+  // デバッグインターバルのクリア
+  if (debugInterval) {
+    clearInterval(debugInterval);
+    debugInterval = null;
+  }
+  // 重要: MediaStreamとAudioContextはcleanupしない
+  // セッション間での使い回しを実現
+});
+```
+
+### **Session Persistence Strategy**
+- **保持対象**: MediaStream, AudioContext, フィルターチェーン
+- **リセット対象**: 表示状態, バッファ履歴, 検出フラグ
+- **メリット**: セッション間の高速復帰, リソース効率化
+
+## 📋 実装チェックリスト
+
+### **基本機能**
+- [x] 3層状態管理の完全実装
+- [x] マイクテスト経由フローの対応
+- [x] ダイレクトアクセスフローの対応
+- [x] 3段階ノイズリダクションの実装
+- [x] 高精度音程検出の実装
+
+### **健康監視**
+- [x] MediaStream状態監視
+- [x] AudioContext状態監視  
+- [x] Track状態監視
+- [x] 3秒間隔での定期チェック
+- [x] 親コンポーネントへの通知
+
+### **エラー処理**
+- [x] Critical/Warning/Infoレベル分類
+- [x] 自動復旧機能
+- [x] 手動復旧フロー
+- [x] ユーザー分かりやすいエラーメッセージ
+
+### **デバッグ機能**
+- [x] デバッグモードの実装
+- [x] 詳細ログ出力
+- [x] コンソールでの状態確認
+- [x] パフォーマンス監視
+
+### **クロスブラウザ対応**
+- [x] Chrome/Firefox/Safari/Edge対応
+- [x] WebKit特殊対応
+- [x] フォールバック実装
+- [x] 互換性テスト
+
 ---
 
-## 🧪 テスト仕様
-
-### 機能テスト
-- [ ] マイクロフォンON/OFF制御
-- [ ] 許可状態管理
-- [ ] エラーハンドリング
-- [ ] 音量レベル監視
-- [ ] リソース管理
-
-### 互換性テスト
-- [ ] iPhone Safari対応
-- [ ] Chrome デスクトップ
-- [ ] Firefox デスクトップ
-- [ ] Android Chrome
-
-### パフォーマンステスト
-- [ ] メモリ使用量
-- [ ] CPU使用率
-- [ ] 音声遅延測定
-- [ ] 長時間動作安定性
-
----
-
-## 📚 参考資料
-
-### Web Audio API
-- [MediaDevices.getUserMedia()](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
-- [AudioContext](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext)
-- [AnalyserNode](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode)
-
-### iPhone Safari制限
-- [Safari Web Audio API Limitations](https://developer.apple.com/documentation/webkit/safari_web_extensions)
-- [iOS Safari Audio Restrictions](https://webkit.org/blog/6784/new-video-policies-for-ios/)
-
----
-
-**作成日**: 2025-07-18  
-**作成者**: Claude Code Assistant  
-**対象**: 音程検出システム Phase 1 - マイクロフォン制御  
-**バージョン**: 1.0
+**この仕様書により、開発者はマイク制御システムの全体構造を理解し、堅牢で高性能な音程検出機能を実装できます。**

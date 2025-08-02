@@ -26,9 +26,27 @@
       "_app/immutable/assets/PageLayout.Cz8yIb7J.css"
     ]
   },
+  "_PitchDetectionDisplay.js": {
+    "file": "chunks/PitchDetectionDisplay.js",
+    "name": "PitchDetectionDisplay",
+    "imports": [
+      "_ssr.js",
+      "_PageLayout.js"
+    ],
+    "css": [
+      "_app/immutable/assets/PitchDetectionDisplay.D_00FytZ.css"
+    ]
+  },
   "_exports.js": {
     "file": "chunks/exports.js",
     "name": "exports"
+  },
+  "_index.js": {
+    "file": "chunks/index.js",
+    "name": "index",
+    "imports": [
+      "_ssr.js"
+    ]
   },
   "_internal.js": {
     "file": "chunks/internal.js",
@@ -73,7 +91,7 @@
     "imports": [
       "_internal.js",
       "_exports.js",
-      "_ssr.js"
+      "_index.js"
     ]
   },
   "src/routes/+layout.svelte": {
@@ -85,7 +103,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.CrWZKMKI.css"
+      "_app/immutable/assets/_layout.CzeJ3ZQ9.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -128,10 +146,24 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
-      "_PageLayout.js"
+      "_exports.js",
+      "_PageLayout.js",
+      "_PitchDetectionDisplay.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Bj4LjpZd.css"
+      "_app/immutable/assets/_page.Dl6HdkQ7.css"
+    ]
+  },
+  "src/routes/scoring-test/+page.svelte": {
+    "file": "entries/pages/scoring-test/_page.svelte.js",
+    "name": "entries/pages/scoring-test/_page.svelte",
+    "src": "src/routes/scoring-test/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.BeR5LleT.css"
     ]
   },
   "src/routes/training/chromatic/+page.svelte": {
@@ -169,11 +201,15 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
+      "_exports.js",
+      "_stores.js",
       "_PageLayout.js",
-      "_Button.js"
+      "_Button.js",
+      "_PitchDetectionDisplay.js",
+      "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Cx2blc6Z.css"
+      "_app/immutable/assets/_page.BYJGuQfz.css"
     ]
   }
 }
