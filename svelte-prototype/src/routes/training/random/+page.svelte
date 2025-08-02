@@ -1538,6 +1538,9 @@
     // 音程精度の評価（70%以上で優秀）- 正しいデータパスに修正
     console.log('='.repeat(60));
     console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed:', enhancedResults.detailed);
+    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.intervals:', enhancedResults.detailed?.intervals);
+    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.directions:', enhancedResults.detailed?.directions);
+    console.log('🚨🚨🚨 [技術分析DEBUG] enhancedResults.detailed.consistency:', enhancedResults.detailed?.consistency);
     const intervalAccuracy = enhancedResults.detailed?.intervals?.accuracy || 0;
     console.log('🚨🚨🚨 [技術分析DEBUG] intervalAccuracy (修正後):', intervalAccuracy);
     console.log('='.repeat(60));
