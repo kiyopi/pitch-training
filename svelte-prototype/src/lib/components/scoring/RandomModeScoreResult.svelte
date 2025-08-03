@@ -447,8 +447,11 @@
   
   .distribution-row {
     display: flex;
+    display: -webkit-flex;
     align-items: center;
+    -webkit-align-items: center;
     gap: 1rem;
+    width: 100%;
   }
   
   .grade-label {
@@ -467,6 +470,10 @@
     overflow: hidden;
     position: relative;
     flex: 1;
+    min-width: 0;
+    width: 100%;
+    -webkit-flex: 1;
+    -webkit-box-flex: 1;
   }
   
   .distribution-bar {
