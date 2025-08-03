@@ -3433,7 +3433,8 @@
     width: 100vw !important;
     height: 100vh !important;
     background: rgba(0, 0, 0, 0.5) !important;
-    z-index: 999998 !important;
+    z-index: 9999998 !important;
+    pointer-events: auto !important;
   }
 
   .session-criteria-popover-carousel {
@@ -3441,14 +3442,15 @@
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    z-index: 999999 !important;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    min-width: 320px;
-    max-width: 400px;
+    z-index: 9999999 !important;
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
+    min-width: 320px !important;
+    max-width: 400px !important;
+    pointer-events: auto !important;
   }
   
   .popover-title {
@@ -3525,12 +3527,21 @@
   <!-- グレーの背景（バックドロップ） -->
   <div 
     class="popover-backdrop-carousel"
+    role="button"
+    tabindex="0"
+    aria-label="ポップオーバーを閉じる"
     on:click={() => showCarouselSessionHelp = false}
+    on:keydown={(e) => e.key === 'Escape' && (showCarouselSessionHelp = false)}
   ></div>
   
   <!-- ポップオーバー本体 -->
-  <div class="session-criteria-popover-carousel">
-    <div class="popover-title">セッション評価について</div>
+  <div 
+    class="session-criteria-popover-carousel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="carousel-popover-title"
+  >
+    <div id="carousel-popover-title" class="popover-title">セッション評価について</div>
     <div class="criteria-content">
       {#each Object.entries(sessionCriteriaDefinitions) as [key, criteria]}
         <div class="session-criteria-item">
