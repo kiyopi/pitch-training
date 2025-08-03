@@ -1548,7 +1548,6 @@
     // 正しいフィールドを使用して値を取得
     let intervalAccuracy = 0;
     let directionAccuracy = 0;
-    let consistencyScore = 0;
     
     if (enhancedResults.detailed?.intervals) {
       // 音程精度: 平均精度を計算
@@ -1586,14 +1585,8 @@
       }
     }
     
-    if (enhancedResults.detailed?.consistency) {
-      // 一貫性: overallConsistencyを使用
-      consistencyScore = enhancedResults.detailed.consistency.overallConsistency || 0;
-    }
-    
     const isIntervalGood = intervalAccuracy >= 70;
     const isDirectionGood = directionAccuracy >= 80;
-    const isConsistencyGood = consistencyScore >= 75;
     
     // 技術分析結果のフォーマット（基準値と説明付き）
     technicalAnalysis.push({
@@ -1606,16 +1599,13 @@
       text: `方向性: ${Math.round(directionAccuracy)}%　（音程の上下判断の精度　目標基準：80〜90%）`
     });
     
-    // 一貫性の表示：データ不足の場合は明確に示す
-    // 一貫性表示は総合評価見直し完了まで一時非表示
-    // const consistencyText = consistencyScore === 0 
-    //   ? '一貫性: データ不足　（複数セッション後に評価可能　目標基準：50〜70%）'
-    //   : `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`;
+    // 📝 一貫性評価について
+    // 従来の一貫性評価（セッション間比較）は以下の理由で削除：
+    // 1. 基音変更により同一音程でも絶対周波数が異なる
+    // 2. 相対音感では基音との関係性が重要（異なる基音=別タスク）
+    // 3. 技術誤差と真のパフォーマンス変動が区別できない
     // 
-    // technicalAnalysis.push({
-    //   category: 'improvements',
-    //   text: consistencyText
-    // });
+    // 将来実装予定: 3タブ統合評価（技術分析・音程別精度・一貫性グラフ）
     
     // アドバイス（改善提案のメッセージ部分）
     const adviceItems = improvements.map(imp => ({
