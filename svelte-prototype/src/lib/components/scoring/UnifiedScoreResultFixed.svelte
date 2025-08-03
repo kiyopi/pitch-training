@@ -35,7 +35,7 @@
   
   // ポップオーバー管理
   let showGradeHelp = false;
-  let showSessionHelp = true; // TODO: デバッグ用に一時的にtrueに変更してテスト
+  let showSessionHelp = false;
   
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
@@ -1767,7 +1767,7 @@
           <!-- 音程別進捗タブ -->
           {#if activeTab === 'intervals' && (detailedAnalysisData?.intervalAnalysis || intervalData.length > 0)}
             <div class="tab-panel">
-              {#if detailedAnalysisData?.intervalAnalysis && detailedAnalysisData?.intervalMastery}
+              {#if detailedAnalysisData?.intervalMastery}
                 <!-- 音程別進捗表（テーブル形式） -->
                 <div class="interval-analysis-table">
                   <h4 class="analysis-title"><Music size={20} class="inline mr-2" />音程別精度一覧</h4>
@@ -2113,9 +2113,9 @@
 
   .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   .stats-grid {
@@ -2827,9 +2827,9 @@
   
   .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
   
   .analysis-item {
