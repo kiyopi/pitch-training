@@ -197,7 +197,7 @@
           
           <div class="bar-container" style="background: #f3f4f6 !important; border: 1px solid #d1d5db;">
             <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
-                 style="width: {(count / 8) * 100}%; background-color: {key === 'excellent' ? '#fbbf24' : 
+                 style="width: {Math.max((count / 8) * 100, count > 0 ? 8 : 0)}%; background-color: {key === 'excellent' ? '#fbbf24' : 
                                                                        key === 'good' ? '#34d399' : 
                                                                        key === 'pass' ? '#60a5fa' : 
                                                                        key === 'needWork' ? '#f87171' : 
