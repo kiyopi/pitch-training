@@ -1768,116 +1768,97 @@
           {#if activeTab === 'intervals' && (detailedAnalysisData?.intervalAnalysis || intervalData.length > 0)}
             <div class="tab-panel">
               {#if detailedAnalysisData?.intervalAnalysis && detailedAnalysisData?.intervalMastery}
-                <!-- 技術誤差考慮版の音程別進捗（強化版） -->
-                <div class="interval-analysis-enhanced">
-                  <!-- 習得済み音程セクション -->
-                  {#if detailedAnalysisData.intervalMastery.mastered.length > 0}
-                    <div class="mastery-section mastered">
-                      <h5 class="mastery-section-title text-green-600"><CheckCircle size={20} class="inline mr-2" />習得済み音程（80%以上）</h5>
-                      <div class="interval-grid">
-                        {#each detailedAnalysisData.intervalMastery.mastered as interval}
-                          <div class="interval-card mastered-card">
-                            <div class="interval-header">
-                              <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge excellent"><Star size={14} class="inline mr-1" />{interval.mastery}%</div>
-                            </div>
-                            <div class="interval-stats">
-                              <div class="stat-row">
-                                <span class="stat-label">挑戦回数:</span>
-                                <span class="stat-value">{interval.attempts}回</span>
-                              </div>
-                              <div class="stat-row">
-                                <span class="stat-label">合格率:</span>
-                                <span class="stat-value text-green-600 font-bold">{interval.passRate}%</span>
-                              </div>
-                              <div class="recommendation">{interval.recommendation}</div>
-                            </div>
-                          </div>
-                        {/each}
-                      </div>
+                <!-- 音程別進捗表（テーブル形式） -->
+                <div class="interval-analysis-table">
+                  <h4 class="analysis-title"><Music size={20} class="inline mr-2" />音程別精度一覧</h4>
+                  
+                  <!-- アイコン評価基準の説明 -->
+                  <div class="icon-legend">
+                    <div class="legend-item">
+                      <CheckCircle size={16} class="text-green-600" />
+                      <span>習得済み（80%以上）</span>
                     </div>
-                  {/if}
-
-                  <!-- 習得中音程セクション -->
-                  {#if detailedAnalysisData.intervalMastery.learning.length > 0}
-                    <div class="mastery-section learning">
-                      <h5 class="mastery-section-title text-blue-600"><Star size={20} class="inline mr-2" />習得中音程（60-79%）</h5>
-                      <div class="interval-grid">
-                        {#each detailedAnalysisData.intervalMastery.learning as interval}
-                          <div class="interval-card learning-card">
-                            <div class="interval-header">
-                              <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge good"><Zap size={14} class="inline mr-1" />{interval.mastery}%</div>
-                            </div>
-                            <div class="interval-stats">
-                              <div class="stat-row">
-                                <span class="stat-label">挑戦回数:</span>
-                                <span class="stat-value">{interval.attempts}回</span>
-                              </div>
-                              <div class="stat-row">
-                                <span class="stat-label">平均誤差:</span>
-                                <span class="stat-value text-amber-600">±{interval.averageError}¢</span>
-                              </div>
-                              <div class="recommendation text-blue-600">{interval.recommendation}</div>
-                            </div>
-                            <div class="progress-bar">
-                              <div class="progress-fill" style="width: {interval.mastery}%; background: linear-gradient(90deg, #3b82f6, #06b6d4)"></div>
-                            </div>
-                          </div>
-                        {/each}
-                      </div>
+                    <div class="legend-item">
+                      <Star size={16} class="text-blue-600" />
+                      <span>習得中（60-79%）</span>
                     </div>
-                  {/if}
-
-                  <!-- 練習必要音程セクション -->
-                  {#if detailedAnalysisData.intervalMastery.needsPractice.length > 0}
-                    <div class="mastery-section needs-practice">
-                      <h5 class="mastery-section-title text-red-600"><Sprout size={20} class="inline mr-2" />重点練習音程（60%未満）</h5>
-                      <div class="interval-grid">
-                        {#each detailedAnalysisData.intervalMastery.needsPractice as interval}
-                          <div class="interval-card practice-card">
-                            <div class="interval-header">
-                              <div class="interval-name">{interval.name}</div>
-                              <div class="mastery-badge needs-work"><BookOpen size={14} class="inline mr-1" />{interval.mastery}%</div>
-                            </div>
-                            <div class="interval-stats">
-                              <div class="stat-row">
-                                <span class="stat-label">挑戦回数:</span>
-                                <span class="stat-value">{interval.attempts}回</span>
-                              </div>
-                              <div class="stat-row">
-                                <span class="stat-label">平均誤差:</span>
-                                <span class="stat-value text-red-600">±{interval.averageError}¢</span>
-                              </div>
-                              <div class="recommendation text-red-600 font-semibold">{interval.recommendation}</div>
-                            </div>
-                            <div class="progress-bar">
-                              <div class="progress-fill" style="width: {interval.mastery}%; background: linear-gradient(90deg, #ef4444, #f97316)"></div>
-                            </div>
-                          </div>
-                        {/each}
-                      </div>
-                    </div>
-                  {/if}
-
-                  <!-- 習得統計サマリー -->
-                  <div class="mastery-summary">
-                    <h5 class="section-title"><PieChart size={18} class="inline mr-2" />音程習得統計</h5>
-                    <div class="summary-grid">
-                      <div class="summary-item mastered">
-                        <span class="summary-label">習得済み</span>
-                        <span class="summary-value text-green-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.mastered}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
-                      </div>
-                      <div class="summary-item learning">
-                        <span class="summary-label">習得中</span>
-                        <span class="summary-value text-blue-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.learning}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
-                      </div>
-                      <div class="summary-item practice">
-                        <span class="summary-label">要練習</span>
-                        <span class="summary-value text-red-600 font-bold">{detailedAnalysisData.intervalMastery.masteryDistribution.practice}/{detailedAnalysisData.intervalMastery.totalIntervals}</span>
-                      </div>
+                    <div class="legend-item">
+                      <BookOpen size={16} class="text-red-600" />
+                      <span>要練習（60%未満）</span>
                     </div>
                   </div>
+                  
+                  <!-- 音程別進捗テーブル -->
+                  <div class="interval-table-container">
+                    <table class="interval-table">
+                      <thead>
+                        <tr>
+                          <th>ステータス</th>
+                          <th>音程</th>
+                          <th>習得度</th>
+                          <th>挑戦回数</th>
+                          <th>合格率</th>
+                          <th>推奨アクション</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- 習得済み音程 -->
+                        {#each detailedAnalysisData.intervalMastery.mastered as interval}
+                          <tr class="mastered-row">
+                            <td class="status-cell">
+                              <CheckCircle size={18} class="text-green-600" />
+                            </td>
+                            <td class="interval-name-cell">{interval.name}</td>
+                            <td class="mastery-cell">
+                              <span class="mastery-badge excellent">{interval.mastery}%</span>
+                            </td>
+                            <td class="attempts-cell">{interval.attempts}回</td>
+                            <td class="pass-rate-cell">
+                              <span class="pass-rate excellent">{interval.passRate}%</span>
+                            </td>
+                            <td class="recommendation-cell">{interval.recommendation}</td>
+                          </tr>
+                        {/each}
+
+                        <!-- 習得中音程 -->
+                        {#each detailedAnalysisData.intervalMastery.learning as interval}
+                          <tr class="learning-row">
+                            <td class="status-cell">
+                              <Star size={18} class="text-blue-600" />
+                            </td>
+                            <td class="interval-name-cell">{interval.name}</td>
+                            <td class="mastery-cell">
+                              <span class="mastery-badge good">{interval.mastery}%</span>
+                            </td>
+                            <td class="attempts-cell">{interval.attempts}回</td>
+                            <td class="pass-rate-cell">
+                              <span class="pass-rate good">{interval.passRate}%</span>
+                            </td>
+                            <td class="recommendation-cell">{interval.recommendation}</td>
+                          </tr>
+                        {/each}
+
+                        <!-- 要練習音程 -->
+                        {#each detailedAnalysisData.intervalMastery.needsPractice as interval}
+                          <tr class="needs-practice-row">
+                            <td class="status-cell">
+                              <BookOpen size={18} class="text-red-600" />
+                            </td>
+                            <td class="interval-name-cell">{interval.name}</td>
+                            <td class="mastery-cell">
+                              <span class="mastery-badge needs-work">{interval.mastery}%</span>
+                            </td>
+                            <td class="attempts-cell">{interval.attempts}回</td>
+                            <td class="pass-rate-cell">
+                              <span class="pass-rate needs-work">{interval.passRate}%</span>
+                            </td>
+                            <td class="recommendation-cell">{interval.recommendation}</td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+
                   
                   <div class="analysis-explanation">
                     <AlertCircle size={16} class="inline mr-1" /><strong>音程習得分析:</strong> 
@@ -2303,6 +2284,103 @@
   .mastery-badge.needs-work {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
+  }
+
+  /* 音程別精度テーブルスタイル */
+  .interval-analysis-table {
+    margin-bottom: 2rem;
+  }
+
+  .icon-legend {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 0.875rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .interval-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .interval-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+
+  .interval-table th {
+    background: #f8fafc;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .interval-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .interval-table tr:hover {
+    background: #fafbfc;
+  }
+
+  .status-cell {
+    text-align: center;
+    width: 60px;
+  }
+
+  .interval-name-cell {
+    font-weight: 600;
+    color: #1f2937;
+    width: 120px;
+  }
+
+  .mastery-cell {
+    width: 100px;
+  }
+
+  .attempts-cell {
+    width: 80px;
+    text-align: center;
+  }
+
+  .pass-rate-cell {
+    width: 80px;
+    text-align: center;
+  }
+
+  .recommendation-cell {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .pass-rate.excellent {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .pass-rate.good {
+    color: #3b82f6;
+    font-weight: 600;
+  }
+
+  .pass-rate.needs-work {
+    color: #ef4444;
+    font-weight: 600;
   }
 
   /* 習得統計サマリー */
