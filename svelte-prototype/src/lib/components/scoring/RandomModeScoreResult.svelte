@@ -116,14 +116,12 @@
     // 技術的ブレ検証中のためペナルティを一時的に除外
     displayScore.set(baseScore); // - penalty
     
-    // 評価分布バーのアニメーション開始
-    setTimeout(() => {
-      excellentWidth.set((results.excellent / 8) * 100);
-      goodWidth.set((results.good / 8) * 100);
-      passWidth.set((results.pass / 8) * 100);
-      needWorkWidth.set((results.needWork / 8) * 100);
-      notMeasuredWidth.set((results.notMeasured / 8) * 100);
-    }, 300); // 総合評価の後にバーアニメーション開始
+    // 評価分布バーのアニメーション開始（即座実行）
+    excellentWidth.set((results.excellent / 8) * 100);
+    goodWidth.set((results.good / 8) * 100);
+    passWidth.set((results.pass / 8) * 100);
+    needWorkWidth.set((results.needWork / 8) * 100);
+    notMeasuredWidth.set((results.notMeasured / 8) * 100);
   }
 </script>
 
@@ -184,6 +182,7 @@
     <!-- iPhone デバッグ用 -->
     <div style="font-size: 10px; color: red; border: 1px solid red; padding: 2px; margin: 5px 0;">
       Debug: gradeDefinitions={Object.keys(gradeDefinitions).length}, results={JSON.stringify(results)}
+      <br>Tweened values: excellent={$excellentWidth}, good={$goodWidth}, needWork={$needWorkWidth}
     </div>
     
     <div class="distribution-bars">
