@@ -1,6 +1,6 @@
 <script>
   import { Trophy, Star, ThumbsUp, Frown, AlertCircle, Music, Target, Mic, 
-           AlertTriangle, Lightbulb, Flame, TrendingUp, Info, ChevronDown, ChevronUp } from 'lucide-svelte';
+           AlertTriangle, Lightbulb, Flame, TrendingUp, Info, ChevronDown, ChevronUp, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
   import { fly, fade, slide } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -14,6 +14,9 @@
   
   let showDetails = false;
   let showFrequencyDetails = {};
+  
+  // ポップオーバー管理
+  let showSessionHelp = false;
   
   // 4段階評価の定義
   const gradeDefinitions = {
@@ -42,6 +45,27 @@
   function calculateGrade(cents) {
     return calculateNoteGrade(cents);
   }
+  
+  // ポップオーバー制御関数
+  function toggleSessionHelp() {
+    showSessionHelp = !showSessionHelp;
+  }
+  
+  function handleOutsideClick(event) {
+    if (!event.target.closest('.session-help-icon') && 
+        !event.target.closest('.session-criteria-popover')) {
+      showSessionHelp = false;
+    }
+  }
+  
+  // 外部クリック検出
+  onMount(() => {
+    document.addEventListener('click', handleOutsideClick);
+    
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  });
   
   // 結果の集計
   $: if (noteResults.length > 0) {
@@ -129,9 +153,65 @@
         />
       </div>
       
-      <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
-        {gradeDefinitions[overallGrade].name}
-      </h2>
+      <div class="grade-title-with-help">
+        <svelte:component 
+          this={gradeDefinitions[overallGrade].icon} 
+          class="grade-icon {gradeDefinitions[overallGrade].color}"
+          style="width: 24px; height: 24px;"
+        />
+        <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
+          {gradeDefinitions[overallGrade].name}
+        </h2>
+        <HelpCircle 
+          size="16" 
+          class="session-help-icon" 
+          style="color: #6b7280;" 
+          on:click={toggleSessionHelp}
+        />
+      </div>
+      
+      <!-- セッション判定基準ポップオーバー -->
+      {#if showSessionHelp}
+        <div class="session-criteria-popover" in:fade={{ duration: 200 }}>
+          <h5 class="popover-title">セッション判定基準</h5>
+          
+          <div class="session-criteria-item">
+            <Trophy class="criteria-icon" style="color: #f59e0b;" />
+            <span class="criteria-name">優秀</span>
+            <div class="criteria-detail">
+              優秀な音程が6個以上 かつ<br/>
+              平均誤差±20¢以内
+            </div>
+          </div>
+          
+          <div class="session-criteria-item">
+            <Star class="criteria-icon" style="color: #059669;" />
+            <span class="criteria-name">良好</span>
+            <div class="criteria-detail">
+              合格以上が7個以上 かつ<br/>
+              平均誤差±30¢以内
+            </div>
+          </div>
+          
+          <div class="session-criteria-item">
+            <ThumbsUp class="criteria-icon" style="color: #2563eb;" />
+            <span class="criteria-name">合格</span>
+            <div class="criteria-detail">
+              合格以上が5個以上 かつ<br/>
+              平均誤差±50¢以内
+            </div>
+          </div>
+          
+          <div class="session-criteria-item">
+            <Frown class="criteria-icon" style="color: #dc2626;" />
+            <span class="criteria-name">要練習</span>
+            <div class="criteria-detail">
+              上記基準に満たない場合
+            </div>
+          </div>
+        </div>
+      {/if}
+      
       <p class="grade-subtitle">
         {#if sessionIndex !== null && baseNote}
           セッション{sessionIndex + 1} - 基音: {baseNote}　平均誤差: {averageError}¢
@@ -322,37 +402,6 @@
       {/if}
     </div>
   </div>
-  
-  <!-- 判定基準（折りたたみ） -->
-  <details class="criteria-section">
-    <summary>
-      <Info class="w-4 h-4" />
-      判定結果の見方
-      <ChevronDown class="w-4 h-4 chevron-icon" />
-    </summary>
-    <div class="criteria-content">
-      {#each Object.entries(gradeDefinitions) as [key, def]}
-        <div class="criteria-item">
-          <svelte:component this={def.icon} class="w-4 h-4 {def.color}" />
-          <strong>{def.name}:</strong> {def.range}
-        </div>
-      {/each}
-      <div class="info-note">
-        <p>¢（セント）: 音程の精度単位。100¢ = 半音1つ分</p>
-        <!-- 技術的ブレ検証中のため一時的に非表示
-        <p>外れ値ペナルティ: ±50セント超の大きな外れがあると評価が下がります</p>
-        -->
-      </div>
-      <div class="session-evaluation-info">
-        <h4>セッション総合評価の基準</h4>
-        <p><strong>優秀</strong>: {SESSION_GRADE_CRITERIA.excellent}</p>
-        <p><strong>良好</strong>: {SESSION_GRADE_CRITERIA.good}</p>
-        <p><strong>合格</strong>: {SESSION_GRADE_CRITERIA.pass}</p>
-        <p><strong>要練習</strong>: {SESSION_GRADE_CRITERIA.needWork}</p>
-        <p class="note">{SESSION_GRADE_CRITERIA.note}</p>
-      </div>
-    </div>
-  </details>
 </div>
 
 <style>
@@ -911,80 +960,7 @@
     color: #0c4a6e;
   }
   
-  /* 判定基準 */
-  .criteria-section {
-    background: #f9fafb;
-    border-radius: 8px;
-    padding: 1rem;
-  }
   
-  .criteria-section summary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-weight: 600;
-    color: #374151;
-    list-style: none;
-  }
-
-  .criteria-section summary::-webkit-details-marker {
-    display: none;
-  }
-  
-  .criteria-content {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-  }
-  
-  .criteria-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
-    color: #6b7280;
-  }
-  
-  .info-note {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .info-note p {
-    margin: 0.25rem 0;
-  }
-  
-  .session-evaluation-info {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f0f9ff;
-    border: 1px solid #bae6fd;
-    border-radius: 6px;
-  }
-  
-  .session-evaluation-info h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #0369a1;
-  }
-  
-  .session-evaluation-info p {
-    margin: 0.25rem 0;
-    font-size: 0.875rem;
-    color: #374151;
-  }
-  
-  .session-evaluation-info p.note {
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: #6b7280;
-    font-style: italic;
-  }
   
   /* アニメーション */
   @keyframes fadeInUp {
@@ -996,6 +972,79 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* ポップオーバー式評価基準表示 */
+  .grade-title-with-help {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .session-help-icon {
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  
+  .session-help-icon:hover {
+    opacity: 0.7;
+  }
+  
+  .session-criteria-popover {
+    position: absolute;
+    z-index: 9999;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    min-width: 320px;
+    max-width: 400px;
+    top: 100%;
+    margin-top: 0.5rem;
+    left: 0;
+  }
+  
+  .popover-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+    text-align: center;
+  }
+  
+  .session-criteria-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .session-criteria-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .criteria-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  .criteria-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+    min-width: 60px;
+  }
+  
+  .criteria-detail {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    line-height: 1.4;
   }
 
   
