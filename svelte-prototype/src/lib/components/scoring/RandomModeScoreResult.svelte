@@ -1007,6 +1007,32 @@
     line-height: 1.4;
   }
 
+  /* iPhone用レスポンシブ最適化 */
+  @media (max-width: 640px) {
+    /* 評価分布バー: ラベル幅縮小でバー表示領域拡大 */
+    .grade-label {
+      min-width: 60px;
+      font-size: 0.75rem;
+    }
+    
+    /* 評価分布バー: カウント表示幅縮小 */
+    .count-display {
+      min-width: 40px;
+      font-size: 0.75rem;
+    }
+    
+    /* 評価分布行: ギャップ縮小でスペース効率化 */
+    .distribution-row {
+      gap: 0.5rem;
+    }
+    
+    /* バーコンテナ: 最大幅確保 */
+    .bar-container {
+      flex: 1;
+      min-width: 100px;
+    }
+  }
+
   
 </style>
 
