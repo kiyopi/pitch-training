@@ -2486,7 +2486,7 @@
         <UnifiedScoreResultFixed 
           scoreData={$unifiedScoreData}
           showDetails={false}
-          className="mb-6"
+          className="mb-6 iphone-no-margin"
           currentScoreData={currentScoreData}
           intervalData={intervalData}
           consistencyData={consistencyData}
@@ -2499,7 +2499,7 @@
         <UnifiedScoreResultFixed 
           scoreData={currentUnifiedScoreData}
           showDetails={false}
-          className="mb-6"
+          className="mb-6 iphone-no-margin"
           currentScoreData={currentScoreData}
           intervalData={intervalData}
           consistencyData={consistencyData}
@@ -3094,6 +3094,32 @@
   /* UnifiedScoreResultFixed上部padding強制削減 */
   :global(.unified-score-result) {
     padding-top: 0.25rem !important; /* さらに縮小: 0.5rem → 0.25rem */
+  }
+  
+  /* iPhone: 完全余白削除 */
+  @media (max-width: 640px) {
+    /* メインページ全体の余白削除 */
+    main {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* UnifiedScoreResultFixed完全余白削除 */
+    :global(.iphone-no-margin) {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    /* mb-6クラス無効化 */
+    :global(.mb-6) {
+      margin-bottom: 0 !important;
+    }
+    
+    /* ページコンテナ余白削除 */
+    .page-container {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
   }
   
   /* 古い共通アクションボタンスタイルは削除（ActionButtonsに統一） */

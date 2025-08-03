@@ -115,6 +115,16 @@
     width: 100%;
   }
   
+  /* iPhone: ページメイン余白完全削除 */
+  @media (max-width: 640px) {
+    .page-main {
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+  
   .page-footer {
     border-top: 1px solid var(--color-gray-200);
     margin-top: var(--space-12);
