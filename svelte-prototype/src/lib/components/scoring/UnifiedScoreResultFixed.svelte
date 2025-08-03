@@ -36,6 +36,35 @@
   // ポップオーバー管理
   let showGradeHelp = false;
   let showSessionHelp = false;
+  let showCarouselSessionHelp = false;
+
+  // セッション評価基準の定義
+  const sessionCriteriaDefinitions = {
+    excellent: {
+      name: 'Excellent',
+      condition: '90%以上の精度',
+      icon: Crown,
+      color: 'purple'
+    },
+    good: {
+      name: 'Good',
+      condition: '80%以上の精度',
+      icon: Trophy,
+      color: 'blue'
+    },
+    pass: {
+      name: 'Pass',
+      condition: '65%以上の精度',
+      icon: ThumbsUp,
+      color: 'green'
+    },
+    needWork: {
+      name: 'Need Work',
+      condition: '65%未満の精度',
+      icon: AlertCircle,
+      color: 'orange'
+    }
+  };
   
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
@@ -1524,6 +1553,7 @@
                     sessionIndex={index}
                     baseNote={session.baseNote}
                     className="carousel-score-result"
+                    on:show-session-help={() => showCarouselSessionHelp = true}
                   />
                 {:else}
                   <div class="no-details">
@@ -3479,3 +3509,28 @@
     position: relative;
   }
 </style>
+
+<!-- カルーセル用セッションヘルプポップオーバー -->
+{#if showCarouselSessionHelp}
+  <div class="session-criteria-popover-carousel">
+    <div class="popover-title">セッション評価について</div>
+    <div class="criteria-content">
+      {#each Object.entries(sessionCriteriaDefinitions) as [key, criteria]}
+        <div class="session-criteria-item">
+          <svelte:component this={criteria.icon} class="criteria-icon text-{criteria.color}-600" />
+          <span class="criteria-name">{criteria.name}</span>
+          <span class="criteria-condition">{criteria.condition}</span>
+        </div>
+      {/each}
+      <div class="criteria-note">
+        各セッションは上記の基準に基づいて評価されます。連続で良い結果を出すことで実力が確実に向上します。
+      </div>
+    </div>
+    <button 
+      class="mt-3 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+      on:click={() => showCarouselSessionHelp = false}
+    >
+      閉じる
+    </button>
+  </div>
+{/if}

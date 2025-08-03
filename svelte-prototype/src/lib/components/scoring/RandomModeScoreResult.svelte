@@ -4,7 +4,9 @@
   import { fly, fade, slide } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
-  import { onMount } from 'svelte';
+  import { onMount, createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
   import { calculateNoteGrade, SESSION_GRADE_CRITERIA } from '$lib/utils/gradeCalculation';
   
   export let noteResults = [];
@@ -16,7 +18,6 @@
   let showFrequencyDetails = {};
   
   // ポップオーバー管理
-  let showSessionHelp = false;
   
   // 4段階評価の定義
   const gradeDefinitions = {
@@ -48,26 +49,10 @@
   
   // ポップオーバー制御関数
   function toggleSessionHelp() {
-    console.log('[RandomModeScoreResult] toggleSessionHelp clicked, current:', showSessionHelp);
-    showSessionHelp = !showSessionHelp;
-    console.log('[RandomModeScoreResult] After toggle:', showSessionHelp);
+    console.log('[RandomModeScoreResult] toggleSessionHelp clicked, dispatching event');
+    dispatch('show-session-help');
   }
   
-  function handleOutsideClick(event) {
-    if (!event.target.closest('.session-help-icon-button') && 
-        !event.target.closest('.session-criteria-popover')) {
-      showSessionHelp = false;
-    }
-  }
-  
-  // 外部クリック検出
-  onMount(() => {
-    document.addEventListener('click', handleOutsideClick);
-    
-    return () => {
-      document.removeEventListener('click', handleOutsideClick);
-    };
-  });
   
   // 結果の集計
   $: if (noteResults.length > 0) {
@@ -173,8 +158,7 @@
       </div>
       
       <!-- セッション判定基準ポップオーバー - カルーセル制約回避のため外部レンダリング -->
-      <!-- Debug: showSessionHelp = {showSessionHelp} -->
-      <!-- ポップオーバーは下記のsvelte:bodyで全画面レンダリング -->
+      <!-- セッション判定基準ヘルプ - 親コンポーネントで管理 -->
       
       <p class="grade-subtitle">
         {#if sessionIndex !== null && baseNote}
@@ -1034,73 +1018,6 @@
     line-height: 1.4;
   }
 
-  /* 全画面ポップオーバー用CSS */
-  :global(.global-popover-backdrop) {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    z-index: 999998 !important;
-  }
-
-  :global(.global-session-criteria-popover) {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 999999 !important;
-    background: white !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 8px !important;
-    padding: 1rem !important;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
-    min-width: 320px !important;
-    max-width: 400px !important;
-  }
   
 </style>
 
-<!-- 全画面ポップオーバー（カルーセル制約完全回避） -->
-{#if showSessionHelp}
-  <div class="global-popover-backdrop" in:fade={{ duration: 200 }} on:click={() => showSessionHelp = false}></div>
-  <div class="global-session-criteria-popover" in:fade={{ duration: 200 }}>
-    <h5 class="popover-title">セッション判定基準</h5>
-    
-    <div class="session-criteria-item">
-      <Trophy class="criteria-icon" style="color: #f59e0b;" />
-      <span class="criteria-name">優秀</span>
-      <div class="criteria-detail">
-        優秀な音程が6個以上 かつ<br/>
-        平均誤差±20¢以内
-      </div>
-    </div>
-    
-    <div class="session-criteria-item">
-      <Star class="criteria-icon" style="color: #059669;" />
-      <span class="criteria-name">良好</span>
-      <div class="criteria-detail">
-        合格以上が7個以上 かつ<br/>
-        平均誤差±30¢以内
-      </div>
-    </div>
-    
-    <div class="session-criteria-item">
-      <ThumbsUp class="criteria-icon" style="color: #2563eb;" />
-      <span class="criteria-name">合格</span>
-      <div class="criteria-detail">
-        合格以上が5個以上 かつ<br/>
-        平均誤差±50¢以内
-      </div>
-    </div>
-    
-    <div class="session-criteria-item">
-      <Frown class="criteria-icon" style="color: #dc2626;" />
-      <span class="criteria-name">要練習</span>
-      <div class="criteria-detail">
-        上記基準に満たない場合
-      </div>
-    </div>
-  </div>
-{/if}
