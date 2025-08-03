@@ -1521,12 +1521,6 @@
             </div>
           </div>
           
-          <!-- Debug: SessionCarousel表示確認 -->
-          <div style="font-size: 12px; color: blue; margin: 10px 0; border: 1px solid blue; padding: 5px;">
-            Debug Carousel: sessionHistory.length = {scoreData.sessionHistory?.length || 0}, currentIndex = {currentSessionIndex}
-            <br>Debug scoreData keys: {JSON.stringify(Object.keys(scoreData || {}))}
-            <br>Debug scoreData.sessionHistory: {JSON.stringify(scoreData.sessionHistory?.slice(0, 2) || [])}
-          </div>
           
           <!-- セッションカルーセル -->
           <div class="carousel-wrapper">
@@ -1541,10 +1535,6 @@
               }}
             >
               <div slot="default" let:session let:index>
-                <!-- Debug: セッションデータ確認 -->
-                <div style="font-size: 10px; color: red; margin-bottom: 5px;">
-                  Debug: Session {index + 1} - noteResults: {session.noteResults ? 'あり' : 'なし'} - baseNote: {session.baseNote || 'なし'}
-                </div>
                 
                 <!-- 8音階詳細表示（セッション情報統合版） -->
                 {#if session.noteResults}

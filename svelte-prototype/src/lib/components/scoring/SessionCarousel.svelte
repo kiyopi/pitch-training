@@ -77,10 +77,6 @@
 </script>
 
 <div class="session-carousel {className}" on:keydown={handleKeydown} role="region" aria-label="セッション詳細カルーセル">
-  <!-- Debug: SessionCarousel内部 -->
-  <div style="font-size: 10px; color: green; border: 1px solid green; padding: 3px; margin: 5px 0;">
-    SessionCarousel Debug: sessionHistory={sessionHistory?.length || 0}, currentIndex={currentIndex}, hasNext={hasNext}, hasPrev={hasPrev}
-  </div>
   
   <!-- カルーセルコンテナ -->
   <div class="carousel-container">
