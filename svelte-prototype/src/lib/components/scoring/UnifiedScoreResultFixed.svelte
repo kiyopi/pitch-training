@@ -311,10 +311,26 @@
   }
 
   function detectOutliers(data, stats) {
-    const outlierThreshold = stats.mean + (3 * stats.stdDev);
-    const outlierData = data.filter(cent => cent > outlierThreshold);
+    // 音程測定特化の外れ値検出
+    // 1. 統計的外れ値（両側3σ）
+    const upperStatThreshold = stats.mean + (3 * stats.stdDev);
+    const lowerStatThreshold = Math.max(0, stats.mean - (3 * stats.stdDev));
+    
+    // 2. 音楽的異常値（100¢ = 半音のズレ）
+    const musicalThreshold = 100;
+    
+    // 3. 両方の条件で外れ値を検出
+    const outlierData = data.filter(cent => 
+      cent > upperStatThreshold ||      // 統計的に大きすぎ
+      cent < lowerStatThreshold ||      // 統計的に小さすぎ（異常に正確）
+      Math.abs(cent) > musicalThreshold // 音楽的に異常（半音以上のズレ）
+    );
+    
     return {
-      threshold: outlierThreshold,
+      threshold: upperStatThreshold,     // 互換性のため上側閾値を保持
+      upperThreshold: upperStatThreshold,
+      lowerThreshold: lowerStatThreshold,
+      musicalThreshold: musicalThreshold,
       data: outlierData,
       count: outlierData.length,
       rate: outlierData.length / data.length
@@ -322,7 +338,12 @@
   }
 
   function calculateRobustStatistics(data, outliers) {
-    const cleanData = data.filter(cent => cent <= outliers.threshold);
+    // 外れ値を除外（両側 + 音楽的異常値）
+    const cleanData = data.filter(cent => {
+      // outliers.dataに含まれないデータのみを使用
+      return !outliers.data.includes(cent);
+    });
+    
     const mean = cleanData.length > 0 ? cleanData.reduce((a, b) => a + b, 0) / cleanData.length : 0;
     const accuracy = Math.max(0, 100 - mean);
     return { mean, accuracy, cleanDataCount: cleanData.length };
@@ -398,7 +419,7 @@
         highPrecision: allCentData.filter(c => c <= 10).length,
         mediumPrecision: allCentData.filter(c => c > 10 && c <= 20).length,
         lowPrecision: allCentData.filter(c => c > 20 && c <= 50).length,
-        anomalies: allCentData.filter(c => c > 50).length
+        anomalies: allCentData.filter(c => c > 100).length  // 音楽的異常値（半音以上）
       },
       correctedEvaluation: {
         rawAverage: Math.round(stats.mean * 10) / 10,
@@ -1448,7 +1469,7 @@
                     </div>
                     <div class="analysis-item">
                       <span class="analysis-label">異常値</span>
-                      <span class="analysis-value text-red-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.anomalies}回（技術誤差 50¢超）</span>
+                      <span class="analysis-value text-red-600">{detailedAnalysisData.technicalAnalysis.outlierCount}回（統計的外れ値・音楽的異常値）</span>
                     </div>
                   </div>
                 </div>
