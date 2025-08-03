@@ -227,10 +227,10 @@
   @media (max-width: 640px) {
     /* iPhone: セッションカルーセル全体の左右マージン完全削除 */
     .session-carousel {
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-      padding-left: 0 !important;
-      padding-right: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
     }
     
     /* iPhone: カルーセル左右ボタンを完全非表示（レイアウトスペース確保） */
@@ -251,9 +251,17 @@
     
     /* iPhone: カルーセルコンテナの余白削減 */
     .carousel-container {
-      margin: 0;
-      padding: 0;
-      gap: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      gap: 0 !important;
+    }
+    
+    /* iPhone: カルーセルビューポートの余白完全削除 */
+    .carousel-viewport {
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 8px;
+      background: #f9fafb;
     }
     
     /* iPhone: インジケーターマージン削減 */
