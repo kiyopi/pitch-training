@@ -1001,7 +1001,7 @@
     const goodRatio = totalGoodSessions / totalSessions;
     const passRatio = (excellentCount + goodCount + passCount) / totalSessions;
     
-    // 🔬 改良版技術誤差補正システム
+    // 🔬 改良版技術誤差補正システム（均等化）
     let correctedExcellentRatio = excellentRatio;
     let correctedGoodRatio = goodRatio;
     let correctedPassRatio = passRatio;
@@ -1011,9 +1011,10 @@
       const improvementFactor = Math.min(errorAnalysis.correctionFactor - 1.0, 0.2); // 最大20%の向上
       
       if (improvementFactor > 0) {
-        correctedExcellentRatio = Math.min(excellentRatio + (improvementFactor * 0.3), 0.95);
+        // 均等な補正適用（全グレードに50%）
+        correctedExcellentRatio = Math.min(excellentRatio + (improvementFactor * 0.5), 0.95);
         correctedGoodRatio = Math.min(goodRatio + (improvementFactor * 0.5), 0.98);
-        correctedPassRatio = Math.min(passRatio + improvementFactor, 1.0);
+        correctedPassRatio = Math.min(passRatio + (improvementFactor * 0.5), 1.0);
       }
     }
     
@@ -1033,18 +1034,18 @@
       correctedPassRatio: Math.round(correctedPassRatio * 100) + '%'
     });
     
-    // 改良された判定基準（より現実的な基準）
+    // 改良された判定基準（より現実的でバランスの取れた基準）
     let grade = 'E';
-    if (correctedExcellentRatio >= 0.75 && correctedGoodRatio >= 0.90) {
-      grade = 'S';
-    } else if (correctedExcellentRatio >= 0.50 && correctedGoodRatio >= 0.80) {
-      grade = 'A';
-    } else if (correctedExcellentRatio >= 0.30 && correctedGoodRatio >= 0.70) {
-      grade = 'B';
-    } else if (correctedGoodRatio >= 0.50 || correctedPassRatio >= 0.65) {
-      grade = 'C';
-    } else if (correctedPassRatio >= 0.40) {
-      grade = 'D';
+    if (correctedExcellentRatio >= 0.60 && correctedGoodRatio >= 0.85) {
+      grade = 'S';  // 優秀60%以上 + 良好以上85%以上
+    } else if (correctedExcellentRatio >= 0.40 && correctedGoodRatio >= 0.75) {
+      grade = 'A';  // 優秀40%以上 + 良好以上75%以上
+    } else if (correctedExcellentRatio >= 0.25 && correctedGoodRatio >= 0.65) {
+      grade = 'B';  // 優秀25%以上 + 良好以上65%以上
+    } else if (correctedGoodRatio >= 0.50) {
+      grade = 'C';  // 良好以上50%以上（シンプル化）
+    } else if (correctedPassRatio >= 0.60) {
+      grade = 'D';  // 合格以上60%以上
     }
     
     console.log('🎯 最終判定:', grade);
@@ -1181,27 +1182,27 @@
             <div class="grade-table">
               <div class="grade-row">
                 <span class="grade-label">S級マスター</span>
-                <span class="grade-condition">優秀75%以上 + 良好以上90%以上</span>
+                <span class="grade-condition">優秀60%以上 + 良好以上85%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">A級エキスパート</span>
-                <span class="grade-condition">優秀50%以上 + 良好以上80%以上</span>
+                <span class="grade-condition">優秀40%以上 + 良好以上75%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">B級プロフィシエント</span>
-                <span class="grade-condition">優秀30%以上 + 良好以上70%以上</span>
+                <span class="grade-condition">優秀25%以上 + 良好以上65%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">C級アドバンス</span>
-                <span class="grade-condition">良好以上50%以上 または 合格以上65%以上</span>
+                <span class="grade-condition">良好以上50%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">D級ビギナー</span>
-                <span class="grade-condition">合格以上40%以上</span>
+                <span class="grade-condition">合格以上60%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">E級スターター</span>
-                <span class="grade-condition">合格以上40%未満</span>
+                <span class="grade-condition">合格以上60%未満</span>
               </div>
             </div>
           </div>
