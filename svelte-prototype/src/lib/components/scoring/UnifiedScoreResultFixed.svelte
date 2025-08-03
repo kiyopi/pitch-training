@@ -1250,15 +1250,15 @@
                 </div>
                 <div class="goal-advice">
                   {#if nextGrade === 'D'}
-                    基本的な音程感覚の向上を重点的に練習
+                    基本的な音程感覚を身につけて合格率を向上させましょう
                   {:else if nextGrade === 'C'}
-                    合格率を50%以上に向上させる練習
+                    安定して合格できるよう練習を継続しましょう
                   {:else if nextGrade === 'B'}
-                    優秀評価を25%以上獲得する精度向上
+                    より高い精度で正解できるよう練習を重ねましょう
                   {:else if nextGrade === 'A'}
-                    優秀評価を40%以上獲得する安定性強化
+                    優秀な精度を安定して出せるよう練習しましょう
                   {:else}
-                    優秀評価を60%以上獲得する完璧性追求
+                    最高レベルの精度を目指して練習を続けましょう
                   {/if}
                 </div>
               {/if}
@@ -1299,27 +1299,27 @@
             <div class="grade-table">
               <div class="grade-row">
                 <span class="grade-label">S級マスター</span>
-                <span class="grade-condition">優秀60%以上 + 良好以上85%以上</span>
+                <span class="grade-condition">優秀60%以上 + 良好以上90%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">A級エキスパート</span>
-                <span class="grade-condition">優秀40%以上 + 良好以上75%以上</span>
+                <span class="grade-condition">優秀40%以上 + 良好以上80%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">B級プロフィシエント</span>
-                <span class="grade-condition">優秀25%以上 + 良好以上65%以上</span>
+                <span class="grade-condition">優秀25%以上 + 良好以上70%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">C級アドバンス</span>
-                <span class="grade-condition">良好以上50%以上</span>
+                <span class="grade-condition">合格以上50%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">D級ビギナー</span>
-                <span class="grade-condition">合格以上60%以上</span>
+                <span class="grade-condition">合格以上30%以上</span>
               </div>
               <div class="grade-row">
                 <span class="grade-label">E級スターター</span>
-                <span class="grade-condition">合格以上60%未満</span>
+                <span class="grade-condition">合格以上30%未満</span>
               </div>
             </div>
           </div>
@@ -2849,7 +2849,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    justify-content: flex-start;
+    justify-content: center;
   }
   
   .session-icon-wrapper {
@@ -2875,10 +2875,10 @@
     height: 24px;
   }
   
-  .session-icon.excellent { color: #eab308; }
-  .session-icon.good { color: #10b981; }
-  .session-icon.pass { color: #3b82f6; }
-  .session-icon.needWork { color: #ef4444; }
+  .session-icon.excellent { color: #f59e0b !important; } /* 優秀 - ゴールド */
+  .session-icon.good { color: #059669 !important; }      /* 良好 - グリーン */
+  .session-icon.pass { color: #2563eb !important; }      /* 合格 - ブルー */
+  .session-icon.needWork { color: #dc2626 !important; }  /* 要練習 - レッド */
   
   .session-number-small {
     font-size: 0.75rem;
@@ -3008,11 +3008,13 @@
     border: 1px solid #bae6fd;
     border-radius: 8px;
     padding: 1rem;
+    text-align: center;
   }
   
   .goal-item {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     font-weight: 500;
     color: #0c4a6e;
