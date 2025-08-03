@@ -268,10 +268,10 @@
       progressRatio: progressRatio,
       dataCompleteness: dataRatio,
       
-      // 🔬 NEW: 4タブ用詳細データ
+      // 🔬 NEW: 2タブ用詳細データ（一貫性タブは廃止済み）
       technicalAnalysis: detailedAnalysis.technicalAnalysis,
       intervalAnalysis: detailedAnalysis.intervalAnalysis,
-      consistencyAnalysis: detailedAnalysis.consistencyAnalysis,
+      // consistencyAnalysis: detailedAnalysis.consistencyAnalysis, // 廃止済み
       comprehensiveStatistics: detailedAnalysis.comprehensiveStatistics
     };
   }
@@ -396,9 +396,9 @@
       },
       errorDistribution: {
         highPrecision: allCentData.filter(c => c <= 10).length,
-        mediumPrecision: allCentData.filter(c => c <= 20).length,
-        lowPrecision: allCentData.filter(c => c <= 50).length,
-        anomalies: outliers.count
+        mediumPrecision: allCentData.filter(c => c > 10 && c <= 20).length,
+        lowPrecision: allCentData.filter(c => c > 20 && c <= 50).length,
+        anomalies: allCentData.filter(c => c > 50).length
       },
       correctedEvaluation: {
         rawAverage: Math.round(stats.mean * 10) / 10,
@@ -413,8 +413,8 @@
     const intervalAnalysis = generateIntervalAnalysis(sessionHistory);
     const intervalMastery = analyzeIntervalMastery(intervalAnalysis);
 
-    // Tab 3: 一貫性分析データ
-    const consistencyAnalysis = generateConsistencyAnalysis(sessionHistory, stats, robustStats);
+    // Tab 3: 一貫性分析データ（廃止済み - CONSISTENCY_EVALUATION_DEPRECATION_SPECIFICATION.md参照）
+    // const consistencyAnalysis = generateConsistencyAnalysis(sessionHistory, stats, robustStats);
 
     // Tab 4: 総合統計データ
     const comprehensiveStatistics = generateComprehensiveStatistics(sessionHistory, allCentData, robustStats);
@@ -423,7 +423,7 @@
       technicalAnalysis,
       intervalAnalysis,
       intervalMastery,
-      consistencyAnalysis,
+      // consistencyAnalysis, // 廃止済み
       comprehensiveStatistics
     };
   }
@@ -567,55 +567,8 @@
     }
   }
 
-  // 一貫性分析データ生成
-  function generateConsistencyAnalysis(sessionHistory, stats, robustStats) {
-    const sessionScores = sessionHistory.map(session => session.score || 0);
-    const technicalErrorPattern = sessionHistory.map((session, index) => {
-      const sessionCents = [];
-      if (session.noteResults) {
-        session.noteResults.forEach(note => {
-          if (note.cents !== null) sessionCents.push(Math.abs(note.cents));
-        });
-      }
-      return sessionCents.length > 0 ? 
-        Math.round(sessionCents.reduce((sum, c) => sum + c, 0) / sessionCents.length) : 
-        stats.mean;
-    });
-
-    const correctedScores = sessionScores.map((score, index) => {
-      const errorAdjustment = Math.max(0, (stats.mean - technicalErrorPattern[index]) / 2);
-      return Math.min(100, score + errorAdjustment);
-    });
-
-    // トレンド分析
-    const firstHalf = correctedScores.slice(0, Math.floor(correctedScores.length / 2));
-    const secondHalf = correctedScores.slice(Math.floor(correctedScores.length / 2));
-    const firstAvg = firstHalf.reduce((sum, s) => sum + s, 0) / firstHalf.length;
-    const secondAvg = secondHalf.reduce((sum, s) => sum + s, 0) / secondHalf.length;
-    
-    let trendAnalysis = 'stable';
-    if (secondAvg > firstAvg + 5) trendAnalysis = 'improving';
-    else if (secondAvg < firstAvg - 5) trendAnalysis = 'declining';
-
-    // 一貫性スコア計算
-    const variance = correctedScores.reduce((sum, score) => {
-      const avg = correctedScores.reduce((s, sc) => s + sc, 0) / correctedScores.length;
-      return sum + Math.pow(score - avg, 2);
-    }, 0) / correctedScores.length;
-    const consistencyScore = Math.max(0, 100 - Math.sqrt(variance));
-
-    return {
-      sessionScores,
-      technicalErrorPattern,
-      correctedScores,
-      trendAnalysis,
-      consistencyScore: Math.round(consistencyScore * 10) / 10,
-      maxVariation: {
-        raw: Math.max(...sessionScores) - Math.min(...sessionScores),
-        corrected: Math.max(...correctedScores) - Math.min(...correctedScores)
-      }
-    };
-  }
+  // 一貫性分析データ生成（廃止済み - CONSISTENCY_EVALUATION_DEPRECATION_SPECIFICATION.md参照）
+  // function generateConsistencyAnalysis() { ... }
 
   // 基音別分析データ生成（新規追加）
   function analyzeByBaseNote(sessionHistory) {
@@ -1125,8 +1078,7 @@
 
   $: availableTabs = [
     { id: 'technical', label: '技術分析', icon: Activity },
-    { id: 'intervals', label: '音程別精度', icon: Music },
-    { id: 'consistency', label: '一貫性グラフ', icon: BarChart3 }
+    { id: 'intervals', label: '音程別精度', icon: Music }
   ];
   
   onMount(() => {
@@ -1488,15 +1440,15 @@
                     </div>
                     <div class="analysis-item">
                       <span class="analysis-label">中精度測定</span>
-                      <span class="analysis-value text-blue-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.mediumPrecision}回（技術誤差 ±20¢以内）</span>
+                      <span class="analysis-value text-blue-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.mediumPrecision}回（技術誤差 10-20¢）</span>
                     </div>
                     <div class="analysis-item">
                       <span class="analysis-label">低精度測定</span>
-                      <span class="analysis-value text-amber-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.lowPrecision}回（技術誤差 ±50¢以内）</span>
+                      <span class="analysis-value text-amber-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.lowPrecision}回（技術誤差 20-50¢）</span>
                     </div>
                     <div class="analysis-item">
                       <span class="analysis-label">異常値</span>
-                      <span class="analysis-value text-red-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.anomalies}回（統計的外れ値）</span>
+                      <span class="analysis-value text-red-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.anomalies}回（技術誤差 50¢超）</span>
                     </div>
                   </div>
                 </div>
@@ -1680,55 +1632,7 @@
             </div>
           {/if}
           
-          <!-- 一貫性グラフタブ -->
-          {#if activeTab === 'consistency' && (detailedAnalysisData?.consistencyAnalysis || consistencyData.length > 0)}
-            <div class="tab-panel">
-              {#if detailedAnalysisData?.consistencyAnalysis}
-                <!-- 技術誤差考慮版の一貫性分析 -->
-                <div class="consistency-analysis-enhanced">
-                  <h4 class="analysis-title"><BarChart3 size={20} class="inline mr-2" />一貫性グラフ（技術誤差補正版）</h4>
-                  
-                  <div class="consistency-stats">
-                    <div class="stat-item">
-                      <span class="stat-label">一貫性スコア:</span>
-                      <span class="stat-value">{detailedAnalysisData.consistencyAnalysis.consistencyScore}%</span>
-                    </div>
-                    <div class="stat-item">
-                      <span class="stat-label">変動幅:</span>
-                      <span class="stat-value">
-                        {detailedAnalysisData.consistencyAnalysis.maxVariation.raw}点（補正前）/ 
-                        {detailedAnalysisData.consistencyAnalysis.maxVariation.corrected}点（補正後）
-                      </span>
-                    </div>
-                    <div class="stat-item">
-                      <span class="stat-label">トレンド:</span>
-                      <span class="stat-value">
-                        {detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'improving' ? '改善中' :
-                         detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'declining' ? '低下中' : '安定'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div class="analysis-explanation">
-                    <AlertCircle size={16} class="inline mr-1" /><strong>一貫性分析:</strong> 
-                    技術誤差を考慮すると、実際のパフォーマンスは補正前より安定しています。
-                    {detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'improving' ? 
-                      '継続練習により確実に向上しています。' :
-                      detailedAnalysisData.consistencyAnalysis.trendAnalysis === 'declining' ?
-                      '練習環境の見直しで改善が期待できます。' :
-                      '安定したパフォーマンスを維持できています。'}
-                  </div>
-                </div>
-              {:else}
-                <!-- 従来版（8セッション未完了時） -->
-                <ConsistencyGraph 
-                  consistencyData={consistencyData}
-                  showTechnicalErrorCorrection={detailedAnalysisData?.measurement === 'complete'}
-                  correctedData={detailedAnalysisData?.consistencyAnalysis?.correctedScores || []}
-                />
-              {/if}
-            </div>
-          {/if}
+          <!-- 一貫性グラフタブ（廃止済み - CONSISTENCY_EVALUATION_DEPRECATION_SPECIFICATION.md参照） -->
         </div>
       {/if}
     </div>
