@@ -798,8 +798,16 @@
         }
       }).toDestination();
       
-      // 音量調整
-      sampler.volume.value = -6; // デフォルトより少し下げる
+      // 音量調整 - iPad/iPhone対応
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      sampler.volume.value = isIOS ? 0 : -6; // iOS: 0dB, その他: -6dB
+      console.log(`🔊 [RandomTraining] 音量設定: ${isIOS ? '0dB (iOS)' : '-6dB (その他)'}`);
+      
+      // iOS専用: Tone.js Destination音量も調整
+      if (isIOS) {
+        Tone.Destination.volume.value = 3; // +3dB boost for iOS
+        console.log('🔊 [RandomTraining] iOS用 Destination音量ブースト: +3dB');
+      }
       
     } catch (error) {
       console.error('サンプラー初期化エラー:', error);

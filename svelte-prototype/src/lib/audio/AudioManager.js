@@ -109,6 +109,10 @@ class AudioManager {
 
       // MediaStream取得（1つのみ）
       if (!this.mediaStream) {
+        // iPad/iPhone検出
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        console.log(`🔍 [AudioManager] デバイス検出: ${isIOS ? 'iOS' : 'その他'}`, navigator.userAgent);
+        
         // Safari WebKit対応: 最大互換性音声設定
         const audioConstraints = {
           audio: {
@@ -116,6 +120,18 @@ class AudioManager {
             echoCancellation: false,
             noiseSuppression: false,
             autoGainControl: false,
+            
+            // iPad/iPhone専用: 超高感度設定
+            ...(isIOS && {
+              googAutoGainControl: false,     // Google AGC完全無効化
+              googNoiseSuppression: false,    // Google ノイズ抑制無効化
+              googEchoCancellation: false,    // Google エコーキャンセル無効化
+              googHighpassFilter: false,      // Google ハイパスフィルター無効化
+              googTypingNoiseDetection: false, // タイピングノイズ検出無効化
+              googBeamforming: false,         // ビームフォーミング無効化
+              mozAutoGainControl: false,      // Mozilla AGC無効化
+              mozNoiseSuppression: false,     // Mozilla ノイズ抑制無効化
+            }),
             
             // Safari対応: 明示的品質設定
             sampleRate: 44100,
