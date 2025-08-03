@@ -154,11 +154,6 @@
       </div>
       
       <div class="grade-title-with-help">
-        <svelte:component 
-          this={gradeDefinitions[overallGrade].icon} 
-          class="grade-icon {gradeDefinitions[overallGrade].color}"
-          style="width: 24px; height: 24px;"
-        />
         <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
           {gradeDefinitions[overallGrade].name}
         </h2>
