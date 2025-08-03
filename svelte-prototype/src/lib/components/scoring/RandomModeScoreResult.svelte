@@ -1012,6 +1012,8 @@
     /* コンテナ全体: パディング削減で表示領域最大化 */
     .random-mode-score-result {
       padding: 1rem;
+      margin: 0 !important;
+      margin-bottom: 0 !important;
     }
     
     /* 評価分布セクション: 右はみ出し防止・左右マージン完全削除 */
