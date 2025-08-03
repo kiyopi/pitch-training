@@ -35,7 +35,7 @@
   
   // ポップオーバー管理
   let showGradeHelp = false;
-  let showSessionHelp = false;
+  let showSessionHelp = true; // TODO: デバッグ用に一時的にtrueに変更してテスト
   
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
