@@ -10,7 +10,7 @@ return {
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.CynKD3k_.js",app:"_app/immutable/entry/app.C81h_F11.js",imports:["_app/immutable/entry/start.CynKD3k_.js","_app/immutable/chunks/CCR5JUMR.js","_app/immutable/chunks/D8aoWfRe.js","_app/immutable/chunks/Wwm2fIbD.js","_app/immutable/entry/app.C81h_F11.js","_app/immutable/chunks/D8aoWfRe.js","_app/immutable/chunks/BXq3pflB.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.CcPG_Gnr.js",app:"_app/immutable/entry/app.DqT5ygs9.js",imports:["_app/immutable/entry/start.CcPG_Gnr.js","_app/immutable/chunks/pVB3N60s.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/entry/app.DqT5ygs9.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/chunks/lf0iVeV9.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -19,7 +19,8 @@ return {
 			__memo(() => import('./nodes/4.js')),
 			__memo(() => import('./nodes/5.js')),
 			__memo(() => import('./nodes/6.js')),
-			__memo(() => import('./nodes/7.js'))
+			__memo(() => import('./nodes/7.js')),
+			__memo(() => import('./nodes/8.js'))
 		],
 		routes: [
 			{
@@ -44,24 +45,31 @@ return {
 				endpoint: null
 			},
 			{
+				id: "/scoring-test",
+				pattern: /^\/scoring-test\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				endpoint: null
+			},
+			{
 				id: "/training/chromatic",
 				pattern: /^\/training\/chromatic\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 5 },
+				page: { layouts: [0,], errors: [1,], leaf: 6 },
 				endpoint: null
 			},
 			{
 				id: "/training/continuous",
 				pattern: /^\/training\/continuous\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 6 },
+				page: { layouts: [0,], errors: [1,], leaf: 7 },
 				endpoint: null
 			},
 			{
 				id: "/training/random",
 				pattern: /^\/training\/random\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 7 },
+				page: { layouts: [0,], errors: [1,], leaf: 8 },
 				endpoint: null
 			}
 		],

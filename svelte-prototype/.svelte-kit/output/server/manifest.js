@@ -10,7 +10,7 @@ return {
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.CynKD3k_.js",app:"_app/immutable/entry/app.C81h_F11.js",imports:["_app/immutable/entry/start.CynKD3k_.js","_app/immutable/chunks/CCR5JUMR.js","_app/immutable/chunks/D8aoWfRe.js","_app/immutable/chunks/Wwm2fIbD.js","_app/immutable/entry/app.C81h_F11.js","_app/immutable/chunks/D8aoWfRe.js","_app/immutable/chunks/BXq3pflB.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.CcPG_Gnr.js",app:"_app/immutable/entry/app.DqT5ygs9.js",imports:["_app/immutable/entry/start.CcPG_Gnr.js","_app/immutable/chunks/pVB3N60s.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/entry/app.DqT5ygs9.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/chunks/lf0iVeV9.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js'))
@@ -18,7 +18,7 @@ return {
 		routes: [
 			
 		],
-		prerendered_routes: new Set(["/","/microphone-test-simple","/microphone-test","/training/chromatic","/training/continuous","/training/random"]),
+		prerendered_routes: new Set(["/","/microphone-test-simple","/microphone-test","/scoring-test","/training/chromatic","/training/continuous","/training/random"]),
 		matchers: async () => {
 			
 			return {  };

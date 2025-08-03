@@ -1,9 +1,27 @@
 # ランダム基音トレーニングページ統合仕様書
 
 **作成日**: 2025-07-26  
-**対象**: `/training/random` ページ  
-**デザインシステム**: shadcn/ui準拠  
-**作業ディレクトリ**: `/Users/isao/Documents/pitch-training`
+**最終更新**: 2025-07-29 11:30 JST  
+**対象**: `/training/random` ページ（SvelteKit）  
+**デザインシステム**: shadcn/ui準拠 + B案段階的成功表現システム  
+**作業ディレクトリ**: `/Users/isao/Documents/pitch-training/svelte-prototype`
+
+## 🎨 **最新更新: B案段階的成功表現システム（2025-07-29）**
+
+### **実装完了機能**
+- ✅ **印象バランス改善**: 成功音階の視覚的強調で達成感向上
+- ✅ **カード型デザイン**: グレード別グラデーション背景とシャドウ
+- ✅ **全8音階固定表示**: 測定不可音も「測定できませんでした」で表示
+- ✅ **レイアウト統合**: 精度バー上への情報集約でスペース効率化
+
+### **グレード表示システム**
+```
+• 優秀 (±15¢以内): 🏆 + "EXCELLENT" + 金色グラデーション
+• 良好 (±25¢以内): ⭐ + "GOOD" + 緑色グラデーション  
+• 合格 (±40¢以内): 👍 + "PASS" + 青色グラデーション
+• 要練習 (±41¢以上): 📚 + "PRACTICE" + 赤色背景
+• 測定不可: AlertCircle + "測定不可" + グレー背景
+```
 
 ---
 
@@ -41,7 +59,7 @@
 ├─────────────────────────────────┤
 │ Scale Guide (ドレミガイド)        │
 ├─────────────────────────────────┤
-│ Detection Section (音程検出)      │
+│ Detection Section (音程検出) ✅   │
 ├─────────────────────────────────┤
 │ Results Section (結果・SNS)       │
 └─────────────────────────────────┘
@@ -59,6 +77,39 @@
 - **Success**: `hsl(142.1 76.2% 36.3%)` (グリーン)
 - **Warning**: `hsl(47.9 95.8% 53.1%)` (イエロー)
 - **Destructive**: `hsl(0 84.2% 60.2%)` (レッド)
+
+#### **フォント仕様** (音程検出表示)
+- **周波数表示**: `font-size: 2rem`、等幅フォント
+- **音程表記**: `font-size: 2rem`、等幅フォント
+- **区切り文字**: `font-size: 1.5rem`
+- **Hz表示**: `font-size: 2rem`
+
+**⚠️ フォントスタイル修正手順**
+```scss
+// 修正対象ファイル: /src/routes/training/random/+page.svelte
+// 992-1029行目のグローバルスタイル
+
+:global(.detected-frequency) {
+  font-size: 2rem !important;  // 周波数数値のサイズ変更
+}
+
+:global(.hz-suffix) {
+  font-size: 2rem !important;  // Hz文字のサイズ変更
+}
+
+:global(.detected-note) {
+  font-size: 2rem !important;  // 音程表記(C4等)のサイズ変更
+}
+
+:global(.divider) {
+  font-size: 1.5rem !important;  // 区切り文字(|)のサイズ変更
+}
+```
+
+**注意事項**:
+- `!important` 修飾子が必須（PitchDetectorコンポーネントとのCSS競合回避）
+- `:global()` セレクタが必須（Svelteコンポーネント境界を超えた適用）
+- フォントファミリーの変更も同様の手順で可能
 
 ---
 
@@ -258,7 +309,7 @@ interface TrainingState {
 TrainingRandomPage/
 ├── BasetonPlayer/          # 基音再生
 ├── ScaleGuide/            # ドレミガイド
-├── PitchDetector/         # 音程検出
+├── PitchDetectionDisplay/ # 音程検出表示 ✅ **実装完了**
 ├── ResultsDisplay/        # 結果表示
 ├── ShareButton/           # SNS共有
 └── StatusIndicator/       # 状態表示
@@ -300,7 +351,7 @@ TrainingRandomPage/
 
 ### **Phase 3: UI統合**
 1. ドレミガイドアニメーション
-2. リアルタイム検出表示
+2. リアルタイム検出表示 ✅ **PitchDetectionDisplayコンポーネント実装完了**
 3. 結果画面実装
 
 ### **Phase 4: 機能強化**
@@ -315,7 +366,7 @@ TrainingRandomPage/
 ### **機能要件**
 - [ ] ランダム基音再生（10種類）
 - [ ] ドレミ8音階ガイド表示
-- [ ] リアルタイム音程検出
+- [x] リアルタイム音程検出 ✅ **PitchDetectionDisplayコンポーネント実装完了**
 - [ ] 採点・結果表示
 - [ ] SNS共有機能
 - [ ] エラーハンドリング

@@ -3,6 +3,6 @@
 export const index = 3;
 let component_cache;
 export const component = async () => component_cache ??= (await import('../entries/pages/microphone-test/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/3.C5kXLTgL.js","_app/immutable/chunks/D8aoWfRe.js","_app/immutable/chunks/BXq3pflB.js","_app/immutable/chunks/CxtIMsJ8.js","_app/immutable/chunks/CCR5JUMR.js","_app/immutable/chunks/Wwm2fIbD.js","_app/immutable/chunks/Cs3yrXb8.js"];
-export const stylesheets = ["_app/immutable/assets/PageLayout.Cz8yIb7J.css","_app/immutable/assets/3.Bj4LjpZd.css"];
+export const imports = ["_app/immutable/nodes/3.rfoBm2e-.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/lf0iVeV9.js","_app/immutable/chunks/Ss7MBA-t.js","_app/immutable/chunks/pVB3N60s.js","_app/immutable/chunks/Bxqf5dJC.js","_app/immutable/chunks/bNTik4J9.js"];
+export const stylesheets = ["_app/immutable/assets/PageLayout.Cz8yIb7J.css","_app/immutable/assets/PitchDetectionDisplay.D_00FytZ.css","_app/immutable/assets/3.Dl6HdkQ7.css"];
 export const fonts = [];

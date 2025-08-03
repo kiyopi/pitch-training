@@ -1,5 +1,10 @@
 /* Svelte移行プロトタイプ - デザインシステム */
 
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* Primary - エメラルドグリーン系 */
   --color-primary: #059669;

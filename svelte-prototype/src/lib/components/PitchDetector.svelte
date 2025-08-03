@@ -2,26 +2,37 @@
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { PitchDetector } from 'pitchy';
   import VolumeBar from './VolumeBar.svelte';
+  import { audioManager } from '$lib/audio/AudioManager.js';
+  import { harmonicCorrection } from '$lib/audio/HarmonicCorrection.js';
+  import { logger } from '$lib/utils/debugUtils.js';
 
   const dispatch = createEventDispatcher();
 
   // Props
   export let isActive = false;
   export let className = '';
+  export let debugMode = false; // デバッグモード
+  export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用、削除済み）
+  export let disableHarmonicCorrection = false; // ハーモニック補正無効化フラグ（230Hz固着問題対策）
 
-  // 音程検出状態
-  let audioContext = null;
-  let mediaStream = null;
-  let analyser = null;
-  let rawAnalyser = null;
+  // 状態管理（改訂版）
+  let componentState = 'uninitialized'; // 'uninitialized' | 'initializing' | 'ready' | 'detecting' | 'error'
+  let lastError = null;
+  let isInitialized = false;
+
+  // 音程検出状態（外部AudioContext対応）
+  let audioContext = null;        // AudioManagerから取得
+  let mediaStream = null;         // AudioManagerから取得
+  let sourceNode = null;          // AudioManagerから取得
+  let analyser = null;            // AudioManagerから取得
+  let rawAnalyser = null;         // AudioManagerから取得
   let pitchDetector = null;
   let animationFrame = null;
   let isDetecting = false;
 
-  // フィルター
-  let highpassFilter = null;
-  let lowpassFilter = null;
-  let notchFilter = null;
+  // AudioManager関連
+  let analyserIds = [];           // 作成したAnalyserのID管理
+  let mediaStreamListeners = new Map(); // MediaStreamイベントリスナー管理
 
   // 検出データ
   let currentVolume = 0;
@@ -36,100 +47,215 @@
   let stableFrequency = 0;
   let stableVolume = 0;
   
-  // 倍音補正用
-  let previousFrequency = 0;
-  let harmonicHistory = [];
+  // 倍音補正用（統一モジュール使用）
+  // previousFrequency, harmonicHistory は HarmonicCorrection.js で管理
+  
+  // デバッグ用
+  let debugInterval = null;
+  
+  // 倍音補正ログ制御用変数は削除済み
+  
+  // 表示状態リセット関数（外部から呼び出し可能）
+  export function resetDisplayState() {
+    currentVolume = 0;
+    rawVolume = 0;
+    currentFrequency = 0;
+    detectedNote = 'ーー';
+    pitchClarity = 0;
+    stableFrequency = 0;
+    stableVolume = 0;
+    
+    // バッファクリア
+    frequencyHistory = [];
+    volumeHistory = [];
+    
+    // 統一倍音補正モジュールのリセット
+    harmonicCorrection.resetHistory();
+    
+    if (debugMode) {
+      console.log('🔄 [PitchDetector] Display state reset');
+    }
+  }
+  
+  // マイク状態チェック関数（デバッグ用）
+  function checkMicrophoneStatus() {
+    if (!debugMode) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const status = {
+      timestamp,
+      componentState,
+      isActive,
+      isDetecting,
+      isInitialized,
+      mediaStreamActive: mediaStream ? mediaStream.active : null,
+      mediaStreamTracks: mediaStream ? mediaStream.getTracks().length : 0,
+      trackStates: mediaStream ? mediaStream.getTracks().map(track => ({
+        kind: track.kind,
+        enabled: track.enabled,
+        readyState: track.readyState,
+        muted: track.muted
+      })) : [],
+      audioContextState: audioContext ? audioContext.state : null,
+      hasAnalyser: !!analyser,
+      currentVolume,
+      currentFrequency
+    };
+    
+    logger.realtime(`[PitchDetector] ${timestamp}:`, status);
+    
+    // マイク状態の異常を検知して親に通知
+    let microphoneHealthy = true;
+    let errorDetails = [];
+    
+    // MediaStreamの状態が異常な場合は警告
+    if (mediaStream && !mediaStream.active) {
+      console.warn(`⚠️ [PitchDetector] MediaStream is inactive!`, mediaStream);
+      microphoneHealthy = false;
+      errorDetails.push('MediaStream inactive');
+    }
+    
+    // AudioContextの状態が異常な場合は警告
+    if (audioContext && audioContext.state === 'suspended') {
+      console.warn(`⚠️ [PitchDetector] AudioContext is suspended!`, audioContext);
+      microphoneHealthy = false;
+      errorDetails.push('AudioContext suspended');
+    }
+    
+    // トラックの状態をチェック
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track, index) => {
+        if (track.readyState === 'ended') {
+          console.error(`❌ [PitchDetector] Track ${index} has ended!`, track);
+          microphoneHealthy = false;
+          errorDetails.push(`Track ${index} ended`);
+        }
+      });
+    }
+    
+    // マイク状態変化を親に通知
+    dispatch('microphoneHealthChange', {
+      healthy: microphoneHealthy,
+      errors: errorDetails,
+      details: status
+    });
+  }
+  
+  // デバッグモードの監視
+  $: if (debugMode && !debugInterval) {
+    console.log('🔍 [PitchDetector] Debug mode enabled - starting status monitoring');
+    debugInterval = setInterval(checkMicrophoneStatus, 3000); // 3秒間隔
+    checkMicrophoneStatus(); // 即座に1回実行
+  } else if (!debugMode && debugInterval) {
+    console.log('🔍 [PitchDetector] Debug mode disabled - stopping status monitoring');
+    clearInterval(debugInterval);
+    debugInterval = null;
+  }
 
-  // 初期化
-  export async function initialize(stream) {
+  // 初期化（AudioManager対応版）
+  export async function initialize() {
     try {
-      mediaStream = stream;
+      componentState = 'initializing';
+      lastError = null;
       
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
+      console.log('🎙️ [PitchDetector] AudioManager経由で初期化開始');
       
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-
-      // 3段階ノイズリダクション実装
-      const source = audioContext.createMediaStreamSource(mediaStream);
+      // AudioManagerから共有リソースを取得
+      const resources = await audioManager.initialize();
+      audioContext = resources.audioContext;
+      mediaStream = resources.mediaStream;
+      sourceNode = resources.sourceNode;
       
-      // フィルター前の信号解析用（比較用）
-      rawAnalyser = audioContext.createAnalyser();
-      rawAnalyser.fftSize = 2048;
-      rawAnalyser.smoothingTimeConstant = 0.8;
-      rawAnalyser.minDecibels = -90;
-      rawAnalyser.maxDecibels = -10;
-      source.connect(rawAnalyser);
+      console.log('✅ [PitchDetector] AudioManager リソース取得完了');
       
-      // 1. ハイパスフィルター（低周波ノイズ除去: 80Hz以下カット）
-      highpassFilter = audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
-      highpassFilter.frequency.setValueAtTime(80, audioContext.currentTime);
-      highpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      // 専用のAnalyserを作成（フィルター付き）
+      const filteredAnalyserId = `pitch-detector-filtered-${Date.now()}`;
+      analyser = audioManager.createAnalyser(filteredAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: true
+      });
+      analyserIds.push(filteredAnalyserId);
       
-      // 2. ローパスフィルター（高周波ノイズ除去: 800Hz以上カット）
-      lowpassFilter = audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.setValueAtTime(800, audioContext.currentTime);
-      lowpassFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
+      // 生信号用Analyser（比較用）
+      const rawAnalyserId = `pitch-detector-raw-${Date.now()}`;
+      rawAnalyser = audioManager.createAnalyser(rawAnalyserId, {
+        fftSize: 2048,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -90,
+        maxDecibels: -10,
+        useFilters: false
+      });
+      analyserIds.push(rawAnalyserId);
       
-      // 3. ノッチフィルター（電源ノイズ除去: 50Hz/60Hz）
-      notchFilter = audioContext.createBiquadFilter();
-      notchFilter.type = 'notch';
-      notchFilter.frequency.setValueAtTime(60, audioContext.currentTime);
-      notchFilter.Q.setValueAtTime(10, audioContext.currentTime);
-      
-      // フィルター後の信号解析用（メイン）
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      
-      // フィルターチェーン接続: source → highpass → lowpass → notch → analyser
-      source.connect(highpassFilter);
-      highpassFilter.connect(lowpassFilter);
-      lowpassFilter.connect(notchFilter);
-      notchFilter.connect(analyser);
+      console.log('✅ [PitchDetector] Analyser作成完了:', analyserIds);
       
       // PitchDetector初期化
       pitchDetector = PitchDetector.forFloat32Array(analyser.fftSize);
       
-      console.log('PitchDetectorコンポーネント初期化完了 - 3段階ノイズリダクション有効');
+      // 初期化完了
+      componentState = 'ready';
+      isInitialized = true;
+      
+      // 状態変更を通知
+      dispatch('stateChange', { state: componentState });
+      
+      // MediaStreamの健康状態監視を開始
+      setupMediaStreamMonitoring();
+      
+      console.log('✅ [PitchDetector] 初期化完了');
       
     } catch (error) {
-      console.error('PitchDetector初期化エラー:', error);
+      console.error('❌ [PitchDetector] 初期化エラー:', error);
+      componentState = 'error';
+      lastError = error;
+      isInitialized = false;
+      
+      // エラーを通知
+      dispatch('error', { error, context: 'initialization' });
+      
       throw error;
     }
   }
 
-  // 検出開始
+  // 検出開始（改訂版）
   export function startDetection() {
-    if (!analyser || !pitchDetector || !audioContext) {
-      console.error('PitchDetector未初期化 - 必要なコンポーネント:', {
-        analyser: !!analyser,
-        pitchDetector: !!pitchDetector,
-        audioContext: !!audioContext,
-        mediaStream: !!mediaStream
-      });
-      return;
+    if (componentState !== 'ready') {
+      const error = new Error(`Cannot start detection: component state is ${componentState}`);
+      dispatch('error', { error, context: 'start-detection' });
+      return false;
     }
     
+    if (!analyser || !pitchDetector || !audioContext) {
+      const error = new Error('Required components not available');
+      componentState = 'error';
+      dispatch('error', { error, context: 'start-detection' });
+      return false;
+    }
+    
+    componentState = 'detecting';
     isDetecting = true;
+    dispatch('stateChange', { state: componentState });
     detectPitch();
-    console.log('音程検出開始');
+    return true;
   }
 
-  // 検出停止
+  // 検出停止（改訂版）
   export function stopDetection() {
     isDetecting = false;
     if (animationFrame) {
       cancelAnimationFrame(animationFrame);
+      animationFrame = null;
     }
-    console.log('音程検出停止');
+    
+    // 状態を ready に戻す（初期化済みの場合）
+    if (componentState === 'detecting' && isInitialized) {
+      componentState = 'ready';
+      dispatch('stateChange', { state: componentState });
+    }
+    
   }
 
   // リアルタイム音程検出
@@ -179,39 +305,27 @@
     // - 極低音域ノイズ（G-1等）は確実に除外
     const isValidVocalRange = pitch >= 65 && pitch <= 1200;
     
-    if (pitch && clarity > 0.6 && currentVolume > 10 && isValidVocalRange) {
-      // 倍音補正システム適用
-      const correctedFreq = correctHarmonicFrequency(pitch, previousFrequency);
+    if (pitch && clarity > 0.8 && currentVolume > 30 && isValidVocalRange) {
+      let finalFreq = pitch;
       
-      // 基音安定化システム適用
-      const stabilizedFreq = stabilizeFrequency(correctedFreq);
+      // ハーモニック補正の有効/無効を制御（230Hz固着問題デバッグ用）
+      if (!disableHarmonicCorrection) {
+        // 統一倍音補正システム適用（音量情報も渡す）
+        const normalizedVolume = Math.min(currentVolume / 100, 1.0); // 0-1に正規化
+        finalFreq = harmonicCorrection.correctHarmonic(pitch, normalizedVolume);
+      } else if (debugMode) {
+        console.log('🔧 [PitchDetector] ハーモニック補正無効化中 - 生値使用:', pitch);
+      }
       
       // 周波数表示を更新
-      currentFrequency = Math.round(stabilizedFreq);
+      currentFrequency = Math.round(finalFreq);
       detectedNote = frequencyToNote(currentFrequency);
       pitchClarity = clarity;
       
-      // 次回比較用に保存
-      previousFrequency = currentFrequency;
-      
-      // デバッグログ（倍音補正効果確認）
-      if (Math.abs(pitch - correctedFreq) > 10) {
-        console.log('倍音補正:', {
-          original: Math.round(pitch),
-          corrected: Math.round(correctedFreq),
-          stabilized: Math.round(stabilizedFreq),
-          note: detectedNote
-        });
-      }
     } else {
-      // 信号が弱い場合は倍音履歴をクリア
-      if (harmonicHistory.length > 0) {
-        harmonicHistory = [];
-      }
-      
-      // 音程がない場合は前回周波数をリセット
+      // 信号が弱い場合は統一倍音補正モジュールの履歴をクリア
       if (currentFrequency === 0) {
-        previousFrequency = 0;
+        harmonicCorrection.resetHistory();
       }
       
       // 周波数表示をクリア
@@ -223,30 +337,13 @@
     // 音程が検出されない場合はVolumeBarも0に（極低音域ノイズ対策）
     const displayVolume = currentFrequency > 0 ? rawVolume : 0;
     
-    // デバッグログ（初回と大きな変化時のみ）
-    if (!window.pitchDetectorLastLog || 
-        Math.abs(window.pitchDetectorLastLog.rawVolume - rawVolume) > 5 ||
-        Math.abs(window.pitchDetectorLastLog.frequency - currentFrequency) > 20 ||
-        Math.abs(window.pitchDetectorLastLog.displayVolume - displayVolume) > 5) {
-      console.log('PitchDetector:', {
-        rawVolume: Math.round(rawVolume),
-        displayVolume: Math.round(displayVolume),
-        filteredVolume: Math.round(currentVolume), 
-        frequency: currentFrequency,
-        note: detectedNote,
-        clarity: Math.round(clarity * 100),
-        isValidRange: isValidVocalRange,
-        rawPitch: pitch ? Math.round(pitch) : 0
-      });
-      window.pitchDetectorLastLog = { rawVolume, frequency: currentFrequency, displayVolume };
-    }
     
     // 親コンポーネントにデータを送信
     
     dispatch('pitchUpdate', {
       frequency: currentFrequency,
       note: detectedNote,
-      volume: currentVolume,
+      volume: displayVolume, // displayVolumeに統一（無音時は0）
       rawVolume: displayVolume,
       clarity: pitchClarity
     });
@@ -254,79 +351,7 @@
     animationFrame = requestAnimationFrame(detectPitch);
   }
 
-  // 音楽的妥当性評価
-  function calculateMusicalScore(frequency) {
-    const C4 = 261.63; // Middle C
-    
-    // 最も近い半音階音名への距離を計算
-    const semitonesFromC4 = Math.log2(frequency / C4) * 12;
-    const nearestSemitone = Math.round(semitonesFromC4);
-    const distanceFromSemitone = Math.abs(semitonesFromC4 - nearestSemitone);
-    
-    // 半音階に近いほど高スコア（±50セント以内で最高点）
-    return Math.max(0, 1.0 - (distanceFromSemitone / 0.5));
-  }
-
-  // 倍音補正システム
-  function correctHarmonicFrequency(detectedFreq, previousFreq) {
-    // 基音候補生成（オクターブ違いを考慮）
-    const fundamentalCandidates = [
-      detectedFreq,          // そのまま（基音の可能性）
-      detectedFreq / 2.0,    // 1オクターブ下（2倍音 → 基音）
-      detectedFreq / 3.0,    // 3倍音 → 基音
-      detectedFreq / 4.0,    // 4倍音 → 基音
-      detectedFreq * 2.0,    // 1オクターブ上（低く歌った場合）
-    ];
-    
-    // 人間音域範囲（C3-C6）
-    const vocalRangeMin = 130.81;
-    const vocalRangeMax = 1046.50;
-    
-    // 各候補の妥当性評価
-    const evaluateFundamental = (freq) => {
-      // 人間音域範囲内チェック（40%重み）
-      const inVocalRange = freq >= vocalRangeMin && freq <= vocalRangeMax;
-      const vocalRangeScore = inVocalRange ? 1.0 : 0.0;
-      
-      // 前回検出との連続性評価（40%重み）
-      const continuityScore = previousFreq > 0
-        ? 1.0 - Math.min(Math.abs(freq - previousFreq) / previousFreq, 1.0)
-        : 0.5;
-      
-      // 音楽的妥当性評価（20%重み）
-      const musicalScore = calculateMusicalScore(freq);
-      
-      const totalScore = (vocalRangeScore * 0.4) + (continuityScore * 0.4) + (musicalScore * 0.2);
-      return { freq, score: totalScore };
-    };
-    
-    // 最高スコア候補を基音として採用
-    const evaluatedCandidates = fundamentalCandidates.map(evaluateFundamental);
-    const bestCandidate = evaluatedCandidates.reduce((best, current) => 
-      current.score > best.score ? current : best
-    );
-    
-    return bestCandidate.freq;
-  }
-
-  // 基音安定化システム
-  function stabilizeFrequency(currentFreq, stabilityThreshold = 0.1) {
-    // 履歴バッファに追加（最大5フレーム保持）
-    harmonicHistory.push(currentFreq);
-    if (harmonicHistory.length > 5) harmonicHistory.shift();
-    
-    // 中央値ベースの安定化（外れ値除去）
-    const sorted = [...harmonicHistory].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    
-    // 急激な変化を抑制（段階的変化）
-    const maxChange = median * stabilityThreshold;
-    const stabilized = Math.abs(currentFreq - median) > maxChange 
-      ? median + Math.sign(currentFreq - median) * maxChange
-      : currentFreq;
-      
-    return stabilized;
-  }
+  // 旧倍音補正関数は削除済み - HarmonicCorrection.js モジュールを使用
 
   // 周波数から音程名に変換
   function frequencyToNote(frequency) {
@@ -342,37 +367,159 @@
     return noteNames[noteIndex] + octave;
   }
 
-  // クリーンアップ
+  // 状態確認API（新規追加）
+  export function getIsInitialized() {
+    return isInitialized && componentState === 'ready';
+  }
+  
+  export function getState() {
+    return {
+      componentState,
+      isInitialized,
+      isDetecting,
+      lastError,
+      hasRequiredComponents: !!(analyser && pitchDetector && audioContext && mediaStream)
+    };
+  }
+  
+  // 再初期化API（AudioManager対応版）
+  export async function reinitialize() {
+    console.log('🔄 [PitchDetector] 再初期化開始');
+    
+    // 現在の状態をクリーンアップ
+    cleanup();
+    
+    // 短い待機でリソース解放を確実に
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 再初期化実行
+    await initialize();
+    
+    console.log('✅ [PitchDetector] 再初期化完了');
+  }
+
+  // クリーンアップ（AudioManager対応版）
   export function cleanup() {
+    console.log('🧹 [PitchDetector] クリーンアップ開始');
+    
     stopDetection();
     
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
+    // MediaStreamイベントリスナーをクリーンアップ
+    if (mediaStreamListeners.size > 0) {
+      mediaStreamListeners.forEach((handlers, track) => {
+        track.removeEventListener('ended', handlers.endedHandler);
+        track.removeEventListener('mute', handlers.muteHandler);
+        track.removeEventListener('unmute', handlers.unmuteHandler);
+      });
+      mediaStreamListeners.clear();
+      console.log('🔄 [PitchDetector] MediaStreamイベントリスナー削除');
     }
     
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close();
-      audioContext = null;
+    // AudioManagerに作成したAnalyserを解放通知
+    if (analyserIds.length > 0) {
+      audioManager.release(analyserIds);
+      console.log('📤 [PitchDetector] AudioManagerにAnalyser解放通知:', analyserIds);
+      analyserIds = [];
     }
     
+    // 状態をリセット
+    componentState = 'uninitialized';
+    isInitialized = false;
+    lastError = null;
+    
+    // 参照をクリア（実際のリソースはAudioManagerが管理）
+    audioContext = null;
+    mediaStream = null;
+    sourceNode = null;
     analyser = null;
     rawAnalyser = null;
     pitchDetector = null;
-    highpassFilter = null;
-    lowpassFilter = null;
-    notchFilter = null;
+    
+    // 履歴クリア
+    frequencyHistory = [];
+    volumeHistory = [];
+    
+    // 統一倍音補正モジュールのリセット
+    harmonicCorrection.resetHistory();
+    
+    console.log('✅ [PitchDetector] クリーンアップ完了');
   }
 
-  // isActiveの変更を監視
-  $: if (isActive && analyser) {
+  /**
+   * MediaStreamの健康状態監視セットアップ
+   * Safari環境でのMediaStreamTrack終了検出
+   */
+  function setupMediaStreamMonitoring() {
+    if (!mediaStream) return;
+    
+    const tracks = mediaStream.getTracks();
+    tracks.forEach(track => {
+      // トラック終了イベントの監視
+      const endedHandler = () => {
+        console.error('🚨 [PitchDetector] MediaStreamTrack終了検出:', track.kind);
+        componentState = 'error';
+        lastError = new Error(`MediaStreamTrack (${track.kind}) ended`);
+        
+        // エラー状態を通知
+        dispatch('error', { 
+          error: lastError, 
+          reason: 'mediastream_ended',
+          recovery: 'restart_required'
+        });
+        
+        // 検出停止
+        if (isDetecting) {
+          stopDetection();
+        }
+      };
+      
+      // トラックの無効化検出
+      const muteHandler = () => {
+        console.warn('⚠️ [PitchDetector] MediaStreamTrack muted:', track.kind);
+        dispatch('warning', { 
+          reason: 'track_muted', 
+          track: track.kind 
+        });
+      };
+      
+      const unmuteHandler = () => {
+        console.log('✅ [PitchDetector] MediaStreamTrack unmuted:', track.kind);
+        dispatch('info', { 
+          reason: 'track_unmuted', 
+          track: track.kind 
+        });
+      };
+      
+      // イベントリスナーを追加
+      track.addEventListener('ended', endedHandler);
+      track.addEventListener('mute', muteHandler);
+      track.addEventListener('unmute', unmuteHandler);
+      
+      // リスナー参照を保存（後で削除するため）
+      mediaStreamListeners.set(track, { endedHandler, muteHandler, unmuteHandler });
+    });
+    
+    console.log('🔍 [PitchDetector] MediaStream監視開始:', tracks.length + ' tracks');
+  }
+
+  // isActiveの変更を監視（改善版）
+  $: if (isActive && componentState === 'ready' && analyser && !isDetecting) {
     startDetection();
-  } else if (!isActive) {
+  } else if (!isActive && isDetecting) {
     stopDetection();
   }
 
   onDestroy(() => {
-    cleanup();
+    // デバッグインターバルのクリア
+    if (debugInterval) {
+      clearInterval(debugInterval);
+      debugInterval = null;
+    }
+    
+    // AudioManager使用時は自動クリーンアップしない
+    // （他のコンポーネントが使用中の可能性があるため）
+    // 明示的なcleanup()呼び出しが必要
+    console.log('🔄 [PitchDetector] onDestroy - AudioManagerリソースは保持');
   });
 </script>
 
