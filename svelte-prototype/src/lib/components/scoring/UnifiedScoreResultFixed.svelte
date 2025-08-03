@@ -1128,13 +1128,17 @@
   
   // ポップオーバー制御関数
   function toggleGradeHelp() {
+    console.log('toggleGradeHelp clicked, current showGradeHelp:', showGradeHelp);
     showGradeHelp = !showGradeHelp;
     showSessionHelp = false;
+    console.log('After toggle, showGradeHelp:', showGradeHelp);
   }
   
   function toggleSessionHelp() {
+    console.log('toggleSessionHelp clicked, current showSessionHelp:', showSessionHelp);
     showSessionHelp = !showSessionHelp;
     showGradeHelp = false;
+    console.log('After toggle, showSessionHelp:', showSessionHelp);
   }
   
   function handleOutsideClick(event) {
@@ -3199,9 +3203,11 @@
   /* ポップオーバー式評価基準表示 */
   .grade-title-with-help,
   .subsection-title-with-help {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.75rem;
   }
   
   .grade-help-icon,
@@ -3218,7 +3224,7 @@
   .grade-criteria-popover,
   .session-criteria-popover {
     position: absolute;
-    z-index: 1000;
+    z-index: 9999;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -3226,6 +3232,7 @@
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     min-width: 320px;
     max-width: 400px;
+    top: 100%;
     margin-top: 0.5rem;
   }
   
@@ -3235,7 +3242,6 @@
   
   .session-criteria-popover {
     left: 0;
-    top: 2rem;
   }
   
   .popover-title {
