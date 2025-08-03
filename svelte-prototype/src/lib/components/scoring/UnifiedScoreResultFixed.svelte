@@ -53,6 +53,7 @@
       name: 'S級マスター', 
       icon: Trophy, 
       color: 'text-purple-500',
+      colorValue: '#a855f7',
       bgColor: '#faf5ff',
       borderColor: '#8b5cf6',
       description: '音楽家レベルの相対音感を達成！優秀率超えの実力を証明されました。'
@@ -61,6 +62,7 @@
       name: 'A級エキスパート', 
       icon: Crown, 
       color: 'text-yellow-500',
+      colorValue: '#eab308',
       bgColor: '#fffbeb',
       borderColor: '#f59e0b',
       description: 'エキスパートレベル到達！優秀率の安定した音感能力です。'
@@ -69,6 +71,7 @@
       name: 'B級プロフィシエント', 
       icon: Star, 
       color: 'text-green-500',
+      colorValue: '#10b981',
       bgColor: '#ecfdf5',
       borderColor: '#10b981',
       description: 'プロフィシエント級達成！良好率の確実な進歩を示しています。'
@@ -77,6 +80,7 @@
       name: 'C級アドバンス', 
       icon: Award, 
       color: 'text-blue-500',
+      colorValue: '#3b82f6',
       bgColor: '#eff6ff',
       borderColor: '#3b82f6',
       description: 'アドバンス級到達！合格率で着実に成長中です。'
@@ -85,6 +89,7 @@
       name: 'D級ベーシック', 
       icon: Target, 
       color: 'text-orange-500',
+      colorValue: '#f97316',
       bgColor: '#fff7ed',
       borderColor: '#f97316',
       description: '継続練習で必ず上達！現在の合格率から目標70%へ向けて練習を続けましょう。'
@@ -93,6 +98,7 @@
       name: 'E級ビギナー', 
       icon: TrendingUp, 
       color: 'text-red-500',
+      colorValue: '#ef4444',
       bgColor: '#fef2f2',
       borderColor: '#ef4444',
       description: '練習開始段階です。継続的な練習で必ず上達します。'
@@ -1162,8 +1168,8 @@
         <svelte:component 
           this={gradeDef.icon} 
           size="120"
-          class="grade-icon {gradeDef.color}"
-          style="transform: scale({$iconScale})"
+          class="grade-icon"
+          style="transform: scale({$iconScale}); color: {gradeDef.colorValue};"
         />
       </div>
       

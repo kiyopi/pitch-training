@@ -20,11 +20,11 @@
   
   // 4段階評価の定義
   const gradeDefinitions = {
-    excellent: { name: '優秀', icon: Trophy, range: '±15¢以内', color: 'text-yellow-500' },
-    good: { name: '良好', icon: Star, range: '±25¢以内', color: 'text-green-500' },
-    pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500' },
-    needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500' },
-    notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500' }
+    excellent: { name: '優秀', icon: Trophy, range: '±15¢以内', color: 'text-yellow-500', colorValue: '#eab308' },
+    good: { name: '良好', icon: Star, range: '±25¢以内', color: 'text-green-500', colorValue: '#10b981' },
+    pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500', colorValue: '#3b82f6' },
+    needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500', colorValue: '#ef4444' },
+    notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500', colorValue: '#6b7280' }
   };
   
   // アニメーション用のスコア
@@ -151,7 +151,8 @@
         <svelte:component 
           this={gradeDefinitions[overallGrade].icon} 
           size="120"
-          class="grade-icon-simple {gradeDefinitions[overallGrade].color}" 
+          class="grade-icon-simple" 
+          style="color: {gradeDefinitions[overallGrade].colorValue};"
         />
       </div>
       
