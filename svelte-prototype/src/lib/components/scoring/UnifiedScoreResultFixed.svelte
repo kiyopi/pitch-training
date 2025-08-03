@@ -1492,6 +1492,11 @@
             </div>
           </div>
           
+          <!-- Debug: SessionCarousel表示確認 -->
+          <div style="font-size: 12px; color: blue; margin: 10px 0; border: 1px solid blue; padding: 5px;">
+            Debug Carousel: sessionHistory.length = {scoreData.sessionHistory?.length || 0}, currentIndex = {currentSessionIndex}
+          </div>
+          
           <!-- セッションカルーセル -->
           <div class="carousel-wrapper">
             <SessionCarousel 
