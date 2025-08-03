@@ -51,6 +51,7 @@
     console.log('toggleSessionHelp clicked, current showSessionHelp:', showSessionHelp);
     showSessionHelp = !showSessionHelp;
     console.log('After toggle, showSessionHelp:', showSessionHelp);
+    console.log('Button clicked successfully!');
   }
   
   function handleOutsideClick(event) {
