@@ -2819,6 +2819,7 @@
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 1.5rem;
+    margin-top: 2rem;
     margin-bottom: 1.5rem;
   }
   
@@ -2925,10 +2926,12 @@
   
   .achievement-count {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
     font-weight: 600;
     font-size: 0.875rem;
+    white-space: nowrap;
   }
   
   .achievement-count .count {
@@ -2949,17 +2952,20 @@
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.75rem;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
+    justify-content: space-around;
   }
   
   .analysis-item {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    text-align: center;
   }
   
   .analysis-label {
@@ -3170,10 +3176,17 @@
     }
     
     /* 技術分析のレスポンシブ対応 */
+    .technical-analysis-content {
+      flex-direction: row;
+      gap: 0.5rem;
+      padding: 0.5rem;
+    }
+    
     .analysis-item {
       flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.25rem;
+      text-align: center;
     }
     
     .analysis-value {
