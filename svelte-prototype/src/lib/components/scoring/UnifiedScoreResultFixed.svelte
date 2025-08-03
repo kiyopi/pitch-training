@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight, CheckCircle, Zap, BookOpen, Activity, PieChart, Hash } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight, CheckCircle, Zap, BookOpen, Activity, PieChart, Hash, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -32,6 +32,10 @@
   
   // タブ管理
   let activeTab = 'technical';
+  
+  // ポップオーバー管理
+  let showGradeHelp = false;
+  let showSessionHelp = false;
   
   
   // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
@@ -1113,7 +1117,36 @@
         iconScale.set(1);
       }, 200);
     }, 100);
+    
+    // 外部クリックリスナー
+    document.addEventListener('click', handleOutsideClick);
+    
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
   });
+  
+  // ポップオーバー制御関数
+  function toggleGradeHelp() {
+    showGradeHelp = !showGradeHelp;
+    showSessionHelp = false;
+  }
+  
+  function toggleSessionHelp() {
+    showSessionHelp = !showSessionHelp;
+    showGradeHelp = false;
+  }
+  
+  function handleOutsideClick(event) {
+    if (!event.target.closest('.grade-help-icon') && 
+        !event.target.closest('.grade-criteria-popover')) {
+      showGradeHelp = false;
+    }
+    if (!event.target.closest('.session-help-icon') && 
+        !event.target.closest('.session-criteria-popover')) {
+      showSessionHelp = false;
+    }
+  }
 </script>
 
 <div class="unified-score-result {className}">
@@ -1130,13 +1163,64 @@
         />
       </div>
       
-      <h2 class="grade-name {gradeDef.color}" in:fade={{ delay: 400 }}>
-        {gradeDef.name}
-      </h2>
+      <div class="grade-title-with-help" in:fade={{ delay: 400 }}>
+        <h2 class="grade-name {gradeDef.color}">
+          {gradeDef.name}
+        </h2>
+        <HelpCircle 
+          size="20" 
+          class="grade-help-icon" 
+          style="color: #6b7280;" 
+          on:click={toggleGradeHelp}
+        />
+      </div>
       
       <p class="grade-description" in:fade={{ delay: 600 }}>
         {gradeDef.description}
       </p>
+      
+      <!-- グレードヘルプポップオーバー -->
+      {#if showGradeHelp}
+        <div class="grade-criteria-popover" in:fade={{ duration: 200 }}>
+          <h5 class="popover-title">8セッション完走時の最終評価</h5>
+          
+          <div class="grade-criteria-item">
+            <Trophy class="criteria-icon" style="color: #a855f7;" />
+            <span class="criteria-name">S級マスター</span>
+            <span class="criteria-condition">優秀60%以上 + 良好以上90%以上</span>
+          </div>
+          
+          <div class="grade-criteria-item">
+            <Medal class="criteria-icon" style="color: #eab308;" />
+            <span class="criteria-name">A級エキスパート</span>
+            <span class="criteria-condition">優秀40%以上 + 良好以上80%以上</span>
+          </div>
+          
+          <div class="grade-criteria-item">
+            <Award class="criteria-icon" style="color: #94a3b8;" />
+            <span class="criteria-name">B級プロフィシエント</span>
+            <span class="criteria-condition">優秀25%以上 + 良好以上70%以上</span>
+          </div>
+          
+          <div class="grade-criteria-item">
+            <Star class="criteria-icon" style="color: #a16207;" />
+            <span class="criteria-name">C級アドバンス</span>
+            <span class="criteria-condition">合格以上50%以上</span>
+          </div>
+          
+          <div class="grade-criteria-item">
+            <BookOpen class="criteria-icon" style="color: #3b82f6;" />
+            <span class="criteria-name">D級ビギナー</span>
+            <span class="criteria-condition">合格以上30%以上</span>
+          </div>
+          
+          <div class="grade-criteria-item">
+            <BookOpenCheck class="criteria-icon" style="color: #10b981;" />
+            <span class="criteria-name">E級スターター</span>
+            <span class="criteria-condition">合格以上30%未満</span>
+          </div>
+        </div>
+      {/if}
       
       
       
@@ -1150,7 +1234,64 @@
           
           <!-- セッション結果ビジュアル -->
           <div class="session-results-visual">
-            <h4 class="subsection-title">セッション結果</h4>
+            <div class="subsection-title-with-help">
+              <h4 class="subsection-title">セッション結果</h4>
+              <HelpCircle 
+                size="16" 
+                class="session-help-icon" 
+                style="color: #6b7280;" 
+                on:click={toggleSessionHelp}
+              />
+            </div>
+            
+            <!-- セッション判定基準ポップオーバー -->
+            {#if showSessionHelp}
+              <div class="session-criteria-popover" in:fade={{ duration: 200 }}>
+                <h5 class="popover-title">セッション判定基準</h5>
+                
+                <div class="session-criteria-item">
+                  <Trophy class="criteria-icon" style="color: #f59e0b;" />
+                  <span class="criteria-name">優秀</span>
+                  <div class="criteria-detail">
+                    優秀な音程が6個以上 かつ<br/>
+                    平均誤差±20¢以内
+                  </div>
+                </div>
+                
+                <div class="session-criteria-item">
+                  <Star class="criteria-icon" style="color: #059669;" />
+                  <span class="criteria-name">良好</span>
+                  <div class="criteria-detail">
+                    合格以上が7個以上 かつ<br/>
+                    平均誤差±30¢以内
+                  </div>
+                </div>
+                
+                <div class="session-criteria-item">
+                  <ThumbsUp class="criteria-icon" style="color: #2563eb;" />
+                  <span class="criteria-name">合格</span>
+                  <div class="criteria-detail">
+                    合格以上が5個以上<br/>
+                    (8音中62.5%)
+                  </div>
+                </div>
+                
+                <div class="session-criteria-item">
+                  <Frown class="criteria-icon" style="color: #dc2626;" />
+                  <span class="criteria-name">要練習</span>
+                  <div class="criteria-detail">
+                    要練習が6個以上 または<br/>
+                    測定不可が4個以上
+                  </div>
+                </div>
+                
+                <p class="criteria-note">
+                  ※技術的ブレを考慮し、ポジティブ<br/>
+                  評価を優先する判定システムです
+                </p>
+              </div>
+            {/if}
+            
             <div class="session-icons">
               {#each scoreData.sessionHistory as session, index}
                 {@const grade = session.grade}
@@ -1288,66 +1429,6 @@
         </div>
       {/if}
       
-      <!-- 評価の見方（簡潔版） -->
-      <div class="grade-explanation" in:fade={{ delay: 1000 }}>
-        <details class="grade-details">
-          <summary class="grade-summary">
-            <ChevronRight size="16" class="chevron-icon" />
-            <span>評価の見方</span>
-          </summary>
-          <div class="grade-explanation-content">
-            <div class="grade-table">
-              <div class="grade-section">
-                <h5 class="grade-section-title">セッション総合評価</h5>
-                <div class="grade-row">
-                  <span class="grade-label">S級マスター</span>
-                  <span class="grade-condition">優秀60%以上 + 良好以上90%以上</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">A級エキスパート</span>
-                  <span class="grade-condition">優秀40%以上 + 良好以上80%以上</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">B級プロフィシエント</span>
-                  <span class="grade-condition">優秀25%以上 + 良好以上70%以上</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">C級アドバンス</span>
-                  <span class="grade-condition">合格以上50%以上</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">D級ビギナー</span>
-                  <span class="grade-condition">合格以上30%以上</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">E級スターター</span>
-                  <span class="grade-condition">合格以上30%未満</span>
-                </div>
-              </div>
-              
-              <div class="grade-section">
-                <h5 class="grade-section-title">セッション別判定基準</h5>
-                <div class="grade-row">
-                  <span class="grade-label">優秀</span>
-                  <span class="grade-condition">±15¢以内</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">良好</span>
-                  <span class="grade-condition">±25¢以内</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">合格</span>
-                  <span class="grade-condition">±40¢以内</span>
-                </div>
-                <div class="grade-row">
-                  <span class="grade-label">要練習</span>
-                  <span class="grade-condition">±41¢以上</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </details>
-      </div>
     </div>
   {/if}
 
@@ -1882,115 +1963,6 @@
     margin: 0 auto;
   }
   
-  /* 評価の見方スタイル（shadcn/ui風） */
-  .grade-explanation {
-    margin-top: 1.5rem;
-    border-top: 1px solid hsl(214.3 31.8% 91.4%);
-    padding-top: 1rem;
-  }
-  
-  .grade-details {
-    border: 1px solid hsl(214.3 31.8% 91.4%);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  .grade-summary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: hsl(210 40% 98%);
-    cursor: pointer;
-    font-weight: 500;
-    color: hsl(222.2 84% 4.9%);
-    transition: background-color 0.2s;
-    list-style: none;
-  }
-  
-  .grade-summary:hover {
-    background: hsl(210 40% 96%);
-  }
-  
-  /* ブラウザのデフォルト矢印を完全に非表示 */
-  .grade-summary::-webkit-details-marker {
-    display: none;
-  }
-  
-  .grade-details summary::-webkit-details-marker {
-    display: none;
-  }
-  
-  .chevron-icon {
-    transition: transform 0.2s ease-in-out;
-    color: hsl(215.4 16.3% 46.9%);
-    transform-origin: center;
-    display: inline-block;
-  }
-  
-  .grade-details[open] .chevron-icon {
-    transform: rotate(90deg);
-  }
-  
-  /* More specific selectors to ensure proper application */
-  .grade-details[open] :global(.chevron-icon) {
-    transform: rotate(90deg) !important;
-  }
-  
-  .grade-details[open] :global(svg.chevron-icon) {
-    transform: rotate(90deg) !important;
-  }
-  
-  .grade-explanation-content {
-    padding: 1rem;
-    background: white;
-  }
-  
-  .grade-table {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .grade-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .grade-section-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: hsl(215.4 16.3% 46.9%);
-    margin-bottom: 0.25rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
-  }
-  
-  .grade-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
-  }
-  
-  .grade-row:last-child {
-    border-bottom: none;
-  }
-  
-  .grade-label {
-    font-weight: 500;
-    color: hsl(222.2 84% 4.9%);
-    font-size: 0.875rem;
-  }
-  
-  .grade-condition {
-    font-size: 0.75rem;
-    color: hsl(215.4 16.3% 46.9%);
-    text-align: right;
-  }
   
   
   /* 8セッション完走時のフィードバック専用スタイル（shadcn/ui テーマ） */
@@ -3122,29 +3094,6 @@
       padding: 1.5rem;
     }
     
-    .grade-summary {
-      padding: 0.75rem;
-      font-size: 0.875rem;
-    }
-    
-    .grade-explanation-content {
-      padding: 0.75rem;
-    }
-    
-    .grade-condition {
-      font-size: 0.6875rem;
-    }
-    
-    .grade-row {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.25rem;
-      padding: 0.75rem 0;
-    }
-    
-    .grade-condition {
-      text-align: left;
-    }
     
     .grade-icon {
       font-size: 60px !important;
@@ -3245,5 +3194,115 @@
     .analysis-label {
       min-width: auto;
     }
+  }
+  
+  /* ポップオーバー式評価基準表示 */
+  .grade-title-with-help,
+  .subsection-title-with-help {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .grade-help-icon,
+  .session-help-icon {
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  
+  .grade-help-icon:hover,
+  .session-help-icon:hover {
+    opacity: 0.7;
+  }
+  
+  .grade-criteria-popover,
+  .session-criteria-popover {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    min-width: 320px;
+    max-width: 400px;
+    margin-top: 0.5rem;
+  }
+  
+  .grade-criteria-popover {
+    right: 0;
+  }
+  
+  .session-criteria-popover {
+    left: 0;
+    top: 2rem;
+  }
+  
+  .popover-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .grade-criteria-item,
+  .session-criteria-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .grade-criteria-item:last-child,
+  .session-criteria-item:last-child {
+    border-bottom: none;
+  }
+  
+  .criteria-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  
+  .criteria-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #1f2937;
+    min-width: 80px;
+  }
+  
+  .criteria-condition {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex: 1;
+    text-align: right;
+  }
+  
+  .criteria-detail {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.4;
+    flex: 1;
+  }
+  
+  .criteria-note {
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    line-height: 1.4;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f3f4f6;
+  }
+  
+  /* ポップオーバーの位置調整のためのラッパー */
+  .grade-display {
+    position: relative;
+  }
+  
+  .session-results-visual {
+    position: relative;
   }
 </style>
