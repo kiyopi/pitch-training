@@ -2749,8 +2749,8 @@
   
   .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
     margin-bottom: 1rem;
   }
   
