@@ -1153,7 +1153,8 @@
       showGradeHelp = false;
     }
     if (!event.target.closest('.session-help-icon-button') && 
-        !event.target.closest('.session-criteria-popover')) {
+        !event.target.closest('.session-criteria-popover') && 
+        !event.target.closest('.session-criteria-popover-carousel')) {
       showSessionHelp = false;
     }
   }
@@ -3357,6 +3358,25 @@
 
   .grade-criteria-popover,
   .session-criteria-popover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    min-width: 320px;
+    max-width: 400px;
+  }
+
+  .session-help-container {
+    position: relative;
+  }
+
+  .session-criteria-popover-carousel {
     position: fixed;
     top: 50%;
     left: 50%;
