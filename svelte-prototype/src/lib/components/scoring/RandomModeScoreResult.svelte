@@ -1,6 +1,6 @@
 <script>
-  import { Trophy, Star, ThumbsUp, Frown, AlertCircle, Music, Target, Mic, 
-           AlertTriangle, Lightbulb, Flame, TrendingUp, Info, ChevronDown, ChevronUp, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
+  import { Trophy, Star, ThumbsUp, Frown, AlertCircle, Music, Meh, Mic, 
+           AlertTriangle, Lightbulb, Flame, Sprout, Info, ChevronDown, ChevronUp, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
   import { fly, fade, slide } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -384,7 +384,7 @@
     <div class="advice-content">
       {#if needWorkNotes.length > 0}
         <p>
-          <Target class="w-4 h-4 text-red-500" />
+          <Meh class="w-4 h-4 text-red-500" />
           重点練習: {needWorkNotes.join('、')}の精度向上
         </p>
       {/if}
@@ -400,7 +400,7 @@
         </p>
       {:else}
         <p>
-          <TrendingUp class="w-4 h-4 text-green-500" />
+          <Sprout class="w-4 h-4 text-green-500" />
           良い調子です！継続的な練習で更なる向上を
         </p>
       {/if}

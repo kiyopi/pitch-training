@@ -6,11 +6,11 @@ function __memo(fn) {
 
 return {
 	appDir: "_app",
-	appPath: "pitch-training/_app",
+	appPath: "_app",
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.KvEnFhGS.js",app:"_app/immutable/entry/app.Dcv6uf6K.js",imports:["_app/immutable/entry/start.KvEnFhGS.js","_app/immutable/chunks/C3WSXP_k.js","_app/immutable/chunks/BB952w8i.js","_app/immutable/entry/app.Dcv6uf6K.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BB952w8i.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.CATclTmx.js",app:"_app/immutable/entry/app.CA-DCfwx.js",imports:["_app/immutable/entry/start.CATclTmx.js","_app/immutable/chunks/DOX8zb68.js","_app/immutable/chunks/QmYPNss9.js","_app/immutable/entry/app.CA-DCfwx.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/QmYPNss9.js","_app/immutable/chunks/Bbjhs0J8.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js'))
@@ -18,7 +18,7 @@ return {
 		routes: [
 			
 		],
-		prerendered_routes: new Set(["/pitch-training/","/pitch-training/microphone-test-simple","/pitch-training/microphone-test","/pitch-training/scoring-test","/pitch-training/training/chromatic","/pitch-training/training/continuous","/pitch-training/training/random"]),
+		prerendered_routes: new Set(["/","/microphone-test-simple","/microphone-test","/scoring-test","/training/chromatic","/training/continuous","/training/random"]),
 		matchers: async () => {
 			
 			return {  };

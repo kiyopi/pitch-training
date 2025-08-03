@@ -1,5 +1,5 @@
 <script>
-  import { Trophy, Crown, Star, Award, Target, TrendingUp, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight, CheckCircle, Zap, BookOpen, Activity, PieChart, Hash, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
+  import { Trophy, Crown, Star, Award, Meh, Sprout, ThumbsUp, Frown, AlertCircle, Music, BarChart3, Flame, Timer, Piano, ChevronRight, CheckCircle, Zap, BookOpen, Activity, PieChart, Hash, HelpCircle, Medal, BookOpenCheck, Target, TrendingUp } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
@@ -87,7 +87,7 @@
     },
     D: { 
       name: 'D級ベーシック', 
-      icon: Target, 
+      icon: Meh, 
       color: 'text-orange-500',
       colorValue: '#f97316',
       bgColor: '#fff7ed',
@@ -96,7 +96,7 @@
     },
     E: { 
       name: 'E級ビギナー', 
-      icon: TrendingUp, 
+      icon: Sprout, 
       color: 'text-red-500',
       colorValue: '#ef4444',
       bgColor: '#fef2f2',
@@ -1206,32 +1206,32 @@
           </div>
           
           <div class="grade-criteria-item">
-            <Medal class="criteria-icon" style="color: #eab308;" />
+            <Crown class="criteria-icon" style="color: #eab308;" />
             <span class="criteria-name">A級エキスパート</span>
             <span class="criteria-condition">優秀40%以上 + 良好以上80%以上</span>
           </div>
           
           <div class="grade-criteria-item">
-            <Award class="criteria-icon" style="color: #94a3b8;" />
+            <Star class="criteria-icon" style="color: #10b981;" />
             <span class="criteria-name">B級プロフィシエント</span>
             <span class="criteria-condition">優秀25%以上 + 良好以上70%以上</span>
           </div>
           
           <div class="grade-criteria-item">
-            <Star class="criteria-icon" style="color: #a16207;" />
+            <Award class="criteria-icon" style="color: #3b82f6;" />
             <span class="criteria-name">C級アドバンス</span>
             <span class="criteria-condition">合格以上50%以上</span>
           </div>
           
           <div class="grade-criteria-item">
-            <BookOpen class="criteria-icon" style="color: #3b82f6;" />
-            <span class="criteria-name">D級ビギナー</span>
+            <Meh class="criteria-icon" style="color: #f97316;" />
+            <span class="criteria-name">D級ベーシック</span>
             <span class="criteria-condition">合格以上30%以上</span>
           </div>
           
           <div class="grade-criteria-item">
-            <BookOpenCheck class="criteria-icon" style="color: #10b981;" />
-            <span class="criteria-name">E級スターター</span>
+            <Sprout class="criteria-icon" style="color: #ef4444;" />
+            <span class="criteria-name">E級ビギナー</span>
             <span class="criteria-condition">合格以上30%未満</span>
           </div>
         </div>
@@ -1832,7 +1832,7 @@
                   <!-- 練習必要音程セクション -->
                   {#if detailedAnalysisData.intervalMastery.needsPractice.length > 0}
                     <div class="mastery-section needs-practice">
-                      <h5 class="mastery-section-title text-red-600"><TrendingUp size={20} class="inline mr-2" />重点練習音程（60%未満）</h5>
+                      <h5 class="mastery-section-title text-red-600"><Sprout size={20} class="inline mr-2" />重点練習音程（60%未満）</h5>
                       <div class="interval-grid">
                         {#each detailedAnalysisData.intervalMastery.needsPractice as interval}
                           <div class="interval-card practice-card">
