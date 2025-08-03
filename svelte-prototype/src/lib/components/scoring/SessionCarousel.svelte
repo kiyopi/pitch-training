@@ -225,21 +225,18 @@
   
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
+    /* iPhone: カルーセル左右ボタンを完全非表示（レイアウトスペース確保） */
     .carousel-nav {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .carousel-nav-prev {
-      left: -18px;
-    }
-    
-    .carousel-nav-next {
-      right: -18px;
+      display: none !important;
     }
     
     .carousel-slide {
       padding: 1rem;
+    }
+    
+    /* iPhone: カルーセルビューポートを全幅使用 */
+    .carousel-viewport {
+      margin: 0;
     }
   }
 </style>
