@@ -16,10 +16,6 @@
       "_PageLayout.js"
     ]
   },
-  "_EnhancedScoringEngine.js": {
-    "file": "chunks/EnhancedScoringEngine.js",
-    "name": "EnhancedScoringEngine"
-  },
   "_PageLayout.js": {
     "file": "chunks/PageLayout.js",
     "name": "PageLayout",
@@ -107,7 +103,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.C7LltrN8.css"
+      "_app/immutable/assets/_layout.CzeJ3ZQ9.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -150,6 +146,7 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
+      "_exports.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.js"
     ],
@@ -163,8 +160,7 @@
     "src": "src/routes/scoring-test/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_ssr.js",
-      "_EnhancedScoringEngine.js"
+      "_ssr.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BeR5LleT.css"
@@ -205,15 +201,15 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
+      "_exports.js",
       "_stores.js",
       "_PageLayout.js",
       "_Button.js",
       "_PitchDetectionDisplay.js",
-      "_EnhancedScoringEngine.js",
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CG8XhP2C.css"
+      "_app/immutable/assets/_page.BGO62ZS7.css"
     ]
   }
 }

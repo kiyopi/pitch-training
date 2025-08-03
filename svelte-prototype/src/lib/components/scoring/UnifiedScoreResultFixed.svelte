@@ -20,38 +20,6 @@
   export let scoreData = null;
   export let showDetails = false;
   
-  // 技術分析計算関数
-  function calculateIntervalAccuracy(intervals) {
-    if (!intervals) return 0;
-    
-    let totalAccuracy = 0;
-    let totalAttempts = 0;
-    
-    for (const [intervalName, data] of Object.entries(intervals)) {
-      if (data && typeof data.averageAccuracy === 'number' && typeof data.attempts === 'number') {
-        totalAccuracy += data.averageAccuracy * data.attempts;
-        totalAttempts += data.attempts;
-      }
-    }
-    
-    return totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
-  }
-  
-  function calculateDirectionAccuracy(directions) {
-    if (!directions) return 0;
-    
-    let totalAccuracy = 0;
-    let totalAttempts = 0;
-    
-    for (const [directionName, data] of Object.entries(directions)) {
-      if (data && typeof data.averageAccuracy === 'number' && typeof data.attempts === 'number') {
-        totalAccuracy += data.averageAccuracy * data.attempts;
-        totalAttempts += data.attempts;
-      }
-    }
-    
-    return totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
-  }
   export let className = '';
   
   // デバッグエリアの統合データ（親から受け取る）
@@ -1185,6 +1153,7 @@
       {/if}
       
       <!-- Phase 2テスト: 詳細分析結果を一時非表示（評価内訳に統合済み） -->
+      <!-- 技術分析データは評価内訳で使用するため、表示のみコメントアウト -->
       <!-- 
       {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
         <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
@@ -1266,37 +1235,34 @@
           </div>
           
           <!-- 技術分析（音程精度・方向性） -->
-          {#if detailedAnalysisData?.intervals || detailedAnalysisData?.directions}
+          {#if technicalFeedbackData?.details && technicalFeedbackData.details.length > 0}
             <div class="technical-analysis">
               <h4 class="subsection-title">技術分析</h4>
               <div class="technical-analysis-content">
-                {#if detailedAnalysisData.intervals}
-                  {@const intervalAccuracy = calculateIntervalAccuracy(detailedAnalysisData.intervals)}
-                  <div class="analysis-item">
-                    <div class="analysis-label">
-                      <Target class="w-4 h-4 text-blue-500" />
-                      <span>音程精度</span>
+                {#each technicalFeedbackData.details as item}
+                  {@const isIntervalAccuracy = item.text.includes('音程精度')}
+                  {@const isDirectionAccuracy = item.text.includes('方向性')}
+                  {@const textContent = item.text}
+                  {@const percentageMatch = textContent.match(/(\d+)%/)}
+                  {#if item.category === 'improvements' && (isIntervalAccuracy || isDirectionAccuracy)}
+                    <div class="analysis-item">
+                      <div class="analysis-label">
+                        {#if isIntervalAccuracy}
+                          <Target class="w-4 h-4 text-blue-500" />
+                        {:else}
+                          <TrendingUp class="w-4 h-4 text-green-500" />
+                        {/if}
+                        <span>{isIntervalAccuracy ? '音程精度' : '方向性'}</span>
+                      </div>
+                      <div class="analysis-value">
+                        {#if percentageMatch}
+                          <span class="percentage">{percentageMatch[1]}%</span>
+                        {/if}
+                        <span class="description">（{textContent.split('（')[1]}</span>
+                      </div>
                     </div>
-                    <div class="analysis-value">
-                      <span class="percentage">{Math.round(intervalAccuracy)}%</span>
-                      <span class="description">（音の高さを捉える正確性　目標基準：70〜85%）</span>
-                    </div>
-                  </div>
-                {/if}
-                
-                {#if detailedAnalysisData.directions}
-                  {@const directionAccuracy = calculateDirectionAccuracy(detailedAnalysisData.directions)}
-                  <div class="analysis-item">
-                    <div class="analysis-label">
-                      <TrendingUp class="w-4 h-4 text-green-500" />
-                      <span>方向性</span>
-                    </div>
-                    <div class="analysis-value">
-                      <span class="percentage">{Math.round(directionAccuracy)}%</span>
-                      <span class="description">（音程の上下判断の精度　目標基準：80〜90%）</span>
-                    </div>
-                  </div>
-                {/if}
+                  {/if}
+                {/each}
               </div>
             </div>
           {/if}
