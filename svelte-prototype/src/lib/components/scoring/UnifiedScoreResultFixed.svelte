@@ -1157,13 +1157,13 @@
                 {@const gradeDef = sessionGradeDefinitions[grade]}
                 <div class="session-icon-wrapper" title="セッション{index + 1}: {gradeDef.name} - 基音: {session.baseNote}">
                   {#if grade === 'excellent'}
-                    <Trophy class="session-icon excellent" />
+                    <Trophy class="session-icon" style="color: #f59e0b;" />
                   {:else if grade === 'good'}
-                    <Star class="session-icon good" />
+                    <Star class="session-icon" style="color: #059669;" />
                   {:else if grade === 'pass'}
-                    <ThumbsUp class="session-icon pass" />
+                    <ThumbsUp class="session-icon" style="color: #2563eb;" />
                   {:else}
-                    <Frown class="session-icon needWork" />
+                    <Frown class="session-icon" style="color: #dc2626;" />
                   {/if}
                   <span class="session-number-small">{index + 1}</span>
                 </div>
@@ -1297,29 +1297,52 @@
           </summary>
           <div class="grade-explanation-content">
             <div class="grade-table">
-              <div class="grade-row">
-                <span class="grade-label">S級マスター</span>
-                <span class="grade-condition">優秀60%以上 + 良好以上90%以上</span>
+              <div class="grade-section">
+                <h5 class="grade-section-title">セッション総合評価</h5>
+                <div class="grade-row">
+                  <span class="grade-label">S級マスター</span>
+                  <span class="grade-condition">優秀60%以上 + 良好以上90%以上</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">A級エキスパート</span>
+                  <span class="grade-condition">優秀40%以上 + 良好以上80%以上</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">B級プロフィシエント</span>
+                  <span class="grade-condition">優秀25%以上 + 良好以上70%以上</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">C級アドバンス</span>
+                  <span class="grade-condition">合格以上50%以上</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">D級ビギナー</span>
+                  <span class="grade-condition">合格以上30%以上</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">E級スターター</span>
+                  <span class="grade-condition">合格以上30%未満</span>
+                </div>
               </div>
-              <div class="grade-row">
-                <span class="grade-label">A級エキスパート</span>
-                <span class="grade-condition">優秀40%以上 + 良好以上80%以上</span>
-              </div>
-              <div class="grade-row">
-                <span class="grade-label">B級プロフィシエント</span>
-                <span class="grade-condition">優秀25%以上 + 良好以上70%以上</span>
-              </div>
-              <div class="grade-row">
-                <span class="grade-label">C級アドバンス</span>
-                <span class="grade-condition">合格以上50%以上</span>
-              </div>
-              <div class="grade-row">
-                <span class="grade-label">D級ビギナー</span>
-                <span class="grade-condition">合格以上30%以上</span>
-              </div>
-              <div class="grade-row">
-                <span class="grade-label">E級スターター</span>
-                <span class="grade-condition">合格以上30%未満</span>
+              
+              <div class="grade-section">
+                <h5 class="grade-section-title">セッション別判定基準</h5>
+                <div class="grade-row">
+                  <span class="grade-label">優秀</span>
+                  <span class="grade-condition">±15¢以内</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">良好</span>
+                  <span class="grade-condition">±25¢以内</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">合格</span>
+                  <span class="grade-condition">±40¢以内</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-label">要練習</span>
+                  <span class="grade-condition">±41¢以上</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1924,7 +1947,25 @@
   }
   
   .grade-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     margin-bottom: 1.5rem;
+  }
+  
+  .grade-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .grade-section-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: hsl(215.4 16.3% 46.9%);
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
   }
   
   .grade-row {
@@ -2724,11 +2765,12 @@
   .analysis-item {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 1;
+    text-align: center;
     padding: 0.75rem;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e0f2fe;
   }
   
   .analysis-label {
@@ -2957,6 +2999,8 @@
     flex-direction: row;
     gap: 1rem;
     justify-content: space-around;
+    align-items: stretch;
+    min-height: 60px;
   }
   
   .analysis-item {
@@ -3187,8 +3231,10 @@
     .analysis-item {
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 0.25rem;
       text-align: center;
+      flex: 1;
     }
     
     .analysis-value {
