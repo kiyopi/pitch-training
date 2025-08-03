@@ -1606,9 +1606,14 @@
       text: `方向性: ${Math.round(directionAccuracy)}%　（音程の上下判断の精度　目標基準：80〜90%）`
     });
     
+    // 一貫性の表示：データ不足の場合は明確に示す
+    const consistencyText = consistencyScore === 0 
+      ? '一貫性: データ不足　（複数セッション後に評価可能　目標基準：50〜70%）'
+      : `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`;
+    
     technicalAnalysis.push({
       category: 'improvements',
-      text: `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`
+      text: consistencyText
     });
     
     // アドバイス（改善提案のメッセージ部分）

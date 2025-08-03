@@ -301,7 +301,9 @@
                   </div>
                   <div class="component">
                     <span class="label">一貫性:</span>
-                    <span class="value">{testResult.result.score.components.consistency}%</span>
+                    <span class="value">
+                      {testResult.result.score.components.consistency === 0 ? 'データ不足' : `${testResult.result.score.components.consistency}%`}
+                    </span>
                   </div>
                 </div>
               </div>
