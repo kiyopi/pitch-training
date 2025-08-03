@@ -185,7 +185,7 @@
       {#each Object.entries(gradeDefinitions) as [key, def], i}
         {@const count = results[key] || 0}
         {@const percentage = (count / 8) * 100}
-        <div class="distribution-row" style="animation-delay: {i * 0.1}s">
+        <div class="distribution-row" in:fly={{ y: 10, duration: 300, delay: i * 100 }}>
           <div class="grade-label">
             <svelte:component this={def.icon} class="w-5 h-5 {def.color}" />
             <span>{def.name}</span>
@@ -446,12 +446,9 @@
   }
   
   .distribution-row {
-    display: grid;
-    grid-template-columns: 120px 1fr 80px;
+    display: flex;
     align-items: center;
     gap: 1rem;
-    opacity: 0;
-    animation: fadeInUp 0.3s forwards;
   }
   
   .grade-label {
@@ -459,6 +456,8 @@
     align-items: center;
     gap: 0.5rem;
     font-weight: 500;
+    min-width: 120px;
+    flex-shrink: 0;
   }
   
   .bar-container {
@@ -467,6 +466,7 @@
     border-radius: 6px;
     overflow: hidden;
     position: relative;
+    flex: 1;
   }
   
   .distribution-bar {
@@ -488,6 +488,8 @@
     gap: 0.5rem;
     justify-content: flex-end;
     font-weight: 600;
+    min-width: 80px;
+    flex-shrink: 0;
   }
   
   .distribution-summary {
