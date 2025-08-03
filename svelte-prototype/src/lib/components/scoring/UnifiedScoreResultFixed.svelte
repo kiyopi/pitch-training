@@ -1152,28 +1152,6 @@
         </div>
       {/if}
       
-      <!-- Phase 2テスト: 詳細分析結果を一時非表示（評価内訳に統合済み） -->
-      <!-- 技術分析データは評価内訳で使用するため、表示のみコメントアウト -->
-      <!-- 
-      {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
-        <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
-          <div class="technical-analysis-content">
-            <h3 class="technical-analysis-title">{technicalFeedbackData.primary}</h3>
-            <p class="technical-analysis-subtitle">{technicalFeedbackData.summary}</p>
-            
-            <div class="technical-analysis-list">
-              {#if technicalFeedbackData.details && technicalFeedbackData.details.length > 0}
-                {#each technicalFeedbackData.details as item}
-                  <div class="technical-analysis-item">
-                    - {item.text}
-                  </div>
-                {/each}
-              {/if}
-            </div>
-          </div>
-        </div>
-      {/if}
-      -->
       
       <!-- 評価内訳表示（セッション評価スタイル統一） -->
       {#if isCompleted && sessionStatistics}
@@ -2730,46 +2708,6 @@
     padding: 1.5rem;
   }
   
-  /* 技術分析インライン表示スタイル */
-  .technical-feedback-inline {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f9fafb, #ffffff);
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-  
-  /* 技術分析コンテンツスタイル */
-  .technical-analysis-content {
-    text-align: center;
-  }
-  
-  .technical-analysis-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-  }
-  
-  .technical-analysis-subtitle {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 1rem;
-  }
-  
-  .technical-analysis-list {
-    max-width: 600px;
-    margin: 0 auto;
-    text-align: left;
-    padding-left: 3rem;
-  }
-  
-  .technical-analysis-item {
-    padding: 0.25rem 0;
-    font-size: 0.875rem;
-    color: #374151;
-    line-height: 1.5;
-  }
   
   /* 技術分析タブスタイル（別の場所で使用） */
   .technical-analysis-tab-content {
