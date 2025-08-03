@@ -1495,6 +1495,8 @@
           <!-- Debug: SessionCarousel表示確認 -->
           <div style="font-size: 12px; color: blue; margin: 10px 0; border: 1px solid blue; padding: 5px;">
             Debug Carousel: sessionHistory.length = {scoreData.sessionHistory?.length || 0}, currentIndex = {currentSessionIndex}
+            <br>Debug scoreData keys: {JSON.stringify(Object.keys(scoreData || {}))}
+            <br>Debug scoreData.sessionHistory: {JSON.stringify(scoreData.sessionHistory?.slice(0, 2) || [])}
           </div>
           
           <!-- セッションカルーセル -->
