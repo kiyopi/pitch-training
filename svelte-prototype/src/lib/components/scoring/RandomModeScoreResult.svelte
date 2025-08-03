@@ -48,7 +48,9 @@
   
   // ポップオーバー制御関数
   function toggleSessionHelp() {
+    console.log('toggleSessionHelp clicked, current showSessionHelp:', showSessionHelp);
     showSessionHelp = !showSessionHelp;
+    console.log('After toggle, showSessionHelp:', showSessionHelp);
   }
   
   function handleOutsideClick(event) {
@@ -170,8 +172,9 @@
       </div>
       
       <!-- セッション判定基準ポップオーバー -->
+      <!-- Debug: showSessionHelp = {showSessionHelp} -->
       {#if showSessionHelp}
-        <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
+        <div class="popover-backdrop" in:fade={{ duration: 200 }} on:click={() => showSessionHelp = false}></div>
         <div class="session-criteria-popover" in:fade={{ duration: 200 }}>
           <h5 class="popover-title">セッション判定基準</h5>
           
