@@ -1110,8 +1110,8 @@
   $: showDetailedAnalysis = scoreData?.sessionHistory && scoreData.sessionHistory.length >= 8;
 
   $: availableTabs = [
-    { id: 'technical', label: '技術分析', icon: Activity },
-    { id: 'intervals', label: '音程別精度', icon: Music }
+    // { id: 'technical', label: '技術分析', icon: Activity },
+    // { id: 'intervals', label: '音程別精度', icon: Music }
   ];
   
   onMount(() => {
@@ -1254,7 +1254,7 @@
               <h4 class="subsection-title">セッション結果</h4>
               <button 
                 class="session-help-icon-button" 
-                on:click={toggleSessionHelp}
+                on:click|stopPropagation={toggleSessionHelp}
                 aria-label="セッション判定基準を表示"
               >
                 <HelpCircle 
@@ -1645,8 +1645,8 @@
     
   </div>
   
-  <!-- 詳細分析ダッシュボード -->
-  {#if showDetailedAnalysis && (currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics)}
+  <!-- 詳細分析ダッシュボード（一時的に無効化） -->
+  {#if false && showDetailedAnalysis && (currentScoreData || intervalData.length > 0 || feedbackData || sessionStatistics)}
     <div class="detailed-analysis-dashboard" in:fly={{ y: 20, duration: 500, delay: 1000 }}>
       
       
@@ -3333,17 +3333,24 @@
   .session-help-icon-button {
     background: none;
     border: none;
-    padding: 0;
+    padding: 4px;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 4px;
   }
   
   .grade-help-icon-button:hover,
   .session-help-icon-button:hover {
-    opacity: 0.7;
+    background: #f3f4f6;
+    opacity: 0.8;
+  }
+  
+  .grade-help-icon-button:active,
+  .session-help-icon-button:active {
+    background: #e5e7eb;
   }
   
   .popover-backdrop {

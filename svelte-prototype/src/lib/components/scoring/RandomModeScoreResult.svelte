@@ -48,10 +48,9 @@
   
   // ポップオーバー制御関数
   function toggleSessionHelp() {
-    console.log('toggleSessionHelp clicked, current showSessionHelp:', showSessionHelp);
+    console.log('[RandomModeScoreResult] toggleSessionHelp clicked, current:', showSessionHelp);
     showSessionHelp = !showSessionHelp;
-    console.log('After toggle, showSessionHelp:', showSessionHelp);
-    console.log('Button clicked successfully!');
+    console.log('[RandomModeScoreResult] After toggle:', showSessionHelp);
   }
   
   function handleOutsideClick(event) {
@@ -163,7 +162,7 @@
         </h2>
         <button 
           class="session-help-icon-button" 
-          on:click={toggleSessionHelp}
+          on:click|stopPropagation={toggleSessionHelp}
           aria-label="セッション判定基準を表示"
         >
           <HelpCircle 
@@ -992,16 +991,22 @@
   .session-help-icon-button {
     background: none;
     border: none;
-    padding: 0;
+    padding: 4px;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 4px;
   }
   
   .session-help-icon-button:hover {
-    opacity: 0.7;
+    background: #f3f4f6;
+    opacity: 0.8;
+  }
+  
+  .session-help-icon-button:active {
+    background: #e5e7eb;
   }
   
   .popover-backdrop {
