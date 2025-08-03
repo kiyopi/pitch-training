@@ -1171,6 +1171,121 @@
         </div>
       {/if}
       
+      <!-- 評価内訳表示（セッション評価スタイル統一） -->
+      {#if isCompleted && sessionStatistics}
+        <div class="evaluation-breakdown" in:fly={{ y: 20, duration: 500, delay: 900 }}>
+          <h3 class="section-title">
+            <BarChart3 class="w-5 h-5" />
+            評価内訳
+          </h3>
+          
+          <!-- セッション結果ビジュアル -->
+          <div class="session-results-visual">
+            <h4 class="subsection-title">セッション結果</h4>
+            <div class="session-icons">
+              {#each scoreData.sessionHistory as session, index}
+                {@const grade = session.grade}
+                {@const gradeDef = sessionGradeDefinitions[grade]}
+                <div class="session-icon-wrapper" title="セッション{index + 1}: {gradeDef.name} - 基音: {session.baseNote}">
+                  {#if grade === 'excellent'}
+                    <Trophy class="session-icon excellent" />
+                  {:else if grade === 'good'}
+                    <Star class="session-icon good" />
+                  {:else if grade === 'pass'}
+                    <ThumbsUp class="session-icon pass" />
+                  {:else}
+                    <Frown class="session-icon needWork" />
+                  {/if}
+                  <span class="session-number-small">{index + 1}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+          
+          <!-- グレード達成状況 -->
+          <div class="grade-achievement">
+            <h4 class="subsection-title">グレード達成状況</h4>
+            <div class="achievement-bars">
+              {#each Object.entries(sessionGradeDefinitions).slice(0, 4) as [key, def]}
+                {@const count = scoreData.sessionHistory.filter(s => s.grade === key).length}
+                {@const percentage = (count / scoreData.sessionHistory.length) * 100}
+                <div class="achievement-row">
+                  <div class="achievement-label">
+                    <svelte:component this={def.icon} class="w-4 h-4 {def.color}" />
+                    <span>{def.name}</span>
+                  </div>
+                  
+                  <div class="achievement-bar-container">
+                    <div class="achievement-bar" 
+                         style="width: {percentage}%; background-color: {def.borderColor};">
+                    </div>
+                  </div>
+                  
+                  <div class="achievement-count">
+                    <span class="count">{count}/8</span>
+                    <span class="percentage">({Math.round(percentage)}%)</span>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+          
+          <!-- 次の目標 -->
+          <div class="next-goal">
+            <h4 class="subsection-title">次の目標</h4>
+            <div class="goal-content">
+              {#if unifiedGrade === 'S'}
+                <div class="goal-item achieved">
+                  <CheckCircle class="w-5 h-5 text-green-500" />
+                  <span>最高グレード達成！この精度を維持しましょう</span>
+                </div>
+              {:else}
+                {@const nextGrade = unifiedGrade === 'E' ? 'D' : unifiedGrade === 'D' ? 'C' : unifiedGrade === 'C' ? 'B' : unifiedGrade === 'B' ? 'A' : 'S'}
+                {@const nextGradeDef = unifiedGradeDefinitions[nextGrade]}
+                <div class="goal-item">
+                  <Target class="w-5 h-5 text-blue-500" />
+                  <span>次回は<strong class="{nextGradeDef.color}">{nextGradeDef.name}</strong>を目指しましょう</span>
+                </div>
+                <div class="goal-advice">
+                  {#if nextGrade === 'D'}
+                    基本的な音程感覚の向上を重点的に練習
+                  {:else if nextGrade === 'C'}
+                    合格率を50%以上に向上させる練習
+                  {:else if nextGrade === 'B'}
+                    優秀評価を25%以上獲得する精度向上
+                  {:else if nextGrade === 'A'}
+                    優秀評価を40%以上獲得する安定性強化
+                  {:else}
+                    優秀評価を60%以上獲得する完璧性追求
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+          
+          <!-- 技術的補正の透明性 -->
+          {#if detailedAnalysisData?.technicalAnalysis}
+            <div class="technical-transparency">
+              <h4 class="subsection-title">技術的補正について</h4>
+              <div class="transparency-content">
+                <div class="transparency-item">
+                  <span class="transparency-label">測定データ数:</span>
+                  <span class="transparency-value">{detailedAnalysisData.technicalAnalysis.totalMeasurements}回</span>
+                </div>
+                <div class="transparency-item">
+                  <span class="transparency-label">外れ値除去:</span>
+                  <span class="transparency-value">{detailedAnalysisData.technicalAnalysis.outlierCount}個</span>
+                </div>
+                <div class="transparency-item">
+                  <span class="transparency-label">補正効果:</span>
+                  <span class="transparency-value">精度 {detailedAnalysisData.technicalAnalysis.correctedEvaluation.rawAverage}¢ → {detailedAnalysisData.technicalAnalysis.correctedEvaluation.correctedAverage}¢</span>
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+      
       <!-- 評価の見方（簡潔版） -->
       <div class="grade-explanation" in:fade={{ delay: 1000 }}>
         <details class="grade-details">
@@ -2734,6 +2849,202 @@
     border-radius: 20px;
     white-space: nowrap;
   }
+  
+  /* 評価内訳表示スタイル（RandomModeScoreResultと統一） */
+  .evaluation-breakdown {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #1f2937;
+  }
+  
+  .subsection-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #374151;
+  }
+  
+  /* セッション結果ビジュアル */
+  .session-results-visual {
+    margin-bottom: 1.5rem;
+  }
+  
+  .session-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-start;
+  }
+  
+  .session-icon-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+    cursor: help;
+  }
+  
+  .session-icon-wrapper:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  .session-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .session-icon.excellent { color: #eab308; }
+  .session-icon.good { color: #10b981; }
+  .session-icon.pass { color: #3b82f6; }
+  .session-icon.needWork { color: #ef4444; }
+  
+  .session-number-small {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  
+  /* グレード達成状況 */
+  .grade-achievement {
+    margin-bottom: 1.5rem;
+  }
+  
+  .achievement-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .achievement-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 80px;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .achievement-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .achievement-bar-container {
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  .achievement-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease-out;
+  }
+  
+  .achievement-count {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .achievement-count .count {
+    color: #374151;
+  }
+  
+  .achievement-count .percentage {
+    color: #6b7280;
+    font-size: 0.75rem;
+  }
+  
+  /* 次の目標 */
+  .next-goal {
+    margin-bottom: 1.5rem;
+  }
+  
+  .goal-content {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .goal-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #0c4a6e;
+    margin-bottom: 0.5rem;
+  }
+  
+  .goal-item.achieved {
+    color: #166534;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0;
+  }
+  
+  .goal-advice {
+    font-size: 0.875rem;
+    color: #0369a1;
+    font-style: italic;
+    margin-left: 1.75rem;
+  }
+  
+  /* 技術的補正の透明性 */
+  .technical-transparency {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .transparency-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .transparency-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+  
+  .transparency-label {
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  .transparency-value {
+    color: #0f172a;
+    font-weight: 600;
+  }
 
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
@@ -2813,6 +3124,35 @@
     
     .progress-counter {
       align-self: center;
+    }
+    
+    /* 評価内訳表示のレスポンシブ対応 */
+    .evaluation-breakdown {
+      padding: 1rem;
+    }
+    
+    .session-icons {
+      justify-content: center;
+    }
+    
+    .achievement-row {
+      grid-template-columns: 100px 1fr 60px;
+      gap: 0.5rem;
+    }
+    
+    .achievement-label {
+      font-size: 0.875rem;
+    }
+    
+    .goal-advice {
+      margin-left: 0;
+      margin-top: 0.5rem;
+    }
+    
+    .transparency-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
     }
   }
 </style>
