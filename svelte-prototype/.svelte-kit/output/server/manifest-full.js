@@ -10,7 +10,7 @@ return {
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.rjAHejI6.js",app:"_app/immutable/entry/app.Bbs-44nz.js",imports:["_app/immutable/entry/start.rjAHejI6.js","_app/immutable/chunks/BH9wSDUD.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/entry/app.Bbs-44nz.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/chunks/lf0iVeV9.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.DGxJV1JT.js",app:"_app/immutable/entry/app.Di_Ehaeb.js",imports:["_app/immutable/entry/start.DGxJV1JT.js","_app/immutable/chunks/_x4-7vk2.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/entry/app.Di_Ehaeb.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/aeIatR-B.js","_app/immutable/chunks/lf0iVeV9.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),

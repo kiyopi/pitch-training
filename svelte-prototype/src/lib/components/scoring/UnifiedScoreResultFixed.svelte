@@ -1505,6 +1505,11 @@
               }}
             >
               <div slot="default" let:session let:index>
+                <!-- Debug: セッションデータ確認 -->
+                <div style="font-size: 10px; color: red; margin-bottom: 5px;">
+                  Debug: Session {index + 1} - noteResults: {session.noteResults ? 'あり' : 'なし'} - baseNote: {session.baseNote || 'なし'}
+                </div>
+                
                 <!-- 8音階詳細表示（セッション情報統合版） -->
                 {#if session.noteResults}
                   <RandomModeScoreResult 
@@ -3385,11 +3390,11 @@
   }
 
   .session-criteria-popover-carousel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10000;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 999999 !important;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
