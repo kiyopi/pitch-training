@@ -197,11 +197,11 @@
           
           <div class="bar-container" style="background: #f3f4f6 !important; border: 1px solid #d1d5db;">
             <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
-                 style="width: {key === 'excellent' ? $excellentWidth : 
-                               key === 'good' ? $goodWidth : 
-                               key === 'pass' ? $passWidth : 
-                               key === 'needWork' ? $needWorkWidth : 
-                               key === 'notMeasured' ? $notMeasuredWidth : 0}%">
+                 style="width: {(count / 8) * 100}%; background-color: {key === 'excellent' ? '#fbbf24' : 
+                                                                       key === 'good' ? '#34d399' : 
+                                                                       key === 'pass' ? '#60a5fa' : 
+                                                                       key === 'needWork' ? '#f87171' : 
+                                                                       key === 'notMeasured' ? '#9ca3af' : '#9ca3af'} !important;">
             </div>
           </div>
           
