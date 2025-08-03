@@ -1696,7 +1696,7 @@
                 <div class="analysis-section">
                   <h5 class="section-title"><BarChart3 size={18} class="inline mr-2" />誤差分布</h5>
                   <p class="section-description">測定精度レベル別の分析結果</p>
-                  <div class="analysis-grid">
+                  <div class="analysis-grid-four">
                     <div class="analysis-item">
                       <span class="analysis-label">高精度測定</span>
                       <span class="analysis-value text-green-600">{detailedAnalysisData.technicalAnalysis.errorDistribution.highPrecision}回（技術誤差 ±10¢以内）</span>
@@ -1720,7 +1720,7 @@
                 <div class="analysis-section">
                   <h5 class="section-title"><AlertCircle size={18} class="inline mr-2" />技術誤差補正結果</h5>
                   <p class="section-description">外れ値除去後の真の音感能力評価</p>
-                  <div class="analysis-grid">
+                  <div class="analysis-grid-five">
                     <div class="analysis-item">
                       <span class="analysis-label">補正前平均誤差</span>
                       <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.rawAverage}¢</span>
@@ -2113,8 +2113,22 @@
 
   .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .analysis-grid-four {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .analysis-grid-five {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
@@ -2827,7 +2841,7 @@
   
   .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -3291,6 +3305,16 @@
     
     .analysis-label {
       min-width: auto;
+    }
+
+    .analysis-grid-four {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .analysis-grid-five {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
     }
   }
   
