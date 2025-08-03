@@ -230,13 +230,25 @@
       display: none !important;
     }
     
+    /* iPhone: スライド内パディング最小化で表示領域最大化 */
     .carousel-slide {
-      padding: 1rem;
+      padding: 0.5rem;
     }
     
     /* iPhone: カルーセルビューポートを全幅使用 */
     .carousel-viewport {
       margin: 0;
+    }
+    
+    /* iPhone: カルーセルコンテナの余白削減 */
+    .carousel-container {
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* iPhone: インジケーターマージン削減 */
+    .carousel-indicators {
+      margin-top: 0.5rem;
     }
   }
 </style>

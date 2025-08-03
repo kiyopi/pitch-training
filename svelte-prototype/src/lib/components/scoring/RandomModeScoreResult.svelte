@@ -1009,27 +1009,51 @@
 
   /* iPhone用レスポンシブ最適化 */
   @media (max-width: 640px) {
+    /* コンテナ全体: パディング削減で表示領域最大化 */
+    .random-mode-score-result {
+      padding: 1rem;
+    }
+    
+    /* 評価分布セクション: 右はみ出し防止 */
+    .rating-distribution {
+      overflow-x: hidden;
+      margin-left: -0.5rem;
+      margin-right: -0.5rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+    
     /* 評価分布バー: ラベル幅縮小でバー表示領域拡大 */
     .grade-label {
-      min-width: 60px;
-      font-size: 0.75rem;
+      min-width: 50px;
+      font-size: 0.7rem;
+      gap: 0.25rem;
     }
     
     /* 評価分布バー: カウント表示幅縮小 */
     .count-display {
-      min-width: 40px;
-      font-size: 0.75rem;
+      min-width: 35px;
+      font-size: 0.7rem;
+      gap: 0.25rem;
     }
     
     /* 評価分布行: ギャップ縮小でスペース効率化 */
     .distribution-row {
-      gap: 0.5rem;
+      gap: 0.3rem;
+      padding: 0 0.25rem;
     }
     
-    /* バーコンテナ: 最大幅確保 */
+    /* バーコンテナ: 最大幅確保＋余白調整 */
     .bar-container {
       flex: 1;
-      min-width: 100px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    
+    /* アイコンサイズ調整 */
+    .grade-label svg {
+      width: 16px;
+      height: 16px;
     }
   }
 
