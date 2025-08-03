@@ -1014,13 +1014,13 @@
       padding: 1rem;
     }
     
-    /* 評価分布セクション: 右はみ出し防止 */
+    /* 評価分布セクション: 右はみ出し防止・左右マージン完全削除 */
     .rating-distribution {
       overflow-x: hidden;
-      margin-left: -0.5rem;
-      margin-right: -0.5rem;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
+      margin-left: -1rem;
+      margin-right: -1rem;
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
     }
     
     /* 評価分布バー: ラベル幅縮小でバー表示領域拡大 */

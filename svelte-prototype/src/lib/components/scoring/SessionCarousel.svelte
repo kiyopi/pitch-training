@@ -225,6 +225,14 @@
   
   /* レスポンシブ対応 */
   @media (max-width: 640px) {
+    /* iPhone: セッションカルーセル全体の左右マージン完全削除 */
+    .session-carousel {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+    
     /* iPhone: カルーセル左右ボタンを完全非表示（レイアウトスペース確保） */
     .carousel-nav {
       display: none !important;
@@ -232,18 +240,20 @@
     
     /* iPhone: スライド内パディング最小化で表示領域最大化 */
     .carousel-slide {
-      padding: 0.5rem;
+      padding: 0.25rem;
     }
     
     /* iPhone: カルーセルビューポートを全幅使用 */
     .carousel-viewport {
       margin: 0;
+      border-radius: 8px;
     }
     
     /* iPhone: カルーセルコンテナの余白削減 */
     .carousel-container {
       margin: 0;
       padding: 0;
+      gap: 0;
     }
     
     /* iPhone: インジケーターマージン削減 */
