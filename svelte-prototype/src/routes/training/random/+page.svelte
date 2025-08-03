@@ -56,6 +56,31 @@
   
   // Force GitHub Actions trigger: 2025-07-29 06:30
   
+  // 統合グレード計算関数
+  function calculateUnifiedGrade(sessionHistory) {
+    if (!sessionHistory || sessionHistory.length === 0) return 'E';
+    
+    const sessionGrades = sessionHistory.map(session => session.grade);
+    const excellentCount = sessionGrades.filter(g => g === 'excellent').length;
+    const goodCount = sessionGrades.filter(g => g === 'good').length;
+    const passCount = sessionGrades.filter(g => g === 'pass').length;
+    const totalGoodSessions = excellentCount + goodCount + passCount;
+    const totalSessions = sessionHistory.length;
+    
+    // 基本比率計算
+    const excellentRatio = excellentCount / totalSessions;
+    const goodRatio = totalGoodSessions / totalSessions;
+    const passRatio = (excellentCount + goodCount + passCount) / totalSessions;
+    
+    // S-E級判定（簡略版）
+    if (excellentRatio >= 0.6 && goodRatio >= 0.9) return 'S';
+    if (excellentRatio >= 0.4 && goodRatio >= 0.8) return 'A';  
+    if (excellentRatio >= 0.25 && goodRatio >= 0.7) return 'B';
+    if (passRatio >= 0.5) return 'C';
+    if (passRatio >= 0.3) return 'D';
+    return 'E';
+  }
+  
   // テスト用ダミーデータ生成（正しい4段階評価システム）
   function generateTestUnifiedScoreData() {
     return {
@@ -1046,6 +1071,7 @@
     };
     
     // 統合スコアデータを作成（localStorage履歴 + 現在セッション）
+    const sessionHistory = [...allSessionHistory, currentSessionResult];
     currentUnifiedScoreData = {
       mode: 'random',
       timestamp: new Date(),
@@ -1058,7 +1084,9 @@
       noteResults: convertedNoteResults,
       distribution: calculateGradeDistribution(noteResultsForDisplay),
       // セッション履歴：既存履歴 + 現在のセッション
-      sessionHistory: [...allSessionHistory, currentSessionResult]
+      sessionHistory: sessionHistory,
+      // 統合グレード算出
+      unifiedGrade: calculateUnifiedGrade(sessionHistory)
     };
     
     console.log('[UnifiedScore] 統合採点データ生成完了（完全版）:', currentUnifiedScoreData);
