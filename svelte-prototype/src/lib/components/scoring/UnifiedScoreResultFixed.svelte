@@ -1189,6 +1189,7 @@
       
       <!-- グレードヘルプポップオーバー -->
       {#if showGradeHelp}
+        <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
         <div class="grade-criteria-popover" in:fade={{ duration: 200 }}>
           <h5 class="popover-title">8セッション完走時の最終評価</h5>
           
@@ -1258,6 +1259,7 @@
             
             <!-- セッション判定基準ポップオーバー -->
             {#if showSessionHelp}
+              <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
               <div class="session-criteria-popover" in:fade={{ duration: 200 }}>
                 <h5 class="popover-title">セッション判定基準</h5>
                 
@@ -3235,10 +3237,23 @@
     opacity: 0.7;
   }
   
+  .popover-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+  }
+
   .grade-criteria-popover,
   .session-criteria-popover {
-    position: absolute;
-    z-index: 9999;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -3246,16 +3261,6 @@
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     min-width: 320px;
     max-width: 400px;
-    top: 100%;
-    margin-top: 0.5rem;
-  }
-  
-  .grade-criteria-popover {
-    right: 0;
-  }
-  
-  .session-criteria-popover {
-    left: 0;
   }
   
   .popover-title {

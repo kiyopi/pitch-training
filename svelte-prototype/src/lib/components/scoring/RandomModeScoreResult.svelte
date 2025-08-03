@@ -171,6 +171,7 @@
       
       <!-- セッション判定基準ポップオーバー -->
       {#if showSessionHelp}
+        <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
         <div class="session-criteria-popover" in:fade={{ duration: 200 }}>
           <h5 class="popover-title">セッション判定基準</h5>
           
@@ -998,9 +999,22 @@
     opacity: 0.7;
   }
   
-  .session-criteria-popover {
-    position: absolute;
+  .popover-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
     z-index: 9999;
+  }
+
+  .session-criteria-popover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -1008,9 +1022,6 @@
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     min-width: 320px;
     max-width: 400px;
-    top: 100%;
-    margin-top: 0.5rem;
-    left: 0;
   }
   
   .popover-title {
