@@ -19,6 +19,7 @@ import {
   isTrainingProgress,
   isSessionResult
 } from '../types/sessionStorage';
+import { calculateNoteGrade as unifiedCalculateNoteGrade, calculateSessionGrade as unifiedCalculateSessionGrade } from './gradeCalculation';
 
 export class SessionStorageManager {
   private static instance: SessionStorageManager;
@@ -341,43 +342,18 @@ export class SessionStorageManager {
 
   /**
    * セッション評価を計算（8音の結果から4段階評価）
+   * 統一された評価ロジックを使用
    */
   public calculateSessionGrade(noteResults: NoteResult[]): SessionGrade {
-    const results = noteResults.reduce((acc, note) => {
-      const grade = this.calculateNoteGrade(note.cents);
-      acc[grade] = (acc[grade] || 0) + 1;
-      if (grade !== 'notMeasured') {
-        acc.totalError += Math.abs(note.cents || 0);
-        acc.measuredCount += 1;
-      }
-      return acc;
-    }, { excellent: 0, good: 0, pass: 0, needWork: 0, notMeasured: 0, totalError: 0, measuredCount: 0 });
-
-    const averageError = results.measuredCount > 0 ? results.totalError / results.measuredCount : 100;
-    const passCount = results.excellent + results.good + results.pass;
-
-    // RandomModeScoreResultと同じ判定ロジック
-    if (results.notMeasured > 3) return 'needWork';
-    if (results.needWork > 2) return 'needWork';
-    if (results.measuredCount === 0) return 'needWork';
-    if (averageError <= 20 && results.excellent >= 6) return 'excellent';
-    if (averageError <= 30 && passCount >= 7) return 'good';
-    if (passCount >= 5) return 'pass';
-    return 'needWork';
+    return unifiedCalculateSessionGrade(noteResults);
   }
 
   /**
    * 音程評価を計算
+   * 統一された評価ロジックを使用
    */
   private calculateNoteGrade(cents: number | null): SessionGrade | 'notMeasured' {
-    if (cents === null || cents === undefined || isNaN(cents)) {
-      return 'notMeasured';
-    }
-    const absCents = Math.abs(cents);
-    if (absCents <= EVALUATION_THRESHOLDS.EXCELLENT) return 'excellent';
-    if (absCents <= EVALUATION_THRESHOLDS.GOOD) return 'good';
-    if (absCents <= EVALUATION_THRESHOLDS.PASS) return 'pass';
-    return 'needWork';
+    return unifiedCalculateNoteGrade(cents) as SessionGrade | 'notMeasured';
   }
 
   // =============================================================================

@@ -5,6 +5,7 @@
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
   import { onMount } from 'svelte';
+  import { calculateNoteGrade, SESSION_GRADE_CRITERIA } from '$lib/utils/gradeCalculation';
   
   export let noteResults = [];
   export let className = '';
@@ -37,17 +38,9 @@
   const notMeasuredWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 400 });
 
   
-  // 評価を計算
+  // 評価を計算（統一ロジック使用）
   function calculateGrade(cents) {
-    // 測定できなかった場合（centsがnullやundefined）
-    if (cents === null || cents === undefined || isNaN(cents)) {
-      return 'notMeasured';
-    }
-    const absCents = Math.abs(cents);
-    if (absCents <= 15) return 'excellent';
-    if (absCents <= 25) return 'good';
-    if (absCents <= 40) return 'pass';
-    return 'needWork';
+    return calculateNoteGrade(cents);
   }
   
   // 結果の集計
@@ -352,11 +345,11 @@
       </div>
       <div class="session-evaluation-info">
         <h4>セッション総合評価の基準</h4>
-        <p><strong>優秀</strong>: 優秀な音程が6個以上かつ平均誤差±20¢以内</p>
-        <p><strong>良好</strong>: 合格以上が7個以上かつ平均誤差±30¢以内</p>
-        <p><strong>合格</strong>: 合格以上が5個以上（8音中62.5%）</p>
-        <p><strong>要練習</strong>: 要練習が6個以上または測定不可が4個以上</p>
-        <p class="note">※技術的ブレを考慮し、ポジティブ評価を優先する判定システムです</p>
+        <p><strong>優秀</strong>: {SESSION_GRADE_CRITERIA.excellent}</p>
+        <p><strong>良好</strong>: {SESSION_GRADE_CRITERIA.good}</p>
+        <p><strong>合格</strong>: {SESSION_GRADE_CRITERIA.pass}</p>
+        <p><strong>要練習</strong>: {SESSION_GRADE_CRITERIA.needWork}</p>
+        <p class="note">{SESSION_GRADE_CRITERIA.note}</p>
       </div>
     </div>
   </details>

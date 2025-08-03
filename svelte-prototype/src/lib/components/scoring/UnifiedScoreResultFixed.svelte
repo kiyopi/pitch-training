@@ -15,6 +15,7 @@
     FeedbackDisplay,
     SessionStatistics
   } from '$lib/components/scoring';
+  import { calculateNoteGrade, calculateSessionGrade } from '$lib/utils/gradeCalculation';
   
   export let scoreData = null;
   export let showDetails = false;
@@ -141,48 +142,10 @@
   }
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
-  function calculateSessionGrade(sessionData) {
+  // 統一された評価ロジックを使用
+  function calculateSessionGradeWrapper(sessionData) {
     if (!sessionData || !sessionData.noteResults) return 'needWork';
-    
-    const noteResults = sessionData.noteResults;
-    const results = noteResults.reduce((acc, note) => {
-      const grade = calculateNoteGrade(note.cents);
-      acc[grade] = (acc[grade] || 0) + 1;
-      if (grade !== 'notMeasured') {
-        acc.totalError += Math.abs(note.cents);
-        acc.measuredCount += 1;
-      }
-      return acc;
-    }, { excellent: 0, good: 0, pass: 0, needWork: 0, notMeasured: 0, totalError: 0, measuredCount: 0 });
-    
-    const averageError = results.measuredCount > 0 ? results.totalError / results.measuredCount : 100;
-    const passCount = results.excellent + results.good + results.pass;
-    
-    // 修正された判定ロジック（要練習以上の成績でも正しく評価）
-    if (results.notMeasured > 3) return 'needWork';
-    if (results.measuredCount === 0) return 'needWork';
-    
-    // 優秀・良好・合格の総数で判定（要練習の個数は参考程度）
-    if (averageError <= 20 && results.excellent >= 6) return 'excellent';
-    if (averageError <= 30 && passCount >= 7) return 'good';
-    if (passCount >= 5) return 'pass';
-    
-    // 要練習が圧倒的に多い場合のみ要練習判定
-    if (results.needWork >= 6) return 'needWork';
-    
-    return 'needWork';
-  }
-  
-  // 音程評価計算（RandomModeScoreResultと統一）
-  function calculateNoteGrade(cents) {
-    if (cents === null || cents === undefined || isNaN(cents)) {
-      return 'notMeasured';
-    }
-    const absCents = Math.abs(cents);
-    if (absCents <= 15) return 'excellent';
-    if (absCents <= 25) return 'good';
-    if (absCents <= 40) return 'pass';
-    return 'needWork';
+    return calculateSessionGrade(sessionData.noteResults);
   }
   
   // 時間フォーマット
