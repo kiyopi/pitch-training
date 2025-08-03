@@ -1510,8 +1510,8 @@
       case 'E':
       default:
         type = 'encouragement';
-        primary = 'スタート地点から成長開始！';
-        summary = '練習量を増やして40%突破を目指しましょう。基礎から着実に積み上げていきます。';
+        primary = 'E級ビギナー';
+        summary = '練習開始段階です。継続的な練習で必ず上達します。';
         icon = 'TrendingUp';
         break;
     }
