@@ -19,6 +19,39 @@
   
   export let scoreData = null;
   export let showDetails = false;
+  
+  // 技術分析計算関数
+  function calculateIntervalAccuracy(intervals) {
+    if (!intervals) return 0;
+    
+    let totalAccuracy = 0;
+    let totalAttempts = 0;
+    
+    for (const [intervalName, data] of Object.entries(intervals)) {
+      if (data && typeof data.averageAccuracy === 'number' && typeof data.attempts === 'number') {
+        totalAccuracy += data.averageAccuracy * data.attempts;
+        totalAttempts += data.attempts;
+      }
+    }
+    
+    return totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+  }
+  
+  function calculateDirectionAccuracy(directions) {
+    if (!directions) return 0;
+    
+    let totalAccuracy = 0;
+    let totalAttempts = 0;
+    
+    for (const [directionName, data] of Object.entries(directions)) {
+      if (data && typeof data.averageAccuracy === 'number' && typeof data.attempts === 'number') {
+        totalAccuracy += data.averageAccuracy * data.attempts;
+        totalAttempts += data.attempts;
+      }
+    }
+    
+    return totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+  }
   export let className = '';
   
   // デバッグエリアの統合データ（親から受け取る）
@@ -1229,6 +1262,42 @@
               {/each}
             </div>
           </div>
+          
+          <!-- 技術分析（音程精度・方向性） -->
+          {#if detailedAnalysisData?.intervals || detailedAnalysisData?.directions}
+            <div class="technical-analysis">
+              <h4 class="subsection-title">技術分析</h4>
+              <div class="technical-analysis-content">
+                {#if detailedAnalysisData.intervals}
+                  {@const intervalAccuracy = calculateIntervalAccuracy(detailedAnalysisData.intervals)}
+                  <div class="analysis-item">
+                    <div class="analysis-label">
+                      <Target class="w-4 h-4 text-blue-500" />
+                      <span>音程精度</span>
+                    </div>
+                    <div class="analysis-value">
+                      <span class="percentage">{Math.round(intervalAccuracy)}%</span>
+                      <span class="description">（音の高さを捉える正確性　目標基準：70〜85%）</span>
+                    </div>
+                  </div>
+                {/if}
+                
+                {#if detailedAnalysisData.directions}
+                  {@const directionAccuracy = calculateDirectionAccuracy(detailedAnalysisData.directions)}
+                  <div class="analysis-item">
+                    <div class="analysis-label">
+                      <TrendingUp class="w-4 h-4 text-green-500" />
+                      <span>方向性</span>
+                    </div>
+                    <div class="analysis-value">
+                      <span class="percentage">{Math.round(directionAccuracy)}%</span>
+                      <span class="description">（音程の上下判断の精度　目標基準：80〜90%）</span>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/if}
           
           <!-- 次の目標 -->
           <div class="next-goal">
@@ -2978,6 +3047,58 @@
     font-size: 0.75rem;
   }
   
+  /* 技術分析 */
+  .technical-analysis {
+    margin-bottom: 1.5rem;
+  }
+  
+  .technical-analysis-content {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .analysis-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .analysis-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    min-width: 120px;
+  }
+  
+  .analysis-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    flex: 1;
+  }
+  
+  .analysis-value .percentage {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+  
+  .analysis-value .description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
   /* 次の目標 */
   .next-goal {
     margin-bottom: 1.5rem;
@@ -3153,6 +3274,22 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 0.25rem;
+    }
+    
+    /* 技術分析のレスポンシブ対応 */
+    .analysis-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    
+    .analysis-value {
+      align-items: flex-start;
+      text-align: left;
+    }
+    
+    .analysis-label {
+      min-width: auto;
     }
   }
 </style>
