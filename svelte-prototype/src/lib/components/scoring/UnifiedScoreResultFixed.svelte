@@ -3556,11 +3556,5 @@
     <div class="criteria-note">
       各セッションは上記の基準に基づいて評価されます。連続で良い結果を出すことで実力が確実に向上します。
     </div>
-    <button 
-      class="mt-3 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-      on:click={() => showCarouselSessionHelp = false}
-    >
-      閉じる
-    </button>
   </div>
 {/if}
