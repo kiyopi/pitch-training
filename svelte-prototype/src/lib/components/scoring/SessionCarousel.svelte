@@ -238,9 +238,9 @@
       display: none !important;
     }
     
-    /* iPhone: スライド内パディング最小化で表示領域最大化 */
+    /* iPhone: スライド内パディング完全最小化で表示領域最大化 */
     .carousel-slide {
-      padding: 0.25rem;
+      padding: 0 !important;
     }
     
     /* iPhone: カルーセルビューポートを全幅使用 */

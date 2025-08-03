@@ -2751,6 +2751,16 @@
     margin-top: 1rem;
   }
   
+  /* iPhone: カルーセルラッパー完全余白削除 */
+  @media (max-width: 640px) {
+    .carousel-wrapper {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+  
   
   .carousel-session-grade {
     display: flex;

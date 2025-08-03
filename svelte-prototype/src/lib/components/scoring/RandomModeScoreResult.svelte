@@ -1009,20 +1009,22 @@
 
   /* iPhone用レスポンシブ最適化 */
   @media (max-width: 640px) {
-    /* コンテナ全体: パディング削減で表示領域最大化 */
+    /* コンテナ全体: パディング完全削除で表示領域最大化 */
     .random-mode-score-result {
-      padding: 1rem;
+      padding: 0.5rem !important;
       margin: 0 !important;
       margin-bottom: 0 !important;
+      border-radius: 6px !important;
+      box-shadow: none !important;
     }
     
     /* 評価分布セクション: 右はみ出し防止・左右マージン完全削除 */
     .rating-distribution {
       overflow-x: hidden;
-      margin-left: -1rem;
-      margin-right: -1rem;
-      padding-left: 0.25rem;
-      padding-right: 0.25rem;
+      margin-left: -1.5rem;
+      margin-right: -1.5rem;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
     }
     
     /* 評価分布バー: ラベル幅縮小でバー表示領域拡大 */
