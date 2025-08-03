@@ -2,8 +2,6 @@
   import { Trophy, Star, ThumbsUp, Frown, AlertCircle, Music, Meh, Mic, 
            AlertTriangle, Lightbulb, Flame, Sprout, Info, ChevronDown, ChevronUp, HelpCircle, Medal, BookOpenCheck } from 'lucide-svelte';
   import { fly, fade, slide } from 'svelte/transition';
-  import { tweened } from 'svelte/motion';
-  import { cubicOut } from 'svelte/easing';
   import { onMount, createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();
@@ -28,18 +26,8 @@
     notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500', colorValue: '#6b7280' }
   };
   
-  // アニメーション用のスコア
-  const displayScore = tweened(0, {
-    duration: 1000,
-    easing: cubicOut
-  });
-  
-  // 評価分布バーのアニメーション用
-  const excellentWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 0 });
-  const goodWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 100 });
-  const passWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 200 });
-  const needWorkWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 300 });
-  const notMeasuredWidth = tweened(0, { duration: 800, easing: cubicOut, delay: 400 });
+  // スコア計算（アニメーションなし）
+  let displayScore = 0;
 
   
   // 評価を計算（統一ロジック使用）
@@ -110,18 +98,11 @@
     return sum + severity;
   }, 0);
   
-  // アニメーション実行
+  // スコア計算実行
   $: if (noteResults.length > 0) {
     const baseScore = Math.max(0, 100 - Math.round(averageError / 10));
     // 技術的ブレ検証中のためペナルティを一時的に除外
-    displayScore.set(baseScore); // - penalty
-    
-    // 評価分布バーのアニメーション開始（即座実行）
-    excellentWidth.set((results.excellent / 8) * 100);
-    goodWidth.set((results.good / 8) * 100);
-    passWidth.set((results.pass / 8) * 100);
-    needWorkWidth.set((results.needWork / 8) * 100);
-    notMeasuredWidth.set((results.notMeasured / 8) * 100);
+    displayScore = baseScore; // - penalty
   }
 </script>
 
@@ -179,11 +160,6 @@
   <div class="rating-distribution" in:fly={{ y: 20, duration: 500, delay: 200 }}>
     <h3 class="section-title">評価分布</h3>
     
-    <!-- iPhone デバッグ用 -->
-    <div style="font-size: 10px; color: red; border: 1px solid red; padding: 2px; margin: 5px 0;">
-      Debug: gradeDefinitions={Object.keys(gradeDefinitions).length}, results={JSON.stringify(results)}
-      <br>Tweened values: excellent={$excellentWidth}, good={$goodWidth}, needWork={$needWorkWidth}
-    </div>
     
     <div class="distribution-bars">
       {#each Object.entries(gradeDefinitions) as [key, def], i}
