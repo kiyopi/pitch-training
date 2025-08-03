@@ -1607,14 +1607,15 @@
     });
     
     // 一貫性の表示：データ不足の場合は明確に示す
-    const consistencyText = consistencyScore === 0 
-      ? '一貫性: データ不足　（複数セッション後に評価可能　目標基準：50〜70%）'
-      : `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`;
-    
-    technicalAnalysis.push({
-      category: 'improvements',
-      text: consistencyText
-    });
+    // 一貫性表示は総合評価見直し完了まで一時非表示
+    // const consistencyText = consistencyScore === 0 
+    //   ? '一貫性: データ不足　（複数セッション後に評価可能　目標基準：50〜70%）'
+    //   : `一貫性: ${Math.round(consistencyScore)}%　（同じ音程を複数回演奏した時の安定性　目標基準：50〜70%）`;
+    // 
+    // technicalAnalysis.push({
+    //   category: 'improvements',
+    //   text: consistencyText
+    // });
     
     // アドバイス（改善提案のメッセージ部分）
     const adviceItems = improvements.map(imp => ({
