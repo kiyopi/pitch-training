@@ -403,6 +403,8 @@
       correctedEvaluation: {
         rawAverage: Math.round(stats.mean * 10) / 10,
         correctedAverage: Math.round(robustStats.mean * 10) / 10,
+        rawAccuracy: Math.max(0, Math.round((100 - stats.mean) * 10) / 10),
+        correctedAccuracy: Math.round(robustStats.accuracy * 10) / 10,
         confidenceLevel: confidenceLevel === 'high' ? 94.2 : confidenceLevel === 'medium' ? 87.5 : 72.1
       }
     };
@@ -1505,12 +1507,16 @@
                   <p class="section-description">外れ値除去後の真の音感能力評価</p>
                   <div class="analysis-grid">
                     <div class="analysis-item">
-                      <span class="analysis-label">補正前平均</span>
-                      <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.rawAverage}点</span>
+                      <span class="analysis-label">補正前平均誤差</span>
+                      <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.rawAverage}¢</span>
                     </div>
                     <div class="analysis-item">
-                      <span class="analysis-label">補正後平均</span>
-                      <span class="analysis-value text-green-600 font-bold">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.correctedAverage}点</span>
+                      <span class="analysis-label">補正後平均誤差</span>
+                      <span class="analysis-value text-green-600 font-bold">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.correctedAverage}¢</span>
+                    </div>
+                    <div class="analysis-item">
+                      <span class="analysis-label">補正後精度</span>
+                      <span class="analysis-value text-blue-600 font-bold">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.correctedAccuracy}%</span>
                     </div>
                     <div class="analysis-item">
                       <span class="analysis-label">真の実力推定</span>
