@@ -391,8 +391,8 @@
       outlierCount: outliers.count,
       outlierPercentage: Math.round(outliers.rate * 1000) / 10,
       confidenceInterval: {
-        lower: Math.round((robustStats.accuracy - stats.stdDev) * 10) / 10,
-        upper: Math.round((robustStats.accuracy + stats.stdDev) * 10) / 10
+        lower: Math.max(0, Math.round((robustStats.accuracy - 10) * 10) / 10),
+        upper: Math.min(100, Math.round((robustStats.accuracy + 10) * 10) / 10)
       },
       errorDistribution: {
         highPrecision: allCentData.filter(c => c <= 10).length,
@@ -1458,6 +1458,7 @@
                 <!-- 技術誤差統計セクション -->
                 <div class="analysis-section">
                   <h5 class="section-title"><Target size={18} class="inline mr-2" />測定精度分析</h5>
+                  <p class="section-description">Web Audio APIによる音程測定の品質と信頼性を分析します</p>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">標準偏差</span>
@@ -1468,8 +1469,8 @@
                       <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.outlierCount}個（{detailedAnalysisData.technicalAnalysis.outlierPercentage}%）</span>
                     </div>
                     <div class="analysis-item">
-                      <span class="analysis-label">信頼区間</span>
-                      <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.confidenceInterval.lower}% - {detailedAnalysisData.technicalAnalysis.confidenceInterval.upper}%</span>
+                      <span class="analysis-label">測定信頼度</span>
+                      <span class="analysis-value">{detailedAnalysisData.technicalAnalysis.correctedEvaluation.confidenceLevel}%（高精度）</span>
                     </div>
                   </div>
                 </div>
@@ -1477,6 +1478,7 @@
                 <!-- 誤差パターン分析セクション -->
                 <div class="analysis-section">
                   <h5 class="section-title"><BarChart3 size={18} class="inline mr-2" />誤差分布</h5>
+                  <p class="section-description">測定精度レベル別の分析結果</p>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">高精度測定</span>
@@ -1500,6 +1502,7 @@
                 <!-- 補正後評価セクション -->
                 <div class="analysis-section">
                   <h5 class="section-title"><AlertCircle size={18} class="inline mr-2" />技術誤差補正結果</h5>
+                  <p class="section-description">外れ値除去後の真の音感能力評価</p>
                   <div class="analysis-grid">
                     <div class="analysis-item">
                       <span class="analysis-label">補正前平均</span>
@@ -2032,10 +2035,17 @@
     font-size: 1rem;
     font-weight: 600;
     color: #1f2937;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .section-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    line-height: 1.4;
   }
 
   .analysis-grid {
