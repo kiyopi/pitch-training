@@ -51,7 +51,7 @@
       color: 'text-purple-500',
       bgColor: '#faf5ff',
       borderColor: '#8b5cf6',
-      description: '完璧な演奏です！'
+      description: '音楽家レベルの相対音感を達成！優秀率超えの実力を証明されました。'
     },
     A: { 
       name: 'A級エキスパート', 
@@ -59,7 +59,7 @@
       color: 'text-yellow-500',
       bgColor: '#fffbeb',
       borderColor: '#f59e0b',
-      description: '素晴らしい精度です！'
+      description: 'エキスパートレベル到達！優秀率の安定した音感能力です。'
     },
     B: { 
       name: 'B級プロフィシエント', 
@@ -67,7 +67,7 @@
       color: 'text-green-500',
       bgColor: '#ecfdf5',
       borderColor: '#10b981',
-      description: '良い調子です！'
+      description: 'プロフィシエント級達成！良好率の確実な進歩を示しています。'
     },
     C: { 
       name: 'C級アドバンス', 
@@ -75,23 +75,23 @@
       color: 'text-blue-500',
       bgColor: '#eff6ff',
       borderColor: '#3b82f6',
-      description: '着実に上達しています'
+      description: 'アドバンス級到達！合格率で着実に成長中です。'
     },
     D: { 
-      name: 'D級ビギナー', 
+      name: 'D級ベーシック', 
       icon: Target, 
       color: 'text-orange-500',
       bgColor: '#fff7ed',
       borderColor: '#f97316',
-      description: '練習を続けましょう'
+      description: '継続練習で必ず上達！現在の合格率から目標70%へ向けて練習を続けましょう。'
     },
     E: { 
-      name: 'E級スターター', 
+      name: 'E級ビギナー', 
       icon: TrendingUp, 
       color: 'text-red-500',
       bgColor: '#fef2f2',
       borderColor: '#ef4444',
-      description: '基礎から頑張りましょう'
+      description: '練習開始段階です。継続的な練習で必ず上達します。'
     }
   };
   
@@ -1138,19 +1138,6 @@
         {gradeDef.description}
       </p>
       
-      <!-- S-E級メッセージ表示（8セッション完了時のみ） -->
-      {#if feedbackData?.primary && isCompleted}
-        <div class="grade-feedback-messages" in:fade={{ delay: 800 }}>
-          <p class="grade-primary-message">
-            {feedbackData.primary}
-          </p>
-          {#if feedbackData.summary}
-            <p class="grade-summary-message">
-              {feedbackData.summary}
-            </p>
-          {/if}
-        </div>
-      {/if}
       
       
       <!-- 評価内訳表示（セッション評価スタイル統一） -->
