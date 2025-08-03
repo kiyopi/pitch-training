@@ -38,31 +38,31 @@
   let showSessionHelp = false;
   let showCarouselSessionHelp = false;
 
-  // セッション評価基準の定義
+  // セッション評価基準の定義（総合評価セクションと統一）
   const sessionCriteriaDefinitions = {
     excellent: {
-      name: 'Excellent',
-      condition: '90%以上の精度',
-      icon: Crown,
-      color: 'purple'
+      name: '優秀',
+      detail: '優秀な音程が6個以上 かつ 平均誤差±20¢以内',
+      icon: Trophy,
+      color: '#f59e0b'
     },
     good: {
-      name: 'Good',
-      condition: '80%以上の精度',
-      icon: Trophy,
-      color: 'blue'
+      name: '良好',
+      detail: '合格以上が7個以上 かつ 平均誤差±30¢以内',
+      icon: Star,
+      color: '#059669'
     },
     pass: {
-      name: 'Pass',
-      condition: '65%以上の精度',
+      name: '合格',
+      detail: '合格以上が5個以上 (8音中62.5%)',
       icon: ThumbsUp,
-      color: 'green'
+      color: '#2563eb'
     },
     needWork: {
-      name: 'Need Work',
-      condition: '65%未満の精度',
-      icon: AlertCircle,
-      color: 'orange'
+      name: '要練習',
+      detail: '要練習が6個以上 または 測定不可が4個以上',
+      icon: Frown,
+      color: '#dc2626'
     }
   };
   
@@ -3541,18 +3541,20 @@
     aria-modal="true"
     aria-labelledby="carousel-popover-title"
   >
-    <div id="carousel-popover-title" class="popover-title">セッション評価について</div>
-    <div class="criteria-content">
-      {#each Object.entries(sessionCriteriaDefinitions) as [key, criteria]}
-        <div class="session-criteria-item">
-          <svelte:component this={criteria.icon} class="criteria-icon text-{criteria.color}-600" />
-          <span class="criteria-name">{criteria.name}</span>
-          <span class="criteria-condition">{criteria.condition}</span>
+    <h5 id="carousel-popover-title" class="popover-title">セッション判定基準</h5>
+    
+    {#each Object.entries(sessionCriteriaDefinitions) as [key, criteria]}
+      <div class="session-criteria-item">
+        <svelte:component this={criteria.icon} class="criteria-icon" style="color: {criteria.color};" />
+        <span class="criteria-name">{criteria.name}</span>
+        <div class="criteria-detail">
+          {criteria.detail}
         </div>
-      {/each}
-      <div class="criteria-note">
-        各セッションは上記の基準に基づいて評価されます。連続で良い結果を出すことで実力が確実に向上します。
       </div>
+    {/each}
+    
+    <div class="criteria-note">
+      各セッションは上記の基準に基づいて評価されます。連続で良い結果を出すことで実力が確実に向上します。
     </div>
     <button 
       class="mt-3 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
