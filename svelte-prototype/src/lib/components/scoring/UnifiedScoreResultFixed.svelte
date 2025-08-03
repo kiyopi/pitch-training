@@ -3426,6 +3426,16 @@
     position: relative;
   }
 
+  .popover-backdrop-carousel {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    z-index: 999998 !important;
+  }
+
   .session-criteria-popover-carousel {
     position: fixed !important;
     top: 50% !important;
@@ -3512,6 +3522,13 @@
 
 <!-- カルーセル用セッションヘルプポップオーバー -->
 {#if showCarouselSessionHelp}
+  <!-- グレーの背景（バックドロップ） -->
+  <div 
+    class="popover-backdrop-carousel"
+    on:click={() => showCarouselSessionHelp = false}
+  ></div>
+  
+  <!-- ポップオーバー本体 -->
   <div class="session-criteria-popover-carousel">
     <div class="popover-title">セッション評価について</div>
     <div class="criteria-content">
