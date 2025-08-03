@@ -181,6 +181,11 @@
   <div class="rating-distribution" in:fly={{ y: 20, duration: 500, delay: 200 }}>
     <h3 class="section-title">評価分布</h3>
     
+    <!-- iPhone デバッグ用 -->
+    <div style="font-size: 10px; color: red; border: 1px solid red; padding: 2px; margin: 5px 0;">
+      Debug: gradeDefinitions={Object.keys(gradeDefinitions).length}, results={JSON.stringify(results)}
+    </div>
+    
     <div class="distribution-bars">
       {#each Object.entries(gradeDefinitions) as [key, def], i}
         {@const count = results[key] || 0}
@@ -191,7 +196,7 @@
             <span>{def.name}</span>
           </div>
           
-          <div class="bar-container">
+          <div class="bar-container" style="background: #f3f4f6 !important; border: 1px solid #d1d5db;">
             <div class="distribution-bar {key === 'needWork' && count > 0 ? 'warning' : ''}" 
                  style="width: {key === 'excellent' ? $excellentWidth : 
                                key === 'good' ? $goodWidth : 
