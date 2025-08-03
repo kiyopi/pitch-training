@@ -1,5 +1,5 @@
 <script>
-  import { AlertCircle, TrendingUp, Zap, Crown, Star, BookOpen, Music } from 'lucide-svelte';
+  import { AlertCircle, TrendingUp, Zap, Crown, Star, BookOpen, Music, CheckCircle } from 'lucide-svelte';
   
   export let intervalData = [];
   export let className = '';
@@ -54,56 +54,68 @@
 </script>
 
 <div class="interval-progress-tracker {className}">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {#each intervalData as interval}
-      <div class="interval-card">
-        <div class="flex items-center gap-4">
-          <svelte:component 
-            this={getMasteryIcon(interval.averageError)} 
-            size="24" 
-            class={getMasteryColor(interval.averageError)}
-          />
-          <div class="flex-1">
-            <div class="font-medium text-gray-800 text-base">
+  <!-- テーブル形式で表示 -->
+  <div class="interval-table-container">
+    <table class="interval-table">
+      <thead>
+        <tr>
+          <th>ステータス</th>
+          <th>音程</th>
+          <th>挑戦回数</th>
+          <th>平均誤差</th>
+          <th>評価</th>
+          {#if showTechnicalErrorCorrection}
+            <th>技術誤差補正</th>
+          {/if}
+        </tr>
+      </thead>
+      <tbody>
+        {#each intervalData as interval}
+          <tr class="interval-row {getMasteryMessage(interval.averageError).toLowerCase()}">
+            <td class="status-cell">
+              <svelte:component 
+                this={getMasteryIcon(interval.averageError)} 
+                size="18" 
+                class={getMasteryColor(interval.averageError)}
+              />
+            </td>
+            <td class="interval-name-cell">
               {interval.scale || intervalInfo[interval.type]?.name || interval.type}
               {#if interval.intervalName}
-                <span class="text-sm text-gray-600 ml-1">（{interval.intervalName}）</span>
+                <span style="font-size: 0.875rem; color: #6b7280;">（{interval.intervalName}）</span>
               {/if}
-              <span class="text-sm text-gray-600 ml-3">
-                {interval.attempts}回
-                {#if interval.averageError !== null}
-                  　平均誤差 ±{interval.averageError}¢
-                {:else}
-                  　未測定
-                {/if}
+            </td>
+            <td class="attempts-cell">{interval.attempts}回</td>
+            <td class="error-cell">
+              {#if interval.averageError !== null}
+                ±{interval.averageError}¢
+              {:else}
+                未測定
+              {/if}
+            </td>
+            <td class="mastery-cell">
+              <span class="mastery-badge {getMasteryMessage(interval.averageError).toLowerCase()}">
+                {getMasteryMessage(interval.averageError)}
               </span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 技術誤差補正データ表示 -->
-        {#if showTechnicalErrorCorrection && interval.technicalErrorRate !== undefined}
-          <div class="mt-2 space-y-1">
-            <div class="flex items-center gap-1 text-xs text-gray-600">
-              <Zap size="12" class="text-blue-500" />
-              <span>技術誤差: ±{interval.technicalErrorRate.toFixed(1)}¢</span>
-            </div>
-            {#if interval.trueAccuracy !== undefined}
-              <div class="flex items-center gap-1 text-xs text-green-600">
-                <TrendingUp size="12" />
-                <span>補正後精度: {interval.trueAccuracy.toFixed(1)}%</span>
-              </div>
+            </td>
+            {#if showTechnicalErrorCorrection}
+              <td class="correction-cell">
+                {#if interval.technicalErrorRate !== undefined}
+                  <div style="font-size: 0.75rem;">
+                    <div>誤差: ±{interval.technicalErrorRate.toFixed(1)}¢</div>
+                    {#if interval.trueAccuracy !== undefined}
+                      <div style="color: #10b981;">精度: {interval.trueAccuracy.toFixed(1)}%</div>
+                    {/if}
+                  </div>
+                {:else}
+                  -
+                {/if}
+              </td>
             {/if}
-            {#if interval.recommendation}
-              <div class="flex items-start gap-1 text-xs text-blue-600">
-                <AlertCircle size="12" class="mt-0.5 flex-shrink-0" />
-                <span>{interval.recommendation}</span>
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    {/each}
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
   
   {#if intervalData.length === 0}
@@ -116,47 +128,142 @@
 
 <style>
   .interval-progress-tracker {
-    background: var(--color-bg-primary);
-    border: 1px solid var(--color-gray-200);
+    background: white;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    padding: var(--space-6);
+    padding: 1.5rem;
   }
 
   .tracker-title {
-    font-size: var(--text-lg);
+    font-size: 1.125rem;
     font-weight: 600;
-    color: var(--color-gray-800);
-    margin-bottom: var(--space-4);
+    color: #1f2937;
+    margin-bottom: 1rem;
   }
 
-  .interval-card {
-    background: var(--color-gray-50);
-    border: 1px solid var(--color-gray-200);
+  .interval-table-container {
+    overflow-x: auto;
     border-radius: 8px;
-    padding: var(--space-4);
-    transition: all 0.2s ease-in-out;
+    border: 1px solid #e2e8f0;
   }
-  
-  .interval-card:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border-color: var(--color-gray-300);
-    transform: translateY(-1px);
+
+  .interval-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+
+  .interval-table th {
+    background: #f8fafc;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .interval-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .interval-table tr:hover {
+    background: #fafbfc;
+  }
+
+  /* 行スタイル（日本語クラス名対応） */
+  .interval-row.得意 {
+    border-left: 3px solid #fbbf24;
+  }
+
+  .interval-row.良好 {
+    border-left: 3px solid #3b82f6;
+  }
+
+  .interval-row.普通 {
+    border-left: 3px solid #10b981;
+  }
+
+  .interval-row.苦手 {
+    border-left: 3px solid #f97316;
+  }
+
+  .interval-row.要練習,
+  .interval-row.未測定 {
+    border-left: 3px solid #ef4444;
+  }
+
+  .status-cell {
+    text-align: center;
+    width: 60px;
+  }
+
+  .interval-name-cell {
+    font-weight: 600;
+  }
+
+  .attempts-cell,
+  .error-cell {
+    text-align: center;
+  }
+
+  .mastery-cell {
+    text-align: center;
+  }
+
+  .mastery-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .mastery-badge.得意 {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+  }
+
+  .mastery-badge.良好 {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+
+  .mastery-badge.普通 {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .mastery-badge.苦手 {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: white;
+  }
+
+  .mastery-badge.要練習,
+  .mastery-badge.未測定 {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+  }
+
+  .correction-cell {
+    text-align: center;
   }
 
 
   .empty-state {
     text-align: center;
-    padding: var(--space-8) 0;
-    color: var(--color-gray-500);
+    padding: 2rem 0;
+    color: #6b7280;
   }
 
   .empty-icon {
-    margin: 0 auto var(--space-2);
-    color: var(--color-gray-400);
+    margin: 0 auto 0.5rem;
+    color: #9ca3af;
   }
 
   .empty-text {
-    font-size: var(--text-sm);
+    font-size: 0.875rem;
   }
 </style>

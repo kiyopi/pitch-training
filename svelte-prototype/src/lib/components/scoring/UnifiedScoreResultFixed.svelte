@@ -1768,7 +1768,7 @@
           <!-- 音程別進捗タブ -->
           {#if activeTab === 'intervals' && (detailedAnalysisData?.intervalAnalysis || intervalData.length > 0)}
             <div class="tab-panel">
-              {#if detailedAnalysisData?.intervalMastery}
+              {#if detailedAnalysisData?.intervalMastery || (scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData?.mode === 'chromatic' ? 12 : 8))}
                 <!-- 音程別進捗表（テーブル形式） -->
                 <div class="interval-analysis-table">
                   <h4 class="analysis-title"><Music size={20} class="inline mr-2" />音程別精度一覧</h4>
