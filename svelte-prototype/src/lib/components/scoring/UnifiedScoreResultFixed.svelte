@@ -1184,7 +1184,8 @@
         </div>
       {/if}
       
-      <!-- 8セッション完走時の技術分析結果（S-E級メッセージの直下） -->
+      <!-- Phase 2テスト: 詳細分析結果を一時非表示（評価内訳に統合済み） -->
+      <!-- 
       {#if technicalFeedbackData && Object.keys(technicalFeedbackData).length > 0 && isCompleted}
         <div class="technical-feedback-inline" in:fade={{ delay: 1000 }}>
           <div class="technical-analysis-content">
@@ -1203,6 +1204,7 @@
           </div>
         </div>
       {/if}
+      -->
       
       <!-- 評価内訳表示（セッション評価スタイル統一） -->
       {#if isCompleted && sessionStatistics}
