@@ -1265,6 +1265,7 @@
             </div>
             
             <!-- セッション判定基準ポップオーバー -->
+            <!-- デバッグ: showSessionHelp = {showSessionHelp} -->
             {#if showSessionHelp}
               <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
               <div class="session-criteria-popover" in:fade={{ duration: 200 }}>

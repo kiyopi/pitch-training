@@ -1010,21 +1010,21 @@
   }
   
   .popover-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     background: rgba(0, 0, 0, 0.3);
-    z-index: 9999;
+    z-index: 999998 !important;
   }
 
   .session-criteria-popover {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10000;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 999999 !important;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -1032,6 +1032,7 @@
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     min-width: 320px;
     max-width: 400px;
+    margin: 0 !important;
   }
   
   .popover-title {
