@@ -1142,11 +1142,11 @@
   }
   
   function handleOutsideClick(event) {
-    if (!event.target.closest('.grade-help-icon') && 
+    if (!event.target.closest('.grade-help-icon-button') && 
         !event.target.closest('.grade-criteria-popover')) {
       showGradeHelp = false;
     }
-    if (!event.target.closest('.session-help-icon') && 
+    if (!event.target.closest('.session-help-icon-button') && 
         !event.target.closest('.session-criteria-popover')) {
       showSessionHelp = false;
     }
@@ -1171,12 +1171,16 @@
         <h2 class="grade-name {gradeDef.color}">
           {gradeDef.name}
         </h2>
-        <HelpCircle 
-          size="20" 
-          class="grade-help-icon" 
-          style="color: #6b7280;" 
+        <button 
+          class="grade-help-icon-button" 
           on:click={toggleGradeHelp}
-        />
+          aria-label="8セッション完走時の最終評価基準を表示"
+        >
+          <HelpCircle 
+            size="20" 
+            style="color: #6b7280;" 
+          />
+        </button>
       </div>
       
       <p class="grade-description" in:fade={{ delay: 600 }}>
@@ -1240,12 +1244,16 @@
           <div class="session-results-visual">
             <div class="subsection-title-with-help">
               <h4 class="subsection-title">セッション結果</h4>
-              <HelpCircle 
-                size="16" 
-                class="session-help-icon" 
-                style="color: #6b7280;" 
+              <button 
+                class="session-help-icon-button" 
                 on:click={toggleSessionHelp}
-              />
+                aria-label="セッション判定基準を表示"
+              >
+                <HelpCircle 
+                  size="16" 
+                  style="color: #6b7280;" 
+                />
+              </button>
             </div>
             
             <!-- セッション判定基準ポップオーバー -->
@@ -3210,14 +3218,20 @@
     gap: 0.75rem;
   }
   
-  .grade-help-icon,
-  .session-help-icon {
+  .grade-help-icon-button,
+  .session-help-icon-button {
+    background: none;
+    border: none;
+    padding: 0;
     cursor: pointer;
     transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
-  .grade-help-icon:hover,
-  .session-help-icon:hover {
+  .grade-help-icon-button:hover,
+  .session-help-icon-button:hover {
     opacity: 0.7;
   }
   

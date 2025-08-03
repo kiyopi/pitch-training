@@ -52,7 +52,7 @@
   }
   
   function handleOutsideClick(event) {
-    if (!event.target.closest('.session-help-icon') && 
+    if (!event.target.closest('.session-help-icon-button') && 
         !event.target.closest('.session-criteria-popover')) {
       showSessionHelp = false;
     }
@@ -162,12 +162,16 @@
         <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
           {gradeDefinitions[overallGrade].name}
         </h2>
-        <HelpCircle 
-          size="16" 
-          class="session-help-icon" 
-          style="color: #6b7280;" 
+        <button 
+          class="session-help-icon-button" 
           on:click={toggleSessionHelp}
-        />
+          aria-label="セッション判定基準を表示"
+        >
+          <HelpCircle 
+            size="16" 
+            style="color: #6b7280;" 
+          />
+        </button>
       </div>
       
       <!-- セッション判定基準ポップオーバー -->
@@ -984,12 +988,18 @@
     margin-bottom: 0.5rem;
   }
   
-  .session-help-icon {
+  .session-help-icon-button {
+    background: none;
+    border: none;
+    padding: 0;
     cursor: pointer;
     transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
-  .session-help-icon:hover {
+  .session-help-icon-button:hover {
     opacity: 0.7;
   }
   
