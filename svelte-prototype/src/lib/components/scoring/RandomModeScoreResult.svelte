@@ -263,7 +263,7 @@
                 <span class="center-label">正確</span>
               </div>
               <div class="accuracy-indicator {grade}" 
-                   style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 100) * 50))}%">
+                   style="left: {Math.max(0, Math.min(100, 50 + (note.cents / 120) * 50))}%">
               </div>
             </div>
           </div>
