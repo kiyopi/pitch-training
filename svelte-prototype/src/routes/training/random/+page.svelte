@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { page } from '$app/stores';
-  import { ChevronRight } from 'lucide-svelte';
+  import { ChevronRight, Music } from 'lucide-svelte';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import VolumeBar from '$lib/components/VolumeBar.svelte';
@@ -285,6 +285,12 @@
   // ガイドアニメーション制御
   let guideAnimationTimer = null;
   let isGuideAnimationActive = false;
+  
+  // ドレミガイドスタートバー制御
+  let guideStartProgress = 0; // 0-100のプログレス
+  let isGuideStartBarActive = false;
+  let guideStartTimer = null;
+  let musicIconGlowing = false;
   
   // 裏での評価蓄積
   let scaleEvaluations = [];
@@ -601,6 +607,58 @@
       // 基音が未設定の場合は新しいランダム基音を選択
       playRandomBaseNote();
     }
+    
+    // ドレミガイドスタートバーを開始
+    startGuideStartBar();
+  }
+
+  // ドレミガイドスタートバー制御関数
+  function startGuideStartBar() {
+    // 既存のタイマーをクリア
+    if (guideStartTimer) {
+      clearInterval(guideStartTimer);
+    }
+    
+    // バー状態をリセット
+    guideStartProgress = 0;
+    isGuideStartBarActive = true;
+    musicIconGlowing = false;
+    
+    console.log('🎵 [GuideStartBar] ガイドスタートバー開始');
+    
+    // 2秒間でプログレスを100%まで進める（50msごとに2.5%ずつ）
+    guideStartTimer = setInterval(() => {
+      guideStartProgress += 2.5;
+      
+      if (guideStartProgress >= 100) {
+        // プログレス完了時
+        guideStartProgress = 100;
+        musicIconGlowing = true;
+        
+        console.log('🎵 [GuideStartBar] ガイド開始タイミング！');
+        
+        // 少し遅延してバーを非表示
+        setTimeout(() => {
+          isGuideStartBarActive = false;
+          musicIconGlowing = false;
+          guideStartProgress = 0;
+        }, 800);
+        
+        clearInterval(guideStartTimer);
+        guideStartTimer = null;
+      }
+    }, 50);
+  }
+  
+  // クリーンアップ
+  function cleanupGuideStartBar() {
+    if (guideStartTimer) {
+      clearInterval(guideStartTimer);
+      guideStartTimer = null;
+    }
+    isGuideStartBarActive = false;
+    musicIconGlowing = false;
+    guideStartProgress = 0;
   }
 
   // 【新】プロトタイプ式のシンプルで正確な周波数計算
@@ -2523,6 +2581,22 @@
                 現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
               </div>
             {/if}
+            
+            <!-- ドレミガイドスタートバー -->
+            {#if isGuideStartBarActive}
+              <div class="guide-start-bar-container">
+                <div class="guide-start-label">ガイド開始まで</div>
+                <div class="guide-start-bar">
+                  <div 
+                    class="guide-progress-fill" 
+                    style="width: {guideStartProgress}%"
+                  ></div>
+                  <div class="guide-music-icon {musicIconGlowing ? 'glowing' : ''}">
+                    <Music size="20" />
+                  </div>
+                </div>
+              </div>
+            {/if}
           </div>
         </Card>
 
@@ -3464,7 +3538,74 @@
     text-align: right;
   }
   
+  /* ドレミガイドスタートバー */
+  .guide-start-bar-container {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
   
+  .guide-start-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    font-weight: 500;
+  }
+  
+  .guide-start-bar {
+    position: relative;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  
+  .guide-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+    transition: width 0.1s ease-out;
+  }
+  
+  .guide-music-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .guide-music-icon.glowing {
+    color: #fbbf24;
+    background: #fffbeb;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+    animation: pulse-glow 1s infinite;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      transform: translateY(-50%) scale(1);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+    }
+    50% {
+      transform: translateY(-50%) scale(1.1);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    }
+  }
   
   @media (max-width: 768px) {
     .session-status {
