@@ -68,6 +68,7 @@ export const SESSION_GRADE_DEFINITIONS = {
     icon: Trophy,
     detail: '合格以上が7個以上 かつ 平均誤差±40¢以内',
     color: 'text-yellow-500',
+    colorValue: '#eab308',
     bgColor: '#fffbeb',
     borderColor: '#fbbf24'
   },
@@ -76,6 +77,7 @@ export const SESSION_GRADE_DEFINITIONS = {
     icon: Star,
     detail: '合格以上が6個以上 かつ 平均誤差±60¢以内',
     color: 'text-green-500',
+    colorValue: '#10b981',
     bgColor: '#ecfdf5',
     borderColor: '#10b981'
   },
@@ -84,6 +86,7 @@ export const SESSION_GRADE_DEFINITIONS = {
     icon: ThumbsUp,
     detail: '合格以上が4個以上 (8音中50%)',
     color: 'text-blue-500',
+    colorValue: '#3b82f6',
     bgColor: '#eff6ff',
     borderColor: '#3b82f6'
   },
@@ -92,6 +95,7 @@ export const SESSION_GRADE_DEFINITIONS = {
     icon: Frown,
     detail: '基本的な音程感覚を身につけて合格率を向上させましょう',
     color: 'text-red-500',
+    colorValue: '#ef4444',
     bgColor: '#fef2f2',
     borderColor: '#ef4444'
   }

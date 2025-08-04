@@ -20,6 +20,7 @@
   
   // 統一評価定義を使用
   const gradeDefinitions = GradeDefinitions.getAllNoteGrades();
+  const sessionGradeDefinitions = GradeDefinitions.getAllSessionGrades();
   
   // スコア計算（アニメーションなし）
   let displayScore = 0;
@@ -91,16 +92,16 @@
       <!-- シンプルアイコン（アニメーション完全削除） -->
       <div class="simple-grade-icon">
         <svelte:component 
-          this={gradeDefinitions[overallGrade].icon} 
+          this={sessionGradeDefinitions[overallGrade].icon} 
           size="120"
           class="grade-icon-simple" 
-          style="color: {gradeDefinitions[overallGrade].colorValue};"
+          style="color: {sessionGradeDefinitions[overallGrade].colorValue};"
         />
       </div>
       
       <div class="grade-title-with-help">
-        <h2 class="grade-title {gradeDefinitions[overallGrade].color}">
-          {gradeDefinitions[overallGrade].name}
+        <h2 class="grade-title {sessionGradeDefinitions[overallGrade].color}">
+          {sessionGradeDefinitions[overallGrade].name}
         </h2>
         <button 
           class="session-help-icon-button" 
@@ -319,6 +320,8 @@
     padding: 2rem 0;
     border-bottom: 1px solid #e5e7eb;
     margin-bottom: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 12px 12px 0 0;
   }
   
   .grade-display {
