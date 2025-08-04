@@ -228,11 +228,6 @@
               />
               <span class="note-name-simple">{note.name}（{note.targetFreq}Hz）</span>
               <span class="detection-result">あなた: {note.detectedFreq || note.adjustedFrequency || note.detectedFrequency || 'データなし'}Hz ({note.diff > 0 ? '+' : ''}{note.diff}Hz) {note.cents > 0 ? '+' : ''}{note.cents}¢</span>
-              {#if isOutlier}
-                <span class="outlier-badge-simple">
-                  {Math.abs(note.cents) > 100 ? '重大' : '注意'}
-                </span>
-              {/if}
             </div>
           {/if}
         </div>
@@ -767,14 +762,6 @@
     font-weight: 500;
   }
 
-  .outlier-badge-simple {
-    padding: 0.125rem 0.375rem;
-    background: #ef4444;
-    color: white;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
 
   /* 精度バー矢印（後回し） */
 
