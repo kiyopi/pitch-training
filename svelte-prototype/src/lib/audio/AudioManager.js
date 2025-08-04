@@ -526,16 +526,16 @@ class AudioManager {
   createDefaultSettings() {
     const platformSpecs = this.getPlatformSpecs();
     
-    // iOS実機対応: 音量・マイク感度を大幅強化
-    const iosOptimizedVolume = platformSpecs.isIOS ? 6 : -6;  // iPad/iPhone: 6dB (従来0dB)
-    const iosOptimizedSensitivity = platformSpecs.isIOS ? 3.0 : platformSpecs.gainCompensation; // iPad/iPhone: 3.0x (従来1.5x)
+    // iOS実機対応: 音量・マイク感度を最大強化
+    const iosOptimizedVolume = platformSpecs.isIOS ? 12 : -6;  // iPad/iPhone: 12dB (6dB→12dB大幅向上)
+    const iosOptimizedSensitivity = platformSpecs.isIOS ? 5.0 : platformSpecs.gainCompensation; // iPad/iPhone: 5.0x (3.0x→5.0x超高感度)
     
     console.log(`🔧 [AudioManager] iOS実機対応設定生成:`, {
       deviceType: platformSpecs.deviceType,
       isIOS: platformSpecs.isIOS,
       baseToneVolume: `${iosOptimizedVolume}dB`,
       micSensitivity: `${iosOptimizedSensitivity}x`,
-      従来値: { baseTone: '0dB', micSens: '1.5x' }
+      従来値: { baseTone: '6dB→12dB', micSens: '3.0x→5.0x' }
     });
     
     return {
