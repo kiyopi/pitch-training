@@ -43,7 +43,7 @@
     // AudioManagerから統一設定を取得
     platformSpecs = audioManager.getPlatformSpecs();
     deviceInfo = `${platformSpecs.deviceType}検出`;
-    baseToneVolume = 20; // テスト用: 極端に大きい値
+    baseToneVolume = 25; // 最適化: 十分な音量レベル確保
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
     console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
@@ -200,7 +200,7 @@
           urls: { "C4": "C4.mp3" },
           baseUrl: "https://tonejs.github.io/audio/salamander/",
           release: 1.5,
-          volume: 20, // テスト用: 極端に大きい値で変化を確認
+          volume: 25, // 最適化: 十分な音量レベル確保
           onload: () => {
             console.log('✅ [MicTest] 基音サンプラー読み込み完了');
           },
@@ -210,8 +210,8 @@
         }).toDestination();
         
         // 初期音量設定
-        // updateBaseToneVolume(); // コメントアウト: 初期化時の volume: 20 を維持
-        console.log('🔊 [MicTest] 初期音量維持: 20dB');
+        // updateBaseToneVolume(); // コメントアウト: 初期化時の volume: 25 を維持
+        console.log('🔊 [MicTest] 初期音量維持: 25dB');
         
       } else {
         console.warn('⚠️ [MicTest] window未定義 - 基音テスト無効');
