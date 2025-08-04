@@ -7,6 +7,7 @@
 		"src/routes/+layout.ts"
 	],
 	"/microphone-test": [
+		"src/routes/microphone-test/+page.ts",
 		"src/routes/+layout.ts"
 	],
 	"/scoring-test": [
@@ -19,6 +20,7 @@
 		"src/routes/+layout.ts"
 	],
 	"/training/random": [
+		"src/routes/training/random/+page.ts",
 		"src/routes/+layout.ts"
 	]
 }
