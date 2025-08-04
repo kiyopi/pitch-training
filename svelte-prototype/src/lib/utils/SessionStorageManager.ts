@@ -62,6 +62,29 @@ export class SessionStorageManager {
         return null;
       }
 
+      // 健康確認（データ整合性チェック）
+      const healthCheckResult = this.performHealthCheck(parsed);
+      if (!healthCheckResult.isHealthy) {
+        console.warn('[SessionStorageManager] Data health check failed:', healthCheckResult.issues);
+        this.createBackup(parsed);
+        
+        // 修復可能な場合は修復を試行
+        if (healthCheckResult.canRepair) {
+          const repairedData = this.repairProgressData(parsed, healthCheckResult.issues);
+          if (repairedData) {
+            console.info('[SessionStorageManager] Data repaired successfully');
+            this.saveProgress(repairedData);
+            this.progress = repairedData;
+            return repairedData;
+          }
+        }
+        
+        // 修復不可能な場合は初期化
+        console.warn('[SessionStorageManager] Data irreparable, creating new progress');
+        this.progress = null;
+        return null;
+      }
+
       // バージョン互換性チェック
       if (parsed.version !== DATA_VERSION) {
         console.info('[SessionStorageManager] Data version mismatch, attempting migration');
@@ -516,6 +539,137 @@ export class SessionStorageManager {
       console.info('[SessionStorageManager] 完了サイクルバックアップ作成:', backupKey);
     } catch (error) {
       console.warn('[SessionStorageManager] 完了サイクルバックアップ失敗:', error);
+    }
+  }
+
+  // =============================================================================
+  // 健康確認・データ修復機能
+  // =============================================================================
+
+  /**
+   * データ健康確認
+   */
+  private performHealthCheck(progress: TrainingProgress): {
+    isHealthy: boolean;
+    canRepair: boolean;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+    let canRepair = true;
+
+    try {
+      // 1. セッションID妥当性確認
+      if (progress.currentSessionId < 1 || progress.currentSessionId > 8) {
+        issues.push(`無効なセッションID: ${progress.currentSessionId}`);
+      }
+
+      // 2. セッション履歴整合性確認
+      if (progress.sessionHistory.length > 8) {
+        issues.push(`セッション履歴過多: ${progress.sessionHistory.length}件`);
+      }
+
+      // 3. 完了状態整合性確認
+      if (progress.isCompleted && progress.sessionHistory.length < 8) {
+        issues.push(`完了フラグ不整合: isCompleted=true but history=${progress.sessionHistory.length}`);
+      }
+
+      // 4. 使用基音リスト確認
+      if (progress.usedBaseNotes && progress.usedBaseNotes.length > progress.sessionHistory.length) {
+        issues.push(`使用基音リスト不整合: used=${progress.usedBaseNotes.length}, history=${progress.sessionHistory.length}`);
+      }
+
+      // 5. セッション履歴のID連続性確認
+      for (let i = 0; i < progress.sessionHistory.length; i++) {
+        const expectedId = i + 1;
+        const actualId = progress.sessionHistory[i].sessionId;
+        if (actualId !== expectedId) {
+          issues.push(`セッション履歴ID不整合: 位置${i} 期待値${expectedId} 実際値${actualId}`);
+          break;
+        }
+      }
+
+      // 6. リロード検出（セッション途中での不整合）
+      const isInProgress = progress.currentSessionId > 1 && !progress.isCompleted;
+      const hasHistory = progress.sessionHistory.length > 0;
+      const lastSessionId = hasHistory ? Math.max(...progress.sessionHistory.map(s => s.sessionId)) : 0;
+      
+      if (isInProgress && progress.currentSessionId !== lastSessionId + 1) {
+        issues.push(`リロード検出: currentSession=${progress.currentSessionId}, lastHistory=${lastSessionId}`);
+      }
+
+      // 修復不可能な条件判定
+      if (progress.sessionHistory.length > 8 || 
+          (progress.sessionHistory.some(s => !s.sessionId || !s.baseNote))) {
+        canRepair = false;
+      }
+
+      const isHealthy = issues.length === 0;
+      
+      if (!isHealthy) {
+        console.info('[SessionStorageManager] Health check issues detected:', issues);
+      }
+
+      return { isHealthy, canRepair, issues };
+    } catch (error) {
+      console.error('[SessionStorageManager] Health check error:', error);
+      return { isHealthy: false, canRepair: false, issues: ['健康確認処理エラー'] };
+    }
+  }
+
+  /**
+   * データ修復処理
+   */
+  private repairProgressData(progress: TrainingProgress, issues: string[]): TrainingProgress | null {
+    try {
+      const repairedProgress = { ...progress };
+      
+      for (const issue of issues) {
+        if (issue.includes('無効なセッションID')) {
+          // セッションIDを適切な値に修正
+          if (repairedProgress.sessionHistory.length === 0) {
+            repairedProgress.currentSessionId = 1;
+            console.info('[Repair] セッションIDを1に修正（履歴なし）');
+          } else {
+            const lastSession = Math.max(...repairedProgress.sessionHistory.map(s => s.sessionId));
+            repairedProgress.currentSessionId = Math.min(lastSession + 1, 8);
+            console.info('[Repair] セッションIDを修正:', repairedProgress.currentSessionId);
+          }
+        }
+        
+        else if (issue.includes('完了フラグ不整合')) {
+          // 8セッション未満の場合は完了フラグをfalseに修正
+          if (repairedProgress.sessionHistory.length < 8) {
+            repairedProgress.isCompleted = false;
+            console.info('[Repair] 完了フラグをfalseに修正');
+          }
+        }
+        
+        else if (issue.includes('使用基音リスト不整合')) {
+          // 使用基音リストを履歴から再構築
+          repairedProgress.usedBaseNotes = [...new Set(repairedProgress.sessionHistory.map(s => s.baseNote))];
+          console.info('[Repair] 使用基音リスト再構築:', repairedProgress.usedBaseNotes.length);
+        }
+        
+        else if (issue.includes('リロード検出')) {
+          // リロード時は進行状況をリセット（新セッション開始）
+          console.info('[Repair] リロード検出 - 新セッション開始に修正');
+          return null; // 新規作成を促す
+        }
+      }
+
+      // 修復後の最終確認
+      const finalCheck = this.performHealthCheck(repairedProgress);
+      if (finalCheck.isHealthy) {
+        console.info('[SessionStorageManager] データ修復成功');
+        return repairedProgress;
+      } else {
+        console.warn('[SessionStorageManager] 修復後も問題残存:', finalCheck.issues);
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('[SessionStorageManager] データ修復エラー:', error);
+      return null;
     }
   }
 }
