@@ -808,6 +808,7 @@
           'C4': 'C4.mp3',
         },
         baseUrl: `${base}/audio/piano/`,
+        volume: 0, // プロトタイプ準拠: 初期化時に基準音量設定
         release: 1.5, // リリース時間最適化
         onload: () => {
           isSamplerLoading = false;
