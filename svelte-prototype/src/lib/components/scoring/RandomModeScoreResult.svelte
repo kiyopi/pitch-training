@@ -87,21 +87,21 @@
 
 <div class="random-mode-score-result {className}">
   <!-- 総合評価セクション -->
-  <div class="overall-score-section">
+  <div class="overall-score-section" style="background-color: {sessionGradeDefinitions[overallGrade]?.bgColor || sessionGradeDefinitions.needWork.bgColor}; border: 2px solid {sessionGradeDefinitions[overallGrade]?.borderColor || sessionGradeDefinitions.needWork.borderColor};">
     <div class="grade-display-enhanced" in:fly={{ y: -20, duration: 500 }}>
       <!-- シンプルアイコン（アニメーション完全削除） -->
       <div class="simple-grade-icon">
         <svelte:component 
-          this={sessionGradeDefinitions[overallGrade].icon} 
+          this={sessionGradeDefinitions[overallGrade]?.icon || sessionGradeDefinitions.needWork.icon} 
           size="120"
           class="grade-icon-simple" 
-          style="color: {sessionGradeDefinitions[overallGrade].colorValue};"
+          style="color: {sessionGradeDefinitions[overallGrade]?.colorValue || sessionGradeDefinitions.needWork.colorValue};"
         />
       </div>
       
       <div class="grade-title-with-help">
-        <h2 class="grade-title {sessionGradeDefinitions[overallGrade].color}">
-          {sessionGradeDefinitions[overallGrade].name}
+        <h2 class="grade-title {sessionGradeDefinitions[overallGrade]?.color || sessionGradeDefinitions.needWork.color}">
+          {sessionGradeDefinitions[overallGrade]?.name || sessionGradeDefinitions.needWork.name}
         </h2>
         <button 
           class="session-help-icon-button" 
@@ -320,7 +320,6 @@
     padding: 2rem 0;
     border-bottom: 1px solid #e5e7eb;
     margin-bottom: 2rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
     border-radius: 12px 12px 0 0;
   }
   
