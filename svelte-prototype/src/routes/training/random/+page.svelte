@@ -56,6 +56,22 @@
   
   // Force GitHub Actions trigger: 2025-07-29 06:30
   
+  // デバイス依存音量設定
+  function getVolumeForDevice() {
+    const isIPhone = /iPhone/.test(navigator.userAgent);
+    const isIPad = /iPad/.test(navigator.userAgent);
+    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    const isIOS = isIPhone || isIPad || isIPadOS;
+    
+    if (isIOS) {
+      console.log('🔊 [RandomTraining] iOS/iPadOS検出 - 音量35dB設定');
+      return 35; // iOS/iPadOS: 高音量設定
+    } else {
+      console.log('🔊 [RandomTraining] PC検出 - 音量-6dB設定');
+      return -6; // PC: 標準音量設定
+    }
+  }
+  
   // 統合グレード計算関数
   function calculateUnifiedGrade(sessionHistory) {
     if (!sessionHistory || sessionHistory.length === 0) return 'E';
@@ -302,10 +318,7 @@
   let detectedNote = 'ーー';
   let pitchDifference = 0;
   
-  // ガイダンス表示用
-  let currentTargetFrequency = 0;
-  let currentTargetNote = '';
-  let currentCentDiff = 0;
+  // ガイダンス表示用変数削除（UI簡素化）
   
   // セッション結果
   let sessionResults = {
@@ -835,7 +848,7 @@
         },
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
-        volume: 35, // 最終最適化: 最大音量レベル確保
+        volume: getVolumeForDevice(), // デバイス依存音量設定
         onload: () => {
           isSamplerLoading = false;
         },
@@ -1875,25 +1888,7 @@
     detectedNote = displayNote;
     currentVolume = volume;
     
-    // ガイダンス情報更新（トレーニング中のみ）
-    if (trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0) {
-      const activeStepIndex = currentScaleIndex - 1;
-      if (activeStepIndex >= 0 && activeStepIndex < scaleSteps.length) {
-        currentTargetFrequency = calculateExpectedFrequency(currentBaseFrequency, activeStepIndex);
-        currentTargetNote = scaleSteps[activeStepIndex].name;
-        
-        if (frequency > 0 && currentTargetFrequency > 0) {
-          currentCentDiff = Math.round(1200 * Math.log2(displayFrequency / currentTargetFrequency));
-        } else {
-          currentCentDiff = 0;
-        }
-      }
-    } else {
-      // ガイダンス情報をリセット
-      currentTargetFrequency = 0;
-      currentTargetNote = '';
-      currentCentDiff = 0;
-    }
+    // ガイダンス機能削除済み（UI簡素化）
     
     // 基音との相対音程を計算（補正後の値で）
     if (currentBaseFrequency > 0 && displayFrequency > 0) {
@@ -2559,10 +2554,7 @@
           isMuted={trainingPhase !== 'guiding'}
           muteMessage="基音再生後に開始"
           className="half-width"
-          targetFrequency={currentTargetFrequency}
-          targetNote={currentTargetNote}
-          centDiff={currentCentDiff}
-          showGuidance={trainingPhase === 'guiding' && isGuideAnimationActive}
+          showGuidance={false}
         />
       </div>
     {/if}
