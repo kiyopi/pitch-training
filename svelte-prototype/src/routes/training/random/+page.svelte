@@ -798,15 +798,30 @@
         }
       }).toDestination();
       
-      // 音量調整 - iPad/iPhone対応
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      sampler.volume.value = isIOS ? 0 : -6; // iOS: 0dB, その他: -6dB
-      console.log(`🔊 [RandomTraining] 音量設定: ${isIOS ? '0dB (iOS)' : '-6dB (その他)'}`);
+      // 音量調整 - iPad/iPhone個別対応
+      const isIPhone = /iPhone/.test(navigator.userAgent);
+      const isIPad = /iPad/.test(navigator.userAgent);
+      const isIOS = isIPhone || isIPad;
       
-      // iOS専用: Tone.js Destination音量も調整
-      if (isIOS) {
-        Tone.Destination.volume.value = 3; // +3dB boost for iOS
-        console.log('🔊 [RandomTraining] iOS用 Destination音量ブースト: +3dB');
+      // デバイス別sampler音量設定
+      if (isIPad) {
+        sampler.volume.value = 6; // iPad: +6dB（強力ブースト）
+        console.log('🔊 [RandomTraining] iPad検出: sampler音量 +6dB');
+      } else if (isIPhone) {
+        sampler.volume.value = 0; // iPhone: 0dB
+        console.log('🔊 [RandomTraining] iPhone検出: sampler音量 0dB');
+      } else {
+        sampler.volume.value = -6; // その他: -6dB
+        console.log('🔊 [RandomTraining] その他デバイス: sampler音量 -6dB');
+      }
+      
+      // デバイス別Destination音量設定
+      if (isIPad) {
+        Tone.Destination.volume.value = 6; // iPad: +6dB Destination boost
+        console.log('🔊 [RandomTraining] iPad: Destination音量 +6dB');
+      } else if (isIPhone) {
+        Tone.Destination.volume.value = 3; // iPhone: +3dB Destination boost
+        console.log('🔊 [RandomTraining] iPhone: Destination音量 +3dB');
       }
       
     } catch (error) {
