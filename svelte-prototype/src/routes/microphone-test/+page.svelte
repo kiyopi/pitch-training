@@ -319,23 +319,6 @@
     text-align: center;
   }
 
-  .training-mode-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-2) 0;
-  }
-
-  .training-mode-description {
-    font-size: var(--text-base);
-    color: var(--color-gray-600);
-    margin: 0;
-  }
-
-  .mic-test-instructions {
-    text-align: center;
-    margin-bottom: var(--space-6);
-  }
 
   .instructions-title {
     font-size: var(--text-xl);
@@ -360,11 +343,6 @@
     text-align: center;
   }
 
-  .status-text.voice-instruction {
-    color: #2563eb;
-    font-size: var(--text-xl);
-    font-weight: 700;
-  }
 
   .ready-title {
     font-size: var(--text-xl);
@@ -413,17 +391,6 @@
     background-color: #1d4ed8;
   }
 
-  .mic-test-button.preparing {
-    background-color: #f59e0b;
-    color: white;
-    cursor: not-allowed;
-  }
-
-  .mic-test-button.confirming {
-    background-color: #8b5cf6;
-    color: white;
-    cursor: not-allowed;
-  }
 
   .mic-test-button.retry {
     background-color: #dc2626;
@@ -478,25 +445,6 @@
     gap: var(--space-2);
   }
 
-  .status-indicator {
-    padding: var(--space-3);
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: var(--text-sm);
-  }
-
-  .status-indicator.pending {
-    background-color: #fef3c7;
-    color: #92400e;
-    border: 1px solid #fcd34d;
-  }
-
-
-  .status-indicator.error {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-  }
 
   .start-button,
   .retry-button {

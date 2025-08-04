@@ -11,6 +11,7 @@
 		"src/routes/+layout.ts"
 	],
 	"/training/continuous": [
+		"src/routes/training/continuous/+page.ts",
 		"src/routes/+layout.ts"
 	],
 	"/training/random": [

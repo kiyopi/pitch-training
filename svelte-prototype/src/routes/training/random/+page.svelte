@@ -12,11 +12,17 @@
 
   // マイクテスト完了確認
   let micTestCompleted = false;
+  let isClient = false;
   
   onMount(() => {
+    // クライアント側でのみ実行
+    isClient = true;
+    
     // マイクテスト完了フラグ確認
-    micTestCompleted = localStorage.getItem('mic-test-completed') === 'true';
-    console.log('🎤 [RandomTraining] マイクテスト完了フラグ:', micTestCompleted);
+    if (typeof localStorage !== 'undefined') {
+      micTestCompleted = localStorage.getItem('mic-test-completed') === 'true';
+      console.log('🎤 [RandomTraining] マイクテスト完了フラグ:', micTestCompleted);
+    }
   });
 
   // TrainingCore エラーハンドラ
@@ -56,7 +62,7 @@
     </div>
 
     <!-- マイクテスト未完了の場合は誘導 -->
-    {#if !micTestCompleted}
+    {#if isClient && !micTestCompleted}
       <div class="mic-test-required">
         <div class="warning-card">
           <div class="warning-icon">⚠️</div>
@@ -72,7 +78,7 @@
           </div>
         </div>
       </div>
-    {:else}
+    {:else if isClient && micTestCompleted}
       <!-- TrainingCore統合 -->
       <TrainingCore
         mode="random"
@@ -85,6 +91,12 @@
         onSessionComplete={handleSessionComplete}
         onAllComplete={handleAllComplete}
       />
+    {:else if !isClient}
+      <!-- サーバーサイドレンダリング中の仮表示 -->
+      <div class="loading-placeholder">
+        <div class="loading-spinner">🎲</div>
+        <p>読み込み中...</p>
+      </div>
     {/if}
 
   </div>
@@ -174,6 +186,28 @@
     background-color: #d97706;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 読み込み中プレースホルダー */
+  .loading-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-gray-600);
+  }
+
+  .loading-spinner {
+    font-size: 3rem;
+    animation: spin 2s linear infinite;
+    margin-bottom: var(--space-4);
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* レスポンシブ対応 */

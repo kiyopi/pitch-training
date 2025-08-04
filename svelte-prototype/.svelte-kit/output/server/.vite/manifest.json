@@ -163,7 +163,7 @@
       "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Douwi259.css"
+      "_app/immutable/assets/_page.DA77aMuH.css"
     ]
   },
   "src/routes/microphone-test/+page.ts": {
@@ -201,8 +201,14 @@
       "_TrainingCore.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BpNOQ34r.css"
+      "_app/immutable/assets/_page.C7txEQCM.css"
     ]
+  },
+  "src/routes/training/continuous/+page.ts": {
+    "file": "entries/pages/training/continuous/_page.ts.js",
+    "name": "entries/pages/training/continuous/_page.ts",
+    "src": "src/routes/training/continuous/+page.ts",
+    "isEntry": true
   },
   "src/routes/training/random/+page.svelte": {
     "file": "entries/pages/training/random/_page.svelte.js",
@@ -218,7 +224,7 @@
       "_TrainingCore.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BwwLUuQa.css"
+      "_app/immutable/assets/_page.4xS8lZID.css"
     ]
   },
   "src/routes/training/random/+page.ts": {

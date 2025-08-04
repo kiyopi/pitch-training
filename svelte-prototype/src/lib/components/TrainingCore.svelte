@@ -207,10 +207,39 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       
       console.log('✅ [TrainingCore] AudioManager初期化完了');
       
+      // PitchDetector初期化
+      await initializePitchDetector();
+      
     } catch (error) {
       console.error('❌ [TrainingCore] AudioManager初期化エラー:', error);
       microphoneState = 'error';
       if (onMicrophoneError) onMicrophoneError(error.message);
+    }
+  }
+
+  async function initializePitchDetector() {
+    if (!pitchDetectorComponent) {
+      console.log('⚠️ [TrainingCore] PitchDetectorコンポーネント未取得 - 300ms後に再試行');
+      setTimeout(async () => {
+        if (pitchDetectorComponent && audioContext && mediaStream) {
+          try {
+            await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
+            console.log('✅ [TrainingCore] PitchDetector初期化完了（遅延）');
+          } catch (error) {
+            console.error('❌ [TrainingCore] PitchDetector遅延初期化エラー:', error);
+          }
+        }
+      }, 300);
+      return;
+    }
+
+    try {
+      if (audioContext && mediaStream) {
+        await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
+        console.log('✅ [TrainingCore] PitchDetector初期化完了');
+      }
+    } catch (error) {
+      console.error('❌ [TrainingCore] PitchDetector初期化エラー:', error);
     }
   }
 
