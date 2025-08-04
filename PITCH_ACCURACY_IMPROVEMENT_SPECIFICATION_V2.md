@@ -19,8 +19,8 @@
 ### 解決方針
 **5段階包括的改善アプローチ**:
 1. **ハードウェア対応強化**: iPad感度7.0x増強
-2. **ユーザー体験向上**: リアルタイム音程ガイダンス
-3. **発声支援強化**: 視覚的フィードバックシステム
+2. **リアルタイム表示改善**: 周波数・音程表示の安定化
+3. **UI簡素化**: 不要な視覚ガイダンス削除によりトレーニング集中度向上
 4. **評価システム公正化**: 技術誤差考慮の緩和基準
 5. **技術的精度向上**: 高度オクターブ補正アルゴリズム
 
@@ -69,56 +69,73 @@ audioManager.setSensitivity(7.0);
 
 ## 🎯 Step 2: リアルタイム周波数表示改善
 
-### 新機能追加
-**PitchDetectionDisplayコンポーネント拡張**:
-```javascript
-// 新規props追加
-export let targetFrequency = 0;  // 目標周波数
-export let targetNote = '';      // 目標音程名  
-export let centDiff = 0;         // セント差
-export let showGuidance = false; // ガイダンス表示フラグ
-```
+### 改善内容
+**PitchDetectionDisplayコンポーネント最適化**:
+- 周波数表示の安定化
+- 音程名表示の改善
+- 音量バー表示の最適化
 
-**精度レベル分類システム**:
-```javascript
-function getAccuracyLevel(cent) {
-  const abs = Math.abs(cent);
-  if (abs <= 30) return 'excellent';  // ±30¢以内
-  if (abs <= 60) return 'good';       // ±60¢以内  
-  if (abs <= 120) return 'okay';      // ±120¢以内
-  if (abs <= 200) return 'poor';      // ±200¢以内
-  return 'very-poor';                 // ±200¢超
-}
-```
-
-**視覚的フィードバックメッセージ**:
-```javascript
-function getAccuracyMessage(level, cent) {
-  if (level === 'excellent') return '🎯 完璧！';
-  if (level === 'good') return '✅ とても良い';  
-  if (level === 'okay') return '🔶 もう少し';
-  if (level === 'poor') return cent > 0 ? '📈 もっと高く' : '📉 もっと低く';
-  return cent > 0 ? '⬆️ かなり高く' : '⬇️ かなり低く';
-}
-```
-
-### UI表示内容
-**目標情報表示**:
-- 目標周波数: `329Hz`
-- 目標音程: `(ミ)`
-- セント差: `+45¢` / `-120¢`
-- 精度メッセージ: `📈 もっと高く`
-
-**色分けシステム**:
-- **excellent**: 緑色（#d1fae5）
-- **good**: 青色（#dbeafe）  
-- **okay**: 黄色（#fef3c7）
-- **poor**: オレンジ色（#fed7d7）
-- **very-poor**: 赤色（#fecaca）
+**不要機能削除（Step 3で実施）**:
+- リアルタイム音程ガイダンス機能の完全削除
+- チカチカする視覚フィードバックの無効化
 
 ---
 
-## 🎯 Step 3: 発声ガイドシステム強化
+## 🎯 Step 3: UI簡素化（リアルタイム音程ガイダンス削除）
+
+### 削除実装
+**ガイダンス変数完全削除**:
+```javascript
+// 削除前
+let currentTargetFrequency = 0;
+let currentTargetNote = '';
+let currentCentDiff = 0;
+
+// 削除後  
+// ガイダンス表示用変数削除（UI簡素化）
+```
+
+**ガイダンス更新ロジック削除**:
+```javascript
+// 削除前: 複雑なリアルタイム更新処理
+if (trainingPhase === 'guiding' && isGuideAnimationActive) {
+  currentTargetFrequency = calculateExpectedFrequency(...);
+  currentTargetNote = scaleSteps[activeStepIndex].name;
+  currentCentDiff = Math.round(1200 * Math.log2(...));
+}
+
+// 削除後
+// ガイダンス機能削除済み（UI簡素化）
+```
+
+**UI表示完全無効化**:
+```javascript
+// 変更前
+<PitchDetectionDisplay
+  targetFrequency={currentTargetFrequency}
+  targetNote={currentTargetNote}
+  centDiff={currentCentDiff}
+  showGuidance={trainingPhase === 'guiding' && isGuideAnimationActive}
+/>
+
+// 変更後
+<PitchDetectionDisplay
+  showGuidance={false}
+/>
+```
+
+### 削除理由
+- **集中度向上**: チカチカする要素がトレーニング集中を妨害  
+- **UI簡素化**: 不要な視覚情報による混乱を排除
+- **パフォーマンス向上**: リアルタイム計算処理の削減
+
+---
+
+## 🎯 Step 4: 評価システム公正化（技術誤差考慮）
+
+---
+
+## 🎯 Step 5: オクターブ補正アルゴリズム改善
 
 ### ガイダンス情報自動計算
 **handlePitchUpdate関数での実装**:
