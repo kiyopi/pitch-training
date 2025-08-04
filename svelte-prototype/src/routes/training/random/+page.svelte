@@ -809,6 +809,7 @@
         },
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
+        volume: 6, // プロトタイプ準拠: +6dB音量設定
         onload: () => {
           isSamplerLoading = false;
         },
