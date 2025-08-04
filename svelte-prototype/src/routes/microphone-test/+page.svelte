@@ -29,6 +29,16 @@
   let detectedNote = 'ーー';
   let pitchDetectorComponent = null;
 
+  // 音域測定状態
+  let showVocalRangeTest = false;
+  let vocalRangeStep = 'intro'; // 'intro' | 'low' | 'high' | 'complete'
+  let lowestNote = null;
+  let lowestFrequency = null;
+  let highestNote = null;
+  let highestFrequency = null;
+  let isRecording = false;
+  let recordingCountdown = 0;
+
   // デバイス検出（AudioManager統一版）
   let platformSpecs = null;
   
@@ -116,6 +126,94 @@
     localStorage.setItem('mic-test-completed', 'true');
     console.log('✅ [MicTest] マイクテスト完了フラグを保存');
     goto(`${base}${selectedMode.path}?from=microphone-test`);
+  }
+
+  // 音域測定開始
+  function startVocalRangeTest() {
+    showVocalRangeTest = true;
+    vocalRangeStep = 'intro';
+  }
+
+  // 音域測定スキップ
+  function skipVocalRangeTest() {
+    showVocalRangeTest = false;
+    // スキップ時は音域未測定として保存
+    localStorage.setItem('vocal-range-measured', 'false');
+  }
+
+  // 低音測定開始
+  function startLowNoteTest() {
+    vocalRangeStep = 'low';
+    startRecording();
+  }
+
+  // 高音測定開始
+  function startHighNoteTest() {
+    vocalRangeStep = 'high';
+    startRecording();
+  }
+
+  // 録音開始
+  function startRecording() {
+    isRecording = true;
+    recordingCountdown = 3;
+    
+    // カウントダウン
+    const interval = setInterval(() => {
+      recordingCountdown--;
+      if (recordingCountdown <= 0) {
+        clearInterval(interval);
+        // 3秒間録音
+        setTimeout(() => {
+          stopRecording();
+        }, 3000);
+      }
+    }, 1000);
+  }
+
+  // 録音停止と結果処理
+  function stopRecording() {
+    isRecording = false;
+    
+    if (vocalRangeStep === 'low') {
+      // 最低音を記録
+      lowestNote = detectedNote;
+      lowestFrequency = currentFrequency;
+      console.log('最低音記録:', lowestNote, lowestFrequency);
+    } else if (vocalRangeStep === 'high') {
+      // 最高音を記録
+      highestNote = detectedNote;
+      highestFrequency = currentFrequency;
+      console.log('最高音記録:', highestNote, highestFrequency);
+      
+      // 両方記録できたら完了
+      if (lowestNote && highestNote) {
+        vocalRangeStep = 'complete';
+        saveVocalRange();
+      }
+    }
+  }
+
+  // 音域データ保存
+  function saveVocalRange() {
+    const vocalRangeData = {
+      measured: true,
+      measuredAt: new Date().toISOString(),
+      lowestNote,
+      lowestFrequency,
+      highestNote,
+      highestFrequency,
+      range: `${lowestNote}-${highestNote}`
+    };
+    
+    localStorage.setItem('vocal-range', JSON.stringify(vocalRangeData));
+    localStorage.setItem('vocal-range-measured', 'true');
+    console.log('音域データ保存:', vocalRangeData);
+  }
+
+  // 音域測定完了
+  function completeVocalRangeTest() {
+    showVocalRangeTest = false;
   }
 
   // PitchDetectorコンポーネントからのイベントハンドラー
@@ -210,11 +308,26 @@
             <h3 class="ready-title">マイク準備完了</h3>
             <p class="ready-description">トレーニングを開始してください</p>
             
-            <div class="training-start-button-area">
-              <button class="training-start-button enabled" on:click={startTraining}>
-                トレーニング開始
-              </button>
-            </div>
+            {#if !showVocalRangeTest}
+              <!-- 音域測定オプション -->
+              <div class="vocal-range-option">
+                <p class="vocal-range-prompt">音域を測定しますか？（推奨・約1分）</p>
+                <div class="button-group">
+                  <button class="button-secondary" on:click={startVocalRangeTest}>
+                    音域を測定する
+                  </button>
+                  <button class="button-ghost" on:click={skipVocalRangeTest}>
+                    スキップ
+                  </button>
+                </div>
+              </div>
+              
+              <div class="training-start-button-area">
+                <button class="training-start-button enabled" on:click={startTraining}>
+                  トレーニング開始
+                </button>
+              </div>
+            {/if}
           {:else}
             <!-- マイクテスト説明 -->
             <h3 class="instructions-title">マイクのテストを開始します</h3>
@@ -263,6 +376,119 @@
     </div>
 
   </div>
+  
+  <!-- 音域測定モーダル -->
+  {#if showVocalRangeTest}
+    <div class="vocal-range-modal-overlay">
+      <div class="vocal-range-modal">
+        <Card variant="default" padding="xl">
+          {#if vocalRangeStep === 'intro'}
+            <!-- 説明画面 -->
+            <div class="vocal-range-content">
+              <h2 class="vocal-range-title">音域測定</h2>
+              <p class="vocal-range-description">
+                あなたの音域を測定します。<br>
+                最低音と最高音を記録することで、<br>
+                最適なトレーニングを提供します。
+              </p>
+              <div class="vocal-range-steps">
+                <div class="step">
+                  <div class="step-number">1</div>
+                  <div class="step-text">できるだけ低い声で「アー」と歌う</div>
+                </div>
+                <div class="step">
+                  <div class="step-number">2</div>
+                  <div class="step-text">できるだけ高い声で「アー」と歌う</div>
+                </div>
+              </div>
+              <button class="button-primary" on:click={startLowNoteTest}>
+                測定を開始
+              </button>
+            </div>
+          {:else if vocalRangeStep === 'low'}
+            <!-- 低音測定 -->
+            <div class="vocal-range-content">
+              <h2 class="vocal-range-title">最低音の測定</h2>
+              <p class="vocal-range-instruction">
+                できるだけ低い声で「アー」と3秒間歌ってください
+              </p>
+              
+              {#if recordingCountdown > 0}
+                <div class="countdown">{recordingCountdown}</div>
+              {:else if isRecording}
+                <div class="recording-indicator">
+                  <div class="recording-dot"></div>
+                  <span>録音中...</span>
+                </div>
+              {/if}
+              
+              <div class="current-note-display">
+                <div class="note-label">検出音程</div>
+                <div class="note-value">{detectedNote}</div>
+                <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+              </div>
+              
+              {#if lowestNote && !isRecording}
+                <div class="result-display">
+                  <p>最低音: {lowestNote}</p>
+                  <button class="button-primary" on:click={startHighNoteTest}>
+                    次へ（最高音測定）
+                  </button>
+                </div>
+              {/if}
+            </div>
+          {:else if vocalRangeStep === 'high'}
+            <!-- 高音測定 -->
+            <div class="vocal-range-content">
+              <h2 class="vocal-range-title">最高音の測定</h2>
+              <p class="vocal-range-instruction">
+                できるだけ高い声で「アー」と3秒間歌ってください
+              </p>
+              
+              {#if recordingCountdown > 0}
+                <div class="countdown">{recordingCountdown}</div>
+              {:else if isRecording}
+                <div class="recording-indicator">
+                  <div class="recording-dot"></div>
+                  <span>録音中...</span>
+                </div>
+              {/if}
+              
+              <div class="current-note-display">
+                <div class="note-label">検出音程</div>
+                <div class="note-value">{detectedNote}</div>
+                <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+              </div>
+              
+              {#if highestNote && !isRecording}
+                <div class="result-display">
+                  <p>最高音: {highestNote}</p>
+                </div>
+              {/if}
+            </div>
+          {:else if vocalRangeStep === 'complete'}
+            <!-- 測定完了 -->
+            <div class="vocal-range-content">
+              <h2 class="vocal-range-title">測定完了</h2>
+              <div class="vocal-range-result">
+                <div class="result-item">
+                  <span class="result-label">あなたの音域</span>
+                  <span class="result-value">{lowestNote} - {highestNote}</span>
+                </div>
+              </div>
+              <p class="vocal-range-complete-message">
+                音域データを保存しました。<br>
+                各トレーニングモードで最適な基音が選択されます。
+              </p>
+              <button class="button-primary" on:click={completeVocalRangeTest}>
+                完了
+              </button>
+            </div>
+          {/if}
+        </Card>
+      </div>
+    </div>
+  {/if}
 </PageLayout>
 
 <style>
@@ -541,5 +767,257 @@
     border-radius: 8px !important;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06) !important;
     margin-bottom: 1.5rem;
+  }
+
+  /* 音域測定関連のスタイル */
+  .vocal-range-option {
+    margin: var(--space-6) 0;
+    text-align: center;
+  }
+
+  .vocal-range-prompt {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+    margin-bottom: var(--space-4);
+  }
+
+  .button-group {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+
+  /* shadcn/ui風ボタン */
+  .button-primary {
+    background-color: hsl(222.2 47.4% 11.2%);
+    color: hsl(210 40% 98%);
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .button-primary:hover {
+    opacity: 0.9;
+  }
+
+  .button-secondary {
+    background-color: hsl(210 40% 96.1%);
+    color: hsl(222.2 47.4% 11.2%);
+    padding: 10px 16px;
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .button-secondary:hover {
+    background-color: hsl(214.3 31.8% 91.4%);
+  }
+
+  .button-ghost {
+    background-color: transparent;
+    color: hsl(222.2 47.4% 11.2%);
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .button-ghost:hover {
+    background-color: hsl(210 40% 96.1%);
+  }
+
+  /* モーダル */
+  .vocal-range-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .vocal-range-modal {
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .vocal-range-content {
+    text-align: center;
+  }
+
+  .vocal-range-title {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-4) 0;
+  }
+
+  .vocal-range-description {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
+  }
+
+  .vocal-range-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: var(--space-6) 0;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background-color: hsl(210 40% 96.1%);
+    padding: var(--space-4);
+    border-radius: 8px;
+  }
+
+  .step-number {
+    width: 32px;
+    height: 32px;
+    background-color: hsl(222.2 47.4% 11.2%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  .step-text {
+    flex: 1;
+    text-align: left;
+    color: var(--color-gray-700);
+  }
+
+  .vocal-range-instruction {
+    font-size: var(--text-lg);
+    color: var(--color-gray-700);
+    margin-bottom: var(--space-6);
+  }
+
+  .countdown {
+    font-size: 64px;
+    font-weight: 700;
+    color: hsl(222.2 47.4% 11.2%);
+    margin: var(--space-8) 0;
+  }
+
+  .recording-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    margin: var(--space-6) 0;
+    font-size: var(--text-lg);
+    color: #dc2626;
+  }
+
+  .recording-dot {
+    width: 12px;
+    height: 12px;
+    background-color: #dc2626;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .current-note-display {
+    background-color: hsl(210 40% 96.1%);
+    padding: var(--space-6);
+    border-radius: 12px;
+    margin: var(--space-6) 0;
+  }
+
+  .note-label {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    margin-bottom: var(--space-2);
+  }
+
+  .note-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: hsl(222.2 47.4% 11.2%);
+    margin-bottom: var(--space-2);
+  }
+
+  .frequency-value {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+  }
+
+  .result-display {
+    margin-top: var(--space-6);
+  }
+
+  .result-display p {
+    font-size: var(--text-lg);
+    color: var(--color-gray-700);
+    margin-bottom: var(--space-4);
+  }
+
+  .vocal-range-result {
+    background-color: hsl(210 40% 96.1%);
+    padding: var(--space-6);
+    border-radius: 12px;
+    margin: var(--space-6) 0;
+  }
+
+  .result-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .result-label {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+  }
+
+  .result-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: hsl(222.2 47.4% 11.2%);
+  }
+
+  .vocal-range-complete-message {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
   }
 </style>
