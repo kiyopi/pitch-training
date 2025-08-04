@@ -44,13 +44,13 @@
     
     if (isIPad) {
       deviceInfo = 'iPad検出';
-      baseToneVolume = 6; // iPad用デフォルト
+      baseToneVolume = -6; // 標準デフォルト
     } else if (isIPhone) {
       deviceInfo = 'iPhone検出';
-      baseToneVolume = 0; // iPhone用デフォルト
+      baseToneVolume = -6; // 標準デフォルト
     } else {
       deviceInfo = 'その他デバイス';
-      baseToneVolume = -6; // PC用デフォルト
+      baseToneVolume = -6; // 標準デフォルト
     }
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);

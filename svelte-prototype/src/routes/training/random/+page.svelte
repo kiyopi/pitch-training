@@ -798,31 +798,23 @@
         }
       }).toDestination();
       
-      // 音量調整 - iPad/iPhone個別対応
+      // デバイス判定（調査用）
       const isIPhone = /iPhone/.test(navigator.userAgent);
       const isIPad = /iPad/.test(navigator.userAgent);
       const isIOS = isIPhone || isIPad;
       
-      // デバイス別sampler音量設定
+      // デバイス情報ログ出力
       if (isIPad) {
-        sampler.volume.value = 6; // iPad: +6dB（強力ブースト）
-        console.log('🔊 [RandomTraining] iPad検出: sampler音量 +6dB');
+        console.log('🔍 [RandomTraining] iPad検出:', navigator.userAgent);
       } else if (isIPhone) {
-        sampler.volume.value = 0; // iPhone: 0dB
-        console.log('🔊 [RandomTraining] iPhone検出: sampler音量 0dB');
+        console.log('🔍 [RandomTraining] iPhone検出:', navigator.userAgent);
       } else {
-        sampler.volume.value = -6; // その他: -6dB
-        console.log('🔊 [RandomTraining] その他デバイス: sampler音量 -6dB');
+        console.log('🔍 [RandomTraining] その他デバイス検出:', navigator.userAgent);
       }
       
-      // デバイス別Destination音量設定
-      if (isIPad) {
-        Tone.Destination.volume.value = 6; // iPad: +6dB Destination boost
-        console.log('🔊 [RandomTraining] iPad: Destination音量 +6dB');
-      } else if (isIPhone) {
-        Tone.Destination.volume.value = 3; // iPhone: +3dB Destination boost
-        console.log('🔊 [RandomTraining] iPhone: Destination音量 +3dB');
-      }
+      // 標準音量設定（全デバイス共通）
+      sampler.volume.value = -6; // 標準: -6dB
+      console.log('🔊 [RandomTraining] 標準音量設定: -6dB');
       
     } catch (error) {
       console.error('サンプラー初期化エラー:', error);
