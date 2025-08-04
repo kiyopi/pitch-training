@@ -277,14 +277,27 @@
 
   // マイク感度調整
   function updateMicSensitivity() {
-    // AudioManagerの感度調整（今後実装）
-    console.log(`🎤 [MicTest] マイク感度設定: ${micSensitivity}x`);
+    try {
+      // AudioManagerの感度調整
+      audioManager.setSensitivity(micSensitivity);
+      console.log(`🎤 [MicTest] マイク感度更新完了: ${micSensitivity}x`);
+    } catch (error) {
+      console.error('❌ [MicTest] マイク感度調整エラー:', error);
+    }
   }
 
   // マイク許可完了時の処理を拡張
   async function onMicrophoneGranted() {
     // 基音テスト初期化
     await initializeBaseToneTest();
+    
+    // AudioManagerから現在のマイク感度を取得
+    try {
+      micSensitivity = audioManager.getSensitivity();
+      console.log(`🎤 [MicTest] 現在のマイク感度取得: ${micSensitivity}x`);
+    } catch (error) {
+      console.warn('⚠️ [MicTest] マイク感度取得エラー:', error);
+    }
   }
 </script>
 

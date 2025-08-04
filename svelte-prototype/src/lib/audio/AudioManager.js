@@ -13,6 +13,7 @@ class AudioManager {
     this.audioContext = null;
     this.mediaStream = null;
     this.sourceNode = null;
+    this.gainNode = null; // マイク感度調整用
     
     // Analyser管理
     this.analysers = new Map(); // id -> analyser
@@ -25,6 +26,9 @@ class AudioManager {
     // 状態管理
     this.isInitialized = false;
     this.lastError = null;
+    
+    // 感度設定
+    this.currentSensitivity = 1.0; // デフォルト感度
   }
 
   /**
@@ -168,6 +172,16 @@ class AudioManager {
         })));
       }
 
+      // GainNode作成（マイク感度調整用）
+      if (!this.gainNode) {
+        this.gainNode = this.audioContext.createGain();
+        this.gainNode.gain.value = this.currentSensitivity;
+        
+        // SourceNode -> GainNode の接続
+        this.sourceNode.connect(this.gainNode);
+        console.log(`✅ [AudioManager] GainNode作成完了 (感度: ${this.currentSensitivity}x)`);
+      }
+
       this.isInitialized = true;
       this.refCount++;
       this.lastError = null;
@@ -222,23 +236,23 @@ class AudioManager {
     analyser.minDecibels = Math.max(minDecibels, -80); // Safari範囲最適化
     analyser.maxDecibels = Math.min(maxDecibels, -10);
 
-    let finalNode = this.sourceNode;
+    let finalNode = this.gainNode || this.sourceNode;
 
     // フィルターチェーン作成（オプション）
     if (useFilters) {
       const filterChain = this._createFilterChain();
       this.filters.set(id, filterChain);
       
-      // フィルターチェーン接続
-      this.sourceNode.connect(filterChain.highpass);
+      // フィルターチェーン接続（GainNodeから開始）
+      finalNode.connect(filterChain.highpass);
       filterChain.highpass.connect(filterChain.lowpass);
       filterChain.lowpass.connect(filterChain.notch);
       filterChain.notch.connect(analyser);
       
       console.log(`🔧 [AudioManager] フィルター付きAnalyser作成: ${id}`);
     } else {
-      // 直接接続（生信号）
-      this.sourceNode.connect(analyser);
+      // 直接接続（GainNodeからの信号）
+      finalNode.connect(analyser);
       console.log(`🔧 [AudioManager] 生信号Analyser作成: ${id}`);
     }
     
@@ -293,6 +307,32 @@ class AudioManager {
       this.filters.delete(id);
       console.log(`🗑️ [AudioManager] フィルターチェーン削除: ${id}`);
     }
+  }
+
+  /**
+   * マイク感度調整
+   * @param {number} sensitivity - 感度倍率 (0.1 ～ 3.0)
+   */
+  setSensitivity(sensitivity) {
+    // 範囲制限
+    const clampedSensitivity = Math.max(0.1, Math.min(3.0, sensitivity));
+    
+    if (this.gainNode) {
+      this.gainNode.gain.value = clampedSensitivity;
+      this.currentSensitivity = clampedSensitivity;
+      console.log(`🎤 [AudioManager] マイク感度更新: ${clampedSensitivity.toFixed(1)}x`);
+    } else {
+      // GainNodeが未初期化の場合は設定のみ保存
+      this.currentSensitivity = clampedSensitivity;
+      console.log(`🎤 [AudioManager] マイク感度設定（初期化待ち）: ${clampedSensitivity.toFixed(1)}x`);
+    }
+  }
+
+  /**
+   * 現在のマイク感度取得
+   */
+  getSensitivity() {
+    return this.currentSensitivity;
   }
 
   /**
@@ -363,6 +403,12 @@ class AudioManager {
       this.audioContext = null;
     }
 
+    // GainNode削除
+    if (this.gainNode) {
+      this.gainNode.disconnect();
+      this.gainNode = null;
+    }
+
     // SourceNode削除
     if (this.sourceNode) {
       this.sourceNode.disconnect();
@@ -373,6 +419,7 @@ class AudioManager {
     this.isInitialized = false;
     this.refCount = 0;
     this.initPromise = null;
+    this.currentSensitivity = 1.0;
 
     console.log('✅ [AudioManager] クリーンアップ完了');
   }
