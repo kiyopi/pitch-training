@@ -302,6 +302,11 @@
   let detectedNote = 'ーー';
   let pitchDifference = 0;
   
+  // ガイダンス表示用
+  let currentTargetFrequency = 0;
+  let currentTargetNote = '';
+  let currentCentDiff = 0;
+  
   // セッション結果
   let sessionResults = {
     correctCount: 0,
@@ -414,9 +419,9 @@
           const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
           
           if (isIPad || isIPadOS) {
-            console.log('🔧 [RandomTraining] iPad検出 - マイク感度5.0x自動設定開始');
-            audioManager.setSensitivity(5.0);
-            console.log('✅ [RandomTraining] iPad マイク感度5.0x自動設定完了');
+            console.log('🔧 [RandomTraining] iPad検出 - マイク感度7.0x自動設定開始');
+            audioManager.setSensitivity(7.0);
+            console.log('✅ [RandomTraining] iPad マイク感度7.0x自動設定完了');
           }
           
           // iPad対応: AudioManager強制初期化
@@ -1870,6 +1875,26 @@
     detectedNote = displayNote;
     currentVolume = volume;
     
+    // ガイダンス情報更新（トレーニング中のみ）
+    if (trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0) {
+      const activeStepIndex = currentScaleIndex - 1;
+      if (activeStepIndex >= 0 && activeStepIndex < scaleSteps.length) {
+        currentTargetFrequency = calculateExpectedFrequency(currentBaseFrequency, activeStepIndex);
+        currentTargetNote = scaleSteps[activeStepIndex].name;
+        
+        if (frequency > 0 && currentTargetFrequency > 0) {
+          currentCentDiff = Math.round(1200 * Math.log2(displayFrequency / currentTargetFrequency));
+        } else {
+          currentCentDiff = 0;
+        }
+      }
+    } else {
+      // ガイダンス情報をリセット
+      currentTargetFrequency = 0;
+      currentTargetNote = '';
+      currentCentDiff = 0;
+    }
+    
     // 基音との相対音程を計算（補正後の値で）
     if (currentBaseFrequency > 0 && displayFrequency > 0) {
       pitchDifference = Math.round(1200 * Math.log2(displayFrequency / currentBaseFrequency));
@@ -1939,46 +1964,62 @@
   
   // 【プロトタイプ式】多段階オクターブ補正関数
   function multiStageOctaveCorrection(detectedFreq, targetFreq) {
-    // 複数の補正候補を生成（プロトタイプと同じ係数）
+    // 拡張補正候補を生成（より柔軟な倍音補正）
     const candidates = [
-      { factor: 3, freq: detectedFreq * 3, description: "1.5オクターブ上" },    // 1.5オクターブ上
+      { factor: 4, freq: detectedFreq * 4, description: "2オクターブ上" },      // 2オクターブ上
+      { factor: 3, freq: detectedFreq * 3, description: "1.5オクターブ上" },   // 1.5オクターブ上
+      { factor: 2.5, freq: detectedFreq * 2.5, description: "1.3オクターブ上" }, // 1.3オクターブ上
       { factor: 2, freq: detectedFreq * 2, description: "1オクターブ上" },      // 1オクターブ上
       { factor: 1.5, freq: detectedFreq * 1.5, description: "0.5オクターブ上" }, // 0.5オクターブ上
       { factor: 1, freq: detectedFreq, description: "補正なし" },              // 補正なし
+      { factor: 0.75, freq: detectedFreq * 0.75, description: "0.33オクターブ下" }, // 0.33オクターブ下
       { factor: 0.67, freq: detectedFreq * 0.67, description: "0.5オクターブ下" }, // 0.5オクターブ下
       { factor: 0.5, freq: detectedFreq * 0.5, description: "1オクターブ下" },  // 1オクターブ下
-      { factor: 0.33, freq: detectedFreq * 0.33, description: "1.5オクターブ下" } // 1.5オクターブ下
+      { factor: 0.4, freq: detectedFreq * 0.4, description: "1.3オクターブ下" }, // 1.3オクターブ下
+      { factor: 0.33, freq: detectedFreq * 0.33, description: "1.5オクターブ下" }, // 1.5オクターブ下
+      { factor: 0.25, freq: detectedFreq * 0.25, description: "2オクターブ下" }  // 2オクターブ下
     ];
     
-    // 目標周波数範囲の定義（±30%の範囲で妥当性をチェック）
-    const targetMin = targetFreq * 0.7;
-    const targetMax = targetFreq * 1.3;
+    // 2段階評価：まず緩い範囲、次に厳しい範囲
+    let bestCandidate = null;
+    let minError = Infinity;
     
-    // 範囲内の候補のみフィルタリング
-    const validCandidates = candidates.filter(candidate => 
-      candidate.freq >= targetMin && candidate.freq <= targetMax
+    // Step 1: ±50%の範囲で最適候補を探索（緩和版）
+    const relaxedMin = targetFreq * 0.5;
+    const relaxedMax = targetFreq * 1.5;
+    
+    const relaxedCandidates = candidates.filter(candidate => 
+      candidate.freq >= relaxedMin && candidate.freq <= relaxedMax
     );
     
-    // 有効な候補がない場合は補正なし
-    if (validCandidates.length === 0) {
-      return {
-        correctedFrequency: detectedFreq,
-        factor: 1,
-        description: "補正なし（有効候補なし）",
-        error: Math.abs(detectedFreq - targetFreq)
-      };
-    }
-    
-    // 最小誤差の候補を選択
-    let bestCandidate = validCandidates[0];
-    let minError = Math.abs(bestCandidate.freq - targetFreq);
-    
-    for (const candidate of validCandidates) {
+    // Step 2: 緩い範囲内で最小誤差を見つける
+    for (const candidate of relaxedCandidates) {
       const error = Math.abs(candidate.freq - targetFreq);
       if (error < minError) {
         minError = error;
         bestCandidate = candidate;
       }
+    }
+    
+    // Step 3: 緩い範囲でも候補がない場合は全候補から最適解を選択
+    if (!bestCandidate) {
+      for (const candidate of candidates) {
+        const error = Math.abs(candidate.freq - targetFreq);
+        if (error < minError) {
+          minError = error;
+          bestCandidate = candidate;
+        }
+      }
+    }
+    
+    // Step 4: それでも見つからない場合は補正なし（フォールバック）
+    if (!bestCandidate) {
+      return {
+        correctedFrequency: detectedFreq,
+        factor: 1,
+        description: "補正なし（フォールバック）",
+        error: Math.abs(detectedFreq - targetFreq)
+      };
     }
     
     return {
@@ -2518,6 +2559,10 @@
           isMuted={trainingPhase !== 'guiding'}
           muteMessage="基音再生後に開始"
           className="half-width"
+          targetFrequency={currentTargetFrequency}
+          targetNote={currentTargetNote}
+          centDiff={currentCentDiff}
+          showGuidance={trainingPhase === 'guiding' && isGuideAnimationActive}
         />
       </div>
     {/if}

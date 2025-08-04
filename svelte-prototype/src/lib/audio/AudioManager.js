@@ -39,10 +39,10 @@ class AudioManager {
     const isIPad = /iPad/.test(navigator.userAgent);
     const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
     
-    // iPad系デバイスは5.0x、その他は1.0x
+    // iPad系デバイスは7.0x、その他は1.0x
     if (isIPad || isIPadOS) {
-      console.log('🔧 [AudioManager] iPad検出 - デフォルト感度5.0x設定');
-      return 5.0;
+      console.log('🔧 [AudioManager] iPad検出 - デフォルト感度7.0x設定');
+      return 7.0;
     } else if (isIPhone) {
       console.log('🔧 [AudioManager] iPhone検出 - デフォルト感度3.0x設定');
       return 3.0;

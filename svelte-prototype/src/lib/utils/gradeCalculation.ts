@@ -11,9 +11,9 @@ export function calculateNoteGrade(cents: number | null | undefined): string {
     return 'notMeasured';
   }
   const absCents = Math.abs(cents);
-  if (absCents <= 15) return 'excellent';
-  if (absCents <= 25) return 'good';
-  if (absCents <= 40) return 'pass';
+  if (absCents <= 30) return 'excellent';  // ±30¢以内（実用的精度）
+  if (absCents <= 60) return 'good';      // ±60¢以内（半音の半分）
+  if (absCents <= 120) return 'pass';     // ±120¢以内（1セミトーン強）
   return 'needWork';
 }
 
@@ -42,10 +42,10 @@ export function calculateSessionGrade(noteResults: NoteResult[]): SessionGrade {
   if (results.notMeasured > 3) return 'needWork';
   if (results.measuredCount === 0) return 'needWork';
   
-  // ポジティブ評価を優先（技術的ブレ耐性）
-  if (averageError <= 20 && results.excellent >= 6) return 'excellent';
-  if (averageError <= 30 && passCount >= 7) return 'good';
-  if (passCount >= 5) return 'pass'; // 8音中62.5%が合格以上
+  // ポジティブ評価を優先（技術的ブレ耐性・緩和版）
+  if (averageError <= 40 && results.excellent >= 5) return 'excellent';  // 平均±40¢、優秀5個以上
+  if (averageError <= 60 && passCount >= 6) return 'good';               // 平均±60¢、合格6個以上
+  if (passCount >= 4) return 'pass'; // 8音中50%が合格以上（大幅緩和）
   
   // 要練習が圧倒的多数（75%以上）の場合のみ要練習判定
   if (results.needWork >= 6) return 'needWork';
@@ -68,9 +68,9 @@ export function calculateGradeDistribution(noteResults: NoteResult[]) {
  * セッション評価基準の説明
  */
 export const SESSION_GRADE_CRITERIA = {
-  excellent: '優秀な音程が6個以上かつ平均誤差±20¢以内',
-  good: '合格以上が7個以上かつ平均誤差±30¢以内',
-  pass: '合格以上が5個以上（8音中62.5%）',
+  excellent: '優秀な音程が5個以上かつ平均誤差±40¢以内（実用的精度）',
+  good: '合格以上が6個以上かつ平均誤差±60¢以内（実践的音感）',
+  pass: '合格以上が4個以上（8音中50%・基礎音感）',
   needWork: '要練習が6個以上または測定不可が4個以上',
-  note: '※技術的ブレを考慮し、ポジティブ評価を優先する判定システムです'
+  note: '※技術誤差±20-50¢を考慮した公正な評価基準（2025/8/4改訂）'
 };

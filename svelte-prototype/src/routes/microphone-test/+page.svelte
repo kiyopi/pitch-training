@@ -162,12 +162,12 @@
   async function onMicrophoneGranted() {
     // iPadマイク安定化処理
     if (platformSpecs && (platformSpecs.deviceType === 'iPad')) {
-      console.log('🔧 [MicTest] iPad検出 - マイク感度5.0x自動設定開始');
+      console.log('🔧 [MicTest] iPad検出 - マイク感度7.0x自動設定開始');
       
-      // iPad専用: 5.0x感度で安定化
-      audioManager.setSensitivity(5.0);
+      // iPad専用: 7.0x感度で安定化
+      audioManager.setSensitivity(7.0);
       
-      console.log('✅ [MicTest] iPad マイク感度5.0x自動設定完了');
+      console.log('✅ [MicTest] iPad マイク感度7.0x自動設定完了');
       
       // AudioManager再初期化でマイク接続安定化
       try {
