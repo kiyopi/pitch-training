@@ -4,7 +4,7 @@ import "../../../../chunks/exports.js";
 import "../../../../chunks/state.svelte.js";
 import { P as PageLayout } from "../../../../chunks/PageLayout.js";
 import "../../../../chunks/PitchDetectionDisplay.svelte_svelte_type_style_lang.js";
-import "../../../../chunks/TrainingCore.svelte_svelte_type_style_lang.js";
+import "../../../../chunks/sessionStorage.js";
 import "pitchy";
 import "tone";
 const css = {

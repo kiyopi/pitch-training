@@ -705,7 +705,11 @@ class SessionStorageManager {
   }
 }
 const trainingProgress = writable(null);
-derived(
+const currentSessionId = writable(1);
+const nextBaseNote = writable("C4");
+const nextBaseName = writable("ド（低）");
+const isLoading = writable(false);
+const isCompleted = derived(
   trainingProgress,
   ($progress) => $progress?.isCompleted || false
 );
@@ -729,7 +733,7 @@ derived(
   trainingProgress,
   ($progress) => $progress?.usedBaseNotes || []
 );
-derived(
+const unifiedScoreData = derived(
   trainingProgress,
   ($progress) => {
     if (!$progress) return null;
@@ -744,7 +748,7 @@ derived(
     return Math.min($progress.sessionHistory.length / 8 * 100, 100);
   }
 );
-derived(
+const remainingSessions = derived(
   trainingProgress,
   ($progress) => {
     if (!$progress) return 8;
@@ -758,3 +762,14 @@ derived(
     return $history[$history.length - 1];
   }
 );
+export {
+  nextBaseNote as a,
+  isLoading as b,
+  currentSessionId as c,
+  isCompleted as i,
+  nextBaseName as n,
+  remainingSessions as r,
+  sessionHistory as s,
+  trainingProgress as t,
+  unifiedScoreData as u
+};
