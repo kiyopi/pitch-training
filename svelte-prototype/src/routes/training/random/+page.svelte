@@ -829,14 +829,17 @@
         }
       }).toDestination();
       
-      // デバイス判定（調査用）
+      // デバイス判定（調査用） - iPadOS 13以降対応
       const isIPhone = /iPhone/.test(navigator.userAgent);
       const isIPad = /iPad/.test(navigator.userAgent);
-      const isIOS = isIPhone || isIPad;
+      const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+      const isIOS = isIPhone || isIPad || isIPadOS;
       
       // デバイス情報ログ出力
       if (isIPad) {
         console.log('🔍 [RandomTraining] iPad検出:', navigator.userAgent);
+      } else if (isIPadOS) {
+        console.log('🔍 [RandomTraining] iPadOS検出:', navigator.userAgent);
       } else if (isIPhone) {
         console.log('🔍 [RandomTraining] iPhone検出:', navigator.userAgent);
       } else {
