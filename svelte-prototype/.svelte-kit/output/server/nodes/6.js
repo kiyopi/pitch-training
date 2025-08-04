@@ -8,6 +8,6 @@ export const universal = {
   "ssr": false
 };
 export const universal_id = "src/routes/training/random/+page.ts";
-export const imports = ["_app/immutable/nodes/6.KbIb7HjK.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/D-MQVlDL.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/DEDhZaYq.js","_app/immutable/chunks/Ce4bX9ZB.js","_app/immutable/chunks/DIRTXL8N.js","_app/immutable/chunks/BZyPgggR.js","_app/immutable/chunks/BUbiQ_O5.js"];
-export const stylesheets = ["_app/immutable/assets/PageLayout.DiiS_FyR.css","_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css","_app/immutable/assets/6.6CIiymtK.css"];
+export const imports = ["_app/immutable/nodes/6.C6XsiDvE.js","_app/immutable/chunks/B5ohtWpw.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/zD7q2hpL.js","_app/immutable/chunks/CDgk5rS8.js","_app/immutable/chunks/COYLqD19.js","_app/immutable/chunks/BSV72V6E.js","_app/immutable/chunks/DYOT9DFe.js"];
+export const stylesheets = ["_app/immutable/assets/PageLayout.DiiS_FyR.css","_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css","_app/immutable/assets/6.BAocVYXR.css"];
 export const fonts = [];

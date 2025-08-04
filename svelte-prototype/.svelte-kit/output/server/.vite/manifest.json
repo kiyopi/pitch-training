@@ -16,6 +16,14 @@
       "_PageLayout.js"
     ]
   },
+  "_Card.js": {
+    "file": "chunks/Card.js",
+    "name": "Card",
+    "imports": [
+      "_ssr.js",
+      "_PageLayout.js"
+    ]
+  },
   "_PageLayout.js": {
     "file": "chunks/PageLayout.js",
     "name": "PageLayout",
@@ -26,15 +34,19 @@
       "_app/immutable/assets/PageLayout.DiiS_FyR.css"
     ]
   },
-  "_PitchDetectionDisplay.js": {
-    "file": "chunks/PitchDetectionDisplay.js",
-    "name": "PitchDetectionDisplay",
-    "imports": [
-      "_ssr.js",
-      "_PageLayout.js"
-    ],
+  "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js": {
+    "file": "chunks/PitchDetectionDisplay.svelte_svelte_type_style_lang.js",
+    "name": "PitchDetectionDisplay.svelte_svelte_type_style_lang",
     "css": [
       "_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css"
+    ]
+  },
+  "_client.js": {
+    "file": "chunks/client.js",
+    "name": "client",
+    "imports": [
+      "_exports.js",
+      "_ssr2.js"
     ]
   },
   "_exports.js": {
@@ -69,8 +81,7 @@
     "name": "stores",
     "imports": [
       "_ssr.js",
-      "_exports.js",
-      "_ssr2.js"
+      "_client.js"
     ]
   },
   "node_modules/@sveltejs/kit/src/runtime/components/svelte-4/error.svelte": {
@@ -119,8 +130,9 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js",
-      "_Button.js"
+      "_Card.js",
+      "_Button.js",
+      "_PageLayout.js"
     ],
     "css": [
       "_app/immutable/assets/_page.DlF9C3i4.css"
@@ -134,8 +146,10 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
+      "_client.js",
+      "_Card.js",
       "_PageLayout.js",
-      "_PitchDetectionDisplay.js"
+      "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js"
     ],
     "css": [
       "_app/immutable/assets/_page.Douwi259.css"
@@ -154,8 +168,9 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js",
-      "_Button.js"
+      "_Card.js",
+      "_Button.js",
+      "_PageLayout.js"
     ],
     "css": [
       "_app/immutable/assets/_page.D7cf117A.css"
@@ -168,8 +183,9 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_PageLayout.js",
-      "_Button.js"
+      "_Card.js",
+      "_Button.js",
+      "_PageLayout.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BydxfNHC.css"
@@ -182,14 +198,13 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_stores.js",
+      "_client.js",
       "_PageLayout.js",
-      "_Button.js",
-      "_PitchDetectionDisplay.js",
+      "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js",
       "_index.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CNfwuabB.css"
+      "_app/immutable/assets/_page.Bqsl-SGn.css"
     ]
   },
   "src/routes/training/random/+page.ts": {

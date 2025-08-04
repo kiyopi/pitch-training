@@ -406,8 +406,83 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     detectedNote = note;
     currentVolume = volume;
     
-    // 音程検出結果を記録（実装は既存ロジックから移植）
-    // TODO: 詳細な音程評価ロジックを実装
+    // リスニングフェーズでの音程検出処理
+    if (trainingPhase === 'listening' && noteResults.length > 0) {
+      processNoteDetection(frequency, note);
+    }
+  }
+  
+  function processNoteDetection(frequency, note) {
+    // 現在のベース音程に基づいて音程を評価
+    const currentBaseNote = baseNote || $nextBaseNote;
+    const baseFreq = getFrequencyFromNote(currentBaseNote);
+    
+    // 検出された音程を現在のスケールにマッピング
+    const currentStepIndex = getCurrentStepIndex();
+    if (currentStepIndex >= 0 && currentStepIndex < noteResults.length) {
+      const targetFreq = calculateTargetFrequency(baseFreq, currentStepIndex);
+      const cents = calculateCents(frequency, targetFreq);
+      
+      // 音程結果を更新
+      noteResults[currentStepIndex] = {
+        name: currentScale[currentStepIndex],
+        cents: cents,
+        targetFreq: targetFreq,
+        detectedFreq: frequency,
+        diff: frequency - targetFreq,
+        accuracy: calculateNoteAccuracy(cents)
+      };
+      
+      // UI更新
+      noteResults = [...noteResults];
+      
+      // 8音完了チェック
+      const completedNotes = noteResults.filter(note => note.cents !== null).length;
+      if (completedNotes >= currentScale.length) {
+        completeSession();
+      }
+    }
+  }
+  
+  function getCurrentStepIndex() {
+    // 現在アクティブなスケールステップのインデックスを取得
+    for (let i = 0; i < scaleSteps.length; i++) {
+      if (scaleSteps[i].state === 'active') {
+        return i;
+      }
+    }
+    return -1;
+  }
+  
+  function getFrequencyFromNote(note) {
+    // 音程名から周波数を計算（基本的な実装）
+    const noteMap = {
+      'C4': 261.63, 'Db4': 277.18, 'D4': 293.66, 'Eb4': 311.13,
+      'E4': 329.63, 'F4': 349.23, 'Gb4': 369.99, 'G4': 392.00,
+      'Ab4': 415.30, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
+      'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25,
+      'E5': 659.25, 'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99
+    };
+    return noteMap[note] || 261.63;
+  }
+  
+  function calculateTargetFrequency(baseFreq, stepIndex) {
+    // 8音階の相対的な周波数比
+    const ratios = [1.0, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8, 2.0];
+    return baseFreq * (ratios[stepIndex] || 1.0);
+  }
+  
+  function calculateCents(detectedFreq, targetFreq) {
+    if (!detectedFreq || !targetFreq || detectedFreq <= 0 || targetFreq <= 0) {
+      return null;
+    }
+    return Math.round(1200 * Math.log2(detectedFreq / targetFreq));
+  }
+  
+  function calculateNoteAccuracy(cents) {
+    if (cents === null) return 0;
+    const absCents = Math.abs(cents);
+    return Math.max(0, Math.min(100, 100 - (absCents / 50) * 100));
   }
   
   function handlePitchDetectorError(event) {
