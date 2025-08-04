@@ -11,6 +11,7 @@ import type {
 } from '../types/sessionStorage';
 import type { Grade, NoteResult } from '../types/scoring';
 import { SessionStorageManager } from '../utils/SessionStorageManager';
+import { EvaluationEngine } from '../evaluation/EvaluationEngine';
 
 // =============================================================================
 // メインストア
@@ -239,13 +240,13 @@ export async function saveSessionResult(
       baseNote,
       baseName,
       grade: manager.calculateSessionGrade(noteResults),
-      accuracy: calculateAccuracy(noteResults),
-      averageError: calculateAverageError(noteResults),
+      accuracy: EvaluationEngine.calculateAccuracy(noteResults),
+      averageError: EvaluationEngine.calculateAverageError(noteResults),
       completedAt: new Date().toISOString(),
       duration,
       noteResults,
       outliers: detectOutliers(noteResults),
-      distribution: calculateDistribution(noteResults),
+      distribution: EvaluationEngine.calculateDistribution(noteResults),
       isCompleted: true
     };
     
@@ -491,13 +492,13 @@ export function generateTestSessionResult(
     baseNote,
     baseName: manager.getBaseNoteName(baseNote),
     grade,
-    accuracy: calculateAccuracy(noteResults),
-    averageError: calculateAverageError(noteResults),
+    accuracy: EvaluationEngine.calculateAccuracy(noteResults),
+    averageError: EvaluationEngine.calculateAverageError(noteResults),
     completedAt: new Date().toISOString(),
     duration: 120 + Math.random() * 60,
     noteResults,
     outliers: detectOutliers(noteResults),
-    distribution: calculateDistribution(noteResults),
+    distribution: EvaluationEngine.calculateDistribution(noteResults),
     isCompleted: true
   };
 }

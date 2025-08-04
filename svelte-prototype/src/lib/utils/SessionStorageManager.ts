@@ -19,7 +19,7 @@ import {
   isTrainingProgress,
   isSessionResult
 } from '../types/sessionStorage';
-import { calculateNoteGrade as unifiedCalculateNoteGrade, calculateSessionGrade as unifiedCalculateSessionGrade } from './gradeCalculation';
+import { EvaluationEngine } from '../evaluation/EvaluationEngine';
 
 export class SessionStorageManager {
   private static instance: SessionStorageManager;
@@ -345,7 +345,7 @@ export class SessionStorageManager {
    * 統一された評価ロジックを使用
    */
   public calculateSessionGrade(noteResults: NoteResult[]): SessionGrade {
-    return unifiedCalculateSessionGrade(noteResults);
+    return EvaluationEngine.evaluateSession(noteResults);
   }
 
   /**
@@ -353,7 +353,9 @@ export class SessionStorageManager {
    * 統一された評価ロジックを使用
    */
   private calculateNoteGrade(cents: number | null): SessionGrade | 'notMeasured' {
-    return unifiedCalculateNoteGrade(cents) as SessionGrade | 'notMeasured';
+    const grade = EvaluationEngine.evaluateNote(cents);
+    // EvaluationEngineは5段階評価を返すが、SessionGradeは4段階なので'notMeasured'を特別扱い
+    return grade === 'notMeasured' ? 'notMeasured' : grade as SessionGrade;
   }
 
   // =============================================================================

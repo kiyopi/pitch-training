@@ -1080,7 +1080,7 @@
       console.log('   保存されたgrade:', latestSession.grade);
       console.log('   noteResults:', latestSession.noteResults);
       if (latestSession.noteResults) {
-        const recalculatedGrade = calculateSessionGrade(latestSession.noteResults);
+        const recalculatedGrade = EvaluationEngine.evaluateSession(latestSession.noteResults);
         console.log('   再計算grade:', recalculatedGrade);
         if (latestSession.grade !== recalculatedGrade) {
           console.warn('   ⚠️ Grade不一致検出！', latestSession.grade, '!=', recalculatedGrade);
