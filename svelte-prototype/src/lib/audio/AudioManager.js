@@ -113,9 +113,16 @@ class AudioManager {
 
       // MediaStream取得（1つのみ）
       if (!this.mediaStream) {
-        // iPad/iPhone検出
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        console.log(`🔍 [AudioManager] デバイス検出: ${isIOS ? 'iOS' : 'その他'}`, navigator.userAgent);
+        // iPad/iPhone検出（iPadOS 13以降対応）
+        const isIPhone = /iPhone/.test(navigator.userAgent);
+        const isIPad = /iPad/.test(navigator.userAgent);
+        // iPadOS 13以降のSafariはMacのようなUser-Agentになる場合がある
+        const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+        const isIOS = isIPhone || isIPad || isIPadOS;
+        
+        const deviceType = isIPad || isIPadOS ? 'iPad' : isIPhone ? 'iPhone' : 'その他';
+        console.log(`🔍 [AudioManager] デバイス検出: ${deviceType}`, navigator.userAgent);
+        console.log(`🔍 [AudioManager] タッチサポート: ${'ontouchend' in document}`);
         
         // Safari WebKit対応: 最大互換性音声設定
         const audioConstraints = {
@@ -333,6 +340,37 @@ class AudioManager {
    */
   getSensitivity() {
     return this.currentSensitivity;
+  }
+
+  /**
+   * 仕様書準拠のプラットフォーム別設定取得
+   * MICROPHONE_PLATFORM_SPECIFICATIONS.md準拠
+   */
+  getPlatformSpecs() {
+    // デバイス判定（統一版）
+    const isIPhone = /iPhone/.test(navigator.userAgent);
+    const isIPad = /iPad/.test(navigator.userAgent);
+    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    const isIOS = isIPhone || isIPad || isIPadOS;
+    
+    // 仕様書準拠パラメータ
+    return {
+      // 音量計算divisor（重要：この値で感度が決まる）
+      divisor: isIOS ? 4.0 : 6.0,           // iPhone/iPad: 4.0, PC: 6.0
+      
+      // 音量補正（iPhone/iPad低域カット対応）  
+      gainCompensation: isIOS ? 1.5 : 1.0,  // iPhone/iPad: 1.5, PC: 1.0
+      
+      // ノイズ閾値（無音時0%表示の基準）
+      noiseThreshold: isIOS ? 12 : 15,      // iPhone/iPad: 12, PC: 15
+      
+      // スムージング（最小限）
+      smoothingFactor: 0.2,                 // 両プラットフォーム共通
+      
+      // デバイス情報
+      deviceType: isIPad || isIPadOS ? 'iPad' : isIPhone ? 'iPhone' : 'PC',
+      isIOS: isIOS
+    };
   }
 
   /**

@@ -35,28 +35,19 @@
   let sampler = null;
   let isBaseTonePlaying = false;
 
-  // デバイス検出（調査用）
+  // デバイス検出（AudioManager統一版）
   let deviceInfo = '';
+  let platformSpecs = null;
+  
   onMount(() => {
-    const isIPhone = /iPhone/.test(navigator.userAgent);
-    const isIPad = /iPad/.test(navigator.userAgent);
-    // iPadOS 13以降のSafariはMacのようなUser-Agentになる場合がある
-    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
-    const isIOS = isIPhone || isIPad || isIPadOS;
-    
-    if (isIPad || isIPadOS) {
-      deviceInfo = 'iPad検出';
-      baseToneVolume = -6; // 標準デフォルト
-    } else if (isIPhone) {
-      deviceInfo = 'iPhone検出';
-      baseToneVolume = -6; // 標準デフォルト
-    } else {
-      deviceInfo = 'その他デバイス';
-      baseToneVolume = -6; // 標準デフォルト
-    }
+    // AudioManagerから統一設定を取得
+    platformSpecs = audioManager.getPlatformSpecs();
+    deviceInfo = `${platformSpecs.deviceType}検出`;
+    baseToneVolume = -6; // 標準デフォルト
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
     console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
+    console.log(`📊 [MicTest] プラットフォーム仕様適用: divisor=${platformSpecs.divisor}, gain=${platformSpecs.gainCompensation}`);
   });
 
   // トレーニングモード設定
@@ -289,18 +280,23 @@
     }
   }
 
-  // プリセット適用機能
+  // プリセット適用機能（仕様書準拠）
   function applyPreset(presetType) {
+    // AudioManagerから仕様書準拠の設定を取得
+    const platformSpecs = audioManager.getPlatformSpecs();
+    
     switch (presetType) {
       case 'ipad-high':
-        // 高感度設定
-        baseToneVolume = 5; // +5dB
-        micSensitivity = 5.0; // 5.0x
+        // 仕様書準拠 + 高感度設定
+        baseToneVolume = 3; // +3dB（適度なブースト）
+        // 仕様書のgainCompensation (1.5) + ユーザー調整 (2.0) = 3.0x
+        micSensitivity = platformSpecs.gainCompensation * 2.0; // 3.0x
         break;
       case 'ipad-extreme':
-        // 超高感度設定
-        baseToneVolume = 10; // +10dB
-        micSensitivity = 10.0; // 10.0x
+        // 仕様書準拠 + 超高感度設定
+        baseToneVolume = 7; // +7dB（強力ブースト）
+        // 仕様書のgainCompensation (1.5) + 極限調整 (4.0) = 6.0x
+        micSensitivity = platformSpecs.gainCompensation * 4.0; // 6.0x
         break;
       default:
         return;
@@ -311,6 +307,7 @@
     updateMicSensitivity();
     
     console.log(`🎯 [MicTest] ${presetType} プリセット適用: 基音${baseToneVolume}dB, マイク${micSensitivity}x`);
+    console.log(`📊 [MicTest] プラットフォーム仕様: divisor=${platformSpecs.divisor}, gainCompensation=${platformSpecs.gainCompensation}, デバイス=${platformSpecs.deviceType}`);
   }
 
   // マイク許可完了時の処理を拡張
@@ -367,10 +364,10 @@
             </div>
             
             <!-- デバイス専用プリセットボタン -->
-            {#if deviceInfo.includes('iPad') || deviceInfo.includes('その他')}
+            {#if platformSpecs && (platformSpecs.isIOS || deviceInfo.includes('その他'))}
               <div class="preset-section">
                 <h4 class="preset-title">
-                  {deviceInfo.includes('iPad') ? 'iPad専用設定' : '高感度設定（テスト用）'}
+                  {platformSpecs.isIOS ? `${platformSpecs.deviceType}専用設定` : '高感度設定（テスト用）'}
                 </h4>
                 <div class="preset-buttons">
                   <button class="preset-button" on:click={() => applyPreset('ipad-high')}>
@@ -379,6 +376,9 @@
                   <button class="preset-button" on:click={() => applyPreset('ipad-extreme')}>
                     超高感度設定
                   </button>
+                </div>
+                <div class="preset-specs">
+                  <small>仕様書準拠: divisor={platformSpecs?.divisor}, gain={platformSpecs?.gainCompensation}x</small>
                 </div>
               </div>
             {/if}
@@ -949,6 +949,17 @@
 
   .preset-button:active {
     background-color: #b45309;
+  }
+
+  .preset-specs {
+    margin-top: var(--space-2);
+    text-align: center;
+  }
+
+  .preset-specs small {
+    color: #92400e;
+    font-size: var(--text-xs);
+    font-family: monospace;
   }
 
   @media (min-width: 768px) {
