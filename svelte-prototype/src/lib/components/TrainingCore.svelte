@@ -168,17 +168,29 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   // =============================================================================
   
   async function initializeMicrophone() {
+    // マイクテスト完了フラグをチェック
+    const micTestCompleted = typeof localStorage !== 'undefined' && localStorage.getItem('mic-test-completed') === 'true';
+    console.log('🎤 [TrainingCore] マイクテスト完了フラグ:', micTestCompleted);
+    
+    if (!micTestCompleted) {
+      console.log('⚠️ [TrainingCore] マイクテスト未完了 - マイクテストページへリダイレクト');
+      if (onMicrophoneError) {
+        onMicrophoneError('マイクテストが必要です');
+      }
+      return;
+    }
+    
     const urlParams = new URLSearchParams(window.location.search);
     
     if (urlParams.get('from') === 'microphone-test') {
       microphoneState = 'granted';
       console.log('✅ [TrainingCore] マイクテスト経由でアクセス - 許可済み');
+      await checkMicrophonePermission();
     } else {
       await checkExistingMicrophonePermission();
-    }
-    
-    if (microphoneState === 'granted') {
-      await checkMicrophonePermission();
+      if (microphoneState === 'granted') {
+        await checkMicrophonePermission();
+      }
     }
   }
   
@@ -218,25 +230,30 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   }
 
   async function initializePitchDetector() {
+    console.log('🎙️ [TrainingCore] PitchDetector初期化開始');
+    
+    // コンポーネント取得を待つ
+    let retryCount = 0;
+    const maxRetries = 10;
+    
+    while (!pitchDetectorComponent && retryCount < maxRetries) {
+      console.log(`⏳ [TrainingCore] PitchDetectorコンポーネント待機中... (${retryCount + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      retryCount++;
+    }
+
     if (!pitchDetectorComponent) {
-      console.log('⚠️ [TrainingCore] PitchDetectorコンポーネント未取得 - 300ms後に再試行');
-      setTimeout(async () => {
-        if (pitchDetectorComponent && audioContext && mediaStream) {
-          try {
-            await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
-            console.log('✅ [TrainingCore] PitchDetector初期化完了（遅延）');
-          } catch (error) {
-            console.error('❌ [TrainingCore] PitchDetector遅延初期化エラー:', error);
-          }
-        }
-      }, 300);
+      console.error('❌ [TrainingCore] PitchDetectorコンポーネント取得失敗');
       return;
     }
 
     try {
       if (audioContext && mediaStream) {
+        console.log('🔧 [TrainingCore] PitchDetector外部AudioContext初期化実行');
         await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
         console.log('✅ [TrainingCore] PitchDetector初期化完了');
+      } else {
+        console.error('❌ [TrainingCore] AudioContext または MediaStream が未初期化');
       }
     } catch (error) {
       console.error('❌ [TrainingCore] PitchDetector初期化エラー:', error);
@@ -547,11 +564,19 @@ TrainingCore.svelte - トレーニング共通コンポーネント
 <!-- HTML テンプレート -->
 <div class="training-core">
   
-  {#if microphoneState !== 'granted'}
-    <!-- マイク許可待ち -->
+  {#if microphoneState === 'checking'}
+    <!-- マイク許可確認中 -->
     <Card class="main-card">
       <div class="card-content text-center">
-        <h3>マイク許可が必要です</h3>
+        <h3>⏳ マイク初期化中...</h3>
+        <p>しばらくお待ちください</p>
+      </div>
+    </Card>
+  {:else if microphoneState === 'denied' || microphoneState === 'error'}
+    <!-- マイク許可エラー -->
+    <Card class="main-card">
+      <div class="card-content text-center">
+        <h3>⚠️ マイク許可が必要です</h3>
         <p>マイクテストページから開始してください</p>
         <Button variant="primary" on:click={handleBackToHome}>
           ホームに戻る
