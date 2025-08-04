@@ -31,7 +31,7 @@
 
   // 音量調整機能
   let baseToneVolume = 0; // -20dB ～ +10dB
-  let micSensitivity = 1.0; // 0.1x ～ 10.0x
+  let micSensitivity = 3.0; // iPad対応: 初期値を高めに設定
   let sampler = null;
   let isBaseTonePlaying = false;
 
@@ -43,7 +43,7 @@
     // AudioManagerから統一設定を取得
     platformSpecs = audioManager.getPlatformSpecs();
     deviceInfo = `${platformSpecs.deviceType}検出`;
-    baseToneVolume = -6; // 標準デフォルト
+    baseToneVolume = 20; // テスト用: 極端に大きい値
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
     console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
@@ -200,7 +200,7 @@
           urls: { "C4": "C4.mp3" },
           baseUrl: "https://tonejs.github.io/audio/salamander/",
           release: 1.5,
-          volume: 6, // プロトタイプ準拠: +6dB音量設定
+          volume: 20, // テスト用: 極端に大きい値で変化を確認
           onload: () => {
             console.log('✅ [MicTest] 基音サンプラー読み込み完了');
           },
