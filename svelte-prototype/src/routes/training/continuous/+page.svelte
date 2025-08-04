@@ -8,11 +8,17 @@
   // マイクテスト完了確認
   let micTestCompleted = false;
   let showStartScreen = true;
+  let isClient = false;
   
   onMount(() => {
+    // クライアント側でのみ実行
+    isClient = true;
+    
     // マイクテスト完了フラグ確認
-    micTestCompleted = localStorage.getItem('mic-test-completed') === 'true';
-    console.log('🎤 [ContinuousTraining] マイクテスト完了フラグ:', micTestCompleted);
+    if (typeof localStorage !== 'undefined') {
+      micTestCompleted = localStorage.getItem('mic-test-completed') === 'true';
+      console.log('🎤 [ContinuousTraining] マイクテスト完了フラグ:', micTestCompleted);
+    }
   });
 
   // TrainingCore エラーハンドラ
@@ -57,7 +63,7 @@
     </div>
 
     <!-- マイクテスト未完了の場合は誘導 -->
-    {#if !micTestCompleted}
+    {#if isClient && !micTestCompleted}
       <div class="mic-test-required">
         <div class="warning-card">
           <div class="warning-icon">⚠️</div>
@@ -73,7 +79,7 @@
           </div>
         </div>
       </div>
-    {:else if showStartScreen}
+    {:else if isClient && micTestCompleted && showStartScreen}
       <!-- チャレンジ開始画面 -->
       <div class="start-screen">
         <div class="challenge-card">
@@ -132,7 +138,7 @@
           </div>
         </div>
       </div>
-    {:else}
+    {:else if isClient && micTestCompleted && !showStartScreen}
       <!-- TrainingCore統合（自動進行モード） -->
       <TrainingCore
         mode="continuous"
@@ -145,6 +151,12 @@
         onSessionComplete={handleSessionComplete}
         onAllComplete={handleAllComplete}
       />
+    {:else if !isClient}
+      <!-- サーバーサイドレンダリング中の仮表示 -->
+      <div class="loading-placeholder">
+        <div class="loading-spinner">⚡</div>
+        <p>読み込み中...</p>
+      </div>
     {/if}
 
   </div>
@@ -357,6 +369,28 @@
 
   .start-challenge-button:active {
     transform: translateY(0);
+  }
+
+  /* 読み込み中プレースホルダー */
+  .loading-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-gray-600);
+  }
+
+  .loading-spinner {
+    font-size: 3rem;
+    animation: spin 2s linear infinite;
+    margin-bottom: var(--space-4);
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* レスポンシブ対応 */
