@@ -1140,7 +1140,7 @@
       baseNote: baseNote,
       baseFrequency: baseFrequency,
       noteResults: convertedNoteResults,
-      distribution: calculateGradeDistribution(noteResultsForDisplay),
+      distribution: EvaluationEngine.calculateDistribution(noteResultsForDisplay),
       // セッション履歴：既存履歴 + 現在のセッション
       sessionHistory: sessionHistory,
       // 統合グレード算出
