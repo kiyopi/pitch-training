@@ -45,6 +45,35 @@
   let platformSpecs = null;
   
   onMount(() => {
+    // localStorage状態デバッグ（最優先）
+    console.log('🔍 [MicTest-Debug] localStorage完全状態確認開始');
+    console.log('🔍 [MicTest-Debug] localStorage使用可能:', typeof Storage !== "undefined");
+    console.log('🔍 [MicTest-Debug] localStorage.length:', localStorage.length);
+    
+    // 全localStorage内容を表示
+    console.log('🔍 [MicTest-Debug] localStorage全内容:');
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const value = localStorage.getItem(key);
+      console.log(`   ${key}: ${value}`);
+    }
+    
+    // 対象キーの状態確認
+    const targetKey = 'pitch-training-audio-settings';
+    const stored = localStorage.getItem(targetKey);
+    console.log(`🔍 [MicTest-Debug] 対象キー '${targetKey}' 存在:`, stored !== null);
+    console.log(`🔍 [MicTest-Debug] 対象キー内容:`, stored);
+    
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        console.log(`🔍 [MicTest-Debug] パース済み内容:`, parsed);
+        console.log(`🔍 [MicTest-Debug] baseToneVolume値:`, parsed.baseToneVolume);
+      } catch (error) {
+        console.error('🔍 [MicTest-Debug] JSON パースエラー:', error);
+      }
+    }
+
     // AudioManagerから統一設定を取得
     platformSpecs = audioManager.getPlatformSpecs();
     deviceInfo = `${platformSpecs.deviceType}検出`;
@@ -239,16 +268,32 @@
 
   // 基音音量更新（AudioManager統合版）
   function updateBaseToneVolume() {
+    console.log(`🔊 [MicTest-Debug] 基音音量更新開始: ${baseToneVolume}dB`);
+    
     if (sampler) {
       sampler.volume.value = baseToneVolume;
-      console.log(`🔊 [MicTest] 基音音量設定: ${baseToneVolume}dB`);
+      console.log(`🔊 [MicTest] Tone.js Sampler音量設定: ${baseToneVolume}dB`);
     }
     
     // AudioManagerに設定を保存（スライダー調整時即座に保存）
     try {
+      console.log(`🔍 [MicTest-Debug] AudioManager保存前のlocalStorage状態確認`);
+      const beforeSave = localStorage.getItem('pitch-training-audio-settings');
+      console.log(`🔍 [MicTest-Debug] 保存前データ:`, beforeSave);
+      
       const success = audioManager.setBaseToneVolume(baseToneVolume);
+      
+      console.log(`🔍 [MicTest-Debug] AudioManager保存後のlocalStorage状態確認`);
+      const afterSave = localStorage.getItem('pitch-training-audio-settings');
+      console.log(`🔍 [MicTest-Debug] 保存後データ:`, afterSave);
+      
       if (success) {
-        console.log(`✅ [MicTest] 基音音量をlocalStorageに保存: ${baseToneVolume}dB`);
+        console.log(`✅ [MicTest] 基音音量をlocalStorageに保存成功: ${baseToneVolume}dB`);
+        
+        // 保存直後の検証読み込み
+        const verification = audioManager.getBaseToneVolume();
+        console.log(`🔍 [MicTest-Debug] 保存直後検証読み込み: ${verification}dB`);
+        
       } else {
         console.warn(`⚠️ [MicTest] 基音音量保存失敗: ${baseToneVolume}dB`);
       }

@@ -832,9 +832,44 @@
         console.log('🔍 [RandomTraining] その他デバイス検出:', navigator.userAgent);
       }
       
-      // 標準音量設定（全デバイス共通）
-      sampler.volume.value = -6; // 標準: -6dB
-      console.log('🔊 [RandomTraining] 標準音量設定: -6dB');
+      // localStorage状態デバッグ（トレーニングページ）
+      console.log('🔍 [RandomTraining-Debug] localStorage完全状態確認開始');
+      console.log('🔍 [RandomTraining-Debug] localStorage使用可能:', typeof Storage !== "undefined");
+      console.log('🔍 [RandomTraining-Debug] localStorage.length:', localStorage.length);
+      
+      // 対象キーの状態確認
+      const targetKey = 'pitch-training-audio-settings';
+      const stored = localStorage.getItem(targetKey);
+      console.log(`🔍 [RandomTraining-Debug] 対象キー '${targetKey}' 存在:`, stored !== null);
+      console.log(`🔍 [RandomTraining-Debug] 対象キー内容:`, stored);
+      
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          console.log(`🔍 [RandomTraining-Debug] パース済み内容:`, parsed);
+          console.log(`🔍 [RandomTraining-Debug] baseToneVolume値:`, parsed.baseToneVolume);
+          
+          // AudioManagerから読み込みテスト
+          console.log(`🔍 [RandomTraining-Debug] AudioManager.getBaseToneVolume()テスト開始`);
+          const audioManagerValue = audioManager.getBaseToneVolume();
+          console.log(`🔍 [RandomTraining-Debug] AudioManager読み込み値: ${audioManagerValue}dB`);
+          
+          // 実際に読み込み値を使用
+          sampler.volume.value = audioManagerValue;
+          console.log(`🔊 [RandomTraining] AudioManager基音音量適用: ${audioManagerValue}dB`);
+          
+        } catch (error) {
+          console.error('🔍 [RandomTraining-Debug] JSON パースエラー:', error);
+          // エラー時はデフォルト値
+          sampler.volume.value = -6;
+          console.log('🔊 [RandomTraining] フォールバック音量設定: -6dB');
+        }
+      } else {
+        console.warn('🔍 [RandomTraining-Debug] localStorage データなし - デフォルト値使用');
+        // データなしの場合はデフォルト値
+        sampler.volume.value = -6;
+        console.log('🔊 [RandomTraining] デフォルト音量設定: -6dB');
+      }
       
     } catch (error) {
       console.error('サンプラー初期化エラー:', error);
