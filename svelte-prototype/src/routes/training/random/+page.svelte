@@ -525,6 +525,16 @@
     sessionStartTime = Date.now(); // セッション開始時刻を記録
     // selectRandomBaseNote() は呼ばない - 既存の基音を保持
     
+    // AudioContext状態確認・再開
+    if (typeof window !== 'undefined' && window.Tone) {
+      const context = window.Tone.context || window.Tone.getContext();
+      if (context && context.state === 'suspended') {
+        console.log('🔄 [RandomTraining] AudioContext suspended検出 - 再開中...');
+        await context.resume();
+        console.log('✅ [RandomTraining] AudioContext再開完了');
+      }
+    }
+
     // 音声再生
     const note = baseNotes.find(n => n.name === currentBaseNote).note;
     sampler.triggerAttackRelease(note, 2, Tone.now(), 0.7);
@@ -546,6 +556,16 @@
     
     console.log('🎵 [BaseNoteOnly] 基音のみ再生開始:', currentBaseNote);
     
+    // AudioContext状態確認・再開
+    if (typeof window !== 'undefined' && window.Tone) {
+      const context = window.Tone.context || window.Tone.getContext();
+      if (context && context.state === 'suspended') {
+        console.log('🔄 [BaseNoteOnly] AudioContext suspended検出 - 再開中...');
+        await context.resume();
+        console.log('✅ [BaseNoteOnly] AudioContext再開完了');
+      }
+    }
+
     // 基音のみ再生（状態変更なし）
     const note = baseNotes.find(n => n.name === currentBaseNote).note;
     sampler.triggerAttackRelease(note, 1.5, Tone.now(), 0.7);

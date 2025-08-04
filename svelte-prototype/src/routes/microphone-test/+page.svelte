@@ -102,6 +102,9 @@
         micPermission = 'granted';
         console.log('✅ [MicTest] マイク許可完了');
         
+        // AudioContext状態確認・再開（マイク・基音両方に必要）
+        await ensureAudioContextRunning();
+        
         // 基音テスト初期化
         await onMicrophoneGranted();
         
@@ -110,6 +113,10 @@
         setTimeout(async () => {
           if (pitchDetectorComponent) {
             console.log('🎙️ [MicTest] PitchDetector初期化開始');
+            
+            // PitchDetector初期化前にもAudioContext再開確認
+            await ensureAudioContextRunning();
+            
             await pitchDetectorComponent.initialize();
             console.log('✅ [MicTest] PitchDetector初期化完了');
             
@@ -226,6 +233,20 @@
     }
   }
 
+  // AudioContext状態確認・再開処理
+  async function ensureAudioContextRunning() {
+    if (typeof window !== 'undefined' && window.Tone) {
+      const context = window.Tone.context || window.Tone.getContext();
+      if (context && context.state === 'suspended') {
+        console.log('🔄 [MicTest] AudioContext suspended検出 - 再開中...');
+        await context.resume();
+        console.log('✅ [MicTest] AudioContext再開完了');
+        return true; // 再開実行
+      }
+    }
+    return false; // 再開不要
+  }
+
   // 基音再生テスト
   async function playBaseTone() {
     if (!sampler || isBaseTonePlaying) return;
@@ -233,6 +254,12 @@
     try {
       isBaseTonePlaying = true;
       console.log('🎵 [MicTest] 基音再生開始: C4');
+      
+      // AudioContext状態確認・再開
+      const wasResumed = await ensureAudioContextRunning();
+      if (wasResumed) {
+        console.log('🔊 [MicTest] AudioContext再開後に基音再生実行');
+      }
       
       await sampler.triggerAttackRelease('C4', 2, window.Tone.now(), 0.7);
       
