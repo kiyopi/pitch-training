@@ -1108,7 +1108,7 @@
       frequency: note.targetFreq || note.expectedFrequency,
       detectedFrequency: note.detectedFreq,
       cents: note.cents,
-      grade: calculateNoteGrade(note.cents),
+      grade: EvaluationEngine.evaluateNote(note.cents),
       targetFreq: note.targetFreq,
       diff: note.diff
     }));
