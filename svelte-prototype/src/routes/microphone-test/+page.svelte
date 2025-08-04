@@ -29,25 +29,12 @@
   let detectedNote = 'ーー';
   let pitchDetectorComponent = null;
 
-  // 音量調整機能
-  let baseToneVolume = 0; // -20dB ～ +10dB
-  let micSensitivity = 3.0; // iPad対応: 初期値を高めに設定
-  let sampler = null;
-  let isBaseTonePlaying = false;
-
   // デバイス検出（AudioManager統一版）
-  let deviceInfo = '';
   let platformSpecs = null;
   
   onMount(() => {
     // AudioManagerから統一設定を取得
     platformSpecs = audioManager.getPlatformSpecs();
-    deviceInfo = `${platformSpecs.deviceType}検出`;
-    baseToneVolume = 35; // 最終最適化: 最大音量レベル確保
-    
-    console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
-    console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
-    console.log(`📊 [MicTest] プラットフォーム仕様適用: divisor=${platformSpecs.divisor}, gain=${platformSpecs.gainCompensation}`);
   });
 
   // トレーニングモード設定
@@ -96,10 +83,7 @@
         micPermission = 'granted';
         console.log('✅ [MicTest] マイク許可完了');
         
-        // AudioContext状態確認・再開（マイク・基音両方に必要）
-        await ensureAudioContextRunning();
-        
-        // 基音テスト初期化
+        // iPadマイク安定化処理
         await onMicrophoneGranted();
         
         // PitchDetector初期化（マイク許可後）
@@ -172,158 +156,16 @@
     }
   }
 
-  // 基音テスト機能
-  async function initializeBaseToneTest() {
-    try {
-      console.log('🎹 [MicTest] 基音テスト初期化開始');
-      
-      // Tone.js動的読み込み
-      if (typeof window !== 'undefined') {
-        if (!window.Tone) {
-          console.log('📦 [MicTest] Tone.js動的読み込み開始');
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/tone@latest/build/Tone.js';
-          document.head.appendChild(script);
-          
-          // Tone.js読み込み完了を待機
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = reject;
-          });
-          console.log('✅ [MicTest] Tone.js読み込み完了');
-        }
-        
-        await window.Tone.start();
-        
-        // Salamander Grand Piano サンプラー
-        sampler = new window.Tone.Sampler({
-          urls: { "C4": "C4.mp3" },
-          baseUrl: "https://tonejs.github.io/audio/salamander/",
-          release: 1.5,
-          volume: 35, // 最終最適化: 最大音量レベル確保
-          onload: () => {
-            console.log('✅ [MicTest] 基音サンプラー読み込み完了');
-          },
-          onerror: (error) => {
-            console.error('❌ [MicTest] 基音サンプラー読み込みエラー:', error);
-          }
-        }).toDestination();
-        
-        // 初期音量設定
-        // updateBaseToneVolume(); // コメントアウト: 初期化時の volume: 35 を維持
-        console.log('🔊 [MicTest] 初期音量維持: 35dB');
-        
-      } else {
-        console.warn('⚠️ [MicTest] window未定義 - 基音テスト無効');
-      }
-    } catch (error) {
-      console.error('❌ [MicTest] 基音テスト初期化エラー:', error);
-    }
-  }
 
-  // 基音音量更新
-  function updateBaseToneVolume() {
-    if (sampler) {
-      sampler.volume.value = baseToneVolume;
-      console.log(`🔊 [MicTest] 基音音量設定: ${baseToneVolume}dB`);
-    }
-  }
-
-  // AudioContext状態確認・再開処理
-  async function ensureAudioContextRunning() {
-    if (typeof window !== 'undefined' && window.Tone) {
-      const context = window.Tone.context || window.Tone.getContext();
-      if (context && context.state === 'suspended') {
-        console.log('🔄 [MicTest] AudioContext suspended検出 - 再開中...');
-        await context.resume();
-        console.log('✅ [MicTest] AudioContext再開完了');
-        return true; // 再開実行
-      }
-    }
-    return false; // 再開不要
-  }
-
-  // 基音再生テスト
-  async function playBaseTone() {
-    if (!sampler || isBaseTonePlaying) return;
-    
-    try {
-      isBaseTonePlaying = true;
-      console.log('🎵 [MicTest] 基音再生開始: C4');
-      
-      // AudioContext状態確認・再開
-      const wasResumed = await ensureAudioContextRunning();
-      if (wasResumed) {
-        console.log('🔊 [MicTest] AudioContext再開後に基音再生実行');
-      }
-      
-      await sampler.triggerAttackRelease('C4', 2, window.Tone.now(), 0.7);
-      
-      // 2秒後に再生状態をリセット
-      setTimeout(() => {
-        isBaseTonePlaying = false;
-        console.log('✅ [MicTest] 基音再生完了');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('❌ [MicTest] 基音再生エラー:', error);
-      isBaseTonePlaying = false;
-    }
-  }
-
-  // マイク感度調整
-  function updateMicSensitivity() {
-    try {
-      // AudioManagerの感度調整
-      audioManager.setSensitivity(micSensitivity);
-      console.log(`🎤 [MicTest] マイク感度更新完了: ${micSensitivity}x`);
-    } catch (error) {
-      console.error('❌ [MicTest] マイク感度調整エラー:', error);
-    }
-  }
-
-  // プリセット適用機能（仕様書準拠）
-  function applyPreset(presetType) {
-    // AudioManagerから仕様書準拠の設定を取得
-    const platformSpecs = audioManager.getPlatformSpecs();
-    
-    switch (presetType) {
-      case 'ipad-high':
-        // 仕様書準拠 + 高感度設定
-        baseToneVolume = 3; // +3dB（適度なブースト）
-        // 仕様書のgainCompensation (1.5) + ユーザー調整 (2.0) = 3.0x
-        micSensitivity = platformSpecs.gainCompensation * 2.0; // 3.0x
-        break;
-      case 'ipad-extreme':
-        // 仕様書準拠 + 超高感度設定
-        baseToneVolume = 7; // +7dB（強力ブースト）
-        // 仕様書のgainCompensation (1.5) + 極限調整 (4.0) = 6.0x
-        micSensitivity = platformSpecs.gainCompensation * 4.0; // 6.0x
-        break;
-      default:
-        return;
-    }
-    
-    // 設定を即座に適用
-    updateBaseToneVolume();
-    updateMicSensitivity();
-    
-    console.log(`🎯 [MicTest] ${presetType} プリセット適用: 基音${baseToneVolume}dB, マイク${micSensitivity}x`);
-    console.log(`📊 [MicTest] プラットフォーム仕様: divisor=${platformSpecs.divisor}, gainCompensation=${platformSpecs.gainCompensation}, デバイス=${platformSpecs.deviceType}`);
-  }
 
   // マイク許可完了時の処理を拡張
   async function onMicrophoneGranted() {
-    // 基音テスト初期化
-    await initializeBaseToneTest();
-    
     // iPadマイク安定化処理
     if (platformSpecs && (platformSpecs.deviceType === 'iPad')) {
       console.log('🔧 [MicTest] iPad検出 - マイク感度5.0x自動設定開始');
       
       // iPad専用: 5.0x感度で安定化
-      micSensitivity = 5.0;
-      updateMicSensitivity();
+      audioManager.setSensitivity(5.0);
       
       console.log('✅ [MicTest] iPad マイク感度5.0x自動設定完了');
       
@@ -333,14 +175,6 @@
         console.log('🔄 [MicTest] iPad用AudioManager再初期化完了');
       } catch (error) {
         console.warn('⚠️ [MicTest] AudioManager再初期化エラー:', error);
-      }
-    } else {
-      // 通常デバイス: AudioManagerから現在のマイク感度を取得
-      try {
-        micSensitivity = audioManager.getSensitivity();
-        console.log(`🎤 [MicTest] 現在のマイク感度取得: ${micSensitivity}x`);
-      } catch (error) {
-        console.warn('⚠️ [MicTest] マイク感度取得エラー:', error);
       }
     }
   }
@@ -375,84 +209,9 @@
       <Card variant="default" padding="lg">
         <div class="training-mode-content">
           {#if micPermission === 'granted'}
-            <!-- マイク許可完了 - 音量調整エリア -->
+            <!-- マイク許可完了 -->
             <h3 class="ready-title">マイク準備完了</h3>
-            <p class="ready-description">音量を調整してからトレーニングを開始してください</p>
-            
-            <!-- デバイス情報表示（調査用） -->
-            <div class="device-info">
-              <span class="device-label">{deviceInfo}</span>
-            </div>
-            
-            <!-- デバイス専用プリセットボタン -->
-            {#if platformSpecs && (platformSpecs.isIOS || deviceInfo.includes('その他'))}
-              <div class="preset-section">
-                <h4 class="preset-title">
-                  {platformSpecs.isIOS ? `${platformSpecs.deviceType}専用設定` : '高感度設定（テスト用）'}
-                </h4>
-                <div class="preset-buttons">
-                  <button class="preset-button" on:click={() => applyPreset('ipad-high')}>
-                    高感度設定
-                  </button>
-                  <button class="preset-button" on:click={() => applyPreset('ipad-extreme')}>
-                    超高感度設定
-                  </button>
-                </div>
-                <div class="preset-specs">
-                  <small>仕様書準拠: divisor={platformSpecs?.divisor}, gain={platformSpecs?.gainCompensation}x</small>
-                </div>
-              </div>
-            {/if}
-            
-            <!-- 音量調整コントロール -->
-            <div class="volume-controls">
-              <!-- 基音音量調整 -->
-              <div class="volume-control-section">
-                <label class="volume-label">
-                  基音音量: {baseToneVolume}dB
-                </label>
-                <div class="volume-slider-container">
-                  <span class="slider-min">-20dB</span>
-                  <input 
-                    type="range" 
-                    min="-20" 
-                    max="10" 
-                    step="1"
-                    bind:value={baseToneVolume}
-                    on:input={updateBaseToneVolume}
-                    class="volume-slider"
-                  />
-                  <span class="slider-max">+10dB</span>
-                </div>
-                <button 
-                  class="base-tone-test-button"
-                  on:click={playBaseTone}
-                  disabled={isBaseTonePlaying}
-                >
-                  {isBaseTonePlaying ? '再生中...' : 'ド(C4)を再生'}
-                </button>
-              </div>
-              
-              <!-- マイク感度調整 -->
-              <div class="volume-control-section">
-                <label class="volume-label">
-                  マイク感度: {micSensitivity.toFixed(1)}x
-                </label>
-                <div class="volume-slider-container">
-                  <span class="slider-min">0.1x</span>
-                  <input 
-                    type="range" 
-                    min="0.1" 
-                    max="10.0" 
-                    step="0.1"
-                    bind:value={micSensitivity}
-                    on:input={updateMicSensitivity}
-                    class="volume-slider"
-                  />
-                  <span class="slider-max">10.0x</span>
-                </div>
-              </div>
-            </div>
+            <p class="ready-description">トレーニングを開始してください</p>
             
             <div class="training-start-button-area">
               <button class="training-start-button enabled" on:click={startTraining}>
@@ -807,113 +566,6 @@
     text-align: center;
   }
 
-  /* 音量調整機能のスタイル */
-  .device-info {
-    text-align: center;
-    margin-bottom: var(--space-4);
-  }
-
-  .device-label {
-    background-color: #dbeafe;
-    color: #1e40af;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: var(--text-sm);
-    font-weight: 500;
-  }
-
-  .volume-controls {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: var(--space-4);
-    margin: var(--space-4) 0;
-  }
-
-  .volume-control-section {
-    margin-bottom: var(--space-4);
-  }
-
-  .volume-control-section:last-child {
-    margin-bottom: 0;
-  }
-
-  .volume-label {
-    display: block;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: var(--space-2);
-    text-align: center;
-  }
-
-  .volume-slider-container {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-bottom: var(--space-3);
-  }
-
-  .slider-min,
-  .slider-max {
-    font-size: var(--text-xs);
-    color: #6b7280;
-    min-width: 32px;
-    text-align: center;
-  }
-
-  .volume-slider {
-    flex: 1;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 6px;
-    background: #e5e7eb;
-    border-radius: 3px;
-    outline: none;
-  }
-
-  .volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-
-  .volume-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-
-  .base-tone-test-button {
-    width: 100%;
-    padding: var(--space-2) var(--space-4);
-    background-color: #059669;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .base-tone-test-button:hover:not(:disabled) {
-    background-color: #047857;
-  }
-
-  .base-tone-test-button:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
-  }
 
   .ready-title {
     color: #059669;
@@ -929,59 +581,6 @@
     margin-bottom: var(--space-4);
   }
 
-  /* プリセット機能のスタイル */
-  .preset-section {
-    background-color: #fef3c7;
-    border: 1px solid #f59e0b;
-    border-radius: 8px;
-    padding: var(--space-4);
-    margin: var(--space-4) 0;
-    text-align: center;
-  }
-
-  .preset-title {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: #92400e;
-    margin: 0 0 var(--space-3) 0;
-  }
-
-  .preset-buttons {
-    display: flex;
-    gap: var(--space-3);
-    justify-content: center;
-  }
-
-  .preset-button {
-    padding: var(--space-2) var(--space-3);
-    background-color: #f59e0b;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .preset-button:hover {
-    background-color: #d97706;
-  }
-
-  .preset-button:active {
-    background-color: #b45309;
-  }
-
-  .preset-specs {
-    margin-top: var(--space-2);
-    text-align: center;
-  }
-
-  .preset-specs small {
-    color: #92400e;
-    font-size: var(--text-xs);
-    font-family: monospace;
-  }
 
   @media (min-width: 768px) {
     .mic-test-header {
