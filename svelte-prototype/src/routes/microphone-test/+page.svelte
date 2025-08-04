@@ -317,12 +317,31 @@
     // 基音テスト初期化
     await initializeBaseToneTest();
     
-    // AudioManagerから現在のマイク感度を取得
-    try {
-      micSensitivity = audioManager.getSensitivity();
-      console.log(`🎤 [MicTest] 現在のマイク感度取得: ${micSensitivity}x`);
-    } catch (error) {
-      console.warn('⚠️ [MicTest] マイク感度取得エラー:', error);
+    // iPadマイク安定化処理
+    if (platformSpecs && (platformSpecs.deviceType === 'iPad')) {
+      console.log('🔧 [MicTest] iPad検出 - マイク感度5.0x自動設定開始');
+      
+      // iPad専用: 5.0x感度で安定化
+      micSensitivity = 5.0;
+      updateMicSensitivity();
+      
+      console.log('✅ [MicTest] iPad マイク感度5.0x自動設定完了');
+      
+      // AudioManager再初期化でマイク接続安定化
+      try {
+        await audioManager.initialize();
+        console.log('🔄 [MicTest] iPad用AudioManager再初期化完了');
+      } catch (error) {
+        console.warn('⚠️ [MicTest] AudioManager再初期化エラー:', error);
+      }
+    } else {
+      // 通常デバイス: AudioManagerから現在のマイク感度を取得
+      try {
+        micSensitivity = audioManager.getSensitivity();
+        console.log(`🎤 [MicTest] 現在のマイク感度取得: ${micSensitivity}x`);
+      } catch (error) {
+        console.warn('⚠️ [MicTest] マイク感度取得エラー:', error);
+      }
     }
   }
 </script>

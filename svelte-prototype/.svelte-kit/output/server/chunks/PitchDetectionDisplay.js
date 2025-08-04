@@ -30,7 +30,25 @@ class AudioManager {
     this.initPromise = null;
     this.isInitialized = false;
     this.lastError = null;
-    this.currentSensitivity = 1;
+    this.currentSensitivity = this._getDefaultSensitivity();
+  }
+  /**
+   * デバイス依存のデフォルト感度取得
+   */
+  _getDefaultSensitivity() {
+    const isIPhone = /iPhone/.test(navigator.userAgent);
+    const isIPad = /iPad/.test(navigator.userAgent);
+    const isIPadOS = /Macintosh/.test(navigator.userAgent) && "ontouchend" in document;
+    if (isIPad || isIPadOS) {
+      console.log("🔧 [AudioManager] iPad検出 - デフォルト感度5.0x設定");
+      return 5;
+    } else if (isIPhone) {
+      console.log("🔧 [AudioManager] iPhone検出 - デフォルト感度3.0x設定");
+      return 3;
+    } else {
+      console.log("🔧 [AudioManager] PC検出 - デフォルト感度1.0x設定");
+      return 1;
+    }
   }
   /**
    * 音声リソースの初期化
@@ -364,7 +382,7 @@ class AudioManager {
     this.isInitialized = false;
     this.refCount = 0;
     this.initPromise = null;
-    this.currentSensitivity = 1;
+    this.currentSensitivity = this._getDefaultSensitivity();
     console.log("✅ [AudioManager] クリーンアップ完了");
   }
   /**

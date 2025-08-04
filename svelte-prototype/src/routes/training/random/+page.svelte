@@ -408,6 +408,17 @@
         if (pitchDetectorComponent) {
           logger.audio('[RandomTraining] PitchDetector初期化開始');
           
+          // iPad対応: マイク感度5.0x自動設定
+          const isIPhone = /iPhone/.test(navigator.userAgent);
+          const isIPad = /iPad/.test(navigator.userAgent);
+          const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+          
+          if (isIPad || isIPadOS) {
+            console.log('🔧 [RandomTraining] iPad検出 - マイク感度5.0x自動設定開始');
+            audioManager.setSensitivity(5.0);
+            console.log('✅ [RandomTraining] iPad マイク感度5.0x自動設定完了');
+          }
+          
           // iPad対応: AudioManager強制初期化
           try {
             console.log('🎤 [RandomTraining] AudioManager再初期化開始（iPad対応）');
