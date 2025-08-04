@@ -92,9 +92,6 @@
           if (pitchDetectorComponent) {
             console.log('🎙️ [MicTest] PitchDetector初期化開始');
             
-            // PitchDetector初期化前にもAudioContext再開確認
-            await ensureAudioContextRunning();
-            
             await pitchDetectorComponent.initialize();
             console.log('✅ [MicTest] PitchDetector初期化完了');
             
