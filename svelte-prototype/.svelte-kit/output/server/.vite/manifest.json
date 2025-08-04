@@ -103,7 +103,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.BWbPeRZ0.css"
+      "_app/immutable/assets/_layout.Cy4i2vtE.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -124,18 +124,6 @@
     ],
     "css": [
       "_app/immutable/assets/_page.DlF9C3i4.css"
-    ]
-  },
-  "src/routes/microphone-test-simple/+page.svelte": {
-    "file": "entries/pages/microphone-test-simple/_page.svelte.js",
-    "name": "entries/pages/microphone-test-simple/_page.svelte",
-    "src": "src/routes/microphone-test-simple/+page.svelte",
-    "isEntry": true,
-    "imports": [
-      "_ssr.js"
-    ],
-    "css": [
-      "_app/immutable/assets/_page.CwlaRopw.css"
     ]
   },
   "src/routes/microphone-test/+page.svelte": {
@@ -159,18 +147,6 @@
     "name": "entries/pages/microphone-test/_page.ts",
     "src": "src/routes/microphone-test/+page.ts",
     "isEntry": true
-  },
-  "src/routes/scoring-test/+page.svelte": {
-    "file": "entries/pages/scoring-test/_page.svelte.js",
-    "name": "entries/pages/scoring-test/_page.svelte",
-    "src": "src/routes/scoring-test/+page.svelte",
-    "isEntry": true,
-    "imports": [
-      "_ssr.js"
-    ],
-    "css": [
-      "_app/immutable/assets/_page.BeR5LleT.css"
-    ]
   },
   "src/routes/training/chromatic/+page.svelte": {
     "file": "entries/pages/training/chromatic/_page.svelte.js",

@@ -7,21 +7,17 @@ export const nodes = [
 	() => import('./nodes/3'),
 	() => import('./nodes/4'),
 	() => import('./nodes/5'),
-	() => import('./nodes/6'),
-	() => import('./nodes/7'),
-	() => import('./nodes/8')
+	() => import('./nodes/6')
 ];
 
 export const server_loads = [];
 
 export const dictionary = {
 		"/": [2],
-		"/microphone-test-simple": [4],
 		"/microphone-test": [3],
-		"/scoring-test": [5],
-		"/training/chromatic": [6],
-		"/training/continuous": [7],
-		"/training/random": [8]
+		"/training/chromatic": [4],
+		"/training/continuous": [5],
+		"/training/random": [6]
 	};
 
 export const hooks = {
