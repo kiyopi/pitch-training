@@ -210,7 +210,8 @@
         }).toDestination();
         
         // 初期音量設定
-        updateBaseToneVolume();
+        // updateBaseToneVolume(); // コメントアウト: 初期化時の volume: 20 を維持
+        console.log('🔊 [MicTest] 初期音量維持: 20dB');
         
       } else {
         console.warn('⚠️ [MicTest] window未定義 - 基音テスト無効');

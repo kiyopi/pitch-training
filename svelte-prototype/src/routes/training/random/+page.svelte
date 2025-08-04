@@ -834,8 +834,8 @@
       }
       
       // 標準音量設定（全デバイス共通）
-      sampler.volume.value = -6; // 標準: -6dB
-      console.log('🔊 [RandomTraining] 標準音量設定: -6dB');
+      // sampler.volume.value = -6; // 標準: -6dB ← コメントアウト: 初期化時の volume: 20 を維持
+      console.log('🔊 [RandomTraining] 音量設定維持: 20dB');
       
     } catch (error) {
       console.error('サンプラー初期化エラー:', error);

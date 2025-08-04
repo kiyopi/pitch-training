@@ -154,6 +154,12 @@
       "_app/immutable/assets/_page.kAOS5daX.css"
     ]
   },
+  "src/routes/microphone-test/+page.ts": {
+    "file": "entries/pages/microphone-test/_page.ts.js",
+    "name": "entries/pages/microphone-test/_page.ts",
+    "src": "src/routes/microphone-test/+page.ts",
+    "isEntry": true
+  },
   "src/routes/scoring-test/+page.svelte": {
     "file": "entries/pages/scoring-test/_page.svelte.js",
     "name": "entries/pages/scoring-test/_page.svelte",
@@ -211,5 +217,11 @@
     "css": [
       "_app/immutable/assets/_page.DSQsVGOX.css"
     ]
+  },
+  "src/routes/training/random/+page.ts": {
+    "file": "entries/pages/training/random/_page.ts.js",
+    "name": "entries/pages/training/random/_page.ts",
+    "src": "src/routes/training/random/+page.ts",
+    "isEntry": true
   }
 }
