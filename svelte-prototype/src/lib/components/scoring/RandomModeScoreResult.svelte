@@ -87,7 +87,7 @@
 
 <div class="random-mode-score-result {className}">
   <!-- 総合評価セクション -->
-  <div class="overall-score-section" style="background-color: {sessionGradeDefinitions[overallGrade]?.bgColor || sessionGradeDefinitions.needWork.bgColor}; border: 2px solid {sessionGradeDefinitions[overallGrade]?.borderColor || sessionGradeDefinitions.needWork.borderColor};">
+  <div class="overall-score-section">
     <div class="grade-display-enhanced" in:fly={{ y: -20, duration: 500 }}>
       <!-- シンプルアイコン（アニメーション完全削除） -->
       <div class="simple-grade-icon">

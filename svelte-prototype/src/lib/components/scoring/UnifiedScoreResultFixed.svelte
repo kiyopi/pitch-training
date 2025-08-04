@@ -1149,13 +1149,13 @@
   <!-- 総合評価表示（8セッション完走時のみ） -->
   {#if isCompleted}
     <div class="grade-display" 
-         style="background-color: {gradeDef.bgColor}; border-color: {gradeDef.borderColor}; opacity: {$bgOpacity}">
+         style="background: {gradeDef.bgColor}; border-color: {gradeDef.borderColor}; opacity: {$bgOpacity}">
       <div class="grade-icon-wrapper">
         <svelte:component 
           this={gradeDef.icon} 
           size="120"
           class="grade-icon"
-          style="transform: scale({$iconScale}); color: {gradeDef.colorValue};"
+          style="transform: scale({$iconScale}); color: {gradeDef.color};"
         />
       </div>
       
