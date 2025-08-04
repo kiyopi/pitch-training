@@ -176,20 +176,37 @@
     isRecording = false;
     
     if (vocalRangeStep === 'low') {
-      // 最低音を記録
-      lowestNote = detectedNote;
-      lowestFrequency = currentFrequency;
-      console.log('最低音記録:', lowestNote, lowestFrequency);
+      // 最低音を記録（有効な音程が検出された場合のみ）
+      if (detectedNote !== 'ーー' && currentFrequency > 50) {
+        lowestNote = detectedNote;
+        lowestFrequency = currentFrequency;
+        console.log('最低音記録:', lowestNote, lowestFrequency);
+      } else {
+        // 音程が検出されなかった場合は再試行
+        console.log('最低音が検出されませんでした。もう一度お試しください。');
+        // 再度録音開始
+        setTimeout(() => {
+          startRecording();
+        }, 1000);
+      }
     } else if (vocalRangeStep === 'high') {
       // 最高音を記録
-      highestNote = detectedNote;
-      highestFrequency = currentFrequency;
-      console.log('最高音記録:', highestNote, highestFrequency);
-      
-      // 両方記録できたら完了
-      if (lowestNote && highestNote) {
-        vocalRangeStep = 'complete';
-        saveVocalRange();
+      if (detectedNote !== 'ーー' && currentFrequency > 50) {
+        highestNote = detectedNote;
+        highestFrequency = currentFrequency;
+        console.log('最高音記録:', highestNote, highestFrequency);
+        
+        // 両方記録できたら完了
+        if (lowestNote && highestNote) {
+          vocalRangeStep = 'complete';
+          saveVocalRange();
+        }
+      } else {
+        // 音程が検出されなかった場合は再試行
+        console.log('最高音が検出されませんでした。もう一度お試しください。');
+        setTimeout(() => {
+          startRecording();
+        }, 1000);
       }
     }
   }
@@ -422,18 +439,26 @@
                 </div>
               {/if}
               
-              <div class="current-note-display">
+              <div class="current-note-display {detectedNote !== 'ーー' && isRecording ? 'detecting' : ''}">
                 <div class="note-label">検出音程</div>
                 <div class="note-value">{detectedNote}</div>
                 <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+                {#if isRecording && detectedNote !== 'ーー'}
+                  <div class="detecting-indicator">音程を検出中...</div>
+                {/if}
               </div>
               
               {#if lowestNote && !isRecording}
-                <div class="result-display">
-                  <p>最低音: {lowestNote}</p>
+                <div class="result-display success">
+                  <div class="success-icon">✓</div>
+                  <p class="success-message">最低音を記録しました: <strong>{lowestNote}</strong></p>
                   <button class="button-primary" on:click={startHighNoteTest}>
                     次へ（最高音測定）
                   </button>
+                </div>
+              {:else if !isRecording && !recordingCountdown}
+                <div class="retry-message">
+                  <p>音程が検出されませんでした。再度録音します...</p>
                 </div>
               {/if}
             </div>
@@ -454,10 +479,13 @@
                 </div>
               {/if}
               
-              <div class="current-note-display">
+              <div class="current-note-display {detectedNote !== 'ーー' && isRecording ? 'detecting' : ''}">
                 <div class="note-label">検出音程</div>
                 <div class="note-value">{detectedNote}</div>
                 <div class="frequency-value">{currentFrequency.toFixed(1)} Hz</div>
+                {#if isRecording && detectedNote !== 'ーー'}
+                  <div class="detecting-indicator">音程を検出中...</div>
+                {/if}
               </div>
               
               {#if highestNote && !isRecording}
@@ -480,6 +508,14 @@
                 音域データを保存しました。<br>
                 各トレーニングモードで最適な基音が選択されます。
               </p>
+              <div class="data-persistence-info">
+                <p class="info-title">📁 データ保存について</p>
+                <ul>
+                  <li>ブラウザのlocalStorageに保存されます</li>
+                  <li>ブラウザのデータをクリアするまで保持されます</li>
+                  <li>マイクテストページから再測定可能です</li>
+                </ul>
+              </div>
               <button class="button-primary" on:click={completeVocalRangeTest}>
                 完了
               </button>
@@ -859,6 +895,7 @@
 
   .vocal-range-content {
     text-align: center;
+    padding: var(--space-4);
   }
 
   .vocal-range-title {
@@ -960,6 +997,13 @@
     padding: var(--space-6);
     border-radius: 12px;
     margin: var(--space-6) 0;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+
+  .current-note-display.detecting {
+    background-color: hsl(142 71% 45% / 0.05);
+    border-color: hsl(142 71% 45% / 0.3);
   }
 
   .note-label {
@@ -1019,5 +1063,90 @@
     color: var(--color-gray-600);
     line-height: 1.6;
     margin-bottom: var(--space-6);
+  }
+
+  /* 成功表示 */
+  .result-display.success {
+    background-color: hsl(142 71% 45% / 0.1);
+    border: 1px solid hsl(142 71% 45% / 0.3);
+    padding: var(--space-4);
+    border-radius: 8px;
+    margin-top: var(--space-4);
+  }
+
+  .success-icon {
+    font-size: 32px;
+    color: hsl(142 71% 45%);
+    margin-bottom: var(--space-2);
+  }
+
+  .success-message {
+    color: hsl(142 71% 35%);
+    font-size: var(--text-base);
+    margin-bottom: var(--space-4);
+  }
+
+  .success-message strong {
+    font-weight: 700;
+    font-size: var(--text-lg);
+  }
+
+  /* 再試行メッセージ */
+  .retry-message {
+    background-color: hsl(48 96% 89%);
+    border: 1px solid hsl(48 96% 89% / 0.5);
+    padding: var(--space-3);
+    border-radius: 8px;
+    margin-top: var(--space-4);
+  }
+
+  .retry-message p {
+    color: hsl(45 93% 25%);
+    font-size: var(--text-sm);
+    margin: 0;
+  }
+
+  /* データ保存情報 */
+  .data-persistence-info {
+    background-color: hsl(210 40% 96.1%);
+    padding: var(--space-4);
+    border-radius: 8px;
+    margin: var(--space-4) 0;
+    text-align: left;
+  }
+
+  .info-title {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: var(--space-2);
+  }
+
+  .data-persistence-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .data-persistence-info li {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    padding-left: var(--space-4);
+    position: relative;
+    margin-bottom: var(--space-1);
+  }
+
+  .data-persistence-info li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--color-gray-400);
+  }
+
+  /* 検出中インジケーター */
+  .detecting-indicator {
+    font-size: var(--text-sm);
+    color: hsl(142 71% 45%);
+    margin-top: var(--space-2);
+    font-weight: 500;
   }
 </style>
