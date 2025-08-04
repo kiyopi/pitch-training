@@ -48,7 +48,15 @@
     // AudioManagerから統一設定を取得
     platformSpecs = audioManager.getPlatformSpecs();
     deviceInfo = `${platformSpecs.deviceType}検出`;
-    baseToneVolume = -6; // 標準デフォルト
+    
+    // 保存済み基音音量を読み込み（デフォルト値は自動適用）
+    try {
+      baseToneVolume = audioManager.getBaseToneVolume();
+      console.log(`📖 [MicTest] 保存済み基音音量読み込み: ${baseToneVolume}dB`);
+    } catch (error) {
+      console.warn('⚠️ [MicTest] 基音音量読み込みエラー - デフォルト使用:', error);
+      baseToneVolume = platformSpecs.isIOS ? 0 : -6;
+    }
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
     console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
@@ -138,9 +146,7 @@
     console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
     // マイクテスト完了フラグを保存
     localStorage.setItem('mic-test-completed', 'true');
-    // 基音音量設定を保存（AudioManager経由）
-    audioManager.setBaseToneVolume(baseToneVolume);
-    console.log(`✅ [MicTest] マイクテスト完了フラグと基音音量(${baseToneVolume}dB)を保存`);
+    console.log(`✅ [MicTest] マイクテスト完了フラグ保存（基音音量は既に${baseToneVolume}dBで保存済み）`);
     goto(`${base}${selectedMode.path}?from=microphone-test`);
   }
 
@@ -231,11 +237,23 @@
     }
   }
 
-  // 基音音量更新
+  // 基音音量更新（AudioManager統合版）
   function updateBaseToneVolume() {
     if (sampler) {
       sampler.volume.value = baseToneVolume;
       console.log(`🔊 [MicTest] 基音音量設定: ${baseToneVolume}dB`);
+    }
+    
+    // AudioManagerに設定を保存（スライダー調整時即座に保存）
+    try {
+      const success = audioManager.setBaseToneVolume(baseToneVolume);
+      if (success) {
+        console.log(`✅ [MicTest] 基音音量をlocalStorageに保存: ${baseToneVolume}dB`);
+      } else {
+        console.warn(`⚠️ [MicTest] 基音音量保存失敗: ${baseToneVolume}dB`);
+      }
+    } catch (error) {
+      console.error('❌ [MicTest] AudioManager基音音量保存エラー:', error);
     }
   }
 

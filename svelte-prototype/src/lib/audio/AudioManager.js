@@ -463,6 +463,151 @@ class AudioManager {
   }
 
   /**
+   * 基音音量設定保存
+   * @param {number} volume - 音量値（dB）
+   * @returns {boolean} 保存成功フラグ
+   */
+  setBaseToneVolume(volume) {
+    try {
+      const settings = this.getAudioSettings();
+      settings.baseToneVolume = volume;
+      settings.lastUpdated = Date.now();
+      
+      localStorage.setItem('pitch-training-audio-settings', JSON.stringify(settings));
+      console.log(`✅ [AudioManager] 基音音量保存: ${volume}dB`);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ [AudioManager] 基音音量保存エラー:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 基音音量設定取得
+   * @returns {number} 音量値（dB）
+   */
+  getBaseToneVolume() {
+    try {
+      const settings = this.getAudioSettings();
+      const platformSpecs = this.getPlatformSpecs();
+      const defaultVolume = platformSpecs.isIOS ? 0 : -6;
+      
+      const volume = settings.baseToneVolume !== undefined ? settings.baseToneVolume : defaultVolume;
+      console.log(`📖 [AudioManager] 基音音量取得: ${volume}dB (デフォルト: ${defaultVolume}dB)`);
+      
+      return volume;
+    } catch (error) {
+      console.error('❌ [AudioManager] 基音音量取得エラー:', error);
+      // エラー時はプラットフォーム別デフォルト値を返す
+      const platformSpecs = this.getPlatformSpecs();
+      return platformSpecs.isIOS ? 0 : -6;
+    }
+  }
+
+  /**
+   * 音響設定全体取得
+   * @returns {Object} 音響設定オブジェクト
+   */
+  getAudioSettings() {
+    try {
+      const stored = localStorage.getItem('pitch-training-audio-settings');
+      return stored ? JSON.parse(stored) : this.createDefaultSettings();
+    } catch (error) {
+      console.warn('⚠️ [AudioManager] 設定読み込みエラー:', error);
+      return this.createDefaultSettings();
+    }
+  }
+
+  /**
+   * デフォルト音響設定作成
+   * @returns {Object} デフォルト設定オブジェクト
+   */
+  createDefaultSettings() {
+    const platformSpecs = this.getPlatformSpecs();
+    
+    return {
+      baseToneVolume: platformSpecs.isIOS ? 0 : -6,
+      micSensitivity: platformSpecs.gainCompensation,
+      lastUpdated: Date.now(),
+      version: '1.0.0',
+      deviceType: platformSpecs.deviceType
+    };
+  }
+
+  /**
+   * 設定データ検証
+   * @param {Object} settings - 検証する設定オブジェクト
+   * @returns {boolean} 検証結果
+   */
+  validateSettings(settings) {
+    if (!settings || typeof settings !== 'object') {
+      return false;
+    }
+    
+    const required = ['baseToneVolume', 'micSensitivity', 'lastUpdated'];
+    return required.every(key => settings.hasOwnProperty(key));
+  }
+
+  /**
+   * 設定マイグレーション
+   * @param {Object} oldSettings - 古い設定
+   * @returns {Object} マイグレーション済み設定
+   */
+  migrateSettings(oldSettings) {
+    const defaultSettings = this.createDefaultSettings();
+    const migrated = { ...defaultSettings, ...oldSettings };
+    migrated.version = '1.0.0';
+    migrated.lastUpdated = Date.now();
+    
+    console.log('🔄 [AudioManager] 設定マイグレーション完了');
+    return migrated;
+  }
+
+  /**
+   * 設定バックアップ作成
+   */
+  createSettingsBackup() {
+    try {
+      const settings = this.getAudioSettings();
+      const backup = {
+        timestamp: new Date().toISOString(),
+        settings: settings,
+        userAgent: navigator.userAgent,
+        deviceType: this.getPlatformSpecs().deviceType
+      };
+      
+      localStorage.setItem('pitch-training-settings-backup', JSON.stringify(backup));
+      console.log('💾 [AudioManager] 設定バックアップ作成完了');
+      
+      return true;
+    } catch (error) {
+      console.warn('⚠️ [AudioManager] バックアップ作成失敗:', error);
+      return false;
+    }
+  }
+
+  /**
+   * エラー時の設定復旧
+   * @returns {Object} 復旧された設定またはデフォルト設定
+   */
+  recoverFromError() {
+    try {
+      const backup = localStorage.getItem('pitch-training-settings-backup');
+      if (backup) {
+        const backupData = JSON.parse(backup);
+        console.log('🔧 [AudioManager] バックアップから復旧');
+        return backupData.settings;
+      }
+    } catch (error) {
+      console.warn('⚠️ [AudioManager] バックアップ復旧失敗:', error);
+    }
+    
+    console.log('🆕 [AudioManager] デフォルト設定で復旧');
+    return this.createDefaultSettings();
+  }
+
+  /**
    * 現在の状態取得（デバッグ用）
    */
   getStatus() {
