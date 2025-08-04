@@ -10,7 +10,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css);
   return `${validate_component(PageLayout, "PageLayout").$$render($$result, {}, {}, {
     default: () => {
-      return `<div class="homepage svelte-ultaxw"><div class="hero svelte-ultaxw" data-svelte-h="svelte-lf8ipo"><h1 class="hero-title svelte-ultaxw">音程の相対的な関係を効果的に鍛える</h1> <p class="hero-description svelte-ultaxw">高精度音程検出とピアノ音源による本格的な相対音感トレーニング</p></div> <div class="modes-grid svelte-ultaxw"> ${validate_component(Card, "Card").$$render(
+      return `<div class="homepage svelte-ultaxw"><div class="hero svelte-ultaxw"><h1 class="hero-title svelte-ultaxw" data-svelte-h="svelte-1nz24lg">音程の相対的な関係を効果的に鍛える</h1> <p class="hero-description svelte-ultaxw" data-svelte-h="svelte-1p99t5t">高精度音程検出とピアノ音源による本格的な相対音感トレーニング</p></div> <div class="modes-grid svelte-ultaxw"> ${validate_component(Card, "Card").$$render(
         $$result,
         {
           variant: "default",
@@ -20,7 +20,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
         {},
         {
           default: () => {
-            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon green svelte-ultaxw" data-svelte-h="svelte-1ygziph"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-zr5chz">ランダム基音モード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-pquvhb">10種類の基音からランダムに選択してトレーニング</p> ${validate_component(Button, "Button").$$render(
+            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon green svelte-ultaxw"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-zr5chz">ランダム基音モード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-pquvhb">10種類の基音からランダムに選択してトレーニング</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
                 href: "./microphone-test?mode=random",
@@ -47,7 +47,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
         {},
         {
           default: () => {
-            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon orange svelte-ultaxw" data-svelte-h="svelte-z6683m"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-3z8jx2">連続チャレンジモード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-6e8jen">選択した回数だけ連続で実行し、総合評価を確認</p> ${validate_component(Button, "Button").$$render(
+            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon orange svelte-ultaxw"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-3z8jx2">連続チャレンジモード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-6e8jen">選択した回数だけ連続で実行し、総合評価を確認</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
                 href: "./microphone-test?mode=continuous",
@@ -74,7 +74,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
         {},
         {
           default: () => {
-            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon purple svelte-ultaxw" data-svelte-h="svelte-j33fe2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-phqvlc">12音階モード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-1gjudyt">クロマチックスケールの上行・下行で完全制覇</p> ${validate_component(Button, "Button").$$render(
+            return `<div class="mode-card svelte-ultaxw"><div class="mode-icon purple svelte-ultaxw"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></div> <h3 class="mode-title svelte-ultaxw" data-svelte-h="svelte-phqvlc">12音階モード</h3> <p class="mode-description svelte-ultaxw" data-svelte-h="svelte-1gjudyt">クロマチックスケールの上行・下行で完全制覇</p> ${validate_component(Button, "Button").$$render(
               $$result,
               {
                 href: "./microphone-test?mode=chromatic",

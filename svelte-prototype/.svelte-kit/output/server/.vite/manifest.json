@@ -50,6 +50,14 @@
       "_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css"
     ]
   },
+  "_client.js": {
+    "file": "chunks/client.js",
+    "name": "client",
+    "imports": [
+      "_exports.js",
+      "_ssr2.js"
+    ]
+  },
   "_exports.js": {
     "file": "chunks/exports.js",
     "name": "exports"
@@ -87,20 +95,12 @@
     "file": "chunks/ssr2.js",
     "name": "ssr"
   },
-  "_state.svelte.js": {
-    "file": "chunks/state.svelte.js",
-    "name": "state.svelte",
-    "imports": [
-      "_ssr2.js"
-    ]
-  },
   "_stores.js": {
     "file": "chunks/stores.js",
     "name": "stores",
     "imports": [
       "_ssr.js",
-      "_exports.js",
-      "_state.svelte.js"
+      "_client.js"
     ]
   },
   "node_modules/@sveltejs/kit/src/runtime/components/svelte-4/error.svelte": {
@@ -133,7 +133,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.D_g0mlvG.css"
+      "_app/immutable/assets/_layout.B1f1RpuR.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -165,15 +165,14 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
-      "_exports.js",
-      "_state.svelte.js",
+      "_client.js",
       "_Card.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.js",
       "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DA77aMuH.css"
+      "_app/immutable/assets/_page.C4_Hk-xL.css"
     ]
   },
   "src/routes/microphone-test/+page.ts": {
@@ -204,8 +203,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_exports.js",
-      "_state.svelte.js",
+      "_client.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js",
       "_sessionStorage.js"
@@ -227,8 +225,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_exports.js",
-      "_state.svelte.js",
+      "_client.js",
       "_stores.js",
       "_Card.js",
       "_Button.js",

@@ -18,7 +18,26 @@
     if ($page.url.searchParams.has('mode')) {
       mode = $page.url.searchParams.get('mode') || 'random';
     }
+    
+    // 既存の音域データを確認
+    checkExistingVocalRange();
   });
+  
+  // 既存音域データ確認
+  function checkExistingVocalRange() {
+    if (typeof localStorage !== 'undefined') {
+      const savedRange = localStorage.getItem('vocal-range');
+      if (savedRange) {
+        try {
+          existingVocalRange = JSON.parse(savedRange);
+          console.log('既存音域データ発見:', existingVocalRange);
+        } catch (error) {
+          console.error('音域データ解析エラー:', error);
+          existingVocalRange = null;
+        }
+      }
+    }
+  }
 
   // マイクテスト状態管理（シンプル版）
   let micPermission = 'initial'; // 'initial' | 'pending' | 'granted' | 'denied'
@@ -38,6 +57,9 @@
   let highestFrequency = null;
   let isRecording = false;
   let recordingCountdown = 0;
+  
+  // 既存音域データ
+  let existingVocalRange = null;
 
   // デバイス検出（AudioManager統一版）
   let platformSpecs = null;
@@ -134,12 +156,6 @@
     vocalRangeStep = 'intro';
   }
 
-  // 音域測定スキップ
-  function skipVocalRangeTest() {
-    showVocalRangeTest = false;
-    // スキップ時は音域未測定として保存
-    localStorage.setItem('vocal-range-measured', 'false');
-  }
 
   // 低音測定開始
   function startLowNoteTest() {
@@ -224,13 +240,27 @@
     };
     
     localStorage.setItem('vocal-range', JSON.stringify(vocalRangeData));
-    localStorage.setItem('vocal-range-measured', 'true');
     console.log('音域データ保存:', vocalRangeData);
   }
 
   // 音域測定完了
   function completeVocalRangeTest() {
     showVocalRangeTest = false;
+    // 最新データを読み込み直し
+    checkExistingVocalRange();
+  }
+  
+  // 音域再測定
+  function retestVocalRange() {
+    // 既存データをクリア
+    existingVocalRange = null;
+    lowestNote = null;
+    lowestFrequency = null;
+    highestNote = null;
+    highestFrequency = null;
+    
+    // 測定開始
+    startVocalRangeTest();
   }
 
   // PitchDetectorコンポーネントからのイベントハンドラー
@@ -326,18 +356,34 @@
             <p class="ready-description">トレーニングを開始してください</p>
             
             {#if !showVocalRangeTest}
-              <!-- 音域測定オプション -->
-              <div class="vocal-range-option">
-                <p class="vocal-range-prompt">音域を測定しますか？（推奨・約1分）</p>
-                <div class="button-group">
-                  <button class="button-secondary" on:click={startVocalRangeTest}>
-                    音域を測定する
-                  </button>
-                  <button class="button-ghost" on:click={skipVocalRangeTest}>
-                    スキップ
-                  </button>
+              {#if existingVocalRange}
+                <!-- 既存音域データ表示 -->
+                <div class="existing-vocal-range">
+                  <div class="existing-range-header">
+                    <div class="range-icon">🎵</div>
+                    <div class="range-info">
+                      <h4 class="range-title">音域データ保存済み</h4>
+                      <p class="range-value">{existingVocalRange.range}</p>
+                      <p class="range-date">測定日: {new Date(existingVocalRange.measuredAt).toLocaleDateString('ja-JP')}</p>
+                    </div>
+                  </div>
+                  <div class="range-actions">
+                    <button class="button-ghost small" on:click={retestVocalRange}>
+                      再測定
+                    </button>
+                  </div>
                 </div>
-              </div>
+              {:else}
+                <!-- 音域測定オプション -->
+                <div class="vocal-range-option">
+                  <p class="vocal-range-prompt">音域を測定しますか？（推奨・約1分）</p>
+                  <div class="button-group">
+                    <button class="button-secondary" on:click={startVocalRangeTest}>
+                      音域を測定する
+                    </button>
+                  </div>
+                </div>
+              {/if}
               
               <div class="training-start-button-area">
                 <button class="training-start-button enabled" on:click={startTraining}>
@@ -1148,5 +1194,61 @@
     color: hsl(142 71% 45%);
     margin-top: var(--space-2);
     font-weight: 500;
+  }
+
+  /* 既存音域データ表示 */
+  .existing-vocal-range {
+    background-color: hsl(210 40% 96.1%);
+    border: 1px solid hsl(214.3 31.8% 91.4%);
+    border-radius: 12px;
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+  }
+
+  .existing-range-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .range-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .range-info {
+    flex: 1;
+    text-align: left;
+  }
+
+  .range-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-1) 0;
+  }
+
+  .range-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: hsl(222.2 47.4% 11.2%);
+    margin: 0 0 var(--space-1) 0;
+  }
+
+  .range-date {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    margin: 0;
+  }
+
+  .range-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .button-ghost.small {
+    padding: 6px 12px;
+    font-size: var(--text-sm);
   }
 </style>

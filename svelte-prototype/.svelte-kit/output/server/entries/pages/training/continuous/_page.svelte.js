@@ -1,7 +1,5 @@
 import { c as create_ssr_component, v as validate_component } from "../../../../chunks/ssr.js";
-import "@sveltejs/kit/internal";
-import "../../../../chunks/exports.js";
-import "../../../../chunks/state.svelte.js";
+import "../../../../chunks/client.js";
 import { P as PageLayout } from "../../../../chunks/PageLayout.js";
 import "../../../../chunks/PitchDetectionDisplay.svelte_svelte_type_style_lang.js";
 import "../../../../chunks/sessionStorage.js";
@@ -15,7 +13,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css);
   return `${$$result.head += `<!-- HEAD_svelte-13kpo59_START -->${$$result.title = `<title>連続チャレンジモード - 相対音感トレーニング</title>`, ""}<!-- HEAD_svelte-13kpo59_END -->`, ""} ${validate_component(PageLayout, "PageLayout").$$render($$result, { showBackButton: true }, {}, {
     default: () => {
-      return `<div class="continuous-training-page svelte-14jb1jb"> <div class="page-header svelte-14jb1jb" data-svelte-h="svelte-1la1yd9"><h1 class="page-title svelte-14jb1jb">⚡ 連続チャレンジモード</h1> <p class="page-description svelte-14jb1jb">中級者向け：より難しい基音で8セッション連続挑戦</p></div>  ${`${`${`${` <div class="loading-placeholder svelte-14jb1jb" data-svelte-h="svelte-1awb2cx"><div class="loading-spinner svelte-14jb1jb">⚡</div> <p>読み込み中...</p></div>`}`}`}`}</div>`;
+      return `<div class="continuous-training-page svelte-14jb1jb"> <div class="page-header svelte-14jb1jb"><h1 class="page-title svelte-14jb1jb" data-svelte-h="svelte-1nub9gt">⚡ 連続チャレンジモード</h1> <p class="page-description svelte-14jb1jb" data-svelte-h="svelte-16c1632">中級者向け：より難しい基音で8セッション連続挑戦</p></div>  ${`${`${`${` <div class="loading-placeholder svelte-14jb1jb"><div class="loading-spinner svelte-14jb1jb" data-svelte-h="svelte-2fq1u0">⚡</div> <p data-svelte-h="svelte-c7iph6">読み込み中...</p></div>`}`}`}`}</div>`;
     }
   })}`;
 });
