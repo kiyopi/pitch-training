@@ -1302,7 +1302,7 @@
             
             <div class="session-icons">
               {#each scoreData.sessionHistory as session, index}
-                {@const grade = session.grade}
+                {@const grade = session.noteResults ? EvaluationEngine.evaluateSession(session.noteResults) : session.grade}
                 {@const gradeDef = sessionGradeDefinitions[grade]}
                 <div class="session-icon-wrapper" title="セッション{index + 1}: {gradeDef.name} - 基音: {session.baseNote}">
                   {#if grade === 'excellent'}
