@@ -2583,20 +2583,18 @@
             {/if}
             
             <!-- ドレミガイドスタートバー -->
-            {#if isGuideStartBarActive}
-              <div class="guide-start-bar-container">
-                <div class="guide-start-label">ガイド開始まで</div>
-                <div class="guide-start-bar">
-                  <div 
-                    class="guide-progress-fill" 
-                    style="width: {guideStartProgress}%"
-                  ></div>
-                  <div class="guide-music-icon {musicIconGlowing ? 'glowing' : ''}">
-                    <Music size="20" />
-                  </div>
+            <div class="guide-start-bar-container">
+              <div class="guide-start-label">ガイド開始まで</div>
+              <div class="guide-start-bar">
+                <div 
+                  class="guide-progress-fill" 
+                  style="width: {guideStartProgress}%"
+                ></div>
+                <div class="guide-music-icon {musicIconGlowing ? 'glowing' : ''}">
+                  <Music size="20" />
                 </div>
               </div>
-            {/if}
+            </div>
           </div>
         </Card>
 
