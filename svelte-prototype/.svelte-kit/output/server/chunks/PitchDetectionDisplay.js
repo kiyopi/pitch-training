@@ -249,10 +249,10 @@ class AudioManager {
   }
   /**
    * マイク感度調整
-   * @param {number} sensitivity - 感度倍率 (0.1 ～ 3.0)
+   * @param {number} sensitivity - 感度倍率 (0.1 ～ 10.0)
    */
   setSensitivity(sensitivity) {
-    const clampedSensitivity = Math.max(0.1, Math.min(3, sensitivity));
+    const clampedSensitivity = Math.max(0.1, Math.min(10, sensitivity));
     if (this.gainNode) {
       this.gainNode.gain.value = clampedSensitivity;
       this.currentSensitivity = clampedSensitivity;

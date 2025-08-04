@@ -311,11 +311,11 @@ class AudioManager {
 
   /**
    * マイク感度調整
-   * @param {number} sensitivity - 感度倍率 (0.1 ～ 3.0)
+   * @param {number} sensitivity - 感度倍率 (0.1 ～ 10.0)
    */
   setSensitivity(sensitivity) {
-    // 範囲制限
-    const clampedSensitivity = Math.max(0.1, Math.min(3.0, sensitivity));
+    // 範囲制限（iPad実機対応で10.0xまで拡張）
+    const clampedSensitivity = Math.max(0.1, Math.min(10.0, sensitivity));
     
     if (this.gainNode) {
       this.gainNode.gain.value = clampedSensitivity;

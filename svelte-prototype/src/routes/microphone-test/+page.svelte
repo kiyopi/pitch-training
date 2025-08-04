@@ -31,7 +31,7 @@
 
   // 音量調整機能
   let baseToneVolume = 0; // -20dB ～ +10dB
-  let micSensitivity = 1.0; // 0.1x ～ 3.0x
+  let micSensitivity = 1.0; // 0.1x ～ 10.0x
   let sampler = null;
   let isBaseTonePlaying = false;
 
@@ -40,9 +40,11 @@
   onMount(() => {
     const isIPhone = /iPhone/.test(navigator.userAgent);
     const isIPad = /iPad/.test(navigator.userAgent);
-    const isIOS = isIPhone || isIPad;
+    // iPadOS 13以降のSafariはMacのようなUser-Agentになる場合がある
+    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    const isIOS = isIPhone || isIPad || isIPadOS;
     
-    if (isIPad) {
+    if (isIPad || isIPadOS) {
       deviceInfo = 'iPad検出';
       baseToneVolume = -6; // 標準デフォルト
     } else if (isIPhone) {
@@ -54,6 +56,7 @@
     }
     
     console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
+    console.log(`🔍 [MicTest] タッチサポート: ${'ontouchend' in document}`);
   });
 
   // トレーニングモード設定
@@ -286,6 +289,30 @@
     }
   }
 
+  // プリセット適用機能
+  function applyPreset(presetType) {
+    switch (presetType) {
+      case 'ipad-high':
+        // 高感度設定
+        baseToneVolume = 5; // +5dB
+        micSensitivity = 5.0; // 5.0x
+        break;
+      case 'ipad-extreme':
+        // 超高感度設定
+        baseToneVolume = 10; // +10dB
+        micSensitivity = 10.0; // 10.0x
+        break;
+      default:
+        return;
+    }
+    
+    // 設定を即座に適用
+    updateBaseToneVolume();
+    updateMicSensitivity();
+    
+    console.log(`🎯 [MicTest] ${presetType} プリセット適用: 基音${baseToneVolume}dB, マイク${micSensitivity}x`);
+  }
+
   // マイク許可完了時の処理を拡張
   async function onMicrophoneGranted() {
     // 基音テスト初期化
@@ -339,6 +366,23 @@
               <span class="device-label">{deviceInfo}</span>
             </div>
             
+            <!-- デバイス専用プリセットボタン -->
+            {#if deviceInfo.includes('iPad') || deviceInfo.includes('その他')}
+              <div class="preset-section">
+                <h4 class="preset-title">
+                  {deviceInfo.includes('iPad') ? 'iPad専用設定' : '高感度設定（テスト用）'}
+                </h4>
+                <div class="preset-buttons">
+                  <button class="preset-button" on:click={() => applyPreset('ipad-high')}>
+                    高感度設定
+                  </button>
+                  <button class="preset-button" on:click={() => applyPreset('ipad-extreme')}>
+                    超高感度設定
+                  </button>
+                </div>
+              </div>
+            {/if}
+            
             <!-- 音量調整コントロール -->
             <div class="volume-controls">
               <!-- 基音音量調整 -->
@@ -378,13 +422,13 @@
                   <input 
                     type="range" 
                     min="0.1" 
-                    max="3.0" 
+                    max="10.0" 
                     step="0.1"
                     bind:value={micSensitivity}
                     on:input={updateMicSensitivity}
                     class="volume-slider"
                   />
-                  <span class="slider-max">3.0x</span>
+                  <span class="slider-max">10.0x</span>
                 </div>
               </div>
             </div>
@@ -862,6 +906,49 @@
     color: #6b7280;
     text-align: center;
     margin-bottom: var(--space-4);
+  }
+
+  /* プリセット機能のスタイル */
+  .preset-section {
+    background-color: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+    text-align: center;
+  }
+
+  .preset-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: #92400e;
+    margin: 0 0 var(--space-3) 0;
+  }
+
+  .preset-buttons {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+
+  .preset-button {
+    padding: var(--space-2) var(--space-3);
+    background-color: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .preset-button:hover {
+    background-color: #d97706;
+  }
+
+  .preset-button:active {
+    background-color: #b45309;
   }
 
   @media (min-width: 768px) {
