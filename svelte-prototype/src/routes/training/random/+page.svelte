@@ -26,7 +26,7 @@
   } from '$lib/components/scoring';
   import UnifiedScoreResultFixed from '$lib/components/scoring/UnifiedScoreResultFixed.svelte';
   import ActionButtons from '$lib/components/ActionButtons.svelte';
-  import { calculateNoteGrade, calculateSessionGrade, calculateGradeDistribution } from '$lib/utils/gradeCalculation';
+  import { EvaluationEngine } from '$lib/evaluation/EvaluationEngine';
   
   // 採点エンジン
   import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
@@ -72,35 +72,9 @@
     }
   }
   
-  // 安定性重視統合グレード計算関数
+  // 統合グレード計算関数（EvaluationEngineを使用）
   function calculateUnifiedGrade(sessionHistory) {
-    if (!sessionHistory || sessionHistory.length === 0) return 'E';
-    
-    const total = sessionHistory.length;
-    const excellent = sessionHistory.filter(s => s.grade === 'excellent').length;
-    const good = sessionHistory.filter(s => s.grade === 'good').length;
-    const pass = sessionHistory.filter(s => s.grade === 'pass').length;
-    const fail = sessionHistory.filter(s => s.grade === 'fail').length;
-    
-    const excellentRate = excellent / total;
-    const goodOrBetterRate = (excellent + good) / total;
-    const successRate = (excellent + good + pass) / total;
-    
-    // 要練習による大幅減点システム（安定性重視）
-    if (fail > 0) {
-      // 要練習が1つでもあれば最大でもC級（明らかな音程外しは大減点）
-      if (successRate >= 0.875 && goodOrBetterRate >= 0.75) return 'C';
-      if (successRate >= 0.75) return 'D';
-      return 'E';
-    }
-    
-    // 完走時（要練習なし）の高評価 - どんな音でも合わせられる安定性を評価
-    if (excellentRate >= 0.5) return 'S';           // 優秀50%以上
-    if (excellentRate >= 0.25) return 'A';          // 優秀25%以上
-    if (goodOrBetterRate >= 0.875) return 'A';      // 良好以上87.5%以上
-    if (goodOrBetterRate >= 0.75) return 'B';       // 良好以上75%以上
-    if (goodOrBetterRate >= 0.5) return 'B';        // 良好以上50%以上
-    return 'C';
+    return EvaluationEngine.evaluateOverall(sessionHistory);
   }
   
   // テスト用ダミーデータ生成（正しい4段階評価システム）
@@ -1151,7 +1125,7 @@
       noteResults: convertedNoteResults,
       measuredNotes: measuredNotes,
       accuracy: averageAccuracy,
-      grade: calculateSessionGrade(noteResultsForDisplay)
+      grade: EvaluationEngine.evaluateSession(noteResultsForDisplay)
     };
     
     // 統合スコアデータを作成（localStorage履歴 + 現在セッション）

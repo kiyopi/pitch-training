@@ -5,7 +5,8 @@
   import { onMount, createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();
-  import { calculateNoteGrade, SESSION_GRADE_CRITERIA } from '$lib/utils/gradeCalculation';
+  import { EvaluationEngine } from '$lib/evaluation/EvaluationEngine';
+  import { GradeDefinitions } from '$lib/evaluation/GradeDefinitions';
   
   export let noteResults = [];
   export let className = '';
@@ -17,22 +18,16 @@
   
   // ポップオーバー管理
   
-  // 4段階評価の定義
-  const gradeDefinitions = {
-    excellent: { name: '優秀', icon: Trophy, range: '±15¢以内', color: 'text-yellow-500', colorValue: '#eab308' },
-    good: { name: '良好', icon: Star, range: '±25¢以内', color: 'text-green-500', colorValue: '#10b981' },
-    pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500', colorValue: '#3b82f6' },
-    needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500', colorValue: '#ef4444' },
-    notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500', colorValue: '#6b7280' }
-  };
+  // 統一評価定義を使用
+  const gradeDefinitions = GradeDefinitions.getAllNoteGrades();
   
   // スコア計算（アニメーションなし）
   let displayScore = 0;
 
   
-  // 評価を計算（統一ロジック使用）
+  // 評価を計算（EvaluationEngineを使用）
   function calculateGrade(cents) {
-    return calculateNoteGrade(cents);
+    return EvaluationEngine.evaluateNote(cents);
   }
   
   // ポップオーバー制御関数

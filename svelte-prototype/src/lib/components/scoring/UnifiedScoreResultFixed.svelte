@@ -15,7 +15,8 @@
     FeedbackDisplay,
     SessionStatistics
   } from '$lib/components/scoring';
-  import { calculateNoteGrade, calculateSessionGrade } from '$lib/utils/gradeCalculation';
+  import { EvaluationEngine } from '$lib/evaluation/EvaluationEngine';
+  import { GradeDefinitions } from '$lib/evaluation/GradeDefinitions';
   
   export let scoreData = null;
   export let showDetails = false;
@@ -67,72 +68,11 @@
   };
   
   
-  // 4段階評価の定義（個別セッション用、RandomModeScoreResultと統一）
-  const sessionGradeDefinitions = {
-    excellent: { name: '優秀', icon: Trophy, range: '±15¢以内', color: 'text-yellow-500', bgColor: '#fffbeb', borderColor: '#fbbf24' },
-    good: { name: '良好', icon: Star, range: '±25¢以内', color: 'text-green-500', bgColor: '#ecfdf5', borderColor: '#10b981' },
-    pass: { name: '合格', icon: ThumbsUp, range: '±40¢以内', color: 'text-blue-500', bgColor: '#eff6ff', borderColor: '#3b82f6' },
-    needWork: { name: '要練習', icon: Frown, range: '±41¢以上', color: 'text-red-500', bgColor: '#fef2f2', borderColor: '#ef4444' },
-    notMeasured: { name: '測定不可', icon: AlertCircle, range: '音声未検出', color: 'text-gray-500', bgColor: '#f9fafb', borderColor: '#9ca3af' }
-  };
+  // 統一評価定義を使用
+  const sessionGradeDefinitions = GradeDefinitions.getAllSessionGrades();
   
-  // S-E級統合評価システム（8セッション完走時用）
-  const unifiedGradeDefinitions = {
-    S: { 
-      name: 'S級マスター', 
-      icon: Trophy, 
-      color: 'text-purple-500',
-      colorValue: '#a855f7',
-      bgColor: '#faf5ff',
-      borderColor: '#8b5cf6',
-      description: '音楽家レベルの相対音感を達成！優秀率超えの実力を証明されました。'
-    },
-    A: { 
-      name: 'A級エキスパート', 
-      icon: Crown, 
-      color: 'text-yellow-500',
-      colorValue: '#eab308',
-      bgColor: '#fffbeb',
-      borderColor: '#f59e0b',
-      description: 'エキスパートレベル到達！優秀率の安定した音感能力です。'
-    },
-    B: { 
-      name: 'B級プロフィシエント', 
-      icon: Star, 
-      color: 'text-green-500',
-      colorValue: '#10b981',
-      bgColor: '#ecfdf5',
-      borderColor: '#10b981',
-      description: 'プロフィシエント級達成！良好率の確実な進歩を示しています。'
-    },
-    C: { 
-      name: 'C級アドバンス', 
-      icon: Award, 
-      color: 'text-blue-500',
-      colorValue: '#3b82f6',
-      bgColor: '#eff6ff',
-      borderColor: '#3b82f6',
-      description: 'アドバンス級到達！合格率で着実に成長中です。'
-    },
-    D: { 
-      name: 'D級ベーシック', 
-      icon: Meh, 
-      color: 'text-orange-500',
-      colorValue: '#f97316',
-      bgColor: '#fff7ed',
-      borderColor: '#f97316',
-      description: '継続練習で必ず上達！現在の合格率から目標70%へ向けて練習を続けましょう。'
-    },
-    E: { 
-      name: 'E級ビギナー', 
-      icon: Sprout, 
-      color: 'text-red-500',
-      colorValue: '#ef4444',
-      bgColor: '#fef2f2',
-      borderColor: '#ef4444',
-      description: '練習開始段階です。継続的な練習で必ず上達します。'
-    }
-  };
+  // 統合評価定義を使用
+  const unifiedGradeDefinitions = GradeDefinitions.getAllOverallGrades();
   
   // アニメーション用
   const iconScale = tweened(0, { duration: 600, easing: cubicOut });
@@ -182,10 +122,10 @@
   }
   
   // セッション総合評価計算（8音の結果から4段階評価を算出）
-  // 統一された評価ロジックを使用
+  // EvaluationEngineを使用した統一評価
   function calculateSessionGradeWrapper(sessionData) {
     if (!sessionData || !sessionData.noteResults) return 'needWork';
-    return calculateSessionGrade(sessionData.noteResults);
+    return EvaluationEngine.evaluateSession(sessionData.noteResults);
   }
   
   // 時間フォーマット
@@ -1132,6 +1072,22 @@
   
   // 8セッション完走判定
   $: isCompleted = scoreData?.sessionHistory && scoreData.sessionHistory.length >= (scoreData.mode === 'chromatic' ? 12 : 8);
+  
+  $: {
+    const latestSession = scoreData?.sessionHistory?.[scoreData.sessionHistory.length - 1];
+    if (latestSession && !isCompleted) {
+      console.log('🔍 [Debug] 最新セッション評価確認:');
+      console.log('   保存されたgrade:', latestSession.grade);
+      console.log('   noteResults:', latestSession.noteResults);
+      if (latestSession.noteResults) {
+        const recalculatedGrade = calculateSessionGrade(latestSession.noteResults);
+        console.log('   再計算grade:', recalculatedGrade);
+        if (latestSession.grade !== recalculatedGrade) {
+          console.warn('   ⚠️ Grade不一致検出！', latestSession.grade, '!=', recalculatedGrade);
+        }
+      }
+    }
+  }
   
   $: gradeDef = isCompleted ? unifiedGradeDefinitions[unifiedGrade] : sessionGradeDefinitions[scoreData?.sessionHistory?.[scoreData.sessionHistory.length - 1]?.grade || 'needWork'];
 
