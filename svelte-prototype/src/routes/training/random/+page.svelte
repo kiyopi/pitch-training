@@ -407,6 +407,16 @@
       setTimeout(async () => {
         if (pitchDetectorComponent) {
           logger.audio('[RandomTraining] PitchDetector初期化開始');
+          
+          // iPad対応: AudioManager強制初期化
+          try {
+            console.log('🎤 [RandomTraining] AudioManager再初期化開始（iPad対応）');
+            await audioManager.initialize();
+            console.log('✅ [RandomTraining] AudioManager再初期化完了');
+          } catch (error) {
+            console.warn('⚠️ AudioManager再初期化エラー:', error);
+          }
+          
           await pitchDetectorComponent.initialize();
           logger.audio('[RandomTraining] PitchDetector初期化完了');
         }
@@ -1800,6 +1810,16 @@
       if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
         try {
           console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
+          
+          // iPad対応: AudioManager健康チェック&再初期化
+          const status = audioManager.getStatus();
+          console.log('🔍 [RandomTraining] AudioManager状態:', status);
+          
+          if (!status.isInitialized || !status.mediaStreamActive) {
+            console.log('🔄 [RandomTraining] AudioManager状態不良 - 再初期化実行');
+            await audioManager.initialize();
+          }
+          
           await pitchDetectorComponent.initialize();
           console.log('✅ [RandomTraining] PitchDetector初期化完了');
         } catch (error) {
