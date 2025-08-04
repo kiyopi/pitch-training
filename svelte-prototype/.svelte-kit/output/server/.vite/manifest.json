@@ -41,12 +41,14 @@
       "_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css"
     ]
   },
-  "_client.js": {
-    "file": "chunks/client.js",
-    "name": "client",
+  "_TrainingCore.svelte_svelte_type_style_lang.js": {
+    "file": "chunks/TrainingCore.svelte_svelte_type_style_lang.js",
+    "name": "TrainingCore.svelte_svelte_type_style_lang",
     "imports": [
-      "_exports.js",
-      "_ssr2.js"
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/TrainingCore.CIF-4CI2.css"
     ]
   },
   "_exports.js": {
@@ -76,12 +78,20 @@
     "file": "chunks/ssr2.js",
     "name": "ssr"
   },
+  "_state.svelte.js": {
+    "file": "chunks/state.svelte.js",
+    "name": "state.svelte",
+    "imports": [
+      "_ssr2.js"
+    ]
+  },
   "_stores.js": {
     "file": "chunks/stores.js",
     "name": "stores",
     "imports": [
       "_ssr.js",
-      "_client.js"
+      "_exports.js",
+      "_state.svelte.js"
     ]
   },
   "node_modules/@sveltejs/kit/src/runtime/components/svelte-4/error.svelte": {
@@ -114,7 +124,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.B1f1RpuR.css"
+      "_app/immutable/assets/_layout.D_g0mlvG.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -146,7 +156,8 @@
     "imports": [
       "_ssr.js",
       "_stores.js",
-      "_client.js",
+      "_exports.js",
+      "_state.svelte.js",
       "_Card.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js"
@@ -183,12 +194,14 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_Card.js",
-      "_Button.js",
-      "_PageLayout.js"
+      "_exports.js",
+      "_state.svelte.js",
+      "_PageLayout.js",
+      "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js",
+      "_TrainingCore.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BydxfNHC.css"
+      "_app/immutable/assets/_page.BpNOQ34r.css"
     ]
   },
   "src/routes/training/random/+page.svelte": {
@@ -198,13 +211,14 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_exports.js",
+      "_state.svelte.js",
       "_PageLayout.js",
       "_PitchDetectionDisplay.svelte_svelte_type_style_lang.js",
-      "_index.js"
+      "_TrainingCore.svelte_svelte_type_style_lang.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Bqsl-SGn.css"
+      "_app/immutable/assets/_page.BwwLUuQa.css"
     ]
   },
   "src/routes/training/random/+page.ts": {

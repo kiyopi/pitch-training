@@ -69,13 +69,13 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   export let baseNote = null;                    // 12音階モード用基音指定
   export let direction = 'asc';                  // 'asc' | 'desc' (12音階モード用)
   export let useLocalStorage = true;             // localStorage使用フラグ
-  export let sessionKey = 'random-training-progress'; // localStorage キー
+  export const sessionKey = 'random-training-progress'; // localStorage キー（未使用）
   
   // コールバック関数
   export let onSessionComplete = null;           // セッション完了時
   export let onAllComplete = null;               // 全完了時
   export let onMicrophoneError = null;           // マイクエラー時
-  export let onStorageError = null;              // ストレージエラー時
+  export const onStorageError = null;            // ストレージエラー時（未使用）
 
   // =============================================================================
   // モード別設定

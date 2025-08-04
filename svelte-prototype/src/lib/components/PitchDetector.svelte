@@ -12,7 +12,7 @@
   export let isActive = false;
   export let className = '';
   export let debugMode = false; // デバッグモード
-  export let trainingPhase = ''; // トレーニングフェーズ（ログ制御用、削除済み）
+  export const trainingPhase = ''; // トレーニングフェーズ（ログ制御用、削除済み）
   export let disableHarmonicCorrection = false; // ハーモニック補正無効化フラグ（230Hz固着問題対策）
 
   // 状態管理（改訂版）

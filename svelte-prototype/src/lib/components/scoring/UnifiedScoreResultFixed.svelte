@@ -26,7 +26,7 @@
   // デバッグエリアの統合データ（親から受け取る）
   export let currentScoreData = null;
   export let intervalData = [];
-  export let consistencyData = [];
+  export const consistencyData = [];
   export let feedbackData = null;
   export let technicalFeedbackData = null;
   export let sessionStatistics = null;

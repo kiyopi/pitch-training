@@ -413,9 +413,6 @@ class AudioManager {
   }
 }
 const audioManager = new AudioManager();
-if (typeof window !== "undefined" && true) {
-  window.audioManager = audioManager;
-}
 class HarmonicCorrection {
   constructor(config = {}) {
     this.vocalRangeMin = config.vocalRangeMin || 130.81;
@@ -680,10 +677,10 @@ class HarmonicCorrection {
   }
 }
 const harmonicCorrection = new HarmonicCorrection();
-if (typeof window !== "undefined" && true) {
-  window.harmonicCorrection = harmonicCorrection;
-}
 const DEBUG_LEVEL = (() => {
+  if (typeof import.meta !== "undefined" && true) {
+    return "error";
+  }
   if (typeof window !== "undefined") {
     const urlParams = new URLSearchParams(window.location.search);
     const debugParam = urlParams.get("debug");
@@ -765,9 +762,6 @@ const logger = {
     }
   }
 };
-if (typeof import.meta !== "undefined" && true) {
-  logger.info(`Debug Level: ${DEBUG_LEVEL} (Change with ?debug=level)`);
-}
 export {
   audioManager as a,
   harmonicCorrection as h,
