@@ -22,6 +22,11 @@
 
   // マイクテスト状態管理（シンプル版）
   let micPermission = 'initial'; // 'initial' | 'pending' | 'granted' | 'denied'
+  
+  // 基音テスト状態管理
+  let baseToneTestState = 'idle'; // 'idle' | 'playing' | 'detecting' | 'success'
+  let baseToneTestTimer = null;
+  let c3DetectionCount = 0;
 
   // 音程検出
   let currentVolume = 0;
@@ -133,7 +138,9 @@
     console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
     // マイクテスト完了フラグを保存
     localStorage.setItem('mic-test-completed', 'true');
-    console.log('✅ [MicTest] マイクテスト完了フラグを保存');
+    // 基音音量設定を保存（AudioManager経由）
+    audioManager.setBaseToneVolume(baseToneVolume);
+    console.log(`✅ [MicTest] マイクテスト完了フラグと基音音量(${baseToneVolume}dB)を保存`);
     goto(`${base}${selectedMode.path}?from=microphone-test`);
   }
 
@@ -144,6 +151,11 @@
     currentFrequency = frequency;
     detectedNote = note;
     currentVolume = volume;
+    
+    // 基音テスト中のC3検出チェック
+    if (frequency > 0) {
+      checkC3Detection(frequency);
+    }
   }
   
   function handlePitchDetectorStateChange(event) {
@@ -266,6 +278,70 @@
     } catch (error) {
       console.error('❌ [MicTest] 基音再生エラー:', error);
       isBaseTonePlaying = false;
+    }
+  }
+  
+  // 基音テスト用C3再生（130.81Hz）
+  async function startBaseToneTest() {
+    if (!sampler || baseToneTestState !== 'idle') return;
+    
+    try {
+      // 状態をplayingに設定
+      baseToneTestState = 'playing';
+      c3DetectionCount = 0;
+      console.log('🎵 [BaseToneTest] C3基音テスト開始');
+      
+      // AudioContext状態確認・再開
+      await ensureAudioContextRunning();
+      
+      // C3を3秒間再生
+      await sampler.triggerAttackRelease('C3', 3, window.Tone.now(), 0.8);
+      
+      // 再生後、検出モードに移行
+      setTimeout(() => {
+        if (baseToneTestState === 'playing') {
+          baseToneTestState = 'detecting';
+          console.log('🎤 [BaseToneTest] C3検出モード開始');
+          
+          // 10秒間検出を試みる
+          baseToneTestTimer = setTimeout(() => {
+            if (baseToneTestState === 'detecting') {
+              baseToneTestState = 'idle';
+              console.log('⏱️ [BaseToneTest] タイムアウト - 再試行してください');
+            }
+          }, 10000);
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ [BaseToneTest] エラー:', error);
+      baseToneTestState = 'idle';
+    }
+  }
+  
+  // C3周波数検出チェック（130.81Hz ± 10Hz）
+  function checkC3Detection(frequency) {
+    if (baseToneTestState !== 'detecting') return;
+    
+    const C3_FREQUENCY = 130.81;
+    const TOLERANCE = 10; // ±10Hz許容
+    
+    if (Math.abs(frequency - C3_FREQUENCY) <= TOLERANCE) {
+      c3DetectionCount++;
+      console.log(`🎯 [BaseToneTest] C3検出カウント: ${c3DetectionCount}`);
+      
+      // 5回連続で検出したら成功
+      if (c3DetectionCount >= 5) {
+        baseToneTestState = 'success';
+        if (baseToneTestTimer) {
+          clearTimeout(baseToneTestTimer);
+          baseToneTestTimer = null;
+        }
+        console.log('✅ [BaseToneTest] C3検出成功！');
+      }
+    } else {
+      // 範囲外の場合はカウントリセット
+      c3DetectionCount = 0;
     }
   }
 
