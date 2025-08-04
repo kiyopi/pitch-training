@@ -1210,7 +1210,7 @@
         <button 
           class="grade-help-icon-button" 
           on:click={toggleGradeHelp}
-          aria-label="8セッション完走時の最終評価基準を表示"
+          aria-label="完走時の最終評価基準を表示"
         >
           <HelpCircle 
             size="20" 
@@ -1227,42 +1227,43 @@
       {#if showGradeHelp}
         <div class="popover-backdrop" in:fade={{ duration: 200 }}></div>
         <div class="grade-criteria-popover" in:fade={{ duration: 200 }}>
-          <h5 class="popover-title">8セッション完走時の最終評価</h5>
+          <h5 class="popover-title">完走時の最終評価（安定性重視）</h5>
+          <p class="stability-warning">⚠️ 要練習が1つでもあると大幅減点！</p>
           
           <div class="grade-criteria-item">
             <Trophy class="criteria-icon" style="color: #a855f7;" />
             <span class="criteria-name">S級マスター</span>
-            <span class="criteria-condition">優秀60%以上 + 良好以上90%以上</span>
+            <span class="criteria-condition">優秀50%以上（要練習なし）</span>
           </div>
           
           <div class="grade-criteria-item">
             <Crown class="criteria-icon" style="color: #eab308;" />
             <span class="criteria-name">A級エキスパート</span>
-            <span class="criteria-condition">優秀40%以上 + 良好以上80%以上</span>
+            <span class="criteria-condition">優秀25%以上 OR 良好以上87.5%以上（要練習なし）</span>
           </div>
           
           <div class="grade-criteria-item">
             <Star class="criteria-icon" style="color: #10b981;" />
             <span class="criteria-name">B級プロフィシエント</span>
-            <span class="criteria-condition">優秀25%以上 + 良好以上70%以上</span>
+            <span class="criteria-condition">良好以上50%以上（要練習なし）</span>
           </div>
           
           <div class="grade-criteria-item">
             <Award class="criteria-icon" style="color: #3b82f6;" />
             <span class="criteria-name">C級アドバンス</span>
-            <span class="criteria-condition">合格以上50%以上</span>
+            <span class="criteria-condition">成功率87.5%以上 + 良好以上75%以上（要練習あり）</span>
           </div>
           
           <div class="grade-criteria-item">
             <Meh class="criteria-icon" style="color: #f97316;" />
             <span class="criteria-name">D級ベーシック</span>
-            <span class="criteria-condition">合格以上30%以上</span>
+            <span class="criteria-condition">成功率75%以上（要練習あり）</span>
           </div>
           
           <div class="grade-criteria-item">
             <Sprout class="criteria-icon" style="color: #ef4444;" />
             <span class="criteria-name">E級ビギナー</span>
-            <span class="criteria-condition">合格以上30%未満</span>
+            <span class="criteria-condition">成功率75%未満（要練習あり）</span>
           </div>
         </div>
       {/if}
@@ -3460,6 +3461,17 @@
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .stability-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    border: 1px solid #fcd34d;
   }
   
   .grade-criteria-item,
