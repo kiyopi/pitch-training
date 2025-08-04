@@ -29,6 +29,33 @@
   let detectedNote = 'ーー';
   let pitchDetectorComponent = null;
 
+  // 音量調整機能
+  let baseToneVolume = 0; // -20dB ～ +10dB
+  let micSensitivity = 1.0; // 0.1x ～ 3.0x
+  let sampler = null;
+  let isBaseTonePlaying = false;
+
+  // デバイス検出（調査用）
+  let deviceInfo = '';
+  onMount(() => {
+    const isIPhone = /iPhone/.test(navigator.userAgent);
+    const isIPad = /iPad/.test(navigator.userAgent);
+    const isIOS = isIPhone || isIPad;
+    
+    if (isIPad) {
+      deviceInfo = 'iPad検出';
+      baseToneVolume = 6; // iPad用デフォルト
+    } else if (isIPhone) {
+      deviceInfo = 'iPhone検出';
+      baseToneVolume = 0; // iPhone用デフォルト
+    } else {
+      deviceInfo = 'その他デバイス';
+      baseToneVolume = -6; // PC用デフォルト
+    }
+    
+    console.log(`🔍 [MicTest] デバイス情報: ${deviceInfo}`, navigator.userAgent);
+  });
+
   // トレーニングモード設定
   const trainingModes = {
     random: {
@@ -74,6 +101,9 @@
       if (resources.mediaStream && resources.audioContext) {
         micPermission = 'granted';
         console.log('✅ [MicTest] マイク許可完了');
+        
+        // 基音テスト初期化
+        await onMicrophoneGranted();
         
         // PitchDetector初期化（マイク許可後）
         // Safari対応: より長い待機時間でMediaStream安定化
@@ -140,6 +170,95 @@
       console.log('⚠️ [MicTest] マイク再許可が必要です');
     }
   }
+
+  // 基音テスト機能
+  async function initializeBaseToneTest() {
+    try {
+      console.log('🎹 [MicTest] 基音テスト初期化開始');
+      
+      // Tone.js動的読み込み
+      if (typeof window !== 'undefined') {
+        if (!window.Tone) {
+          console.log('📦 [MicTest] Tone.js動的読み込み開始');
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/tone@latest/build/Tone.js';
+          document.head.appendChild(script);
+          
+          // Tone.js読み込み完了を待機
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+          });
+          console.log('✅ [MicTest] Tone.js読み込み完了');
+        }
+        
+        await window.Tone.start();
+        
+        // Salamander Grand Piano サンプラー
+        sampler = new window.Tone.Sampler({
+          urls: { "C4": "C4.mp3" },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1.5,
+          onload: () => {
+            console.log('✅ [MicTest] 基音サンプラー読み込み完了');
+          },
+          onerror: (error) => {
+            console.error('❌ [MicTest] 基音サンプラー読み込みエラー:', error);
+          }
+        }).toDestination();
+        
+        // 初期音量設定
+        updateBaseToneVolume();
+        
+      } else {
+        console.warn('⚠️ [MicTest] window未定義 - 基音テスト無効');
+      }
+    } catch (error) {
+      console.error('❌ [MicTest] 基音テスト初期化エラー:', error);
+    }
+  }
+
+  // 基音音量更新
+  function updateBaseToneVolume() {
+    if (sampler) {
+      sampler.volume.value = baseToneVolume;
+      console.log(`🔊 [MicTest] 基音音量設定: ${baseToneVolume}dB`);
+    }
+  }
+
+  // 基音再生テスト
+  async function playBaseTone() {
+    if (!sampler || isBaseTonePlaying) return;
+    
+    try {
+      isBaseTonePlaying = true;
+      console.log('🎵 [MicTest] 基音再生開始: C4');
+      
+      await sampler.triggerAttackRelease('C4', 2, window.Tone.now(), 0.7);
+      
+      // 2秒後に再生状態をリセット
+      setTimeout(() => {
+        isBaseTonePlaying = false;
+        console.log('✅ [MicTest] 基音再生完了');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ [MicTest] 基音再生エラー:', error);
+      isBaseTonePlaying = false;
+    }
+  }
+
+  // マイク感度調整
+  function updateMicSensitivity() {
+    // AudioManagerの感度調整（今後実装）
+    console.log(`🎤 [MicTest] マイク感度設定: ${micSensitivity}x`);
+  }
+
+  // マイク許可完了時の処理を拡張
+  async function onMicrophoneGranted() {
+    // 基音テスト初期化
+    await initializeBaseToneTest();
+  }
 </script>
 
 <svelte:head>
@@ -171,9 +290,64 @@
       <Card variant="default" padding="lg">
         <div class="training-mode-content">
           {#if micPermission === 'granted'}
-            <!-- マイク許可完了 -->
+            <!-- マイク許可完了 - 音量調整エリア -->
             <h3 class="ready-title">マイク準備完了</h3>
-            <p class="ready-description">トレーニング開始ボタンを押して{selectedMode.name}へ進んでください</p>
+            <p class="ready-description">音量を調整してからトレーニングを開始してください</p>
+            
+            <!-- デバイス情報表示（調査用） -->
+            <div class="device-info">
+              <span class="device-label">{deviceInfo}</span>
+            </div>
+            
+            <!-- 音量調整コントロール -->
+            <div class="volume-controls">
+              <!-- 基音音量調整 -->
+              <div class="volume-control-section">
+                <label class="volume-label">
+                  基音音量: {baseToneVolume}dB
+                </label>
+                <div class="volume-slider-container">
+                  <span class="slider-min">-20dB</span>
+                  <input 
+                    type="range" 
+                    min="-20" 
+                    max="10" 
+                    step="1"
+                    bind:value={baseToneVolume}
+                    on:input={updateBaseToneVolume}
+                    class="volume-slider"
+                  />
+                  <span class="slider-max">+10dB</span>
+                </div>
+                <button 
+                  class="base-tone-test-button"
+                  on:click={playBaseTone}
+                  disabled={isBaseTonePlaying}
+                >
+                  {isBaseTonePlaying ? '再生中...' : 'ド(C4)を再生'}
+                </button>
+              </div>
+              
+              <!-- マイク感度調整 -->
+              <div class="volume-control-section">
+                <label class="volume-label">
+                  マイク感度: {micSensitivity.toFixed(1)}x
+                </label>
+                <div class="volume-slider-container">
+                  <span class="slider-min">0.1x</span>
+                  <input 
+                    type="range" 
+                    min="0.1" 
+                    max="3.0" 
+                    step="0.1"
+                    bind:value={micSensitivity}
+                    on:input={updateMicSensitivity}
+                    class="volume-slider"
+                  />
+                  <span class="slider-max">3.0x</span>
+                </div>
+              </div>
+            </div>
             
             <div class="training-start-button-area">
               <button class="training-start-button enabled" on:click={startTraining}>
@@ -526,6 +700,128 @@
     font-weight: 600;
     margin-bottom: var(--space-2);
     text-align: center;
+  }
+
+  /* 音量調整機能のスタイル */
+  .device-info {
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .device-label {
+    background-color: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .volume-controls {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+  }
+
+  .volume-control-section {
+    margin-bottom: var(--space-4);
+  }
+
+  .volume-control-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .volume-label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: var(--space-2);
+    text-align: center;
+  }
+
+  .volume-slider-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .slider-min,
+  .slider-max {
+    font-size: var(--text-xs);
+    color: #6b7280;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .volume-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .volume-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .base-tone-test-button {
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    background-color: #059669;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .base-tone-test-button:hover:not(:disabled) {
+    background-color: #047857;
+  }
+
+  .base-tone-test-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .ready-title {
+    color: #059669;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: var(--space-2);
+  }
+
+  .ready-description {
+    color: #6b7280;
+    text-align: center;
+    margin-bottom: var(--space-4);
   }
 
   @media (min-width: 768px) {
