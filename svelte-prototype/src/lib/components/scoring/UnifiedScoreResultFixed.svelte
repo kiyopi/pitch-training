@@ -1504,14 +1504,8 @@
                 <!-- RandomModeScoreResult使用 -->
                 <RandomModeScoreResult
                   noteResults={session.noteResults || []}
-                  baseFrequency={session.baseFrequency || 261.63}
-                  accuracy={session.accuracy || 0}
-                  sessionNumber={index + 1}
-                  totalSessions={scoreData.sessionHistory?.length || 8}
+                  sessionIndex={index}
                   baseNote={session.baseNote || 'C4'}
-                  measuredNotes={session.measuredNotes || 0}
-                  grade={session.grade || 'unknown'}
-                  showDetailsToggle={false}
                   className="carousel-score-result"
                 />
               </div>
