@@ -7,7 +7,8 @@ import type {
   SessionResult, 
   UnifiedScoreData, 
   SessionGrade, 
-  BaseNote 
+  BaseNote,
+  VoiceRangeType 
 } from '../types/sessionStorage';
 import type { Grade, NoteResult } from '../types/scoring';
 import { SessionStorageManager } from '../utils/SessionStorageManager';
@@ -26,6 +27,11 @@ export const trainingProgress = writable<TrainingProgress | null>(null);
  * 現在のセッション番号ストア
  */
 export const currentSessionId = writable<number>(1);
+
+/**
+ * 音域設定ストア
+ */
+export const voiceRange = writable<VoiceRangeType>('middle');
 
 /**
  * 次の基音ストア
@@ -188,6 +194,7 @@ export async function loadProgress(): Promise<boolean> {
       // ストア更新
       trainingProgress.set(progress);
       currentSessionId.set(progress.currentSessionId);
+      voiceRange.set(progress.voiceRange);
       
       // 次の基音を設定
       const nextNote = manager.getNextBaseNote();
@@ -197,13 +204,16 @@ export async function loadProgress(): Promise<boolean> {
       console.info('[SessionStorage] Progress loaded successfully:', {
         sessionCount: progress.sessionHistory.length,
         currentSession: progress.currentSessionId,
+        voiceRange: progress.voiceRange,
         isCompleted: progress.isCompleted
       });
     } else {
       // 新規作成
-      const newProgress = manager.createNewProgress();
+      const currentVoiceRange = get(voiceRange);
+      const newProgress = manager.createNewProgress(currentVoiceRange);
       trainingProgress.set(newProgress);
       currentSessionId.set(1);
+      voiceRange.set(currentVoiceRange);
       
       const nextNote = manager.getNextBaseNote();
       nextBaseNote.set(nextNote);
@@ -305,14 +315,16 @@ export async function resetProgress(): Promise<boolean> {
 /**
  * 新しい進行状況を作成
  */
-export async function createNewProgress(): Promise<boolean> {
+export async function createNewProgress(selectedVoiceRange?: VoiceRangeType): Promise<boolean> {
   return await executeWithErrorHandling(async () => {
     const manager = getStorageManager();
-    const newProgress = manager.createNewProgress();
+    const currentVoiceRange = selectedVoiceRange || get(voiceRange);
+    const newProgress = manager.createNewProgress(currentVoiceRange);
     
     // ストア設定
     trainingProgress.set(newProgress);
     currentSessionId.set(1);
+    voiceRange.set(currentVoiceRange);
     
     const nextNote = manager.getNextBaseNote();
     nextBaseNote.set(nextNote);
@@ -362,6 +374,7 @@ export async function startNewCycleIfCompleted(): Promise<boolean> {
       if (newProgress) {
         trainingProgress.set(newProgress);
         currentSessionId.set(1);
+        voiceRange.set(newProgress.voiceRange);
         
         const nextNote = manager.getNextBaseNote();
         nextBaseNote.set(nextNote);
@@ -374,6 +387,36 @@ export async function startNewCycleIfCompleted(): Promise<boolean> {
     
     return false;
   }, 'Failed to start new cycle') !== null;
+}
+
+/**
+ * 音域設定変更
+ */
+export async function setVoiceRange(newVoiceRange: VoiceRangeType): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const success = manager.setVoiceRange(newVoiceRange);
+    
+    if (success) {
+      // ストア更新
+      voiceRange.set(newVoiceRange);
+      
+      // 進行状況更新
+      const updatedProgress = manager.loadProgress();
+      if (updatedProgress) {
+        trainingProgress.set(updatedProgress);
+        
+        // 次の基音を新しい音域で設定
+        const nextNote = manager.getNextBaseNote();
+        nextBaseNote.set(nextNote);
+        nextBaseName.set(manager.getBaseNoteName(nextNote));
+      }
+      
+      console.info(`[SessionStorage] 音域変更完了: ${newVoiceRange}`);
+    }
+    
+    return success;
+  }, 'Failed to set voice range') !== null;
 }
 
 // =============================================================================
@@ -512,5 +555,6 @@ export type {
   SessionResult,
   UnifiedScoreData,
   SessionGrade,
-  BaseNote
+  BaseNote,
+  VoiceRangeType
 } from '../types/sessionStorage';

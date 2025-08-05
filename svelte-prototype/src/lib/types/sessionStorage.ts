@@ -6,6 +6,9 @@ import type { TrainingMode, Grade, NoteResult, GradeDistribution } from './scori
 // 4段階評価（個別セッション用）
 export type SessionGrade = 'excellent' | 'good' | 'pass' | 'needWork';
 
+// 音域タイプ
+export type VoiceRangeType = 'low' | 'middle' | 'high' | 'extended';
+
 // 外れ値情報
 export interface OutlierInfo {
   name: string;                    // 音名（ド、レ、ミ...）
@@ -50,6 +53,7 @@ export interface TrainingProgress {
   // 基音管理
   availableBaseNotes: string[];   // 使用可能基音リスト
   usedBaseNotes: string[];        // 使用済み基音リスト
+  voiceRange: VoiceRangeType;     // 選択された音域タイプ
 }
 
 // localStorage用統合スコアデータ（UnifiedScoreResultFixed.svelte用）
@@ -84,21 +88,35 @@ export const BACKUP_KEYS = {
   PROGRESS_BACKUP: 'pitch-training-progress-backup'
 } as const;
 
-// 基音プール定数
-export const BASE_NOTE_POOL = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'] as const;
+// 基音プール定数（中級レベル16種類 - 3オクターブ帯域）
+export const BASE_NOTE_POOL = ['C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'G4', 'Ab4', 'A4', 'Bb3', 'B3', 'C5', 'D5', 'F3', 'G3'] as const;
 
-// 基音名マッピング
+// 音域別基音グループ（8種類ずつ）
+export const VOICE_RANGE_GROUPS = {
+  low: ['F3', 'G3', 'Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4'] as const,     // 低音域中心
+  middle: ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4'] as const,  // 中音域中心  
+  high: ['D4', 'Eb4', 'E4', 'F4', 'Gb4', 'G4', 'Ab4', 'A4'] as const,    // 高音域中心
+  extended: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'C5', 'D5'] as const     // 拡張音域（オクターブ跨ぎ）
+} as const;
+
+// 基音名マッピング（中級レベル16種類対応）
 export const BASE_NOTE_NAMES = {
-  'C4': 'ド（低）',
-  'D4': 'レ（低）',
-  'E4': 'ミ（低）',
-  'F4': 'ファ（低）',
-  'G4': 'ソ（低）',
+  'C4': 'ド（中）',
+  'Db4': 'ド#（中）',
+  'D4': 'レ（中）',
+  'Eb4': 'レ#（中）',
+  'E4': 'ミ（中）',
+  'F4': 'ファ（中）',
+  'Gb4': 'ファ#（中）',
+  'G4': 'ソ（中）',
+  'Ab4': 'ラb（中）',
   'A4': 'ラ（中）',
-  'B4': 'シ（中）',
+  'Bb3': 'シb（低）',
+  'B3': 'シ（低）',
   'C5': 'ド（高）',
   'D5': 'レ（高）',
-  'E5': 'ミ（高）'
+  'F3': 'ファ（低）',
+  'G3': 'ソ（低）'
 } as const;
 
 // データバージョン（将来の互換性管理用）
@@ -158,3 +176,4 @@ export function isTrainingProgress(obj: any): obj is TrainingProgress {
 // ユーティリティ型
 export type BaseNote = typeof BASE_NOTE_POOL[number];
 export type BaseNoteName = typeof BASE_NOTE_NAMES[keyof typeof BASE_NOTE_NAMES];
+export type VoiceRangeNote = typeof VOICE_RANGE_GROUPS[VoiceRangeType][number];

@@ -6,14 +6,16 @@ import type {
   SessionResult, 
   UnifiedScoreData, 
   SessionGrade, 
-  BaseNote 
+  BaseNote,
+  VoiceRangeType 
 } from '../types/sessionStorage';
 import type { Grade, NoteResult } from '../types/scoring';
 import { 
   STORAGE_KEYS, 
   BACKUP_KEYS, 
   BASE_NOTE_POOL, 
-  BASE_NOTE_NAMES, 
+  BASE_NOTE_NAMES,
+  VOICE_RANGE_GROUPS,
   DATA_VERSION,
   EVALUATION_THRESHOLDS,
   isTrainingProgress,
@@ -181,7 +183,10 @@ export class SessionStorageManager {
   /**
    * 新しい進行状況を作成（初回開始時）
    */
-  public createNewProgress(): TrainingProgress {
+  public createNewProgress(voiceRange: VoiceRangeType = 'middle'): TrainingProgress {
+    // 音域に応じた基音リストを取得
+    const voiceRangeNotes = [...VOICE_RANGE_GROUPS[voiceRange]];
+    
     const newProgress: TrainingProgress = {
       mode: 'random',
       version: DATA_VERSION,
@@ -190,12 +195,14 @@ export class SessionStorageManager {
       sessionHistory: [],
       currentSessionId: 1,
       isCompleted: false,
-      availableBaseNotes: [...BASE_NOTE_POOL],
-      usedBaseNotes: []
+      availableBaseNotes: voiceRangeNotes,
+      usedBaseNotes: [],
+      voiceRange: voiceRange
     };
 
     this.progress = newProgress;
     this.saveProgress(newProgress);
+    console.info(`[SessionStorageManager] 新進行状況作成: 音域=${voiceRange}, 基音数=${voiceRangeNotes.length}`);
     return newProgress;
   }
 
@@ -261,25 +268,33 @@ export class SessionStorageManager {
   }
 
   /**
-   * 次の基音を取得（重複回避）
+   * 次の基音を取得（音域対応＋重複回避＋8セッション最適化）
    */
   public getNextBaseNote(): BaseNote {
     const progress = this.progress || this.loadProgress();
     if (!progress) {
-      // 初回の場合はランダム選択
-      return BASE_NOTE_POOL[Math.floor(Math.random() * BASE_NOTE_POOL.length)];
+      // 初回の場合は中音域からランダム選択
+      const middleRangeNotes = VOICE_RANGE_GROUPS.middle;
+      return middleRangeNotes[Math.floor(Math.random() * middleRangeNotes.length)];
     }
 
-    // 使用可能な基音リスト
-    const availableNotes = BASE_NOTE_POOL.filter(note => !progress.usedBaseNotes.includes(note));
+    // 選択された音域の基音リストを取得
+    const voiceRangeNotes = VOICE_RANGE_GROUPS[progress.voiceRange];
     
-    // 全て使用済みの場合はリセット
-    if (availableNotes.length === 0) {
-      return BASE_NOTE_POOL[Math.floor(Math.random() * BASE_NOTE_POOL.length)];
+    // 使用可能な基音リスト（音域内での重複回避）
+    const availableNotes = voiceRangeNotes.filter(note => !progress.usedBaseNotes.includes(note));
+    
+    // 8セッション完了または全て使用済みの場合はリセット
+    if (availableNotes.length === 0 || progress.sessionHistory.length >= 8) {
+      console.info(`[SessionStorageManager] 基音プールリセット - 音域${progress.voiceRange}で新サイクル開始`);
+      return voiceRangeNotes[Math.floor(Math.random() * voiceRangeNotes.length)];
     }
 
-    // ランダム選択
-    return availableNotes[Math.floor(Math.random() * availableNotes.length)];
+    // 8セッション中は完全重複回避でランダム選択
+    const selectedNote = availableNotes[Math.floor(Math.random() * availableNotes.length)];
+    console.info(`[SessionStorageManager] 基音選択: ${selectedNote} (音域: ${progress.voiceRange}, 残り選択肢: ${availableNotes.length}/${voiceRangeNotes.length})`);
+    
+    return selectedNote;
   }
 
   /**
@@ -450,8 +465,9 @@ export class SessionStorageManager {
           ...oldData,
           version: DATA_VERSION,
           // 不足フィールドの補完
-          availableBaseNotes: oldData.availableBaseNotes || [...BASE_NOTE_POOL],
+          availableBaseNotes: oldData.availableBaseNotes || [...VOICE_RANGE_GROUPS.middle],
           usedBaseNotes: oldData.usedBaseNotes || [],
+          voiceRange: oldData.voiceRange || 'middle',
           lastUpdatedAt: oldData.lastUpdatedAt || new Date().toISOString()
         };
       }
@@ -498,6 +514,45 @@ export class SessionStorageManager {
    */
   public getBaseNoteName(baseNote: BaseNote): string {
     return BASE_NOTE_NAMES[baseNote] || baseNote;
+  }
+
+  /**
+   * 音域変更（セッション進行中は次回サイクルから適用）  
+   */
+  public setVoiceRange(voiceRange: VoiceRangeType): boolean {
+    try {
+      const progress = this.progress || this.loadProgress();
+      if (!progress) {
+        // 新規作成時は指定音域で作成
+        this.createNewProgress(voiceRange);
+        return true;
+      }
+
+      // セッション進行中の場合は次回サイクル設定として保存
+      progress.voiceRange = voiceRange;
+      progress.availableBaseNotes = [...VOICE_RANGE_GROUPS[voiceRange]];
+      
+      // 進行中の場合は使用済み基音をリセット（音域変更のため）
+      if (progress.sessionHistory.length > 0 && !progress.isCompleted) {
+        console.info(`[SessionStorageManager] 音域変更: ${voiceRange} - 使用済み基音リセット`);
+        progress.usedBaseNotes = [];
+      }
+
+      this.saveProgress(progress);
+      console.info(`[SessionStorageManager] 音域設定更新: ${voiceRange}`);
+      return true;
+    } catch (error) {
+      console.error('[SessionStorageManager] 音域設定エラー:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 現在の音域取得
+   */
+  public getVoiceRange(): VoiceRangeType {
+    const progress = this.progress || this.loadProgress();
+    return progress?.voiceRange || 'middle';
   }
 
   /**

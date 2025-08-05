@@ -370,7 +370,7 @@
   // セッション時刻管理
   let sessionStartTime = null;
 
-  // 基音候補（存在する音源ファイルに合わせた10種類）
+  // 基音候補（中級レベル16種類 - 3オクターブ帯域）
   const baseNotes = [
     { note: 'C4', name: 'ド（中）', frequency: 261.63, semitonesFromC: 0 },
     { note: 'Db4', name: 'ド#（中）', frequency: 277.18, semitonesFromC: 1 },
@@ -379,9 +379,15 @@
     { note: 'E4', name: 'ミ（中）', frequency: 329.63, semitonesFromC: 4 },
     { note: 'F4', name: 'ファ（中）', frequency: 349.23, semitonesFromC: 5 },
     { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
+    { note: 'G4', name: 'ソ（中）', frequency: 392.00, semitonesFromC: 7 },
     { note: 'Ab4', name: 'ラb（中）', frequency: 415.30, semitonesFromC: 8 },
+    { note: 'A4', name: 'ラ（中）', frequency: 440.00, semitonesFromC: 9 },
     { note: 'Bb3', name: 'シb（低）', frequency: 233.08, semitonesFromC: -2 },
-    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 }
+    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 },
+    { note: 'C5', name: 'ド（高）', frequency: 523.25, semitonesFromC: 12 },
+    { note: 'D5', name: 'レ（高）', frequency: 587.33, semitonesFromC: 14 },
+    { note: 'F3', name: 'ファ（低）', frequency: 174.61, semitonesFromC: -7 },
+    { note: 'G3', name: 'ソ（低）', frequency: 196.00, semitonesFromC: -5 }
   ];
 
   // マイク許可確認（AudioManager対応版）
