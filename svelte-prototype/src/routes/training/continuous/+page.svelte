@@ -2548,7 +2548,7 @@
         
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
         playBaseNote();
-      }, 5000); // 5秒後に次セッション開始（結果表示時間を確保）
+      }, 3000); // 3秒後に次セッション開始（2秒短縮）
     } else {
       console.log('🎉 [ContinuousMode] 8セッション完了！');
       // 総合評価画面を表示（trainingPhase は 'results' のまま維持）
