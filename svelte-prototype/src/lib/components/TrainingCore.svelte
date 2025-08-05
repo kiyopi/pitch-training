@@ -89,6 +89,7 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     : ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド（高）'];
 
   // 基音情報定義（ランダムモード成功実装から移植）
+  // 基音候補（存在する音源ファイルに合わせた10種類）- ランダムモード完全互換
   const baseNotes = [
     { note: 'C4', name: 'ド（中）', frequency: 261.63, semitonesFromC: 0 },
     { note: 'Db4', name: 'ド#（中）', frequency: 277.18, semitonesFromC: 1 },
@@ -99,19 +100,13 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
     { note: 'Ab4', name: 'ラb（中）', frequency: 415.30, semitonesFromC: 8 },
     { note: 'Bb3', name: 'シb（低）', frequency: 233.08, semitonesFromC: -2 },
-    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 },
-    { note: 'F#4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
-    { note: 'G#4', name: 'ソ#（中）', frequency: 415.30, semitonesFromC: 8 },
-    { note: 'Bb4', name: 'シb（高）', frequency: 466.16, semitonesFromC: 10 },
-    { note: 'C#5', name: 'ド#（高）', frequency: 554.37, semitonesFromC: 13 },
-    { note: 'Eb5', name: 'レ#（高）', frequency: 622.25, semitonesFromC: 15 },
-    { note: 'F#5', name: 'ファ#（高）', frequency: 739.99, semitonesFromC: 18 }
+    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 }
   ];
   
-  // 基音プール（モード別：ランダムモード成功実装に合わせて修正）
+  // 基音プール（モード別：ランダムモード完全互換 - 10種類のみ）
   $: baseNotePool = mode === 'continuous'
-    ? ['Bb3', 'B3', 'Db4', 'Eb4', 'F#4', 'G#4', 'Bb4', 'C#5', 'Eb5', 'F#5'] // 中級向け（♭♯含む）
-    : ['C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4', 'Bb3', 'B3'];     // 初級向け
+    ? ['Bb3', 'B3', 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4'] // ランダムモード互換
+    : ['C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4', 'Bb3', 'B3'];     // ランダムモード互換
 
   // =============================================================================
   // 状態管理
