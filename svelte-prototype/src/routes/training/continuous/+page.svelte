@@ -2791,6 +2791,7 @@
         </Card>
 
         <!-- Detection Section (Display Only) -->
+        <!-- Debug: {JSON.stringify({currentFrequency, detectedNote, currentVolume, trainingPhase})} -->
         <PitchDetectionDisplay
           frequency={currentFrequency}
           note={detectedNote}
