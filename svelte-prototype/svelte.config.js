@@ -21,7 +21,9 @@ const config = {
 				}
 				throw new Error(message);
 			}
-		}
+		},
+		// CSS強制インライン化
+		inlineStyleThreshold: 999999999
 	}
 };
 

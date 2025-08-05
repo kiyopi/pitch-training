@@ -4,7 +4,6 @@
   import { base } from '$app/paths';
   import PageLayout from '$lib/components/PageLayout.svelte';
   import TrainingCore from '$lib/components/TrainingCore.svelte';
-  import '../../../app.css';
 
   // マイクテスト完了確認
   let micTestCompleted = false;

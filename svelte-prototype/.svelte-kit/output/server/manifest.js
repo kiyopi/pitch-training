@@ -6,42 +6,19 @@ function __memo(fn) {
 
 return {
 	appDir: "_app",
-	appPath: "_app",
+	appPath: "pitch-training/_app",
 	assets: new Set(["audio/piano/C4.mp3"]),
 	mimeTypes: {".mp3":"audio/mpeg"},
 	_: {
-		client: {start:"_app/immutable/entry/start.CiOCguc4.js",app:"_app/immutable/entry/app.obv3KgQw.js",imports:["_app/immutable/entry/start.CiOCguc4.js","_app/immutable/chunks/De6g8PEg.js","_app/immutable/chunks/CA1QoDly.js","_app/immutable/entry/app.obv3KgQw.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/CA1QoDly.js","_app/immutable/chunks/DruVC1qS.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.BENjZimQ.js",app:"_app/immutable/entry/app.CJCWYHJT.js",imports:["_app/immutable/entry/start.BENjZimQ.js","_app/immutable/chunks/BNXdTR5k.js","_app/immutable/chunks/BbQtw8CC.js","_app/immutable/entry/app.CJCWYHJT.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BbQtw8CC.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
-			__memo(() => import('./nodes/1.js')),
-			__memo(() => import('./nodes/4.js')),
-			__memo(() => import('./nodes/5.js')),
-			__memo(() => import('./nodes/6.js'))
+			__memo(() => import('./nodes/1.js'))
 		],
 		routes: [
-			{
-				id: "/training/chromatic",
-				pattern: /^\/training\/chromatic\/?$/,
-				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 2 },
-				endpoint: null
-			},
-			{
-				id: "/training/continuous",
-				pattern: /^\/training\/continuous\/?$/,
-				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 3 },
-				endpoint: null
-			},
-			{
-				id: "/training/random",
-				pattern: /^\/training\/random\/?$/,
-				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 4 },
-				endpoint: null
-			}
+			
 		],
-		prerendered_routes: new Set(["/","/microphone-test"]),
+		prerendered_routes: new Set(["/pitch-training/","/pitch-training/microphone-test","/pitch-training/training/chromatic","/pitch-training/training/continuous","/pitch-training/training/random"]),
 		matchers: async () => {
 			
 			return {  };
