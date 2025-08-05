@@ -168,24 +168,24 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: 1.5rem;
   }
 
   .page-header {
     text-align: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: 1.5rem;
   }
 
   .page-title {
-    font-size: var(--text-3xl);
+    font-size: 1.875rem;
     font-weight: 700;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-3) 0;
+    color: #111827;
+    margin: 0 0 0.75rem 0;
   }
 
   .page-description {
-    font-size: var(--text-lg);
-    color: var(--color-gray-600);
+    font-size: 1.125rem;
+    color: #4b5563;
     margin: 0;
     max-width: 600px;
     margin-left: auto;
@@ -196,14 +196,14 @@
   .mic-test-required {
     display: flex;
     justify-content: center;
-    margin: var(--space-8) 0;
+    margin: 2rem 0;
   }
 
   .warning-card {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-6);
+    gap: 1rem;
+    padding: 1.5rem;
     background-color: #fef3c7;
     border: 1px solid #fcd34d;
     border-radius: 12px;
@@ -217,16 +217,16 @@
   }
 
   .warning-content h3 {
-    font-size: var(--text-xl);
+    font-size: 1.25rem;
     font-weight: 600;
     color: #92400e;
-    margin: 0 0 var(--space-2) 0;
+    margin: 0 0 0.5rem 0;
   }
 
   .warning-content p {
-    font-size: var(--text-base);
+    font-size: 1rem;
     color: #92400e;
-    margin: 0 0 var(--space-4) 0;
+    margin: 0 0 1rem 0;
     line-height: 1.5;
   }
 
@@ -236,7 +236,7 @@
     border: none;
     border-radius: 8px;
     padding: 12px 24px;
-    font-size: var(--text-base);
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -252,13 +252,13 @@
   .start-screen {
     display: flex;
     justify-content: center;
-    margin: var(--space-8) 0;
+    margin: 2rem 0;
   }
 
   .challenge-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px;
-    padding: var(--space-8);
+    padding: 2rem;
     max-width: 600px;
     color: white;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -266,7 +266,7 @@
   }
 
   .challenge-icon-wrapper {
-    margin-bottom: var(--space-6);
+    margin-bottom: 1.5rem;
   }
 
   .challenge-icon {
@@ -286,20 +286,20 @@
   }
 
   .challenge-title {
-    font-size: var(--text-2xl);
+    font-size: 1.5rem;
     font-weight: 700;
-    margin: 0 0 var(--space-6) 0;
+    margin: 0 0 1.5rem 0;
   }
 
   .challenge-features {
-    margin-bottom: var(--space-6);
+    margin-bottom: 1.5rem;
   }
 
   .feature-item {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
+    gap: 1rem;
+    margin-bottom: 1rem;
     text-align: left;
   }
 
@@ -309,33 +309,33 @@
   }
 
   .feature-text {
-    font-size: var(--text-base);
+    font-size: 1rem;
     line-height: 1.4;
   }
 
   .feature-text strong {
     font-weight: 600;
-    font-size: var(--text-lg);
+    font-size: 1.125rem;
   }
 
   .difficulty-info {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: var(--space-4);
-    margin-bottom: var(--space-6);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   .difficulty-info h3 {
-    font-size: var(--text-lg);
+    font-size: 1.125rem;
     font-weight: 600;
-    margin: 0 0 var(--space-3) 0;
+    margin: 0 0 0.75rem 0;
     text-align: center;
   }
 
   .base-notes-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: var(--space-2);
+    gap: 0.5rem;
     justify-items: center;
   }
 
@@ -343,8 +343,8 @@
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
-    padding: var(--space-1) var(--space-2);
-    font-size: var(--text-sm);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
     font-weight: 600;
     font-family: 'Courier New', monospace;
   }
@@ -355,7 +355,7 @@
     border: none;
     border-radius: 12px;
     padding: 16px 32px;
-    font-size: var(--text-xl);
+    font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -377,15 +377,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-8);
+    padding: 2rem;
     text-align: center;
-    color: var(--color-gray-600);
+    color: #4b5563;
   }
 
   .loading-spinner {
     font-size: 3rem;
     animation: spin 2s linear infinite;
-    margin-bottom: var(--space-4);
+    margin-bottom: 1rem;
   }
 
   @keyframes spin {
@@ -396,17 +396,17 @@
   /* レスポンシブ対応 */
   @media (max-width: 768px) {
     .page-title {
-      font-size: var(--text-2xl);
+      font-size: 1.5rem;
     }
     
     .page-description {
-      font-size: var(--text-base);
+      font-size: 1rem;
     }
     
     .warning-card {
       flex-direction: column;
       text-align: center;
-      margin: 0 var(--space-4);
+      margin: 0 1rem;
     }
     
     .warning-icon {
@@ -414,8 +414,8 @@
     }
 
     .challenge-card {
-      margin: 0 var(--space-4);
-      padding: var(--space-6);
+      margin: 0 1rem;
+      padding: 1.5rem;
     }
 
     .challenge-icon {
@@ -423,13 +423,13 @@
     }
 
     .challenge-title {
-      font-size: var(--text-xl);
+      font-size: 1.25rem;
     }
 
     .feature-item {
       flex-direction: column;
       text-align: center;
-      gap: var(--space-2);
+      gap: 0.5rem;
     }
 
     .feature-icon {
@@ -442,7 +442,7 @@
 
     .start-challenge-button {
       padding: 14px 28px;
-      font-size: var(--text-lg);
+      font-size: 1.125rem;
     }
   }
 </style>
