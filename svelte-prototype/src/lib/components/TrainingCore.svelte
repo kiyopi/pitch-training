@@ -35,6 +35,7 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   import UnifiedScoreResultFixed from '$lib/components/scoring/UnifiedScoreResultFixed.svelte';
   import ActionButtons from '$lib/components/ActionButtons.svelte';
   import { EvaluationEngine } from '$lib/evaluation/EvaluationEngine';
+  import { EnhancedScoringEngine } from '$lib/scoring/EnhancedScoringEngine.js';
   
   // localStorage セッション管理
   import {
@@ -140,6 +141,16 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   // UI状態
   let showScoreResult = false;
   let currentUnifiedScoreData = null;
+  
+  // 統合採点システム
+  let scoringEngine = null;
+  let currentScoreData = null;
+  let intervalData = [];
+  let consistencyData = [];
+  let feedbackData = null;
+  let technicalFeedbackData = null;
+  let sessionStatistics = null;
+  let noteResultsForDisplay = [];
 
   // =============================================================================
   // 初期化処理
@@ -154,6 +165,9 @@ TrainingCore.svelte - トレーニング共通コンポーネント
         await loadProgress();
         console.log(`✅ [TrainingCore] localStorage初期化完了: セッション${$currentSessionId}/8`);
       }
+      
+      // 採点エンジン初期化
+      initializeScoringEngine();
       
       // マイク初期化
       await initializeMicrophone();
@@ -469,14 +483,28 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     
     console.log(`✅ [TrainingCore] セッション完了: ${duration}秒`);
     
+    // 表示用noteResultsを準備
+    noteResultsForDisplay = noteResults.map(note => ({
+      name: note.name,
+      cents: note.cents,
+      targetFreq: note.targetFreq,
+      detectedFreq: note.detectedFreq,
+      diff: note.diff,
+      accuracy: note.accuracy === null ? 'notMeasured' : note.accuracy
+    }));
+    
     if (useLocalStorage) {
       // localStorage保存
       const success = await saveSessionResult(noteResults, duration, currentBaseNote, currentBaseName);
       if (success) {
         console.log('✅ [TrainingCore] セッション結果保存完了');
         
-        // 統合採点データ生成
-        currentUnifiedScoreData = $unifiedScoreData;
+        // 統合採点データ生成（ランダムモードパターン）
+        generateUnifiedScoreData();
+        
+        // 強化採点システム（8セッション完了時の技術分析用）
+        generateEnhancedScoringData();
+        
         showScoreResult = true;
         
         // コールバック実行
@@ -489,21 +517,7 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       }
     } else {
       // 12音階モード等：一時的な結果表示
-      currentUnifiedScoreData = {
-        mode: mode,
-        sessionHistory: [{
-          sessionId: 1,
-          grade: EvaluationEngine.evaluateSession(noteResults),
-          accuracy: EvaluationEngine.calculateAccuracy(noteResults),
-          baseNote: currentBaseNote,
-          baseName: currentBaseName,
-          noteResults: noteResults,
-          completedAt: new Date().toISOString()
-        }],
-        isCompleted: true,
-        totalSessions: 1,
-        targetSessions: 1
-      };
+      generateStandaloneScoreData(currentBaseNote, currentBaseName);
       showScoreResult = true;
       
       if (onSessionComplete) onSessionComplete();
@@ -523,6 +537,9 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     // リスニングフェーズでの音程検出処理
     if (trainingPhase === 'listening' && noteResults.length > 0) {
       processNoteDetection(frequency, note);
+      
+      // 採点エンジンにデータ送信
+      updateScoringEngine(frequency, note);
     }
   }
   
@@ -627,6 +644,325 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   function handleBackToHome() {
     goto(`${base}/`);
   }
+  
+  // =============================================================================
+  // 統合採点システム（ランダムモードから移植）
+  // =============================================================================
+  
+  // 採点エンジン初期化
+  function initializeScoringEngine() {
+    try {
+      scoringEngine = new EnhancedScoringEngine();
+      console.log('[TrainingCore] 採点エンジン初期化完了');
+    } catch (error) {
+      console.error('[TrainingCore] 採点エンジン初期化エラー:', error);
+    }
+  }
+  
+  // 統合採点データ生成（ランダムモードから移植）
+  function generateUnifiedScoreData() {
+    if (!noteResultsForDisplay || noteResultsForDisplay.length === 0) {
+      console.warn('[TrainingCore UnifiedScore] noteResultsForDisplay が空です');
+      return;
+    }
+    
+    // 測定成功率計算
+    const measuredNotes = noteResultsForDisplay.filter(note => note.accuracy !== 'notMeasured').length;
+    const totalNotes = noteResultsForDisplay.length;
+    
+    // 平均精度計算
+    const validAccuracies = noteResultsForDisplay
+      .filter(note => note.accuracy !== 'notMeasured' && typeof note.accuracy === 'number')
+      .map(note => note.accuracy);
+    const averageAccuracy = validAccuracies.length > 0 
+      ? Math.round(validAccuracies.reduce((sum, acc) => sum + acc, 0) / validAccuracies.length)
+      : 0;
+    
+    // 基音情報
+    const currentBaseNote = baseNote || $nextBaseNote;
+    const baseFreq = getFrequencyFromNote(currentBaseNote);
+
+    // noteResultsForDisplayを正しい形式に変換
+    const convertedNoteResults = noteResultsForDisplay.map(note => ({
+      name: note.name,
+      note: note.note || note.name,
+      frequency: note.targetFreq,
+      detectedFrequency: note.detectedFreq,
+      cents: note.cents,
+      grade: EvaluationEngine.evaluateNote(note.cents),
+      targetFreq: note.targetFreq,
+      diff: note.diff
+    }));
+    
+    // localStorage から既存のセッション履歴を取得
+    const currentProgress = $trainingProgress;
+    const allSessionHistory = currentProgress?.sessionHistory || [];
+    
+    // 現在のセッション結果を追加
+    const currentSessionResult = {
+      timestamp: new Date(),
+      baseNote: currentBaseNote,
+      baseFrequency: baseFreq,
+      noteResults: convertedNoteResults,
+      measuredNotes: measuredNotes,
+      accuracy: averageAccuracy,
+      grade: EvaluationEngine.evaluateSession(noteResultsForDisplay)
+    };
+    
+    // 統合スコアデータを作成（localStorage履歴 + 現在セッション）
+    const sessionHistory = [...allSessionHistory, currentSessionResult];
+    currentUnifiedScoreData = {
+      mode: mode,
+      timestamp: new Date(),
+      duration: Math.round((Date.now() - sessionStartTime) / 1000),
+      totalNotes: totalNotes,
+      measuredNotes: measuredNotes,
+      averageAccuracy: averageAccuracy,
+      baseNote: currentBaseNote,
+      baseFrequency: baseFreq,
+      noteResults: convertedNoteResults,
+      distribution: EvaluationEngine.calculateDistribution(noteResultsForDisplay),
+      sessionHistory: sessionHistory,
+      unifiedGrade: calculateUnifiedGrade(sessionHistory)
+    };
+    
+    console.log('[TrainingCore UnifiedScore] 統合採点データ生成完了:', currentUnifiedScoreData);
+  }
+  
+  // 単独モード用採点データ生成（12音階モード等）
+  function generateStandaloneScoreData(currentBaseNote, currentBaseName) {
+    const averageAccuracy = EvaluationEngine.calculateAccuracy(noteResults);
+    
+    currentUnifiedScoreData = {
+      mode: mode,
+      sessionHistory: [{
+        sessionId: 1,
+        grade: EvaluationEngine.evaluateSession(noteResults),
+        accuracy: averageAccuracy,
+        baseNote: currentBaseNote,
+        baseName: currentBaseName,
+        noteResults: noteResults,
+        completedAt: new Date().toISOString()
+      }],
+      isCompleted: true,
+      totalSessions: 1,
+      targetSessions: 1,
+      averageAccuracy: averageAccuracy
+    };
+  }
+  
+  // 強化採点システム（ランダムモードから移植）
+  async function generateEnhancedScoringData() {
+    try {
+      if (scoringEngine) {
+        // sessionHistoryデータをEnhancedScoringEngineに渡す
+        const currentSessionHistory = $sessionHistory || [];
+        
+        // 各セッションの各音程データをanalyzePerformanceで処理
+        for (const [sessionIndex, session] of currentSessionHistory.entries()) {
+          if (session.noteResults && session.noteResults.length > 0) {
+            const baseFreq = session.baseFrequency || 262;
+            
+            // 各音程データを個別に分析
+            for (const note of session.noteResults) {
+              if (note.detectedFreq && note.targetFreq) {
+                await scoringEngine.analyzePerformance({
+                  baseFreq: baseFreq,
+                  targetFreq: note.targetFreq,
+                  detectedFreq: note.detectedFreq,
+                  responseTime: 2000,
+                  volume: 50,
+                  harmonicCorrection: null
+                });
+              }
+            }
+          }
+        }
+        
+        const results = scoringEngine.generateDetailedReport();
+        
+        // 技術分析結果データ更新（8セッション完了時のみ）
+        technicalFeedbackData = generateTechnicalFeedbackFromEnhancedEngine(results);
+        
+        // フィードバックデータ更新
+        feedbackData = generateFeedbackFromResults(noteResultsForDisplay);
+        
+      } else {
+        // scoringEngine が無い場合は実際のデータから生成
+        feedbackData = generateFeedbackFromResults(noteResultsForDisplay);
+      }
+      
+      console.log('[TrainingCore EnhancedScoring] 追加採点データ生成完了');
+      
+    } catch (error) {
+      console.error('[TrainingCore EnhancedScoring] データ生成エラー:', error);
+      feedbackData = generateFeedbackFromResults(noteResultsForDisplay);
+    }
+  }
+  
+  // 統合グレード算出（S-E級）
+  function calculateUnifiedGrade(sessionHistory) {
+    if (!sessionHistory || sessionHistory.length === 0) return 'E';
+    
+    const grades = sessionHistory.map(session => session.grade);
+    const excellentCount = grades.filter(g => g === 'excellent').length;
+    const goodCount = grades.filter(g => g === 'good').length;
+    const passCount = grades.filter(g => g === 'pass').length;
+    const totalSessions = grades.length;
+    
+    const excellentRate = excellentCount / totalSessions;
+    const goodRate = (excellentCount + goodCount) / totalSessions;
+    const passRate = (excellentCount + goodCount + passCount) / totalSessions;
+    
+    if (excellentRate >= 0.9) return 'S';
+    if (excellentRate >= 0.7) return 'A';
+    if (goodRate >= 0.8) return 'B';
+    if (passRate >= 0.7) return 'C';
+    if (passRate >= 0.4) return 'D';
+    return 'E';
+  }
+  
+  // フィードバック生成（実際のトレーニングデータから）
+  function generateFeedbackFromResults(noteResults) {
+    if (!noteResults || noteResults.length === 0) {
+      return {
+        type: 'info',
+        primary: 'データなし',
+        summary: '測定データがありません'
+      };
+    }
+    
+    const measuredNotes = noteResults.filter(note => note.accuracy !== 'notMeasured');
+    const averageAccuracy = measuredNotes.length > 0 
+      ? Math.round(measuredNotes.reduce((sum, note) => sum + note.accuracy, 0) / measuredNotes.length)
+      : 0;
+    
+    let type, primary, summary;
+    
+    if (averageAccuracy >= 85) {
+      type = 'excellent';
+      primary = '素晴らしい精度です！';
+      summary = `平均精度${averageAccuracy}%で優秀な音感能力を示しています。`;
+    } else if (averageAccuracy >= 70) {
+      type = 'improvement';
+      primary = '良い進歩が見られます';
+      summary = `平均精度${averageAccuracy}%で確実に向上しています。`;
+    } else if (averageAccuracy >= 50) {
+      type = 'practice';
+      primary = '継続練習で向上中';
+      summary = `現在の精度${averageAccuracy}%から更なる向上を目指しましょう。`;
+    } else {
+      type = 'encouragement';
+      primary = '練習を続けましょう';
+      summary = '継続的な練習で必ず上達します。';
+    }
+    
+    return { type, primary, summary };
+  }
+  
+  // 技術分析フィードバック生成（8セッション完了時）
+  function generateTechnicalFeedbackFromEnhancedEngine(enhancedResults) {
+    // モード別完了判定
+    const requiredSessions = mode === 'chromatic' ? 12 : 8;
+    const currentSessionHistory = $sessionHistory || [];
+    const completedSessions = currentSessionHistory.length;
+    
+    // セッション完了前は技術分析結果なし
+    if (completedSessions < requiredSessions || !enhancedResults) {
+      return null;
+    }
+    
+    const improvements = enhancedResults.improvements || [];
+    
+    // 技術分析データを整理
+    const technicalAnalysis = [];
+    
+    // 音程精度・方向性精度計算
+    let intervalAccuracy = 0;
+    let directionAccuracy = 0;
+    
+    if (enhancedResults.detailed?.intervals) {
+      const intervalsData = enhancedResults.detailed.intervals;
+      if (intervalsData.totalAnalyses > 0) {
+        let totalAccuracy = 0;
+        let totalAttempts = 0;
+        
+        for (const [intervalType, data] of Object.entries(intervalsData.masteryLevels)) {
+          if (data.attempts > 0) {
+            totalAccuracy += data.averageAccuracy * data.attempts;
+            totalAttempts += data.attempts;
+          }
+        }
+        
+        intervalAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+      }
+    }
+    
+    if (enhancedResults.detailed?.directions) {
+      const directionsData = enhancedResults.detailed.directions;
+      if (directionsData.totalAnalyses > 0) {
+        let totalAccuracy = 0;
+        let totalAttempts = 0;
+        
+        for (const [directionType, data] of Object.entries(directionsData.masteryData)) {
+          if (data.attempts > 0) {
+            totalAccuracy += data.averageAccuracy * data.attempts;
+            totalAttempts += data.attempts;
+          }
+        }
+        
+        directionAccuracy = totalAttempts > 0 ? (totalAccuracy / totalAttempts) : 0;
+      }
+    }
+    
+    // 技術分析結果のフォーマット
+    technicalAnalysis.push({
+      category: 'improvements',
+      text: `音程精度: ${Math.round(intervalAccuracy)}%　（音の高さを捉える正確性　目標基準：70〜85%）`
+    });
+    
+    technicalAnalysis.push({
+      category: 'improvements',
+      text: `方向性: ${Math.round(directionAccuracy)}%　（音程の上下判断の精度　目標基準：80〜90%）`
+    });
+    
+    return {
+      type: 'info',
+      primary: '詳細分析結果',
+      summary: '音程精度・一貫性・方向性の総合分析',
+      details: technicalAnalysis
+    };
+  }
+  
+  // 採点エンジンにデータを送信
+  function updateScoringEngine(frequency, note) {
+    if (!scoringEngine || trainingPhase !== 'listening') return;
+    
+    const currentStepIndex = getCurrentStepIndex();
+    if (currentStepIndex < 0 || currentStepIndex >= noteResults.length) return;
+    
+    const currentBaseNote = baseNote || $nextBaseNote;
+    const baseFreq = getFrequencyFromNote(currentBaseNote);
+    const expectedFrequency = calculateTargetFrequency(baseFreq, currentStepIndex);
+    
+    // 採点エンジンに音程データを送信
+    const attemptData = {
+      baseFrequency: baseFreq,
+      targetFrequency: expectedFrequency,
+      detectedFrequency: frequency,
+      detectedNote: note,
+      volume: currentVolume,
+      timestamp: Date.now(),
+      scaleIndex: currentStepIndex,
+      scaleName: currentScale[currentStepIndex]
+    };
+    
+    try {
+      scoringEngine.processAttempt(attemptData);
+    } catch (error) {
+      console.error('[TrainingCore] 採点エンジンエラー:', error);
+    }
+  }
 </script>
 
 <!-- HTML テンプレート -->
@@ -656,10 +992,10 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     <!-- セッション結果表示 -->
     <UnifiedScoreResultFixed 
       currentScoreData={currentUnifiedScoreData}
-      intervalData={[]}
-      consistencyData={[]}
-      feedbackData={null}
-      technicalFeedbackData={null}
+      intervalData={intervalData || []}
+      consistencyData={consistencyData || []}
+      feedbackData={feedbackData}
+      technicalFeedbackData={technicalFeedbackData}
     />
     
     <ActionButtons
