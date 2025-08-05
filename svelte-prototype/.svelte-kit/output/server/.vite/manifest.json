@@ -190,11 +190,18 @@
       "_ssr.js",
       "_Card.js",
       "_Button.js",
-      "_PageLayout.js"
+      "_PageLayout.js",
+      "_client.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.D7cf117A.css"
+      "_app/immutable/assets/_page.Bh9ZXNIK.css"
     ]
+  },
+  "src/routes/training/chromatic/+page.ts": {
+    "file": "entries/pages/training/chromatic/_page.ts.js",
+    "name": "entries/pages/training/chromatic/_page.ts",
+    "src": "src/routes/training/chromatic/+page.ts",
+    "isEntry": true
   },
   "src/routes/training/continuous/+page.svelte": {
     "file": "entries/pages/training/continuous/_page.svelte.js",

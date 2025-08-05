@@ -3,18 +3,26 @@
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import PageLayout from '$lib/components/PageLayout.svelte';
+  import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
 
   // トレーニング状態管理
   let direction = 'ascending'; // 'ascending' | 'descending'
   let isPlaying = false;
   let isDetecting = false;
   let currentBaseNote = 'C4';
+  let selectedBaseNote = 'C4';
   let currentScaleIndex = 0;
   let scaleResults = [];
   let showResults = false;
   let currentVolume = 0;
   let currentFrequency = 0;
   let currentNote = '';
+  let showBaseSelection = false;
+  
+  // 音域データ
+  let vocalRange = null;
+  let micTestCompleted = false;
   
   // 12音階システム（クロマチック）
   const chromaticNotesAsc = ['ド', 'ド#', 'レ', 'レ#', 'ミ', 'ファ', 'ファ#', 'ソ', 'ソ#', 'ラ', 'ラ#', 'シ'];
@@ -23,9 +31,102 @@
   // 現在の音階配列
   $: currentScale = direction === 'ascending' ? chromaticNotesAsc : chromaticNotesDesc;
   
-  // 固定基音（C4）
-  const baseNote = 'C4';
+  // 基音選択肢（音域に基づく）
+  const baseNoteOptions = [
+    { note: 'C3', japanese: 'ド3', frequency: 130.81 },
+    { note: 'D3', japanese: 'レ3', frequency: 146.83 },
+    { note: 'E3', japanese: 'ミ3', frequency: 164.81 },
+    { note: 'F3', japanese: 'ファ3', frequency: 174.61 },
+    { note: 'G3', japanese: 'ソ3', frequency: 196.00 },
+    { note: 'A3', japanese: 'ラ3', frequency: 220.00 },
+    { note: 'B3', japanese: 'シ3', frequency: 246.94 },
+    { note: 'C4', japanese: 'ド4', frequency: 261.63 },
+    { note: 'D4', japanese: 'レ4', frequency: 293.66 },
+    { note: 'E4', japanese: 'ミ4', frequency: 329.63 },
+    { note: 'F4', japanese: 'ファ4', frequency: 349.23 },
+    { note: 'G4', japanese: 'ソ4', frequency: 392.00 },
+    { note: 'A4', japanese: 'ラ4', frequency: 440.00 },
+    { note: 'B4', japanese: 'シ4', frequency: 493.88 },
+    { note: 'C5', japanese: 'ド5', frequency: 523.25 }
+  ];
+  
+  // 音域に適した基音選択肢
+  $: availableBaseNotes = getAvailableBaseNotes();
 
+  // 初期化
+  onMount(() => {
+    checkMicrophoneTestStatus();
+    loadVocalRangeData();
+  });
+  
+  // マイクテスト完了確認
+  function checkMicrophoneTestStatus() {
+    if (typeof localStorage !== 'undefined') {
+      const micTestStatus = localStorage.getItem('mic-test-completed');
+      micTestCompleted = micTestStatus === 'true';
+      
+      if (!micTestCompleted) {
+        // マイクテスト未完了の場合、マイクテストページに誘導
+        console.log('マイクテスト未完了 - マイクテストページに誘導');
+        goto(`${base}/microphone-test?mode=chromatic`);
+        return;
+      }
+      
+      console.log('✅ マイクテスト完了済み - 12音階モード開始可能');
+    }
+  }
+  
+  // 音域データ読み込み
+  function loadVocalRangeData() {
+    if (typeof localStorage !== 'undefined') {
+      const savedRange = localStorage.getItem('vocal-range');
+      if (savedRange) {
+        try {
+          vocalRange = JSON.parse(savedRange);
+          console.log('音域データ読み込み:', vocalRange);
+        } catch (error) {
+          console.error('音域データ解析エラー:', error);
+          vocalRange = null;
+        }
+      }
+    }
+  }
+  
+  // 音域に適した基音選択肢を取得
+  function getAvailableBaseNotes() {
+    if (!vocalRange) {
+      // 音域データがない場合はデフォルト範囲
+      return baseNoteOptions.filter(note => 
+        note.frequency >= 200 && note.frequency <= 400
+      );
+    }
+    
+    // 音域データがある場合、その範囲内の基音を選択
+    const minFreq = vocalRange.lowestFrequency;
+    const maxFreq = vocalRange.highestFrequency;
+    
+    // 安全マージンを考慮（基音±1オクターブ分の音程を歌うため）
+    const safeMinFreq = minFreq * 1.2; // 20%上
+    const safeMaxFreq = maxFreq * 0.8; // 20%下
+    
+    return baseNoteOptions.filter(note => 
+      note.frequency >= safeMinFreq && note.frequency <= safeMaxFreq
+    );
+  }
+  
+  // 基音選択画面表示
+  function showBaseNoteSelection() {
+    showBaseSelection = true;
+  }
+  
+  // 基音選択確定
+  function selectBaseNote(noteData) {
+    selectedBaseNote = noteData.note;
+    currentBaseNote = noteData.note;
+    showBaseSelection = false;
+    console.log('基音選択:', noteData);
+  }
+  
   // トレーニング開始
   function startTraining() {
     // リセット
@@ -34,7 +135,7 @@
     showResults = false;
     
     // 基音再生
-    playBaseNote(baseNote);
+    playBaseNote(selectedBaseNote);
   }
 
   // 基音再生（モック）
@@ -137,6 +238,22 @@
               半音階（クロマチック）を使った高度な相対音感トレーニング
             </p>
             
+            <!-- 基音選択 -->
+            <div class="base-note-selector">
+              <h3 class="selector-title">基音選択</h3>
+              <div class="base-note-info">
+                <div class="selected-base-note">
+                  選択中: <strong>{baseNoteOptions.find(note => note.note === selectedBaseNote)?.japanese || selectedBaseNote}</strong>
+                  {#if vocalRange}
+                    <span class="range-info">（音域: {vocalRange.range}）</span>
+                  {/if}
+                </div>
+                <button class="base-note-change-button" on:click={showBaseNoteSelection}>
+                  基音を変更
+                </button>
+              </div>
+            </div>
+
             <!-- 方向選択 -->
             <div class="direction-selector">
               <h3 class="selector-title">スケール方向</h3>
@@ -376,6 +493,50 @@
       </div>
     {/if}
   </div>
+  
+  <!-- 基音選択モーダル -->
+  {#if showBaseSelection}
+    <div class="base-selection-modal-overlay">
+      <div class="base-selection-modal">
+        <Card variant="default" padding="xl">
+          <div class="base-selection-content">
+            <h2 class="base-selection-title">基音を選択</h2>
+            {#if vocalRange}
+              <p class="vocal-range-info">
+                あなたの音域: <strong>{vocalRange.range}</strong><br>
+                以下は歌いやすい基音です
+              </p>
+            {:else}
+              <p class="vocal-range-info">
+                音域測定データがありません。標準的な基音から選択してください
+              </p>
+            {/if}
+            
+            <div class="base-note-grid">
+              {#each availableBaseNotes as noteData}
+                <button 
+                  class="base-note-option {selectedBaseNote === noteData.note ? 'selected' : ''}"
+                  on:click={() => selectBaseNote(noteData)}
+                >
+                  <div class="note-display">
+                    <span class="note-japanese">{noteData.japanese}</span>
+                    <span class="note-english">({noteData.note})</span>
+                  </div>
+                  <div class="note-frequency">{noteData.frequency.toFixed(1)} Hz</div>
+                </button>
+              {/each}
+            </div>
+            
+            <div class="modal-actions">
+              <button class="modal-cancel" on:click={() => showBaseSelection = false}>
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  {/if}
 </PageLayout>
 
 <style>
@@ -918,6 +1079,155 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+  }
+
+  /* 基音選択 */
+  .base-note-selector {
+    margin-bottom: var(--space-6);
+  }
+
+  .base-note-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .selected-base-note {
+    font-size: var(--text-base);
+    color: var(--color-gray-700);
+  }
+
+  .range-info {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+  }
+
+  .base-note-change-button {
+    padding: var(--space-2) var(--space-4);
+    background-color: #e9d5ff;
+    color: #9333ea;
+    border: 1px solid #9333ea;
+    border-radius: 6px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .base-note-change-button:hover {
+    background-color: #9333ea;
+    color: white;
+  }
+
+  /* 基音選択モーダル */
+  .base-selection-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .base-selection-modal {
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .base-selection-content {
+    text-align: center;
+  }
+
+  .base-selection-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--space-4) 0;
+  }
+
+  .vocal-range-info {
+    font-size: var(--text-base);
+    color: var(--color-gray-600);
+    margin-bottom: var(--space-6);
+    line-height: 1.6;
+  }
+
+  .base-note-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .base-note-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    border: 2px solid var(--color-gray-300);
+    border-radius: 8px;
+    background: white;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .base-note-option:hover {
+    border-color: #9333ea;
+    color: #9333ea;
+  }
+
+  .base-note-option.selected {
+    border-color: #9333ea;
+    background-color: #9333ea;
+    color: white;
+  }
+
+  .note-display {
+    margin-bottom: var(--space-2);
+  }
+
+  .note-japanese {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    display: block;
+  }
+
+  .note-english {
+    font-size: var(--text-sm);
+    opacity: 0.8;
+  }
+
+  .note-frequency {
+    font-size: var(--text-xs);
+    opacity: 0.7;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: center;
+  }
+
+  .modal-cancel {
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .modal-cancel:hover {
+    background-color: var(--color-gray-200);
   }
 
   @media (max-width: 767px) {

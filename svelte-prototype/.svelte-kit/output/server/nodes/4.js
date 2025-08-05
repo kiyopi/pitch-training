@@ -3,6 +3,11 @@
 export const index = 4;
 let component_cache;
 export const component = async () => component_cache ??= (await import('../entries/pages/training/chromatic/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/4.BzYCd7uV.js","_app/immutable/chunks/MK1avi_n.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/EmpYP22I.js","_app/immutable/chunks/AtinoeQd.js"];
-export const stylesheets = ["_app/immutable/assets/PageLayout.DiiS_FyR.css","_app/immutable/assets/4.D7cf117A.css"];
+export const universal = {
+  "prerender": false,
+  "ssr": false
+};
+export const universal_id = "src/routes/training/chromatic/+page.ts";
+export const imports = ["_app/immutable/nodes/4.CzuQrViB.js","_app/immutable/chunks/Be0szi1F.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/CzYZU643.js","_app/immutable/chunks/iHfyItqC.js","_app/immutable/chunks/CGE1Ttke.js"];
+export const stylesheets = ["_app/immutable/assets/PageLayout.DiiS_FyR.css","_app/immutable/assets/4.B0Z6I6O1.css"];
 export const fonts = [];

@@ -8,6 +8,7 @@
 		"src/routes/+layout.ts"
 	],
 	"/training/chromatic": [
+		"src/routes/training/chromatic/+page.ts",
 		"src/routes/+layout.ts"
 	],
 	"/training/continuous": [
