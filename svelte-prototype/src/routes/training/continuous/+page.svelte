@@ -7,7 +7,7 @@
 
   // マイクテスト完了確認
   let micTestCompleted = false;
-  let showStartScreen = true;
+  let showStartScreen = false;
   let isClient = false;
   
   onMount(() => {
