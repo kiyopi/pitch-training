@@ -1912,40 +1912,64 @@
   
   // PitchDetectorコンポーネントからのイベントハンドラー
   function handlePitchUpdate(event) {
-    const { frequency, note, volume, rawVolume, clarity } = event.detail;
-    
-    // 初期値設定（生の値）
-    let displayFrequency = frequency;
-    let displayNote = note;
-    
-    // 表示は常に評価システムと同じ補正を適用
-    if (trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0 && frequency > 0) {
-      const correctedResult = getEvaluationCorrectedFrequency(frequency);
-      if (correctedResult) {
-        displayFrequency = correctedResult.frequency;
-        displayNote = correctedResult.note;
+    try {
+      // event.detail の存在確認
+      if (!event || !event.detail) {
+        console.warn('⚠️ [ContinuousMode] handlePitchUpdate: event.detail が undefined');
+        return;
       }
-    }
-    
-    currentFrequency = displayFrequency;
-    detectedNote = displayNote;
-    currentVolume = volume;
-    
-    // ガイダンス機能削除済み（UI簡素化）
-    
-    // 基音との相対音程を計算（補正後の値で）
-    if (currentBaseFrequency > 0 && displayFrequency > 0) {
-      pitchDifference = Math.round(1200 * Math.log2(displayFrequency / currentBaseFrequency));
-    } else {
-      pitchDifference = 0;
-    }
-    
-    // ガイドアニメーション中の評価蓄積（元の周波数で実行）
-    evaluateScaleStep(frequency, note);
-    
-    // 採点エンジンへのデータ送信
-    if (scoringEngine && frequency > 0 && currentBaseFrequency > 0) {
-      updateScoringEngine(frequency, note);
+      
+      const { frequency, note, volume, rawVolume, clarity } = event.detail;
+      
+      // 初期値設定（生の値）
+      let displayFrequency = frequency;
+      let displayNote = note;
+      
+      // 表示は常に評価システムと同じ補正を適用
+      if (trainingPhase === 'guiding' && isGuideAnimationActive && currentBaseFrequency > 0 && frequency > 0) {
+        const correctedResult = getEvaluationCorrectedFrequency(frequency);
+        if (correctedResult) {
+          displayFrequency = correctedResult.frequency;
+          displayNote = correctedResult.note;
+        }
+      }
+      
+      currentFrequency = displayFrequency;
+      detectedNote = displayNote;
+      currentVolume = volume;
+      
+      // ガイダンス機能削除済み（UI簡素化）
+      
+      // 基音との相対音程を計算（補正後の値で）
+      if (currentBaseFrequency > 0 && displayFrequency > 0) {
+        pitchDifference = Math.round(1200 * Math.log2(displayFrequency / currentBaseFrequency));
+      } else {
+        pitchDifference = 0;
+      }
+      
+      // ガイドアニメーション中の評価蓄積（元の周波数で実行）
+      try {
+        evaluateScaleStep(frequency, note);
+      } catch (evalError) {
+        console.error('❌ [ContinuousMode] evaluateScaleStep エラー:', evalError);
+      }
+      
+      // 採点エンジンへのデータ送信
+      try {
+        if (scoringEngine && frequency > 0 && currentBaseFrequency > 0) {
+          updateScoringEngine(frequency, note);
+        }
+      } catch (scoringError) {
+        console.error('❌ [ContinuousMode] updateScoringEngine エラー:', scoringError);
+      }
+    } catch (error) {
+      console.error('❌ [ContinuousMode] handlePitchUpdate エラー:', {
+        error: error.message,
+        stack: error.stack,
+        eventDetail: event?.detail,
+        trainingPhase,
+        currentSessionId: $currentSessionId
+      });
     }
   }
 
@@ -2494,7 +2518,28 @@
   }
   
   function handlePitchDetectorError(event) {
-    console.error('❌ PitchDetectorエラー:', event.detail);
+    const { error, context, reason, recovery } = event.detail;
+    console.error('❌ [ContinuousMode] PitchDetectorエラー詳細:', {
+      error: error?.message || error,
+      stack: error?.stack,
+      context,
+      reason,
+      recovery,
+      trainingPhase,
+      currentSessionId: $currentSessionId
+    });
+    
+    // 重大なエラーの場合は自動復旧を試行
+    if (reason === 'mediastream_ended' && recovery === 'restart_required') {
+      console.log('⚡ [ContinuousMode] MediaStream終了検出 - 自動復旧を試行');
+      setTimeout(async () => {
+        try {
+          await checkMicrophonePermission(); // マイク再初期化
+        } catch (recoveryError) {
+          console.error('❌ [ContinuousMode] 自動復旧失敗:', recoveryError);
+        }
+      }, 1000);
+    }
   }
   
   // マイク健康状態変化ハンドラー
