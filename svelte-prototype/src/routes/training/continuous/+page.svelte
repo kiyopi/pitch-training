@@ -2646,8 +2646,6 @@
 </svelte:head>
 
 <PageLayout>
-  <!-- DEBUG: PageLayout開始 - ページ全体のレンダリング開始 -->
-  <!-- DEBUG: 変数確認 - trainingPhase: {trainingPhase}, microphoneState: {microphoneState} -->
   <!-- Header -->
   <div class="header-section">
     <h1 class="page-title">⚡ 連続チャレンジモード</h1>
@@ -2708,7 +2706,6 @@
       />
     </div>
 
-    <!-- DEBUG: メイントレーニングインターフェース開始 -->
     <!-- メイントレーニングインターフェース -->
     
     {#if trainingPhase !== 'results'}
@@ -2733,7 +2730,6 @@
         </Card>
       {/if}
 
-      <!-- DEBUG: side-by-side-container開始位置 -->
       <div class="side-by-side-container">
         <!-- Base Tone Section -->
         <Card class="main-card half-width">
@@ -2805,7 +2801,6 @@
           showGuidance={false}
         />
       </div>
-      <!-- DEBUG: side-by-side-container終了位置 -->
     {/if}
 
     {#if trainingPhase !== 'results'}
@@ -2834,24 +2829,12 @@
     {/if}
 
 
-    <!-- DEBUG: Results Section開始 -->
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
       <!-- 統合採点システム結果（localStorage統合版） -->
       {#if $unifiedScoreData && $isCompleted}
         <!-- 8セッション完了時：localStorageデータを使用 -->
         {#if $unifiedScoreData}
-          {console.log('🔍 [ContinuousMode] UnifiedScoreData structure:', {
-            sessionHistoryLength: $unifiedScoreData.sessionHistory?.length || 0,
-            sessionHistory: $unifiedScoreData.sessionHistory?.map((s, i) => ({
-              index: i,
-              sessionId: s.sessionId,
-              baseNote: s.baseNote,
-              hasNoteResults: !!s.noteResults,
-              noteResultsLength: s.noteResults?.length || 0,
-              accuracy: s.accuracy
-            })) || []
-          })}
         {/if}
         <UnifiedScoreResultFixed 
           scoreData={$unifiedScoreData}
@@ -2866,17 +2849,6 @@
         />
       {:else if currentUnifiedScoreData}
         <!-- 1セッション完了時：従来のデータを使用 -->
-        {console.log('🔍 [ContinuousMode] CurrentUnifiedScoreData structure:', {
-          sessionHistoryLength: currentUnifiedScoreData.sessionHistory?.length || 0,
-          sessionHistory: currentUnifiedScoreData.sessionHistory?.map((s, i) => ({
-            index: i,
-            sessionId: s.sessionId,
-            baseNote: s.baseNote,
-            hasNoteResults: !!s.noteResults,
-            noteResultsLength: s.noteResults?.length || 0,
-            accuracy: s.accuracy
-          })) || []
-        })}
         <UnifiedScoreResultFixed 
           scoreData={currentUnifiedScoreData}
           showDetails={false}
