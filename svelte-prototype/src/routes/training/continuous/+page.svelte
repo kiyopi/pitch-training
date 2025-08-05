@@ -2449,12 +2449,25 @@
     
     // 8セッション未満の場合は次のセッションを自動開始
     if ($currentSessionId < 8) {
+      // セッション結果を5秒間表示してから次セッション開始
       setTimeout(() => {
-        console.log('🔄 [ContinuousMode] 次セッション自動開始:', $currentSessionId + 1);
-        // セッション状態をリセットして次の基音再生
+        console.log('🔄 [ContinuousMode] 次セッション自動開始準備:', $currentSessionId + 1);
+        
+        // 次セッション用の状態リセット
         trainingPhase = 'setup';
+        sessionResults = {
+          isCompleted: false,
+          correctCount: 0,
+          totalCount: 0,
+          averageAccuracy: 0
+        };
+        
+        // UI状態をリセット
+        isPlaying = false;
+        
+        console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
         playBaseNote();
-      }, 2000); // 2秒後に次セッション開始
+      }, 5000); // 5秒後に次セッション開始（結果表示時間を確保）
     } else {
       console.log('🎉 [ContinuousMode] 8セッション完了！');
       // 総合評価画面を表示（trainingPhase は 'results' のまま維持）
