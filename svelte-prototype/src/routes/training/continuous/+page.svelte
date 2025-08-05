@@ -2730,6 +2730,7 @@
         </Card>
       {/if}
 
+      <!-- DEBUG: side-by-side-container開始位置 -->
       <div class="side-by-side-container">
         <!-- Base Tone Section -->
         <Card class="main-card half-width">
@@ -2801,6 +2802,7 @@
           showGuidance={false}
         />
       </div>
+      <!-- DEBUG: side-by-side-container終了位置 -->
     {/if}
 
     {#if trainingPhase !== 'results'}
