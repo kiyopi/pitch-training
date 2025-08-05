@@ -2343,12 +2343,20 @@
     // 【緊急デバッグ】基音リセットログ
     console.log('🔄 [restartDifferentBaseNote] 基音情報をリセットしました');
     
-    // 5. PitchDetectorの表示状態をリセット
+    // 5. 新しい基音を強制的に取得（重要！）
+    try {
+      await loadProgress(); // セッションストレージから次の基音を強制更新
+      console.log('🎯 [restartDifferentBaseNote] 新しい基音取得完了:', $nextBaseNote, $nextBaseName);
+    } catch (error) {
+      console.error('❌ [restartDifferentBaseNote] 新しい基音取得エラー:', error);
+    }
+    
+    // 6. PitchDetectorの表示状態をリセット
     if (pitchDetectorComponent && pitchDetectorComponent.resetDisplayState) {
       pitchDetectorComponent.resetDisplayState();
     }
     
-    // 6. セッション状態リセット
+    // 7. セッション状態リセット
     resetSessionState();
   }
   
