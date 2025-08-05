@@ -79,4 +79,5 @@ MIT License
 - 2025-01: SvelteKit完全移行
 - TrainingCore統合基盤完成
 - 統合採点システム統合完了
+- GitHub Actions デプロイ確認中
 - 機能優先開発フェーズ開始
