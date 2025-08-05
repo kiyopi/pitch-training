@@ -180,6 +180,16 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       
       console.log(`✅ [TrainingCore] ${mode}モード初期化完了`);
       
+      // 自動再生モードの場合は初期化完了後に自動開始
+      if (autoPlay && microphoneState === 'granted') {
+        console.log(`🔄 [TrainingCore] 自動再生モード - 初回セッション自動開始`);
+        setTimeout(() => {
+          if (trainingPhase === 'waiting') {
+            playBaseNote();
+          }
+        }, 2000);
+      }
+      
     } catch (error) {
       console.error(`❌ [TrainingCore] 初期化エラー:`, error);
       if (onMicrophoneError) onMicrophoneError(error.message);
@@ -264,6 +274,16 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       
       microphoneState = 'granted';
       trainingPhase = 'waiting'; // setup → waiting に変更
+      
+      // 自動再生モードの場合はマイク許可完了後に自動開始
+      if (autoPlay) {
+        console.log(`🔄 [TrainingCore] 自動再生モード - マイク許可完了後の自動開始`);
+        setTimeout(() => {
+          if (trainingPhase === 'waiting' && !showScoreResult) {
+            playBaseNote();
+          }
+        }, 3000);
+      }
       
       // PitchDetector初期化（ランダムモード成功パターン）
       setTimeout(async () => {
