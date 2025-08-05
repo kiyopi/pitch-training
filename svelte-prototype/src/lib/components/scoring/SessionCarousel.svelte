@@ -11,8 +11,8 @@
   
   const dispatch = createEventDispatcher();
   
-  // アニメーション用
-  const slidePosition = tweened(0, { duration: 300, easing: cubicOut });
+  // アニメーション用（無効化）
+  const slidePosition = tweened(0, { duration: 0, easing: cubicOut });
   
   // 現在のセッションデータ
   $: currentSession = sessionHistory[currentIndex] || null;
