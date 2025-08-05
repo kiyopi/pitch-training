@@ -18,6 +18,12 @@
     if (typeof localStorage !== 'undefined') {
       micTestCompleted = localStorage.getItem('mic-test-completed') === 'true';
       console.log('🎤 [ContinuousTraining] マイクテスト完了フラグ:', micTestCompleted);
+      
+      // マイクテスト完了時にチャレンジ開始画面を表示
+      if (micTestCompleted) {
+        showStartScreen = true;
+        console.log('🎯 [ContinuousTraining] チャレンジ開始画面を表示');
+      }
     }
   });
 
