@@ -93,7 +93,15 @@
       currentSessionCount,
       currentSessionIndex,
       preventAutoMove,
-      sessionHistory: scoreData.sessionHistory.length
+      sessionHistory: scoreData.sessionHistory.length,
+      sessionDetails: scoreData.sessionHistory.map((s, i) => ({
+        index: i,
+        sessionId: s.sessionId,
+        baseNote: s.baseNote,
+        baseName: s.baseName,
+        hasNoteResults: !!s.noteResults,
+        noteResultsLength: s.noteResults?.length || 0
+      }))
     });
     
     // 初回表示時、または新しいセッションが追加された時のみ

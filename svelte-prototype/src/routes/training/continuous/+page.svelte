@@ -1881,25 +1881,51 @@
       }
       
       // PitchDetectorの明示的初期化（マイクテスト経由時）
-      await new Promise(resolve => setTimeout(resolve, 300)); // DOM更新・参照取得待ち
-      if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // 300ms → 500msに増加
+      
+      // より堅牢な初期化チェック
+      if (pitchDetectorComponent) {
         try {
-          console.log('🎙️ [RandomTraining] PitchDetector初期化開始');
+          console.log('🎙️ [ContinuousMode] PitchDetector初期化開始');
           
-          // iPad対応: AudioManager健康チェック&再初期化
-          const status = audioManager.getStatus();
-          console.log('🔍 [RandomTraining] AudioManager状態:', status);
-          
-          if (!status.isInitialized || !status.mediaStreamActive) {
-            console.log('🔄 [RandomTraining] AudioManager状態不良 - 再初期化実行');
-            await audioManager.initialize();
+          // コンポーネントの存在とメソッドの利用可能性を確認
+          if (typeof pitchDetectorComponent.getIsInitialized === 'function') {
+            const isInitialized = pitchDetectorComponent.getIsInitialized();
+            console.log('🔍 [ContinuousMode] PitchDetector初期化状態:', isInitialized);
+            
+            if (!isInitialized) {
+              // AudioManager状態確認
+              const status = audioManager.getStatus();
+              console.log('🔍 [ContinuousMode] AudioManager状態:', status);
+              
+              if (!status.isInitialized || !status.mediaStreamActive) {
+                console.log('🔄 [ContinuousMode] AudioManager再初期化実行');
+                await audioManager.initialize();
+              }
+              
+              await pitchDetectorComponent.initialize();
+              console.log('✅ [ContinuousMode] PitchDetector初期化完了');
+            } else {
+              console.log('✅ [ContinuousMode] PitchDetectorは既に初期化済み');
+            }
+          } else {
+            console.error('❌ [ContinuousMode] getIsInitializedメソッドが利用できません');
+            // フォールバック: 直接初期化を試みる
+            await pitchDetectorComponent.initialize();
           }
-          
-          await pitchDetectorComponent.initialize();
-          console.log('✅ [RandomTraining] PitchDetector初期化完了');
         } catch (error) {
-          console.warn('⚠️ PitchDetector初期化失敗:', error);
+          console.error('❌ [ContinuousMode] PitchDetector初期化エラー:', error);
+          // 復旧処理: 少し待ってから再試行
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          try {
+            await pitchDetectorComponent.initialize();
+            console.log('✅ [ContinuousMode] PitchDetector初期化再試行成功');
+          } catch (retryError) {
+            console.error('❌ [ContinuousMode] PitchDetector初期化再試行も失敗:', retryError);
+          }
         }
+      } else {
+        console.warn('⚠️ [ContinuousMode] PitchDetectorコンポーネントが存在しません');
       }
       
       // returnを削除 - PitchDetectorコンポーネントのレンダリングを許可
@@ -2492,21 +2518,28 @@
         // UI状態をリセット
         isPlaying = false;
         
-        // 音程検出を再開（連続モード用・状態チェック付き）
+        // 音程検出を再開（連続モード用・getState()使用）
         if (pitchDetectorComponent) {
           try {
-            // PitchDetectorが既に検出中でないことを確認
-            if (pitchDetectorComponent.getIsInitialized && pitchDetectorComponent.getIsInitialized()) {
-              // 既に検出中の場合はスキップ
-              const isDetecting = pitchDetectorComponent.isDetecting || false;
-              if (isDetecting) {
-                console.log('🔄 [ContinuousMode] 音程検出は既にアクティブ状態 - スキップ');
-              } else {
+            // getState()メソッドで正確な状態を取得
+            if (pitchDetectorComponent.getState) {
+              const state = pitchDetectorComponent.getState();
+              console.log('🔍 [ContinuousMode] PitchDetector状態:', state);
+              
+              if (state.isInitialized && state.componentState === 'ready') {
                 console.log('🎤 [ContinuousMode] 音程検出再開');
                 pitchDetectorComponent.startDetection();
+              } else if (state.componentState === 'detecting') {
+                console.log('🔄 [ContinuousMode] 音程検出は既にアクティブ状態 - スキップ');
+              } else {
+                console.log('⚠️ [ContinuousMode] PitchDetector状態不正 - 音程検出再開をスキップ:', state.componentState);
               }
             } else {
-              console.log('⚠️ [ContinuousMode] PitchDetector未初期化 - 音程検出再開をスキップ');
+              console.log('⚠️ [ContinuousMode] getState()メソッド未対応 - フォールバック処理');
+              // フォールバック: 従来の方法
+              if (pitchDetectorComponent.getIsInitialized && pitchDetectorComponent.getIsInitialized()) {
+                pitchDetectorComponent.startDetection();
+              }
             }
           } catch (detectionError) {
             console.warn('⚠️ [ContinuousMode] 音程検出再開失敗:', detectionError.message);
@@ -2534,6 +2567,21 @@
   
   function handlePitchDetectorError(event) {
     const { error, context, reason, recovery } = event.detail;
+    
+    // 初期化関連のエラーは詳細ログを出力
+    if (context === 'initialization' || (error?.message && error.message.includes('getIsInitialized'))) {
+      console.error('❌ [ContinuousMode] PitchDetector初期化エラー詳細:', {
+        error: error?.message || error,
+        stack: error?.stack,
+        context,
+        componentExists: !!pitchDetectorComponent,
+        hasGetIsInitialized: typeof pitchDetectorComponent?.getIsInitialized === 'function',
+        trainingPhase,
+        currentSessionId: $currentSessionId
+      });
+      return;
+    }
+    
     console.error('❌ [ContinuousMode] PitchDetectorエラー詳細:', {
       error: error?.message || error,
       stack: error?.stack,
@@ -2786,6 +2834,19 @@
       <!-- 統合採点システム結果（localStorage統合版） -->
       {#if $unifiedScoreData && $isCompleted}
         <!-- 8セッション完了時：localStorageデータを使用 -->
+        {#if $unifiedScoreData}
+          {console.log('🔍 [ContinuousMode] UnifiedScoreData structure:', {
+            sessionHistoryLength: $unifiedScoreData.sessionHistory?.length || 0,
+            sessionHistory: $unifiedScoreData.sessionHistory?.map((s, i) => ({
+              index: i,
+              sessionId: s.sessionId,
+              baseNote: s.baseNote,
+              hasNoteResults: !!s.noteResults,
+              noteResultsLength: s.noteResults?.length || 0,
+              accuracy: s.accuracy
+            })) || []
+          })}
+        {/if}
         <UnifiedScoreResultFixed 
           scoreData={$unifiedScoreData}
           showDetails={false}
@@ -2799,6 +2860,17 @@
         />
       {:else if currentUnifiedScoreData}
         <!-- 1セッション完了時：従来のデータを使用 -->
+        {console.log('🔍 [ContinuousMode] CurrentUnifiedScoreData structure:', {
+          sessionHistoryLength: currentUnifiedScoreData.sessionHistory?.length || 0,
+          sessionHistory: currentUnifiedScoreData.sessionHistory?.map((s, i) => ({
+            index: i,
+            sessionId: s.sessionId,
+            baseNote: s.baseNote,
+            hasNoteResults: !!s.noteResults,
+            noteResultsLength: s.noteResults?.length || 0,
+            accuracy: s.accuracy
+          })) || []
+        })}
         <UnifiedScoreResultFixed 
           scoreData={currentUnifiedScoreData}
           showDetails={false}
