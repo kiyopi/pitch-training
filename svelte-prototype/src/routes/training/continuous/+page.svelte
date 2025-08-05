@@ -2186,9 +2186,9 @@
   }
   
   
-  // セッション完了処理
+  // セッション完了処理（連続モード対応）
   function completeSession() {
-    trainingPhase = 'completed';
+    trainingPhase = 'results';
     sessionResults.isCompleted = true;
     sessionResults.averageAccuracy = Math.round((sessionResults.correctCount / sessionResults.totalCount) * 100);
     
@@ -2196,6 +2196,9 @@
     if (pitchDetectorComponent) {
       pitchDetectorComponent.stopDetection();
     }
+
+    // 連続モードでのセッション完了処理
+    handleSessionComplete();
   }
   
   // 同じ基音で再挑戦
@@ -2432,15 +2435,30 @@
     scrollToTop();
   }
 
-  // 連続チャレンジモード：自動基音再生（setup状態で自動実行）
-  $: if (trainingPhase === 'setup' && microphoneState === 'granted' && sampler && !isSamplerLoading && !isPlaying) {
-    // 少し遅延させて自動基音再生を実行
-    setTimeout(() => {
-      if (trainingPhase === 'setup' && !isPlaying) {
-        console.log('🎵 [ContinuousMode] 自動基音再生開始');
+  // 連続チャレンジモード：8セッション連続実行制御
+  function startContinuousMode() {
+    console.log('⚡ [ContinuousMode] 8セッション連続開始');
+    
+    // 最初のセッションを開始
+    playBaseNote();
+  }
+
+  // セッション完了時の自動次セッション開始
+  function handleSessionComplete() {
+    console.log('✅ [ContinuousMode] セッション完了:', $currentSessionId);
+    
+    // 8セッション未満の場合は次のセッションを自動開始
+    if ($currentSessionId < 8) {
+      setTimeout(() => {
+        console.log('🔄 [ContinuousMode] 次セッション自動開始:', $currentSessionId + 1);
+        // セッション状態をリセットして次の基音再生
+        trainingPhase = 'setup';
         playBaseNote();
-      }
-    }, 800);
+      }, 2000); // 2秒後に次セッション開始
+    } else {
+      console.log('🎉 [ContinuousMode] 8セッション完了！');
+      // 総合評価画面へ
+    }
   }
 
 
@@ -2579,29 +2597,35 @@
             <h3 class="section-title">🎹 基音再生</h3>
           </div>
           <div class="card-content">
-            <!-- 連続チャレンジモード：基音再生の自動化表示 -->
-            {#if isPlaying}
-              <div class="auto-play-status">
-                🎵 基音再生中...
-              </div>
-            {:else if trainingPhase === 'waiting' || trainingPhase === 'guiding'}
-              <div class="auto-play-status">
-                ⚡ 連続モード進行中
-              </div>
-            {:else}
-              <!-- 手動再生ボタン（連続モードでは通常非表示、初回のみ表示） -->
+            <!-- 連続チャレンジモード：基音再生ボタン（8セッション開始後は非表示） -->
+            {#if trainingPhase === 'setup' && !isPlaying && !($currentSessionId > 1)}
               <Button 
                 variant="primary"
-                disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting'}
-                on:click={playBaseNote}
-                style="opacity: 0.7;"
+                on:click={startContinuousMode}
               >
-                {#if currentBaseNote && currentBaseFrequency > 0}
-                  🔄 {currentBaseNote} 再生
-                {:else}
-                  🎹 基音再生（自動実行中）
-                {/if}
+                ⚡ 連続チャレンジ開始（8セッション）
               </Button>
+            {:else}
+              <!-- 連続モード実行中の状態表示 -->
+              <div class="continuous-status">
+                {#if isPlaying}
+                  <div class="status-text">
+                    🎵 基音 {$currentSessionId}/8 再生中...
+                  </div>
+                {:else if trainingPhase === 'guiding'}
+                  <div class="status-text">
+                    🎤 セッション {$currentSessionId}/8: ドレミ発声中
+                  </div>
+                {:else if trainingPhase === 'results'}
+                  <div class="status-text">
+                    ✅ セッション {$currentSessionId}/8 完了
+                  </div>
+                {:else}
+                  <div class="status-text">
+                    ⚡ 連続モード進行中 ({$currentSessionId}/8)
+                  </div>
+                {/if}
+              </div>
             {/if}
             
             {#if currentBaseNote}
@@ -3651,8 +3675,15 @@
     }
   }
 
-  /* 連続チャレンジモード：自動再生ステータス表示 */
-  .auto-play-status {
+  /* 連続チャレンジモード：実行状態表示 */
+  .continuous-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-text {
     display: flex;
     align-items: center;
     justify-content: center;
