@@ -758,6 +758,9 @@
     // 強化採点エンジンの結果生成
     generateFinalScoring();
     
+    // セッション完了処理を実行（連続モード対応）
+    completeSession();
+    
     // 8音階評価データを新コンポーネント用に変換
     // 全8音階を固定表示（測定できなかった音も含む）
     noteResultsForDisplay = SCALE_NAMES.map(noteName => {
