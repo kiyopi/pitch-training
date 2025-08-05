@@ -2791,9 +2791,6 @@
         </Card>
 
         <!-- Detection Section (Display Only) -->
-        <div style="background: yellow; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
-          DEBUG: freq={currentFrequency}, note={detectedNote}, vol={currentVolume}, phase={trainingPhase}
-        </div>
         <PitchDetectionDisplay
           frequency={currentFrequency}
           note={detectedNote}
