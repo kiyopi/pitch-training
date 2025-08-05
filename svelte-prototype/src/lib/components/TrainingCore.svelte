@@ -256,29 +256,33 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       microphoneState = 'granted';
       trainingPhase = 'waiting'; // setup → waiting に変更
       
-      // PitchDetector初期化（ランダムモード成功パターン：外部AudioContext方式）
+      // PitchDetector初期化（ランダムモード成功パターン）
       setTimeout(async () => {
-        if (pitchDetectorComponent) {
-          console.log('🎙️ [TrainingCore] PitchDetector初期化開始');
-          
-          // iPad対応: AudioManager健康チェック&再初期化
-          const isIPad = /iPad/.test(navigator.userAgent);
-          const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
-          
-          if (isIPad || isIPadOS) {
-            console.log('📱 [TrainingCore] iPad/iPadOS検出 - AudioManager再初期化');
-            try {
-              await audioManager.initialize();
-              console.log('✅ [TrainingCore] AudioManager再初期化完了');
-            } catch (error) {
-              console.warn('⚠️ AudioManager再初期化エラー:', error);
+        if (pitchDetectorComponent && pitchDetectorComponent.getIsInitialized && !pitchDetectorComponent.getIsInitialized()) {
+          try {
+            console.log('🎙️ [TrainingCore] PitchDetector初期化開始');
+            
+            // iPad対応: AudioManager健康チェック&再初期化
+            const isIPad = /iPad/.test(navigator.userAgent);
+            const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+            
+            if (isIPad || isIPadOS) {
+              console.log('📱 [TrainingCore] iPad/iPadOS検出 - AudioManager再初期化');
+              try {
+                await audioManager.initialize();
+                console.log('✅ [TrainingCore] AudioManager再初期化完了');
+              } catch (error) {
+                console.warn('⚠️ AudioManager再初期化エラー:', error);
+              }
             }
+            
+            await pitchDetectorComponent.initialize();
+            console.log('✅ [TrainingCore] PitchDetector初期化完了');
+          } catch (error) {
+            console.warn('⚠️ [TrainingCore] PitchDetector初期化失敗:', error);
           }
-          
-          await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
-          console.log('✅ [TrainingCore] PitchDetector初期化完了');
         }
-      }, 300); // 200ms → 300ms（TrainingCore仕様書に従う）
+      }, 300);
       
     } catch (error) {
       console.error('❌ [TrainingCore] マイク許可エラー:', error);
@@ -766,10 +770,10 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     <div style="display: none;">
       <PitchDetector
         bind:this={pitchDetectorComponent}
-        isActive={microphoneState === 'granted' && trainingPhase === 'listening'}
+        isActive={microphoneState === 'granted'}
+        trainingPhase={trainingPhase}
         on:pitchUpdate={handlePitchUpdate}
         on:error={handlePitchDetectorError}
-        debugMode={false}
       />
     </div>
     
