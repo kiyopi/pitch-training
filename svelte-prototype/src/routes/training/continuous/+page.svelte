@@ -104,24 +104,24 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: 24px;
   }
 
   .page-header {
     text-align: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: 24px;
   }
 
   .page-title {
-    font-size: var(--text-3xl);
+    font-size: 30px;
     font-weight: 700;
-    color: var(--color-gray-900);
-    margin: 0 0 var(--space-3) 0;
+    color: #111827;
+    margin: 0 0 12px 0;
   }
 
   .page-description {
-    font-size: var(--text-lg);
-    color: var(--color-gray-600);
+    font-size: 18px;
+    color: #6b7280;
     margin: 0;
     max-width: 600px;
     margin-left: auto;
@@ -132,14 +132,14 @@
   .mic-test-required {
     display: flex;
     justify-content: center;
-    margin: var(--space-8) 0;
+    margin: 32px 0;
   }
 
   .warning-card {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-6);
+    gap: 16px;
+    padding: 24px;
     background-color: #fef3c7;
     border: 1px solid #fcd34d;
     border-radius: 12px;
@@ -153,16 +153,16 @@
   }
 
   .warning-content h3 {
-    font-size: var(--text-xl);
+    font-size: 20px;
     font-weight: 600;
     color: #92400e;
-    margin: 0 0 var(--space-2) 0;
+    margin: 0 0 8px 0;
   }
 
   .warning-content p {
-    font-size: var(--text-base);
+    font-size: 16px;
     color: #92400e;
-    margin: 0 0 var(--space-4) 0;
+    margin: 0 0 16px 0;
     line-height: 1.5;
   }
 
@@ -172,7 +172,7 @@
     border: none;
     border-radius: 8px;
     padding: 12px 24px;
-    font-size: var(--text-base);
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -191,15 +191,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-8);
+    padding: 32px;
     text-align: center;
-    color: var(--color-gray-600);
+    color: #6b7280;
   }
 
   .loading-spinner {
     font-size: 3rem;
     animation: spin 2s linear infinite;
-    margin-bottom: var(--space-4);
+    margin-bottom: 16px;
   }
 
   @keyframes spin {
@@ -210,17 +210,17 @@
   /* レスポンシブ対応 */
   @media (max-width: 768px) {
     .page-title {
-      font-size: var(--text-2xl);
+      font-size: 24px;
     }
     
     .page-description {
-      font-size: var(--text-base);
+      font-size: 16px;
     }
     
     .warning-card {
       flex-direction: column;
       text-align: center;
-      margin: 0 var(--space-4);
+      margin: 0 16px;
     }
     
     .warning-icon {
