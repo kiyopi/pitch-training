@@ -2683,8 +2683,8 @@
     {/if}
     
     <div class="debug-info">
-      📱 {buildVersion || 'undefined'} | {buildTimestamp || 'undefined'}<br/>
-      <small style="font-size: 0.6rem;">{updateStatus || 'undefined'}</small>
+      📱 {buildVersion || ''} | {buildTimestamp || ''}<br/>
+      <small style="font-size: 0.6rem;">{updateStatus || ''}</small>
     </div>
   </div>
 
