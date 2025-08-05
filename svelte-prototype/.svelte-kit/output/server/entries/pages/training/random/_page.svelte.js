@@ -1,4 +1,4 @@
-import { c as create_ssr_component, d as compute_rest_props, f as spread, g as each, h as escape_object, i as escape_attribute_value, v as validate_component, a as validate_store, b as subscribe, o as onDestroy, e as escape } from "../../../../chunks/ssr.js";
+import { c as create_ssr_component, f as compute_rest_props, g as spread, d as each, h as escape_object, i as escape_attribute_value, v as validate_component, a as validate_store, b as subscribe, o as onDestroy, e as escape } from "../../../../chunks/ssr.js";
 import "../../../../chunks/client.js";
 import { p as page } from "../../../../chunks/stores.js";
 import { C as Card } from "../../../../chunks/Card.js";

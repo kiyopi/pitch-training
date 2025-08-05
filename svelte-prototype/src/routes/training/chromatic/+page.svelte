@@ -233,10 +233,24 @@
       <div class="start-screen">
         <Card variant="default" padding="lg">
           <div class="start-content">
-            <h2 class="start-title">12音階トレーニング</h2>
+            <h2 class="start-title">🎼 12音階（クロマチック）モード</h2>
             <p class="start-description">
-              半音階（クロマチック）を使った高度な相対音感トレーニング
+              半音階12音すべてを使った高度な相対音感トレーニング<br>
+              <strong>基音 → ド → ド# → レ → ... → シ</strong> の順序で歌います
             </p>
+            <div class="chromatic-demo">
+              <div class="demo-title">🎵 歌唱する12音階</div>
+              <div class="demo-notes">
+                {#each chromaticNotesAsc as note, index}
+                  <span class="demo-note" class:base-note={index === 0}>
+                    {note}
+                  </span>
+                {/each}
+              </div>
+              <div class="demo-description">
+                選択した基音を「ド」として、半音ずつ上がって12音すべてを歌います
+              </div>
+            </div>
             
             <!-- 基音選択 -->
             <div class="base-note-selector">
@@ -297,15 +311,15 @@
                 <span class="step-number">1</span>
                 <div>
                   <h3>基音確認</h3>
-                  <p>C4（ド4）の音程を基準として聞きます</p>
+                  <p>選択した基音（{baseNoteOptions.find(note => note.note === selectedBaseNote)?.japanese || selectedBaseNote}）を「ド」として聞きます</p>
                 </div>
               </div>
               
               <div class="instruction-item">
                 <span class="step-number">2</span>
                 <div>
-                  <h3>半音階歌唱</h3>
-                  <p>選択した方向で12音すべてを半音ずつ歌います</p>
+                  <h3>12音階歌唱</h3>
+                  <p>{direction === 'ascending' ? '上行（ド→ド#→レ...）' : '下行（シ→ラ#→ラ...）'}で12音すべてを歌います</p>
                 </div>
               </div>
               
@@ -313,8 +327,19 @@
                 <span class="step-number">3</span>
                 <div>
                   <h3>高精度判定</h3>
-                  <p>半音の微細な音程差まで厳密に判定します</p>
+                  <p>半音（50セント）の微細な音程差まで厳密に判定します</p>
                 </div>
+              </div>
+            </div>
+            
+            <!-- テスト方法説明 -->
+            <div class="test-instructions">
+              <h3 class="test-title">📋 テスト方法</h3>
+              <div class="test-steps">
+                <p><strong>1. 基音を変更</strong> → 「基音を変更」ボタンで好きな基音を選択</p>
+                <p><strong>2. 方向を選択</strong> → 上行（ド→シ）または下行（シ→ド）を選択</p>
+                <p><strong>3. トレーニング開始</strong> → 基音を聞いてから12音階を歌唱</p>
+                <p><strong>4. 音程検出確認</strong> → 各音程で正解/不正解が即座に表示されます</p>
               </div>
             </div>
 
@@ -708,6 +733,83 @@
     font-size: var(--text-sm);
     color: var(--color-gray-600);
     margin: 0;
+  }
+
+  /* クロマチックデモ */
+  .chromatic-demo {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: var(--space-4);
+    margin: var(--space-6) 0;
+    text-align: center;
+  }
+
+  .demo-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: #9333ea;
+    margin-bottom: var(--space-3);
+  }
+
+  .demo-notes {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .demo-note {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-gray-700);
+    padding: var(--space-1) var(--space-2);
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+  }
+
+  .demo-note.base-note {
+    background-color: #9333ea;
+    color: white;
+    border-color: #9333ea;
+  }
+
+  .demo-description {
+    font-size: var(--text-xs);
+    color: var(--color-gray-600);
+    line-height: 1.4;
+  }
+
+  /* テスト方法説明 */
+  .test-instructions {
+    background-color: #e9d5ff;
+    border-radius: 8px;
+    padding: var(--space-4);
+    margin: var(--space-6) 0;
+    text-align: left;
+  }
+
+  .test-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: #9333ea;
+    margin: 0 0 var(--space-3) 0;
+    text-align: center;
+  }
+
+  .test-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .test-steps p {
+    font-size: var(--text-sm);
+    color: var(--color-gray-700);
+    margin: 0;
+    line-height: 1.5;
   }
 
   /* 基音再生画面 */
