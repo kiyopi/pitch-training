@@ -2708,8 +2708,7 @@
 
     <!-- メイントレーニングインターフェース -->
     
-    {#if trainingPhase !== 'results'}
-      <!-- Base Tone and Detection Side by Side -->
+    <!-- Base Tone and Detection Side by Side (常に表示) -->
       <!-- マイク健康状態警告（問題がある場合のみ表示） -->
       {#if !microphoneHealthy && microphoneErrors.length > 0}
         <Card class="warning-card">
@@ -2801,32 +2800,33 @@
           showGuidance={false}
         />
       </div>
-    {/if}
 
-    {#if trainingPhase !== 'results'}
-      <!-- Scale Guide Section -->
-      <Card class="main-card">
-        <div class="card-header">
-          <h3 class="section-title">🎵 ドレミ音階ガイド</h3>
-        </div>
-        <div class="card-content">
-          <div class="scale-guide">
-            {#each scaleSteps as step, index}
-              <div 
-                class="scale-item {step.state || 'inactive'}"
-              >
-                {step.name || `音階${index + 1}`}
-              </div>
-            {/each}
-          </div>
-          {#if trainingPhase === 'guiding'}
-            <div class="guide-instruction">
-              ガイドに合わせて <strong>ドレミファソラシド</strong> を歌ってください
+    <!-- Scale Guide Section (常に表示) -->
+    <Card class="main-card">
+      <div class="card-header">
+        <h3 class="section-title">🎵 ドレミ音階ガイド</h3>
+      </div>
+      <div class="card-content">
+        <div class="scale-guide">
+          {#each scaleSteps as step, index}
+            <div 
+              class="scale-item {step.state || 'inactive'}"
+            >
+              {step.name || `音階${index + 1}`}
             </div>
-          {/if}
+          {/each}
         </div>
-      </Card>
-    {/if}
+        {#if trainingPhase === 'guiding'}
+          <div class="guide-instruction">
+            ガイドに合わせて <strong>ドレミファソラシド</strong> を歌ってください
+          </div>
+        {:else if trainingPhase === 'results'}
+          <div class="guide-instruction">
+            基音やリアルタイム周波数表示は総合評価中でも利用できます
+          </div>
+        {/if}
+      </div>
+    </Card>
 
 
     <!-- Results Section - Enhanced Scoring System -->
