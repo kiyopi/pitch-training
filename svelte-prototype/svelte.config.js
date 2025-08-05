@@ -6,7 +6,7 @@ const config = {
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: '404.html',
+			fallback: 'index.html',
 			precompress: false,
 			strict: false
 		}),
@@ -16,7 +16,7 @@ const config = {
 		prerender: {
 			handleHttpError: ({ path, referrer, message }) => {
 				// faviconエラーとテスト系ページエラーを無視
-				if (path.includes('favicon') || path.includes('microphone-test') || path.includes('scoring-components-test') || path.includes('scoring-test') || path.includes('training/continuous')) {
+				if (path.includes('favicon') || path.includes('scoring-components-test') || path.includes('scoring-test')) {
 					return;
 				}
 				throw new Error(message);

@@ -50,6 +50,10 @@
       "_app/immutable/assets/PitchDetectionDisplay.BuTwW1pX.css"
     ]
   },
+  "_app.js": {
+    "file": "_app/immutable/assets/app.B1f1RpuR.css",
+    "src": "_app.js"
+  },
   "_client.js": {
     "file": "chunks/client.js",
     "name": "client",
@@ -133,7 +137,7 @@
       "_ssr.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.B1f1RpuR.css"
+      "_app/immutable/assets/app.B1f1RpuR.css"
     ]
   },
   "src/routes/+layout.ts": {
@@ -216,7 +220,8 @@
       "_sessionStorage.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CK9VRwlo.css"
+      "_app/immutable/assets/_page.CK9VRwlo.css",
+      "_app/immutable/assets/app.B1f1RpuR.css"
     ]
   },
   "src/routes/training/continuous/+page.ts": {
