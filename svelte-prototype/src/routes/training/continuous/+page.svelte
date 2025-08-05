@@ -2432,6 +2432,17 @@
     scrollToTop();
   }
 
+  // 連続チャレンジモード：自動基音再生（setup状態で自動実行）
+  $: if (trainingPhase === 'setup' && microphoneState === 'granted' && sampler && !isSamplerLoading && !isPlaying) {
+    // 少し遅延させて自動基音再生を実行
+    setTimeout(() => {
+      if (trainingPhase === 'setup' && !isPlaying) {
+        console.log('🎵 [ContinuousMode] 自動基音再生開始');
+        playBaseNote();
+      }
+    }, 800);
+  }
+
 
   // PitchDetectorイベントハンドラー（簡素版）
   function handlePitchDetectorStateChange(event) {
@@ -2568,19 +2579,30 @@
             <h3 class="section-title">🎹 基音再生</h3>
           </div>
           <div class="card-content">
-            <Button 
-              variant="primary"
-              disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting'}
-              on:click={playBaseNote}
-            >
-              {#if isPlaying}
-                🎵 再生中...
-              {:else if currentBaseNote && currentBaseFrequency > 0}
-                🔄 {currentBaseNote} 再生
-              {:else}
-                🎹 基音再生
-              {/if}
-            </Button>
+            <!-- 連続チャレンジモード：基音再生の自動化表示 -->
+            {#if isPlaying}
+              <div class="auto-play-status">
+                🎵 基音再生中...
+              </div>
+            {:else if trainingPhase === 'waiting' || trainingPhase === 'guiding'}
+              <div class="auto-play-status">
+                ⚡ 連続モード進行中
+              </div>
+            {:else}
+              <!-- 手動再生ボタン（連続モードでは通常非表示、初回のみ表示） -->
+              <Button 
+                variant="primary"
+                disabled={isPlaying || trainingPhase === 'guiding' || trainingPhase === 'waiting'}
+                on:click={playBaseNote}
+                style="opacity: 0.7;"
+              >
+                {#if currentBaseNote && currentBaseFrequency > 0}
+                  🔄 {currentBaseNote} 再生
+                {:else}
+                  🎹 基音再生（自動実行中）
+                {/if}
+              </Button>
+            {/if}
             
             {#if currentBaseNote}
               <div class="base-note-info">
@@ -3626,6 +3648,32 @@
     .progress-section {
       width: 100%;
       justify-content: center;
+    }
+  }
+
+  /* 連続チャレンジモード：自動再生ステータス表示 */
+  .auto-play-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    animation: pulse-soft 2s infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.02);
+      opacity: 0.9;
     }
   }
 </style>
