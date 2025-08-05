@@ -2683,8 +2683,8 @@
     {/if}
     
     <div class="debug-info">
-      📱 {buildVersion} | {buildTimestamp}<br/>
-      <small style="font-size: 0.6rem;">{updateStatus}</small>
+      📱 {buildVersion || 'undefined'} | {buildTimestamp || 'undefined'}<br/>
+      <small style="font-size: 0.6rem;">{updateStatus || 'undefined'}</small>
     </div>
   </div>
 
@@ -2791,7 +2791,9 @@
         </Card>
 
         <!-- Detection Section (Display Only) -->
-        <!-- Debug: {JSON.stringify({currentFrequency, detectedNote, currentVolume, trainingPhase})} -->
+        <div style="background: yellow; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
+          DEBUG: freq={currentFrequency}, note={detectedNote}, vol={currentVolume}, phase={trainingPhase}
+        </div>
         <PitchDetectionDisplay
           frequency={currentFrequency}
           note={detectedNote}
