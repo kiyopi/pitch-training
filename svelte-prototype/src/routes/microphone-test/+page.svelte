@@ -91,7 +91,7 @@
     }
   };
 
-  const selectedMode = trainingModes[mode] || trainingModes.random;
+  $: selectedMode = trainingModes[mode] || trainingModes.random;
   
   // マイク許可確認（シンプル版 - ランダム基音ページから移植）
   async function requestMicrophone() {
@@ -143,7 +143,7 @@
   
   // トレーニング開始関数
   function startTraining() {
-    console.log('🚀 [MicTest] トレーニング開始 - ランダム基音モードへ遷移');
+    console.log(`🚀 [MicTest] トレーニング開始 - ${selectedMode.name}へ遷移`);
     // マイクテスト完了フラグを保存
     localStorage.setItem('mic-test-completed', 'true');
     console.log('✅ [MicTest] マイクテスト完了フラグを保存');
