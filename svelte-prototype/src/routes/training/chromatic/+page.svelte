@@ -223,7 +223,7 @@
         </div>
         <div>
           <h1 class="mode-title">12音階モード（クロマチック）</h1>
-          <p class="mode-description">基音を聞いて半音階12音すべてを相対音程で歌うトレーニング</p>
+          <p class="mode-description">基音を聞いて半音階12音すべてを相対音感で歌うトレーニング</p>
         </div>
       </div>
     </div>

@@ -65,7 +65,7 @@
           </div>
           <h3 class="mode-title">12音階モード（クロマチック）</h3>
           <p class="mode-description">
-            基音を聞いて半音階12音すべてを相対音程で歌うトレーニング
+            基音を聞いて半音階12音すべてを相対音感で歌うトレーニング
           </p>
           <Button href="./microphone-test?mode=chromatic" variant="tertiary" size="lg" fullWidth>
             トレーニング開始

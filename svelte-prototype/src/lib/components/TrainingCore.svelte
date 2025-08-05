@@ -88,9 +88,9 @@ TrainingCore.svelte - トレーニング共通コンポーネント
         : ['シ', 'ラ#', 'ラ', 'ソ#', 'ソ', 'ファ#', 'ファ', 'ミ', 'レ#', 'レ', 'ド#', 'ド'])
     : ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド（高）'];
 
-  // 基音プール（モード別）
+  // 基音プール（モード別：ランダムモード成功実装に合わせて修正）
   $: baseNotePool = mode === 'continuous'
-    ? ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'] // 初級向けに変更（テスト用）
+    ? ['Bb3', 'B3', 'Db4', 'Eb4', 'F#4', 'G#4', 'Bb4', 'C#5', 'Eb5', 'F#5'] // 中級向け（♭♯含む）
     : ['C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'Ab4', 'Bb3', 'B3'];     // 初級向け
 
   // =============================================================================
@@ -180,6 +180,7 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       return;
     }
     
+    // ランダムモード成功実装からの早期検出パターン移植
     const urlParams = new URLSearchParams(window.location.search);
     
     if (urlParams.get('from') === 'microphone-test') {
@@ -187,10 +188,8 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       console.log('✅ [TrainingCore] マイクテスト経由でアクセス - 許可済み');
       await checkMicrophonePermission();
     } else {
+      console.log('🔍 [TrainingCore] ダイレクトアクセス検出 - マイク許可状態確認');
       await checkExistingMicrophonePermission();
-      if (microphoneState === 'granted') {
-        await checkMicrophonePermission();
-      }
     }
   }
   
@@ -210,69 +209,104 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   }
   
   async function checkMicrophonePermission() {
+    microphoneState = 'checking';
+    
     try {
+      console.log('🎤 [TrainingCore] AudioManager経由でマイク許可確認開始');
+      
+      if (!navigator.mediaDevices?.getUserMedia) {
+        microphoneState = 'error';
+        console.error('❌ [TrainingCore] getUserMedia未対応ブラウザ');
+        return;
+      }
+      
+      // AudioManagerから共有リソースを取得（ランダムモード成功パターン）
       const resources = await audioManager.initialize();
       audioContext = resources.audioContext;
       mediaStream = resources.mediaStream;
       sourceNode = resources.sourceNode;
+      
+      console.log('✅ [TrainingCore] AudioManager リソース取得完了');
+      
       microphoneState = 'granted';
+      trainingPhase = 'waiting'; // setup → waiting に変更
       
-      console.log('✅ [TrainingCore] AudioManager初期化完了');
-      
-      // PitchDetector初期化
-      await initializePitchDetector();
+      // PitchDetector初期化（ランダムモード成功パターン：外部AudioContext方式）
+      setTimeout(async () => {
+        if (pitchDetectorComponent) {
+          console.log('🎙️ [TrainingCore] PitchDetector初期化開始');
+          
+          // iPad対応: AudioManager健康チェック&再初期化
+          const isIPad = /iPad/.test(navigator.userAgent);
+          const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+          
+          if (isIPad || isIPadOS) {
+            console.log('📱 [TrainingCore] iPad/iPadOS検出 - AudioManager再初期化');
+            try {
+              await audioManager.initialize();
+              console.log('✅ [TrainingCore] AudioManager再初期化完了');
+            } catch (error) {
+              console.warn('⚠️ AudioManager再初期化エラー:', error);
+            }
+          }
+          
+          await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
+          console.log('✅ [TrainingCore] PitchDetector初期化完了');
+        }
+      }, 300); // 200ms → 300ms（TrainingCore仕様書に従う）
       
     } catch (error) {
-      console.error('❌ [TrainingCore] AudioManager初期化エラー:', error);
-      microphoneState = 'error';
+      console.error('❌ [TrainingCore] マイク許可エラー:', error);
+      microphoneState = (error?.name === 'NotAllowedError') ? 'denied' : 'error';
       if (onMicrophoneError) onMicrophoneError(error.message);
     }
   }
 
-  async function initializePitchDetector() {
-    console.log('🎙️ [TrainingCore] PitchDetector初期化開始');
-    
-    // コンポーネント取得を待つ
-    let retryCount = 0;
-    const maxRetries = 10;
-    
-    while (!pitchDetectorComponent && retryCount < maxRetries) {
-      console.log(`⏳ [TrainingCore] PitchDetectorコンポーネント待機中... (${retryCount + 1}/${maxRetries})`);
-      await new Promise(resolve => setTimeout(resolve, 200));
-      retryCount++;
-    }
-
-    if (!pitchDetectorComponent) {
-      console.error('❌ [TrainingCore] PitchDetectorコンポーネント取得失敗');
-      return;
-    }
-
-    try {
-      if (audioContext && mediaStream) {
-        console.log('🔧 [TrainingCore] PitchDetector外部AudioContext初期化実行');
-        await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext, mediaStream);
-        console.log('✅ [TrainingCore] PitchDetector初期化完了');
-      } else {
-        console.error('❌ [TrainingCore] AudioContext または MediaStream が未初期化');
-      }
-    } catch (error) {
-      console.error('❌ [TrainingCore] PitchDetector初期化エラー:', error);
-    }
-  }
 
   // =============================================================================
   // 基音再生システム（既存ロジック完全保護）
   // =============================================================================
   
+  function getVolumeForDevice() {
+    const isIPhone = /iPhone/.test(navigator.userAgent);
+    const isIPad = /iPad/.test(navigator.userAgent);
+    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    const isIOS = isIPhone || isIPad || isIPadOS;
+    
+    if (isIOS) {
+      console.log('🔊 [TrainingCore] iOS/iPadOS検出 - 音量35dB設定');
+      return 35; // iOS/iPadOS: 高音量設定
+    } else {
+      console.log('🔊 [TrainingCore] PC検出 - 音量-6dB設定');
+      return -6; // PC: 標準音量設定
+    }
+  }
+  
   async function initializeBaseNotePlaying() {
     try {
+      // SSR対応チェック（ランダムモード成功パターン）
+      if (typeof window === 'undefined') {
+        console.log('⚠️ [TrainingCore] SSR環境検出 - 基音再生初期化スキップ');
+        return;
+      }
+      
       isSamplerLoading = true;
       console.log('🎹 [TrainingCore] Salamander Grand Piano 読み込み開始');
       
+      // ランダムモード成功実装と同じ設定を使用
       sampler = new Tone.Sampler({
-        urls: { "C4": "C4.mp3" },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1.5
+        urls: { 'C4': 'C4.mp3' },
+        baseUrl: `${base}/audio/piano/`,
+        release: 1.5, // リリース時間最適化
+        volume: getVolumeForDevice(), // デバイス依存音量設定
+        onload: () => {
+          isSamplerLoading = false;
+          console.log('✅ [TrainingCore] Salamander Piano音源読み込み完了');
+        },
+        onerror: (error) => {
+          console.error('❌ [TrainingCore] Salamander Piano音源読み込みエラー:', error);
+          isSamplerLoading = false;
+        }
       }).toDestination();
       
       // Salamander Grand Piano 読み込み完了まで待機
@@ -291,10 +325,19 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     if (isPlaying || !sampler || isSamplerLoading) return;
     
     try {
-      // Tone.js AudioContext 開始確認
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-        console.log('🔊 [TrainingCore] Tone.js AudioContext 開始');
+      // AudioContext状態確認・再開（ランダムモード成功パターン）
+      if (typeof window !== 'undefined' && window.Tone) {
+        const context = window.Tone.context || window.Tone.getContext();
+        if (context && context.state === 'suspended') {
+          console.log('🔄 [TrainingCore] AudioContext suspended検出 - 再開中...');
+          await context.resume();
+          console.log('✅ [TrainingCore] AudioContext再開完了');
+        }
+        
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+          console.log('🔊 [TrainingCore] Tone.js AudioContext 開始');
+        }
       }
       
       isPlaying = true;
@@ -304,13 +347,12 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       if (mode === 'chromatic' && baseNote) {
         currentBaseNote = baseNote; // 12音階モード：指定基音
       } else {
-        // ランダム・連続モード：baseNotePollからランダム選択
+        // ランダム・連続モード：baseNotePoolからランダム選択
         const randomIndex = Math.floor(Math.random() * baseNotePool.length);
         currentBaseNote = baseNotePool[randomIndex];
       }
       
       const volume = getVolumeForDevice();
-      
       sampler.volume.value = volume;
       
       console.log(`🎹 [TrainingCore] 基音再生: ${currentBaseNote} (${volume}dB)`);
@@ -327,16 +369,6 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       console.error('❌ [TrainingCore] 基音再生エラー:', error);
       isPlaying = false;
     }
-  }
-  
-  // デバイス依存音量設定（既存ロジック）
-  function getVolumeForDevice() {
-    const isIPhone = /iPhone/.test(navigator.userAgent);
-    const isIPad = /iPad/.test(navigator.userAgent);
-    const isIPadOS = /Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
-    const isIOS = isIPhone || isIPad || isIPadOS;
-    
-    return isIOS ? 35 : -6;
   }
 
   // =============================================================================
