@@ -2770,7 +2770,7 @@
             
             {#if currentBaseNote}
               <div class="base-note-info">
-                現在の基音: <strong>{currentBaseNote}</strong> ({currentBaseFrequency.toFixed(1)}Hz)
+                現在の基音: <strong>{currentBaseNote}</strong> ({(currentBaseFrequency || 0).toFixed(1)}Hz)
               </div>
             {/if}
             
@@ -2813,9 +2813,9 @@
           <div class="scale-guide">
             {#each scaleSteps as step, index}
               <div 
-                class="scale-item {step.state}"
+                class="scale-item {step.state || 'inactive'}"
               >
-                {step.name}
+                {step.name || `音階${index + 1}`}
               </div>
             {/each}
           </div>
