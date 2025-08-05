@@ -889,12 +889,12 @@
       
       // AudioContextは初回再生時に起動（安全なアプローチ）
       
-      // Salamander Grand Piano C4音源（Tone.js自動ピッチシフト対応）
+      // Salamander Grand Piano C4音源（公式CDN・CLAUDE.md仕様準拠）
       sampler = new Tone.Sampler({
         urls: {
           'C4': 'C4.mp3',
         },
-        baseUrl: `${base}/audio/piano/`,
+        baseUrl: 'https://tonejs.github.io/audio/salamander/',
         release: 1.5, // リリース時間最適化
         volume: getVolumeForDevice(), // デバイス依存音量設定
         onload: () => {
