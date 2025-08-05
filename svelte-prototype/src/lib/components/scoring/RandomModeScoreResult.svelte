@@ -92,9 +92,15 @@
   
   <!-- データ準備待ち表示 -->
   {#if !isDataReady}
-    <div class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>データを読み込み中...</p>
+    <div class="carousel-navigation-only">
+      <div class="session-info">
+        {#if sessionIndex !== null && baseNote}
+          <h3>セッション{sessionIndex + 1} - 基音: {baseNote}</h3>
+        {:else}
+          <h3>セッションデータ</h3>
+        {/if}
+        <p>カルーセルの移動ボタンで他のセッションを確認できます</p>
+      </div>
     </div>
   {:else}
   

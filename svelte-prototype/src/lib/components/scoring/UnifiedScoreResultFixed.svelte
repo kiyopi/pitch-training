@@ -1501,21 +1501,25 @@
             >
               <div slot="default" let:session let:index>
                 
-                <!-- 8音階詳細表示（セッション情報統合版） -->
-                {#if session.noteResults}
-                  <RandomModeScoreResult 
-                    noteResults={session.noteResults}
-                    sessionIndex={index}
-                    baseNote={session.baseNote}
-                    className="carousel-score-result"
-                    on:show-session-help={() => showCarouselSessionHelp = true}
-                  />
-                {:else}
-                  <div class="no-details">
-                    セッション{index + 1} - 基音: {session.baseNote}<br>
-                    詳細データがありません
+                <!-- シンプルなセッション情報表示 -->
+                <div class="simple-session-info">
+                  <h3>セッション{index + 1} - 基音: {session.baseNote}</h3>
+                  <p>カルーセルの移動ボタンで他のセッションを確認できます</p>
+                  <div class="session-summary">
+                    <div class="summary-item">
+                      <span class="label">測定成功:</span>
+                      <span class="value">{session.measuredNotes || 0}/{session.noteResults?.length || 8}</span>
+                    </div>
+                    <div class="summary-item">
+                      <span class="label">平均精度:</span>
+                      <span class="value">{session.accuracy || 0}%</span>
+                    </div>
+                    <div class="summary-item">
+                      <span class="label">評価:</span>
+                      <span class="value grade-{session.grade}">{session.grade || 'unknown'}</span>
+                    </div>
                   </div>
-                {/if}
+                </div>
               </div>
             </SessionCarousel>
           </div>
@@ -3507,6 +3511,72 @@
   
   .session-results-visual {
     position: relative;
+  }
+  
+  /* シンプルなセッション情報表示 */
+  .simple-session-info {
+    text-align: center;
+    padding: 2rem;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .simple-session-info h3 {
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .simple-session-info p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .session-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .summary-item .label {
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .summary-item .value {
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  .summary-item .value.grade-excellent {
+    color: #f59e0b;
+  }
+  
+  .summary-item .value.grade-good {
+    color: #059669;
+  }
+  
+  .summary-item .value.grade-pass {
+    color: #2563eb;
+  }
+  
+  .summary-item .value.grade-needWork {
+    color: #dc2626;
   }
 </style>
 
