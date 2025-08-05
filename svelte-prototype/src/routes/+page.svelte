@@ -28,7 +28,7 @@
           <p class="mode-description">
             10種類の基音からランダムに選択してトレーニング
           </p>
-          <Button href="./microphone-test?mode=random" variant="success" size="lg" fullWidth>
+          <Button href="./training/random" variant="success" size="lg" fullWidth>
             トレーニング開始
           </Button>
         </div>
@@ -48,7 +48,7 @@
           <p class="mode-description">
             選択した回数だけ連続で実行し、総合評価を確認
           </p>
-          <Button href="./microphone-test?mode=continuous" variant="warning" size="lg" fullWidth>
+          <Button href="./training/continuous" variant="warning" size="lg" fullWidth>
             トレーニング開始
           </Button>
         </div>
@@ -67,7 +67,7 @@
           <p class="mode-description">
             基音を聞いて半音階12音すべてを相対音感で歌うトレーニング
           </p>
-          <Button href="./microphone-test?mode=chromatic" variant="tertiary" size="lg" fullWidth>
+          <Button href="./training/chromatic" variant="tertiary" size="lg" fullWidth>
             トレーニング開始
           </Button>
         </div>
