@@ -298,7 +298,17 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       }
       
       isPlaying = true;
-      const currentBaseNote = baseNote || $nextBaseNote;
+      
+      // 基音選択（モード別）
+      let currentBaseNote;
+      if (mode === 'chromatic' && baseNote) {
+        currentBaseNote = baseNote; // 12音階モード：指定基音
+      } else {
+        // ランダム・連続モード：baseNotePollからランダム選択
+        const randomIndex = Math.floor(Math.random() * baseNotePool.length);
+        currentBaseNote = baseNotePool[randomIndex];
+      }
+      
       const volume = getVolumeForDevice();
       
       sampler.volume.value = volume;
