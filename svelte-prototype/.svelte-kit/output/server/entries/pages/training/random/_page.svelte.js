@@ -1,7 +1,5 @@
-import { c as create_ssr_component, a as subscribe, o as onDestroy, v as validate_component, e as escape, b as each } from "../../../../chunks/ssr.js";
-import "@sveltejs/kit/internal";
-import "../../../../chunks/exports.js";
-import "../../../../chunks/state.svelte.js";
+import { c as create_ssr_component, a as validate_store, b as subscribe, o as onDestroy, v as validate_component, e as escape, d as each } from "../../../../chunks/ssr.js";
+import "../../../../chunks/client.js";
 import { p as page } from "../../../../chunks/stores.js";
 import { P as PageLayout, C as Card } from "../../../../chunks/PageLayout.js";
 import { B as Button } from "../../../../chunks/Button.js";
@@ -171,15 +169,25 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let $sessionHistory, $$unsubscribe_sessionHistory;
   let $$unsubscribe_trainingProgress;
   let $isLoading, $$unsubscribe_isLoading;
+  validate_store(unifiedScoreData, "unifiedScoreData");
   $$unsubscribe_unifiedScoreData = subscribe(unifiedScoreData, (value) => $unifiedScoreData = value);
+  validate_store(isCompleted, "isCompleted");
   $$unsubscribe_isCompleted = subscribe(isCompleted, (value) => $isCompleted = value);
+  validate_store(page, "page");
   $$unsubscribe_page = subscribe(page, (value) => value);
+  validate_store(currentSessionId, "currentSessionId");
   $$unsubscribe_currentSessionId = subscribe(currentSessionId, (value) => value);
+  validate_store(remainingSessions, "remainingSessions");
   $$unsubscribe_remainingSessions = subscribe(remainingSessions, (value) => value);
+  validate_store(nextBaseName, "nextBaseName");
   $$unsubscribe_nextBaseName = subscribe(nextBaseName, (value) => value);
+  validate_store(nextBaseNote, "nextBaseNote");
   $$unsubscribe_nextBaseNote = subscribe(nextBaseNote, (value) => value);
+  validate_store(sessionHistory, "sessionHistory");
   $$unsubscribe_sessionHistory = subscribe(sessionHistory, (value) => $sessionHistory = value);
+  validate_store(trainingProgress, "trainingProgress");
   $$unsubscribe_trainingProgress = subscribe(trainingProgress, (value) => value);
+  validate_store(isLoading, "isLoading");
   $$unsubscribe_isLoading = subscribe(isLoading, (value) => $isLoading = value);
   let trainingPhase = "setup";
   let microphoneState = (() => {
@@ -249,7 +257,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
           {}
         )}</div>  ${`  ${``} <div class="side-by-side-container svelte-1ktm6f3"> ${validate_component(Card, "Card").$$render($$result, { class: "main-card half-width" }, {}, {
           default: () => {
-            return `<div class="card-header svelte-1ktm6f3" data-svelte-h="svelte-o46h1v"><h3 class="section-title svelte-1ktm6f3">🎹 基音再生</h3></div> <div class="card-content svelte-1ktm6f3">${validate_component(Button, "Button").$$render(
+            return `<div class="card-header svelte-1ktm6f3"><h3 class="section-title svelte-1ktm6f3" data-svelte-h="svelte-syc53b">🎹 基音再生</h3></div> <div class="card-content svelte-1ktm6f3">${validate_component(Button, "Button").$$render(
               $$result,
               {
                 variant: "primary",
@@ -278,13 +286,13 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
           {}
         )}</div>`} ${` ${validate_component(Card, "Card").$$render($$result, { class: "main-card" }, {}, {
           default: () => {
-            return `<div class="card-header svelte-1ktm6f3" data-svelte-h="svelte-z1jpw4"><h3 class="section-title svelte-1ktm6f3">🎵 ドレミ音階ガイド</h3></div> <div class="card-content svelte-1ktm6f3"><div class="scale-guide svelte-1ktm6f3">${each(scaleSteps, (step, index) => {
+            return `<div class="card-header svelte-1ktm6f3"><h3 class="section-title svelte-1ktm6f3" data-svelte-h="svelte-1mor0as">🎵 ドレミ音階ガイド</h3></div> <div class="card-content svelte-1ktm6f3"><div class="scale-guide svelte-1ktm6f3">${each(scaleSteps, (step, index) => {
               return `<div class="${"scale-item " + escape(step.state, true) + " svelte-1ktm6f3"}">${escape(step.name)} </div>`;
             })}</div> ${``}</div>`;
           }
         })}`}  ${``} ` : ` ${validate_component(Card, "Card").$$render($$result, { class: "error-card" }, {}, {
           default: () => {
-            return `<div class="error-content svelte-1ktm6f3"><div class="error-icon svelte-1ktm6f3" data-svelte-h="svelte-15rbx8n">🎤</div> <h3 class="svelte-1ktm6f3" data-svelte-h="svelte-17kvze2">マイクテストが必要です</h3> <p class="svelte-1ktm6f3" data-svelte-h="svelte-12s9olt">ランダム基音トレーニングを開始する前に、マイクテストページで音声入力の確認をお願いします。</p> <div class="recommendation svelte-1ktm6f3" data-svelte-h="svelte-13ge0u9"><p class="svelte-1ktm6f3">このページは<strong>マイクテスト完了後</strong>にご利用いただけます。</p> <p class="svelte-1ktm6f3">まずはマイクテストページで音声確認を行ってください。</p></div> <div class="action-buttons">${validate_component(Button, "Button").$$render($$result, { variant: "primary" }, {}, {
+            return `<div class="error-content svelte-1ktm6f3"><div class="error-icon svelte-1ktm6f3" data-svelte-h="svelte-15rbx8n">🎤</div> <h3 class="svelte-1ktm6f3" data-svelte-h="svelte-17kvze2">マイクテストが必要です</h3> <p class="svelte-1ktm6f3" data-svelte-h="svelte-12s9olt">ランダム基音トレーニングを開始する前に、マイクテストページで音声入力の確認をお願いします。</p> <div class="recommendation svelte-1ktm6f3"><p class="svelte-1ktm6f3">このページは<strong data-svelte-h="svelte-1n3qsr6">マイクテスト完了後</strong>にご利用いただけます。</p> <p class="svelte-1ktm6f3" data-svelte-h="svelte-v8nd09">まずはマイクテストページで音声確認を行ってください。</p></div> <div class="action-buttons">${validate_component(Button, "Button").$$render($$result, { variant: "primary" }, {}, {
               default: () => {
                 return `🎤 マイクテストページへ移動`;
               }

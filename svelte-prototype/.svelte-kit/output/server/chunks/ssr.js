@@ -15,6 +15,11 @@ function is_function(thing) {
 function safe_not_equal(a, b) {
   return a != a ? b == b : a !== b || a && typeof a === "object" || typeof a === "function";
 }
+function validate_store(store, name) {
+  if (store != null && typeof store.subscribe !== "function") {
+    throw new Error(`'${name}' is not a store with a 'subscribe' method`);
+  }
+}
 function subscribe(store, ...callbacks) {
   if (store == null) {
     for (const callback of callbacks) {
@@ -253,22 +258,23 @@ function style_object_to_string(style_object) {
   return Object.keys(style_object).filter((key) => style_object[key] != null && style_object[key] !== "").map((key) => `${key}: ${escape_attribute_value(style_object[key])};`).join(" ");
 }
 export {
-  subscribe as a,
-  each as b,
+  validate_store as a,
+  subscribe as b,
   create_ssr_component as c,
-  compute_rest_props as d,
+  each as d,
   escape as e,
-  spread as f,
-  escape_object as g,
-  escape_attribute_value as h,
-  safe_not_equal as i,
-  is_function as j,
-  add_attribute as k,
-  createEventDispatcher as l,
+  compute_rest_props as f,
+  spread as g,
+  escape_object as h,
+  escape_attribute_value as i,
+  safe_not_equal as j,
+  is_function as k,
+  add_attribute as l,
   missing_component as m,
   noop as n,
   onDestroy as o,
-  getContext as p,
+  createEventDispatcher as p,
+  getContext as q,
   run_all as r,
   setContext as s,
   validate_component as v

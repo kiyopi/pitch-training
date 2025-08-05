@@ -2457,7 +2457,11 @@
       }, 2000); // 2秒後に次セッション開始
     } else {
       console.log('🎉 [ContinuousMode] 8セッション完了！');
-      // 総合評価画面へ
+      // 総合評価画面を表示（trainingPhase は 'results' のまま維持）
+      // $isCompleted が true になることで UnifiedScoreResultFixed に総合データが表示される
+      setTimeout(() => {
+        console.log('🏆 [ContinuousMode] 総合評価画面表示完了');
+      }, 1000);
     }
   }
 
@@ -2517,8 +2521,8 @@
       <div class="session-progress">
         <div class="session-status">
           <div class="session-info">
-            <span class="completed-count">{$sessionHistory?.length || 0}/8</span>
-            <span class="remaining-text">残り {8 - ($sessionHistory?.length || 0)} セッション</span>
+            <span class="completed-count">セッション {$currentSessionId}/8</span>
+            <span class="remaining-text">完了済み {$sessionHistory?.length || 0}セッション</span>
           </div>
           <div class="progress-section">
             <div class="progress-bar">
