@@ -13,6 +13,9 @@
   export let sessionIndex = null; // セッション番号（0ベース）
   export let baseNote = null; // 基音名
   
+  // データ準備完了チェック
+  $: isDataReady = noteResults && noteResults.length > 0 && noteResults.some(note => note.name);
+  
   let showDetails = false;
   let showFrequencyDetails = {};
   
@@ -86,6 +89,15 @@
 </script>
 
 <div class="random-mode-score-result {className}">
+  
+  <!-- データ準備待ち表示 -->
+  {#if !isDataReady}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>データを読み込み中...</p>
+    </div>
+  {:else}
+  
   <!-- 総合評価セクション -->
   <div class="overall-score-section">
     <div class="grade-display-enhanced" in:fly={{ y: -20, duration: 500 }}>
@@ -304,6 +316,8 @@
       {/if}
     </div>
   </div>
+  
+  {/if}
 </div>
 
 <style>
@@ -312,6 +326,31 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* ローディング状態 */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #6b7280;
+  }
+  
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
   
   /* 総合評価 */
