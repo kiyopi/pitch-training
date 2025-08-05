@@ -297,6 +297,13 @@ export class SessionStorageManager {
    * 次の基音を取得（音域対応＋重複回避＋8セッション最適化）
    */
   public getNextBaseNote(): BaseNote {
+    return this.getNextBaseNoteExcluding(null);
+  }
+
+  /**
+   * 指定した基音を除外して次の基音を取得（連続モード用）
+   */
+  public getNextBaseNoteExcluding(excludeNote: BaseNote | null): BaseNote {
     const progress = this.progress || this.loadProgress();
     if (!progress) {
       // 初回の場合は中音域からランダム選択
@@ -318,8 +325,15 @@ export class SessionStorageManager {
       音域基音リスト: voiceRangeNotes
     });
     
-    // 使用可能な基音リスト（音域内での重複回避）
-    const availableNotes = voiceRangeNotes.filter(note => !progress.usedBaseNotes.includes(note));
+    // 使用可能な基音リスト（音域内での重複回避 + 除外基音対応）
+    let availableNotes = voiceRangeNotes.filter(note => !progress.usedBaseNotes.includes(note));
+    
+    // 除外基音がある場合はさらにフィルタリング
+    if (excludeNote && availableNotes.includes(excludeNote)) {
+      const beforeExclude = availableNotes.length;
+      availableNotes = availableNotes.filter(note => note !== excludeNote);
+      console.info(`[SessionStorageManager] 除外基音適用: ${excludeNote} → 使用可能基音数 ${beforeExclude}→${availableNotes.length}`);
+    }
     
     console.info(`[SessionStorageManager] 使用可能基音: [${availableNotes.join(', ')}] (${availableNotes.length}/${voiceRangeNotes.length})`);
     

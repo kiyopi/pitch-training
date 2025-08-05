@@ -391,6 +391,29 @@ export async function startNewCycleIfCompleted(): Promise<boolean> {
 }
 
 /**
+ * 現在の基音を除外して強制的に新しい基音を取得（連続モード用）
+ */
+export async function forceNewBaseNoteExcludingCurrent(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const currentNote = get(nextBaseNote);
+    
+    console.info(`[SessionStorage] 現在の基音を除外して新基音取得: 除外=${currentNote}`);
+    
+    // 現在の基音を除外して新しい基音を取得
+    const newNote = manager.getNextBaseNoteExcluding(currentNote);
+    const newName = manager.getBaseNoteName(newNote);
+    
+    // ストア更新
+    nextBaseNote.set(newNote);
+    nextBaseName.set(newName);
+    
+    console.info(`[SessionStorage] 新基音取得完了: ${currentNote} → ${newNote} (${newName})`);
+    return true;
+  }, 'Failed to force new base note') !== null;
+}
+
+/**
  * 緊急リセット：基音重複問題解決用
  */
 export async function emergencyResetForDuplication(): Promise<boolean> {
@@ -592,3 +615,5 @@ export type {
   BaseNote,
   VoiceRangeType
 } from '../types/sessionStorage';
+
+// forceNewBaseNoteExcludingCurrent は上記で既にエクスポート済み

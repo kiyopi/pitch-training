@@ -52,7 +52,8 @@
     resetProgress,
     createNewProgress,
     startNewCycleIfCompleted,
-    emergencyResetForDuplication
+    emergencyResetForDuplication,
+    forceNewBaseNoteExcludingCurrent
   } from '$lib/stores/sessionStorage';
   
   // Force GitHub Actions trigger: 2025-07-29 06:30
@@ -2561,13 +2562,16 @@
           }
         }
         
-        // 🔥 重要: 次のセッション用の新しい基音を取得
-        console.log('🔄 [ContinuousMode] 次セッション用の新しい基音を取得中...');
+        // 🔥 重要: 現在の基音を除外して新しい基音を強制取得
+        console.log('🔄 [ContinuousMode] 現在の基音を除外して新しい基音を取得中...');
+        const previousNote = $nextBaseNote;
         try {
-          await loadProgress(); // SessionStorageから新しい基音を取得
-          console.log('🎯 [ContinuousMode] 新しい基音取得完了:', $nextBaseNote, $nextBaseName);
+          await forceNewBaseNoteExcludingCurrent(); // 現在の基音を除外して新基音取得
+          console.log('🎯 [ContinuousMode] 新しい基音取得完了:', `${previousNote} → ${$nextBaseNote} (${$nextBaseName})`);
         } catch (error) {
           console.error('❌ [ContinuousMode] 新しい基音取得エラー:', error);
+          // フォールバック: 従来の方法
+          await loadProgress();
         }
         
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');

@@ -8,6 +8,6 @@ export const universal = {
   "ssr": false
 };
 export const universal_id = "src/routes/training/chromatic/+page.ts";
-export const imports = ["_app/immutable/nodes/4.BPsLle8Z.js","_app/immutable/chunks/DXfV3yLF.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/BnpKoSs-.js","_app/immutable/chunks/CrwomGmF.js","_app/immutable/chunks/DC6Dc1fJ.js"];
+export const imports = ["_app/immutable/nodes/4.fKFovq0g.js","_app/immutable/chunks/DXfV3yLF.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/BnpKoSs-.js","_app/immutable/chunks/CrwomGmF.js","_app/immutable/chunks/BltEqEJK.js"];
 export const stylesheets = ["_app/immutable/assets/PageLayout.DiiS_FyR.css","_app/immutable/assets/4.DxItvq4r.css"];
 export const fonts = [];

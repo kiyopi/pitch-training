@@ -3021,6 +3021,12 @@ class SessionStorageManager {
    * 次の基音を取得（音域対応＋重複回避＋8セッション最適化）
    */
   getNextBaseNote() {
+    return this.getNextBaseNoteExcluding(null);
+  }
+  /**
+   * 指定した基音を除外して次の基音を取得（連続モード用）
+   */
+  getNextBaseNoteExcluding(excludeNote) {
     const progress = this.progress || this.loadProgress();
     if (!progress) {
       const middleRangeNotes = VOICE_RANGE_GROUPS.middle;
@@ -3036,7 +3042,12 @@ class SessionStorageManager {
       使用済み基音: progress.usedBaseNotes,
       音域基音リスト: voiceRangeNotes
     });
-    const availableNotes = voiceRangeNotes.filter((note) => !progress.usedBaseNotes.includes(note));
+    let availableNotes = voiceRangeNotes.filter((note) => !progress.usedBaseNotes.includes(note));
+    if (excludeNote && availableNotes.includes(excludeNote)) {
+      const beforeExclude = availableNotes.length;
+      availableNotes = availableNotes.filter((note) => note !== excludeNote);
+      console.info(`[SessionStorageManager] 除外基音適用: ${excludeNote} → 使用可能基音数 ${beforeExclude}→${availableNotes.length}`);
+    }
     console.info(`[SessionStorageManager] 使用可能基音: [${availableNotes.join(", ")}] (${availableNotes.length}/${voiceRangeNotes.length})`);
     if (availableNotes.length === 0 || progress.sessionHistory.length >= 8) {
       console.info(`[SessionStorageManager] 基音プールリセット - 音域${progress.voiceRange}で新サイクル開始`);
