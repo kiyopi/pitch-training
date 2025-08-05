@@ -1117,12 +1117,12 @@ TrainingCore.svelte - トレーニング共通コンポーネント
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: 24px;
   }
 
   .side-by-side-container {
     display: flex;
-    gap: var(--space-4);
+    gap: 16px;
     flex-wrap: wrap;
   }
 
@@ -1136,42 +1136,42 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   }
 
   .session-counter {
-    font-size: var(--text-lg);
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: var(--space-3);
+    margin-bottom: 12px;
   }
 
   .progress-bar {
     width: 100%;
     height: 8px;
-    background-color: var(--color-gray-200);
+    background-color: #e5e7eb;
     border-radius: 4px;
     overflow: hidden;
   }
 
   .progress-fill {
     height: 100%;
-    background-color: var(--color-green-500);
+    background-color: #10b981;
     transition: width 0.3s ease;
   }
 
   /* ドレミガイドスタートバー */
   .guide-start-bar-container {
-    margin-top: var(--space-4);
+    margin-top: 16px;
     text-align: center;
   }
 
   .guide-start-label {
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
-    margin-bottom: var(--space-2);
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 8px;
   }
 
   .guide-start-bar {
     position: relative;
     width: 100%;
     height: 24px;
-    background-color: var(--color-gray-200);
+    background-color: #e5e7eb;
     border-radius: 12px;
     overflow: hidden;
   }
@@ -1205,39 +1205,42 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   .scale-guide {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: 8px;
     justify-content: center;
   }
 
   .scale-item {
-    padding: var(--space-2) var(--space-3);
+    padding: 8px 12px;
     border-radius: 6px;
     font-weight: 600;
-    font-size: var(--text-sm);
+    font-size: 14px;
     transition: all 0.3s ease;
+    min-width: 60px;
+    text-align: center;
   }
 
   .scale-item.inactive {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-600);
+    background-color: #e5e7eb;
+    color: #6b7280;
   }
 
   .scale-item.active {
-    background-color: var(--color-blue-500);
+    background-color: #3b82f6;
     color: white;
     transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
 
   /* カードスタイル */
   .card-header .section-title {
-    font-size: var(--text-lg);
+    font-size: 18px;
     font-weight: 600;
-    color: var(--color-gray-900);
+    color: #111827;
     margin: 0;
   }
 
   .card-content {
-    padding: var(--space-4);
+    padding: 16px;
   }
 
   /* レスポンシブ */
