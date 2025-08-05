@@ -2736,6 +2736,8 @@
         </Card>
       {/if}
 
+      <!-- 基音再生・リアルタイム音程検出セクション（総合評価中は非表示） -->
+      {#if !$isCompleted}
       <div class="side-by-side-container">
         <!-- Base Tone Section -->
         <Card class="main-card half-width">
@@ -2807,8 +2809,10 @@
           showGuidance={false}
         />
       </div>
+      {/if}
 
-    <!-- Scale Guide Section (常に表示) -->
+    <!-- ドレミ音階ガイドセクション（総合評価中は非表示） -->
+    {#if !$isCompleted}
     <Card class="main-card">
       <div class="card-header">
         <h3 class="section-title">🎵 ドレミ音階ガイド</h3>
@@ -2834,6 +2838,7 @@
         {/if}
       </div>
     </Card>
+    {/if}
 
 
     <!-- Results Section - Enhanced Scoring System -->
