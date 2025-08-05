@@ -889,25 +889,10 @@
       
       // AudioContextは初回再生時に起動（安全なアプローチ）
       
-      // Salamander Grand Piano 全基音対応（16種類音源）
+      // Salamander Grand Piano C4音源（Tone.js自動ピッチシフト対応）
       sampler = new Tone.Sampler({
         urls: {
-          'F3': 'F3.mp3',
-          'G3': 'G3.mp3', 
-          'Bb3': 'Bb3.mp3',
-          'B3': 'B3.mp3',
           'C4': 'C4.mp3',
-          'Db4': 'Db4.mp3',
-          'D4': 'D4.mp3',
-          'Eb4': 'Eb4.mp3',
-          'E4': 'E4.mp3',
-          'F4': 'F4.mp3',
-          'Gb4': 'Gb4.mp3',
-          'G4': 'G4.mp3',
-          'Ab4': 'Ab4.mp3',
-          'A4': 'A4.mp3',
-          'C5': 'C5.mp3',
-          'D5': 'D5.mp3'
         },
         baseUrl: `${base}/audio/piano/`,
         release: 1.5, // リリース時間最適化
