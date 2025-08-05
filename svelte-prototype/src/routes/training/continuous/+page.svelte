@@ -2465,6 +2465,12 @@
         // UI状態をリセット
         isPlaying = false;
         
+        // 音程検出を再開（連続モード用）
+        if (pitchDetectorComponent) {
+          console.log('🎤 [ContinuousMode] 音程検出再開');
+          pitchDetectorComponent.startDetection();
+        }
+        
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
         playBaseNote();
       }, 5000); // 5秒後に次セッション開始（結果表示時間を確保）

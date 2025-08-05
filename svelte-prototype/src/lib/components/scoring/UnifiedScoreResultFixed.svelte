@@ -1562,11 +1562,23 @@
               }}
             >
               <div slot="default" let:session let:index>
-                <!-- 連続モード用の詳細表示（将来実装） -->
-                <div class="no-details">
-                  セッション{index + 1} - 基音: {session.baseNote}<br>
-                  連続モードの詳細表示は準備中です
-                </div>
+                <!-- 連続モード: ランダムモードと同じ詳細表示を使用 -->
+                <RandomModeScoreResult 
+                  scoreData={{
+                    sessionId: session.sessionId,
+                    baseNote: session.baseNote,
+                    baseName: session.baseName,
+                    accuracy: session.accuracy,
+                    grade: session.grade,
+                    noteResults: session.noteResults || [],
+                    duration: session.duration,
+                    mode: 'continuous'
+                  }}
+                  intervalData={intervalData}
+                  feedbackData={feedbackData}
+                  consistencyData={consistencyData}
+                  sessionStatistics={sessionStatistics}
+                />
               </div>
             </SessionCarousel>
           </div>
