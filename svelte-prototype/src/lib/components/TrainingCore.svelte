@@ -387,7 +387,7 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       sampler.volume.value = volume;
       
       console.log(`🎹 [TrainingCore] 基音再生: ${selectedNoteInfo.note} (${selectedNoteInfo.name}, ${selectedNoteInfo.frequency}Hz, ${volume}dB)`);
-      sampler.triggerAttackRelease(selectedNoteInfo.note, '2n');
+      sampler.triggerAttackRelease(selectedNoteInfo.note, 1.5, Tone.now(), 0.7);
       
       // ガイドアニメーション開始
       startGuideAnimation();
