@@ -51,7 +51,8 @@
     saveSessionResult,
     resetProgress,
     createNewProgress,
-    startNewCycleIfCompleted
+    startNewCycleIfCompleted,
+    emergencyResetForDuplication
   } from '$lib/stores/sessionStorage';
   
   // Force GitHub Actions trigger: 2025-07-29 06:30

@@ -19,7 +19,8 @@ import {
   DATA_VERSION,
   EVALUATION_THRESHOLDS,
   isTrainingProgress,
-  isSessionResult
+  isSessionResult,
+  isValidVoiceRange
 } from '../types/sessionStorage';
 import { EvaluationEngine } from '../evaluation/EvaluationEngine';
 
@@ -202,8 +203,30 @@ export class SessionStorageManager {
 
     this.progress = newProgress;
     this.saveProgress(newProgress);
-    console.info(`[SessionStorageManager] 新進行状況作成: 音域=${voiceRange}, 基音数=${voiceRangeNotes.length}`);
+    console.info(`[SessionStorageManager] 新進行状況作成: 音域=${voiceRange}, 基音数=${voiceRangeNotes.length}, 基音リスト=[${voiceRangeNotes.join(', ')}]`);
     return newProgress;
+  }
+
+  /**
+   * 緊急リセット：基音重複問題解決用
+   */
+  public emergencyResetForBaseNoteDuplication(): boolean {
+    try {
+      console.warn('[SessionStorageManager] 緊急リセット実行: 基音重複問題対応');
+      
+      // localStorageをクリア
+      localStorage.removeItem(STORAGE_KEYS.TRAINING_PROGRESS);
+      this.progress = null;
+      
+      // 新規作成
+      this.createNewProgress('middle');
+      
+      console.info('[SessionStorageManager] 緊急リセット完了');
+      return true;
+    } catch (error) {
+      console.error('[SessionStorageManager] 緊急リセット失敗:', error);
+      return false;
+    }
   }
 
   /**
@@ -235,6 +258,9 @@ export class SessionStorageManager {
       // 使用済み基音に追加
       if (!progress.usedBaseNotes.includes(sessionResult.baseNote)) {
         progress.usedBaseNotes.push(sessionResult.baseNote);
+        console.info(`[SessionStorageManager] 使用済み基音追加: ${sessionResult.baseNote} → [${progress.usedBaseNotes.join(', ')}]`);
+      } else {
+        console.warn(`[SessionStorageManager] 基音重複検出: ${sessionResult.baseNote} は既に使用済み → [${progress.usedBaseNotes.join(', ')}]`);
       }
 
       // 8セッション完了チェック
@@ -275,24 +301,39 @@ export class SessionStorageManager {
     if (!progress) {
       // 初回の場合は中音域からランダム選択
       const middleRangeNotes = VOICE_RANGE_GROUPS.middle;
-      return middleRangeNotes[Math.floor(Math.random() * middleRangeNotes.length)];
+      const selectedNote = middleRangeNotes[Math.floor(Math.random() * middleRangeNotes.length)];
+      console.info(`[SessionStorageManager] 初回基音選択: ${selectedNote} (中音域デフォルト)`);
+      return selectedNote;
     }
 
     // 選択された音域の基音リストを取得
     const voiceRangeNotes = VOICE_RANGE_GROUPS[progress.voiceRange];
     
+    // デバッグ情報
+    console.info(`[SessionStorageManager] 基音選択処理開始:`, {
+      音域: progress.voiceRange,
+      セッション数: progress.sessionHistory.length,
+      完了状態: progress.isCompleted,
+      使用済み基音: progress.usedBaseNotes,
+      音域基音リスト: voiceRangeNotes
+    });
+    
     // 使用可能な基音リスト（音域内での重複回避）
     const availableNotes = voiceRangeNotes.filter(note => !progress.usedBaseNotes.includes(note));
+    
+    console.info(`[SessionStorageManager] 使用可能基音: [${availableNotes.join(', ')}] (${availableNotes.length}/${voiceRangeNotes.length})`);
     
     // 8セッション完了または全て使用済みの場合はリセット
     if (availableNotes.length === 0 || progress.sessionHistory.length >= 8) {
       console.info(`[SessionStorageManager] 基音プールリセット - 音域${progress.voiceRange}で新サイクル開始`);
-      return voiceRangeNotes[Math.floor(Math.random() * voiceRangeNotes.length)];
+      const selectedNote = voiceRangeNotes[Math.floor(Math.random() * voiceRangeNotes.length)];
+      console.info(`[SessionStorageManager] リセット後選択: ${selectedNote}`);
+      return selectedNote;
     }
 
     // 8セッション中は完全重複回避でランダム選択
     const selectedNote = availableNotes[Math.floor(Math.random() * availableNotes.length)];
-    console.info(`[SessionStorageManager] 基音選択: ${selectedNote} (音域: ${progress.voiceRange}, 残り選択肢: ${availableNotes.length}/${voiceRangeNotes.length})`);
+    console.info(`[SessionStorageManager] 基音選択完了: ${selectedNote} (音域: ${progress.voiceRange}, 残り選択肢: ${availableNotes.length}/${voiceRangeNotes.length})`);
     
     return selectedNote;
   }
@@ -521,6 +562,12 @@ export class SessionStorageManager {
    */
   public setVoiceRange(voiceRange: VoiceRangeType): boolean {
     try {
+      // 音域値妥当性チェック
+      if (!isValidVoiceRange(voiceRange)) {
+        console.error(`[SessionStorageManager] 無効な音域値: ${voiceRange}`);
+        return false;
+      }
+
       const progress = this.progress || this.loadProgress();
       if (!progress) {
         // 新規作成時は指定音域で作成
@@ -552,7 +599,17 @@ export class SessionStorageManager {
    */
   public getVoiceRange(): VoiceRangeType {
     const progress = this.progress || this.loadProgress();
-    return progress?.voiceRange || 'middle';
+    const voiceRange = progress?.voiceRange;
+    
+    // 音域が無効または未定義の場合は'middle'を返す
+    if (!isValidVoiceRange(voiceRange)) {
+      if (voiceRange !== undefined) {
+        console.warn(`[SessionStorageManager] 無効な音域値を検出: ${voiceRange} → 'middle'に自動修正`);
+      }
+      return 'middle';
+    }
+    
+    return voiceRange;
   }
 
   /**
@@ -652,6 +709,22 @@ export class SessionStorageManager {
         issues.push(`リロード検出: currentSession=${progress.currentSessionId}, lastHistory=${lastSessionId}`);
       }
 
+      // 7. 音域妥当性確認
+      if (!isValidVoiceRange(progress.voiceRange)) {
+        issues.push(`無効な音域設定: ${progress.voiceRange}`);
+      }
+
+      // 8. 音域と基音リスト整合性確認
+      if (progress.voiceRange && isValidVoiceRange(progress.voiceRange)) {
+        const expectedBaseNotes = VOICE_RANGE_GROUPS[progress.voiceRange];
+        const currentBaseNotes = progress.availableBaseNotes;
+        
+        if (!currentBaseNotes || currentBaseNotes.length !== expectedBaseNotes.length ||
+            !expectedBaseNotes.every(note => currentBaseNotes.includes(note))) {
+          issues.push(`音域と基音リスト不整合: 音域=${progress.voiceRange}, 基音数=${currentBaseNotes?.length || 0}/${expectedBaseNotes.length}`);
+        }
+      }
+
       // 修復不可能な条件判定
       if (progress.sessionHistory.length > 8 || 
           (progress.sessionHistory.some(s => !s.sessionId || !s.baseNote))) {
@@ -709,6 +782,28 @@ export class SessionStorageManager {
           // リロード時は進行状況をリセット（新セッション開始）
           console.info('[Repair] リロード検出 - 新セッション開始に修正');
           return null; // 新規作成を促す
+        }
+        
+        else if (issue.includes('無効な音域設定')) {
+          // 無効な音域は'middle'に修正
+          repairedProgress.voiceRange = 'middle';
+          repairedProgress.availableBaseNotes = [...VOICE_RANGE_GROUPS.middle];
+          repairedProgress.usedBaseNotes = []; // リセットして再開
+          console.info('[Repair] 音域設定を\'middle\'に修正');
+        }
+        
+        else if (issue.includes('音域と基音リスト不整合')) {
+          // 音域に合わせて基音リストを修正
+          const voiceRange = repairedProgress.voiceRange;
+          if (isValidVoiceRange(voiceRange)) {
+            repairedProgress.availableBaseNotes = [...VOICE_RANGE_GROUPS[voiceRange]];
+            // 使用済み基音リストを音域内の基音のみに絞り込み
+            const validUsedNotes = repairedProgress.usedBaseNotes.filter(note => 
+              VOICE_RANGE_GROUPS[voiceRange].includes(note as any)
+            );
+            repairedProgress.usedBaseNotes = validUsedNotes;
+            console.info(`[Repair] 基音リストを音域'${voiceRange}'に合わせて修正`);
+          }
         }
       }
 

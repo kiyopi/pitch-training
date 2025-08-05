@@ -149,6 +149,12 @@ export const EVALUATION_THRESHOLDS = {
   D_GRADE: { goodPlusRatio: 0.50 }
 } as const;
 
+// 音域値妥当性チェック関数
+export function isValidVoiceRange(voiceRange: any): voiceRange is VoiceRangeType {
+  return typeof voiceRange === 'string' && 
+         ['low', 'middle', 'high', 'extended'].includes(voiceRange);
+}
+
 // 型ガード関数
 export function isSessionResult(obj: any): obj is SessionResult {
   return (
@@ -169,7 +175,10 @@ export function isTrainingProgress(obj: any): obj is TrainingProgress {
     typeof obj.version === 'string' &&
     Array.isArray(obj.sessionHistory) &&
     typeof obj.currentSessionId === 'number' &&
-    typeof obj.isCompleted === 'boolean'
+    typeof obj.isCompleted === 'boolean' &&
+    Array.isArray(obj.availableBaseNotes) &&
+    Array.isArray(obj.usedBaseNotes) &&
+    (obj.voiceRange === undefined || isValidVoiceRange(obj.voiceRange)) // 音域は未定義または有効値
   );
 }
 

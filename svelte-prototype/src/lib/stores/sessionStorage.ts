@@ -13,6 +13,7 @@ import type {
 import type { Grade, NoteResult } from '../types/scoring';
 import { SessionStorageManager } from '../utils/SessionStorageManager';
 import { EvaluationEngine } from '../evaluation/EvaluationEngine';
+import { isValidVoiceRange } from '../types/sessionStorage';
 
 // =============================================================================
 // メインストア
@@ -390,10 +391,43 @@ export async function startNewCycleIfCompleted(): Promise<boolean> {
 }
 
 /**
+ * 緊急リセット：基音重複問題解決用
+ */
+export async function emergencyResetForDuplication(): Promise<boolean> {
+  return await executeWithErrorHandling(async () => {
+    const manager = getStorageManager();
+    const success = manager.emergencyResetForBaseNoteDuplication();
+    
+    if (success) {
+      // ストア完全リセット
+      const newProgress = manager.loadProgress();
+      if (newProgress) {
+        trainingProgress.set(newProgress);
+        currentSessionId.set(1);
+        voiceRange.set(newProgress.voiceRange);
+        
+        const nextNote = manager.getNextBaseNote();
+        nextBaseNote.set(nextNote);
+        nextBaseName.set(manager.getBaseNoteName(nextNote));
+        
+        console.info('[SessionStorage] 緊急リセット完了');
+      }
+    }
+    
+    return success;
+  }, 'Failed to emergency reset') !== null;
+}
+
+/**
  * 音域設定変更
  */
 export async function setVoiceRange(newVoiceRange: VoiceRangeType): Promise<boolean> {
   return await executeWithErrorHandling(async () => {
+    // 音域値妥当性チェック
+    if (!isValidVoiceRange(newVoiceRange)) {
+      throw new Error(`Invalid voice range: ${newVoiceRange}`);
+    }
+    
     const manager = getStorageManager();
     const success = manager.setVoiceRange(newVoiceRange);
     
