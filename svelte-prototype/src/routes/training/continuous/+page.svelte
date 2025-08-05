@@ -2492,10 +2492,25 @@
         // UI状態をリセット
         isPlaying = false;
         
-        // 音程検出を再開（連続モード用）
+        // 音程検出を再開（連続モード用・状態チェック付き）
         if (pitchDetectorComponent) {
-          console.log('🎤 [ContinuousMode] 音程検出再開');
-          pitchDetectorComponent.startDetection();
+          try {
+            // PitchDetectorが既に検出中でないことを確認
+            if (pitchDetectorComponent.getIsInitialized && pitchDetectorComponent.getIsInitialized()) {
+              // 既に検出中の場合はスキップ
+              const isDetecting = pitchDetectorComponent.isDetecting || false;
+              if (isDetecting) {
+                console.log('🔄 [ContinuousMode] 音程検出は既にアクティブ状態 - スキップ');
+              } else {
+                console.log('🎤 [ContinuousMode] 音程検出再開');
+                pitchDetectorComponent.startDetection();
+              }
+            } else {
+              console.log('⚠️ [ContinuousMode] PitchDetector未初期化 - 音程検出再開をスキップ');
+            }
+          } catch (detectionError) {
+            console.warn('⚠️ [ContinuousMode] 音程検出再開失敗:', detectionError.message);
+          }
         }
         
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
@@ -2539,6 +2554,12 @@
           console.error('❌ [ContinuousMode] 自動復旧失敗:', recoveryError);
         }
       }, 1000);
+    }
+    
+    // 重複検出開始エラーの場合は警告のみ（復旧不要）
+    if (context === 'start-detection' && error?.message?.includes('component state is detecting')) {
+      console.log('🔄 [ContinuousMode] 音程検出は既にアクティブ状態です（正常）');
+      return; // 復旧処理不要
     }
   }
   
