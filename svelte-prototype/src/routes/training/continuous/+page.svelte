@@ -2518,7 +2518,7 @@
     // 8セッション未満の場合は次のセッションを自動開始
     if ($currentSessionId < 8) {
       // セッション結果を5秒間表示してから次セッション開始
-      setTimeout(() => {
+      setTimeout(async () => {
         console.log('🔄 [ContinuousMode] 次セッション自動開始準備:', $currentSessionId + 1);
         
         // 次セッション用の状態リセット
@@ -2559,6 +2559,15 @@
           } catch (detectionError) {
             console.warn('⚠️ [ContinuousMode] 音程検出再開失敗:', detectionError.message);
           }
+        }
+        
+        // 🔥 重要: 次のセッション用の新しい基音を取得
+        console.log('🔄 [ContinuousMode] 次セッション用の新しい基音を取得中...');
+        try {
+          await loadProgress(); // SessionStorageから新しい基音を取得
+          console.log('🎯 [ContinuousMode] 新しい基音取得完了:', $nextBaseNote, $nextBaseName);
+        } catch (error) {
+          console.error('❌ [ContinuousMode] 新しい基音取得エラー:', error);
         }
         
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
