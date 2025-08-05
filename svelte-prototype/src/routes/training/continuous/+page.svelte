@@ -2553,8 +2553,8 @@
         
       </div>
       
-      <!-- 上部アクションボタン（基音再生画面では非表示） -->
-      {#if trainingPhase === 'results'}
+      <!-- 上部アクションボタン（8セッション完了時のみ表示） -->
+      {#if trainingPhase === 'results' && $isCompleted}
         <div class="top-action-buttons">
           <ActionButtons 
             isCompleted={$isCompleted}
@@ -2745,16 +2745,28 @@
       
       
       
-      <!-- アクションボタン（常時表示） -->
-      {#if trainingPhase === 'results'}
+      <!-- アクションボタン（8セッション完了時のみ表示） -->
+      {#if trainingPhase === 'results' && $isCompleted}
         <Card class="main-card bottom-action-card">
           <div class="card-content">
-            <!-- 下部アクションボタン -->
+            <!-- 下部アクションボタン（8セッション完了時のみ） -->
             <ActionButtons 
               isCompleted={$isCompleted}
               position="bottom"
               on:action={handleActionButtonClick}
             />
+          </div>
+        </Card>
+      {:else if trainingPhase === 'results' && !$isCompleted}
+        <!-- 連続モード：セッション結果表示中（自動で次セッション開始） -->
+        <Card class="main-card bottom-action-card">
+          <div class="card-content">
+            <div class="continuous-mode-message">
+              <div class="auto-progress-indicator">
+                <div class="spinner"></div>
+                <span>次のセッションを準備中...</span>
+              </div>
+            </div>
           </div>
         </Card>
       {/if}
