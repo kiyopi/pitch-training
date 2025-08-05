@@ -2646,6 +2646,8 @@
 </svelte:head>
 
 <PageLayout>
+  <!-- DEBUG: PageLayout開始 - ページ全体のレンダリング開始 -->
+  <!-- DEBUG: 変数確認 - trainingPhase: {trainingPhase}, microphoneState: {microphoneState} -->
   <!-- Header -->
   <div class="header-section">
     <h1 class="page-title">⚡ 連続チャレンジモード</h1>
@@ -2706,6 +2708,7 @@
       />
     </div>
 
+    <!-- DEBUG: メイントレーニングインターフェース開始 -->
     <!-- メイントレーニングインターフェース -->
     
     {#if trainingPhase !== 'results'}
@@ -2831,6 +2834,7 @@
     {/if}
 
 
+    <!-- DEBUG: Results Section開始 -->
     <!-- Results Section - Enhanced Scoring System -->
     {#if trainingPhase === 'results'}
       <!-- 統合採点システム結果（localStorage統合版） -->
