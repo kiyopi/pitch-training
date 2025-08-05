@@ -207,7 +207,7 @@
 </script>
 
 <svelte:head>
-  <title>12音階モード - 相対音感トレーニング</title>
+  <title>12音階モード（クロマチック） - 相対音感トレーニング</title>
 </svelte:head>
 
 <PageLayout showBackButton={true}>
@@ -222,8 +222,8 @@
           </svg>
         </div>
         <div>
-          <h1 class="mode-title">12音階モード</h1>
-          <p class="mode-description">クロマチックスケールの上行・下行で完全制覇</p>
+          <h1 class="mode-title">12音階モード（クロマチック）</h1>
+          <p class="mode-description">基音を聞いて半音階12音すべてを相対音程で歌うトレーニング</p>
         </div>
       </div>
     </div>

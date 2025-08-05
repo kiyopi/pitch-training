@@ -63,9 +63,9 @@
               <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
             </svg>
           </div>
-          <h3 class="mode-title">12音階モード</h3>
+          <h3 class="mode-title">12音階モード（クロマチック）</h3>
           <p class="mode-description">
-            クロマチックスケールの上行・下行で完全制覇
+            基音を聞いて半音階12音すべてを相対音程で歌うトレーニング
           </p>
           <Button href="./microphone-test?mode=chromatic" variant="tertiary" size="lg" fullWidth>
             トレーニング開始
