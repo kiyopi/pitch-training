@@ -88,6 +88,26 @@ TrainingCore.svelte - トレーニング共通コンポーネント
         : ['シ', 'ラ#', 'ラ', 'ソ#', 'ソ', 'ファ#', 'ファ', 'ミ', 'レ#', 'レ', 'ド#', 'ド'])
     : ['ド', 'レ', 'ミ', 'ファ', 'ソ', 'ラ', 'シ', 'ド（高）'];
 
+  // 基音情報定義（ランダムモード成功実装から移植）
+  const baseNotes = [
+    { note: 'C4', name: 'ド（中）', frequency: 261.63, semitonesFromC: 0 },
+    { note: 'Db4', name: 'ド#（中）', frequency: 277.18, semitonesFromC: 1 },
+    { note: 'D4', name: 'レ（中）', frequency: 293.66, semitonesFromC: 2 },
+    { note: 'Eb4', name: 'レ#（中）', frequency: 311.13, semitonesFromC: 3 },
+    { note: 'E4', name: 'ミ（中）', frequency: 329.63, semitonesFromC: 4 },
+    { note: 'F4', name: 'ファ（中）', frequency: 349.23, semitonesFromC: 5 },
+    { note: 'Gb4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
+    { note: 'Ab4', name: 'ラb（中）', frequency: 415.30, semitonesFromC: 8 },
+    { note: 'Bb3', name: 'シb（低）', frequency: 233.08, semitonesFromC: -2 },
+    { note: 'B3', name: 'シ（低）', frequency: 246.94, semitonesFromC: -1 },
+    { note: 'F#4', name: 'ファ#（中）', frequency: 369.99, semitonesFromC: 6 },
+    { note: 'G#4', name: 'ソ#（中）', frequency: 415.30, semitonesFromC: 8 },
+    { note: 'Bb4', name: 'シb（高）', frequency: 466.16, semitonesFromC: 10 },
+    { note: 'C#5', name: 'ド#（高）', frequency: 554.37, semitonesFromC: 13 },
+    { note: 'Eb5', name: 'レ#（高）', frequency: 622.25, semitonesFromC: 15 },
+    { note: 'F#5', name: 'ファ#（高）', frequency: 739.99, semitonesFromC: 18 }
+  ];
+  
   // 基音プール（モード別：ランダムモード成功実装に合わせて修正）
   $: baseNotePool = mode === 'continuous'
     ? ['Bb3', 'B3', 'Db4', 'Eb4', 'F#4', 'G#4', 'Bb4', 'C#5', 'Eb5', 'F#5'] // 中級向け（♭♯含む）
@@ -196,13 +216,18 @@ TrainingCore.svelte - トレーニング共通コンポーネント
   async function checkExistingMicrophonePermission() {
     try {
       const permissionStatus = await navigator.permissions.query({name: 'microphone'});
+      
       if (permissionStatus.state === 'granted') {
+        // 既に許可済みの場合のみストリーム取得（ランダムモード成功パターン）
+        console.log('✅ [TrainingCore] マイク許可済み検出 - AudioManager初期化実行');
         await checkMicrophonePermission();
       } else {
+        // 未許可の場合はエラー画面表示
         microphoneState = 'denied';
         console.log('⚠️ [TrainingCore] マイク許可が必要です');
       }
     } catch (error) {
+      // Permissions API 未対応の場合は従来の方法
       console.error('❌ [TrainingCore] マイク許可確認エラー:', error);
       microphoneState = 'error';
     }
@@ -342,21 +367,23 @@ TrainingCore.svelte - トレーニング共通コンポーネント
       
       isPlaying = true;
       
-      // 基音選択（モード別）
-      let currentBaseNote;
+      // 基音選択（ランダムモード成功実装パターン）
+      let selectedNoteInfo;
       if (mode === 'chromatic' && baseNote) {
-        currentBaseNote = baseNote; // 12音階モード：指定基音
+        // 12音階モード：指定基音
+        selectedNoteInfo = baseNotes.find(n => n.note === baseNote) || baseNotes[0];
       } else {
         // ランダム・連続モード：baseNotePoolからランダム選択
         const randomIndex = Math.floor(Math.random() * baseNotePool.length);
-        currentBaseNote = baseNotePool[randomIndex];
+        const selectedNote = baseNotePool[randomIndex];
+        selectedNoteInfo = baseNotes.find(n => n.note === selectedNote) || baseNotes[0];
       }
       
       const volume = getVolumeForDevice();
       sampler.volume.value = volume;
       
-      console.log(`🎹 [TrainingCore] 基音再生: ${currentBaseNote} (${volume}dB)`);
-      sampler.triggerAttackRelease(currentBaseNote, '2n');
+      console.log(`🎹 [TrainingCore] 基音再生: ${selectedNoteInfo.note} (${selectedNoteInfo.name}, ${selectedNoteInfo.frequency}Hz, ${volume}dB)`);
+      sampler.triggerAttackRelease(selectedNoteInfo.note, '2n');
       
       // ガイドアニメーション開始
       startGuideAnimation();
