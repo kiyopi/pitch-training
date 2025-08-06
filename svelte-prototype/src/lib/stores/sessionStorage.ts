@@ -199,15 +199,44 @@ export async function loadProgress(): Promise<boolean> {
       
       // 次の基音を設定
       console.info(`[SessionStorage] 🎯 進行状況読み込み後の基音選択開始`);
-      const nextNote = manager.getNextBaseNote();
-      nextBaseNote.set(nextNote);
-      nextBaseName.set(manager.getBaseNoteName(nextNote));
-      
-      console.info(`[SessionStorage] 🎹 読み込み時基音選択:`, {
-        選択基音: nextNote,
-        基音名: manager.getBaseNoteName(nextNote),
-        選択理由: 'localStorage読み込み後の初期設定'
-      });
+      try {
+        const nextNote = manager.getNextBaseNote();
+        
+        // 基音妥当性チェック
+        if (!nextNote || typeof nextNote !== 'string') {
+          throw new Error(`無効な基音取得: ${nextNote}`);
+        }
+        
+        nextBaseNote.set(nextNote);
+        nextBaseName.set(manager.getBaseNoteName(nextNote));
+        
+        console.info(`[SessionStorage] 🎹 読み込み時基音選択:`, {
+          選択基音: nextNote,
+          基音名: manager.getBaseNoteName(nextNote),
+          選択理由: 'localStorage読み込み後の初期設定'
+        });
+      } catch (error) {
+        // 🔥 フォールバック処理: 読み込み時基音選択エラーの復旧
+        console.error(`[SessionStorage] ❌ 読み込み時基音選択エラー:`, error);
+        console.warn(`[SessionStorage] 🛡️ フォールバック処理: 進行状況に応じた基音設定`);
+        
+        // フォールバック: 音域に応じた基音を安全に設定
+        const voiceRange = progress.voiceRange || 'middle';
+        const fallbackNote = voiceRange === 'high' ? 'C5' : 
+                           voiceRange === 'low' ? 'C3' : 
+                           voiceRange === 'veryHigh' ? 'C6' : 'C4';
+        
+        nextBaseNote.set(fallbackNote);
+        nextBaseName.set(manager.getBaseNoteName(fallbackNote));
+        
+        console.info(`[SessionStorage] 🆘 フォールバック基音設定:`, {
+          フォールバック基音: fallbackNote,
+          音域: voiceRange,
+          実行理由: '読み込み時基音選択エラー復旧'
+        });
+        
+        storageError.set(`読み込み時基音選択エラー: ${error.message} (フォールバック復旧済み)`);
+      }
       
       console.info('[SessionStorage] Progress loaded successfully:', {
         sessionCount: progress.sessionHistory.length,
@@ -226,16 +255,44 @@ export async function loadProgress(): Promise<boolean> {
       voiceRange.set(currentVoiceRange);
       
       console.info(`[SessionStorage] 🎯 新規作成時の基音選択開始`);
-      const nextNote = manager.getNextBaseNote();
-      nextBaseNote.set(nextNote);
-      nextBaseName.set(manager.getBaseNoteName(nextNote));
-      
-      console.info(`[SessionStorage] 🎹 新規作成基音選択:`, {
-        選択基音: nextNote,
-        基音名: manager.getBaseNoteName(nextNote),
-        音域: currentVoiceRange,
-        選択理由: '新規進行状況作成時の初期基音'
-      });
+      try {
+        const nextNote = manager.getNextBaseNote();
+        
+        // 基音妥当性チェック
+        if (!nextNote || typeof nextNote !== 'string') {
+          throw new Error(`無効な基音取得: ${nextNote}`);
+        }
+        
+        nextBaseNote.set(nextNote);
+        nextBaseName.set(manager.getBaseNoteName(nextNote));
+        
+        console.info(`[SessionStorage] 🎹 新規作成基音選択:`, {
+          選択基音: nextNote,
+          基音名: manager.getBaseNoteName(nextNote),
+          音域: currentVoiceRange,
+          選択理由: '新規進行状況作成時の初期基音'
+        });
+      } catch (error) {
+        // 🔥 フォールバック処理: 新規作成時基音選択エラーの復旧
+        console.error(`[SessionStorage] ❌ 新規作成時基音選択エラー:`, error);
+        console.warn(`[SessionStorage] 🛡️ フォールバック処理: 音域別デフォルト基音設定`);
+        
+        // フォールバック: 音域に応じたデフォルト基音
+        const fallbackNote = currentVoiceRange === 'high' ? 'C5' : 
+                           currentVoiceRange === 'low' ? 'C3' : 
+                           currentVoiceRange === 'veryHigh' ? 'C6' : 'C4';
+        
+        nextBaseNote.set(fallbackNote);
+        nextBaseName.set(manager.getBaseNoteName(fallbackNote));
+        
+        console.info(`[SessionStorage] 🆘 フォールバック基音設定:`, {
+          フォールバック基音: fallbackNote,
+          音域: currentVoiceRange,
+          実行理由: '新規作成時基音選択エラー復旧'
+        });
+        
+        storageError.set(`新規作成時基音選択エラー: ${error.message} (フォールバック復旧済み)`);
+      }
       
       console.info('[SessionStorage] New progress created');
     }
@@ -299,17 +356,43 @@ export async function saveSessionResult(
             現在音域: updatedProgress.voiceRange
           });
           
-          const nextNote = manager.getNextBaseNote();
-          nextBaseNote.set(nextNote);
-          nextBaseName.set(manager.getBaseNoteName(nextNote));
-          
-          console.info(`[SessionStorage] 🎹 基音選択完了:`, {
-            選択基音: nextNote,
-            基音名: manager.getBaseNoteName(nextNote),
-            次セッション予定: updatedProgress.currentSessionId,
-            選択実行時刻: new Date().toISOString()
-          });
-          console.info(`[SessionStorage] 🔄 基音選択サマリー: ${sessionResult.baseNote}(Session${sessionResult.sessionId}) → ${nextNote}(Session${updatedProgress.currentSessionId})`);
+          try {
+            const nextNote = manager.getNextBaseNote();
+            
+            // 基音妥当性チェック
+            if (!nextNote || typeof nextNote !== 'string') {
+              throw new Error(`無効な基音取得: ${nextNote}`);
+            }
+            
+            nextBaseNote.set(nextNote);
+            nextBaseName.set(manager.getBaseNoteName(nextNote));
+            
+            console.info(`[SessionStorage] 🎹 基音選択完了:`, {
+              選択基音: nextNote,
+              基音名: manager.getBaseNoteName(nextNote),
+              次セッション予定: updatedProgress.currentSessionId,
+              選択実行時刻: new Date().toISOString()
+            });
+            console.info(`[SessionStorage] 🔄 基音選択サマリー: ${sessionResult.baseNote}(Session${sessionResult.sessionId}) → ${nextNote}(Session${updatedProgress.currentSessionId})`);
+          } catch (error) {
+            // 🔥 フォールバック処理: 基音選択エラー時の安全な復旧
+            console.error(`[SessionStorage] ❌ 基音選択エラー:`, error);
+            console.warn(`[SessionStorage] 🛡️ フォールバック処理開始: デフォルト基音設定`);
+            
+            // フォールバック1: 音域の中音域基音を使用
+            const fallbackNote = 'C4'; // 中音域の基本基音
+            nextBaseNote.set(fallbackNote);
+            nextBaseName.set(manager.getBaseNoteName(fallbackNote));
+            
+            console.info(`[SessionStorage] 🆘 フォールバック基音設定:`, {
+              フォールバック基音: fallbackNote,
+              基音名: manager.getBaseNoteName(fallbackNote),
+              実行理由: '基音選択処理エラー復旧'
+            });
+            
+            // エラー情報をストアに記録（今後のデバッグ用）
+            storageError.set(`基音選択エラー: ${error.message} (フォールバック復旧済み)`);
+          }
         } else {
           console.info(`[SessionStorage] ✅ 8セッション完了 - 基音選択スキップ (isCompleted=${updatedProgress.isCompleted})`);
         }

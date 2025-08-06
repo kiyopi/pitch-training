@@ -2571,6 +2571,23 @@
           usedBaseNotes: $usedBaseNotes?.length || 0
         });
         
+        // 🛡️ フォールバック処理: 基音が未設定の場合の安全確保
+        if (!$nextBaseNote || typeof $nextBaseNote !== 'string') {
+          console.warn('🚨 [ContinuousMode] 基音未設定エラー検出 - フォールバック処理実行');
+          
+          try {
+            // 緊急基音設定: 中音域基本基音
+            await forceNewBaseNoteExcludingCurrent();
+            console.info('🆘 [ContinuousMode] フォールバック基音設定完了:', $nextBaseNote, `(${$nextBaseName})`);
+          } catch (fallbackError) {
+            // 最終フォールバック: ハードコードされた安全基音
+            console.error('❌ [ContinuousMode] フォールバック処理エラー:', fallbackError);
+            console.warn('🔧 [ContinuousMode] 最終フォールバック: 安全基音 C4 設定');
+            nextBaseNote.set('C4');
+            nextBaseName.set('ド（低）');
+          }
+        }
+        
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
         playBaseNote();
       }, 2000); // 2秒後に次セッション開始
