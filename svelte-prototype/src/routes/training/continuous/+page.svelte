@@ -2562,17 +2562,14 @@
           }
         }
         
-        // 🔥 重要: 現在の基音を除外して新しい基音を強制取得
-        console.log('🔄 [ContinuousMode] 現在の基音を除外して新しい基音を取得中...');
-        const previousNote = $nextBaseNote;
-        try {
-          await forceNewBaseNoteExcludingCurrent(); // 現在の基音を除外して新基音取得
-          console.log('🎯 [ContinuousMode] 新しい基音取得完了:', `${previousNote} → ${$nextBaseNote} (${$nextBaseName})`);
-        } catch (error) {
-          console.error('❌ [ContinuousMode] 新しい基音取得エラー:', error);
-          // フォールバック: 従来の方法
-          await loadProgress();
-        }
+        // ✅ 基音は saveSessionResult で既に選択済み - 重複処理を削除
+        console.log('🎯 [ContinuousMode] 基音選択完了 (saveSessionResult実行済み):', $nextBaseNote, `(${$nextBaseName})`);
+        console.log('📋 [ContinuousMode] 現在のセッション状況:', {
+          currentSession: $currentSessionId,
+          totalSessions: $sessionHistory.length,
+          isCompleted: $isCompleted,
+          usedBaseNotes: $usedBaseNotes?.length || 0
+        });
         
         console.log('🎵 [ContinuousMode] 次の基音自動再生開始');
         playBaseNote();

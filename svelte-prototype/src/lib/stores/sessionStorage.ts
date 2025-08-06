@@ -198,9 +198,16 @@ export async function loadProgress(): Promise<boolean> {
       voiceRange.set(progress.voiceRange);
       
       // 次の基音を設定
+      console.info(`[SessionStorage] 🎯 進行状況読み込み後の基音選択開始`);
       const nextNote = manager.getNextBaseNote();
       nextBaseNote.set(nextNote);
       nextBaseName.set(manager.getBaseNoteName(nextNote));
+      
+      console.info(`[SessionStorage] 🎹 読み込み時基音選択:`, {
+        選択基音: nextNote,
+        基音名: manager.getBaseNoteName(nextNote),
+        選択理由: 'localStorage読み込み後の初期設定'
+      });
       
       console.info('[SessionStorage] Progress loaded successfully:', {
         sessionCount: progress.sessionHistory.length,
@@ -211,14 +218,24 @@ export async function loadProgress(): Promise<boolean> {
     } else {
       // 新規作成
       const currentVoiceRange = get(voiceRange);
+      console.info(`[SessionStorage] 🆕 新規進行状況作成開始 - 音域: ${currentVoiceRange}`);
+      
       const newProgress = manager.createNewProgress(currentVoiceRange);
       trainingProgress.set(newProgress);
       currentSessionId.set(1);
       voiceRange.set(currentVoiceRange);
       
+      console.info(`[SessionStorage] 🎯 新規作成時の基音選択開始`);
       const nextNote = manager.getNextBaseNote();
       nextBaseNote.set(nextNote);
       nextBaseName.set(manager.getBaseNoteName(nextNote));
+      
+      console.info(`[SessionStorage] 🎹 新規作成基音選択:`, {
+        選択基音: nextNote,
+        基音名: manager.getBaseNoteName(nextNote),
+        音域: currentVoiceRange,
+        選択理由: '新規進行状況作成時の初期基音'
+      });
       
       console.info('[SessionStorage] New progress created');
     }
@@ -273,9 +290,28 @@ export async function saveSessionResult(
         
         // 次の基音を設定（8セッション未完了の場合）
         if (!updatedProgress.isCompleted) {
+          console.info(`[SessionStorage] 🎯 基音選択実行開始 - セッション${sessionResult.sessionId}完了後`);
+          console.info(`[SessionStorage] 📊 現在の状況:`, {
+            完了セッション数: updatedProgress.sessionHistory.length,
+            次セッション: updatedProgress.currentSessionId,
+            完了状態: updatedProgress.isCompleted,
+            使用済み基音数: updatedProgress.usedBaseNotes.length,
+            現在音域: updatedProgress.voiceRange
+          });
+          
           const nextNote = manager.getNextBaseNote();
           nextBaseNote.set(nextNote);
           nextBaseName.set(manager.getBaseNoteName(nextNote));
+          
+          console.info(`[SessionStorage] 🎹 基音選択完了:`, {
+            選択基音: nextNote,
+            基音名: manager.getBaseNoteName(nextNote),
+            次セッション予定: updatedProgress.currentSessionId,
+            選択実行時刻: new Date().toISOString()
+          });
+          console.info(`[SessionStorage] 🔄 基音選択サマリー: ${sessionResult.baseNote}(Session${sessionResult.sessionId}) → ${nextNote}(Session${updatedProgress.currentSessionId})`);
+        } else {
+          console.info(`[SessionStorage] ✅ 8セッション完了 - 基音選択スキップ (isCompleted=${updatedProgress.isCompleted})`);
         }
         
         console.info('[SessionStorage] Session result saved:', {
