@@ -2640,9 +2640,46 @@
       console.log('⚡ [ContinuousMode] MediaStream終了検出 - 自動復旧を試行');
       setTimeout(async () => {
         try {
-          await checkMicrophonePermission(); // マイク再初期化
+          console.log('🔄 [ContinuousMode] マイク再初期化開始');
+          
+          // Step 1: マイク権限と接続を再確認
+          await checkMicrophonePermission();
+          console.log('✅ [ContinuousMode] マイク権限確認完了');
+          
+          // Step 2: PitchDetectorの再初期化
+          if (pitchDetectorComponent && typeof pitchDetectorComponent.reinitialize === 'function') {
+            await pitchDetectorComponent.reinitialize();
+            console.log('✅ [ContinuousMode] PitchDetector再初期化完了');
+          } else {
+            // フォールバック: 従来の初期化方法
+            console.warn('⚠️ [ContinuousMode] reinitialize未対応 - 従来方法で復旧');
+            if (pitchDetectorComponent && typeof pitchDetectorComponent.initializeWithExternalAudioContext === 'function') {
+              const audioContext = audioManager.getAudioContext();
+              await pitchDetectorComponent.initializeWithExternalAudioContext(audioContext);
+              console.log('✅ [ContinuousMode] フォールバック初期化完了');
+            }
+          }
+          
+          // Step 3: 音程検出再開（トレーニング中のみ）
+          if (trainingPhase === 'training' && !isResultViewPhase) {
+            try {
+              if (pitchDetectorComponent && typeof pitchDetectorComponent.startDetection === 'function') {
+                pitchDetectorComponent.startDetection();
+                console.log('✅ [ContinuousMode] 音程検出再開完了');
+              }
+            } catch (startError) {
+              console.warn('⚠️ [ContinuousMode] 音程検出再開失敗:', startError.message);
+            }
+          }
+          
+          console.log('🎉 [ContinuousMode] MediaStream復旧完了');
         } catch (recoveryError) {
           console.error('❌ [ContinuousMode] 自動復旧失敗:', recoveryError);
+          
+          // 最終フォールバック: ユーザーに手動復旧を促す
+          microphoneHealthy = false;
+          microphoneErrors = ['MediaStreamが終了しました。ページを再読み込みしてマイク許可を再度取得してください。'];
+          console.error('🚨 [ContinuousMode] 復旧不可 - ユーザー手動操作が必要');
         }
       }, 1000);
     }
@@ -2659,6 +2696,37 @@
     const { healthy, errors, details } = event.detail;
     microphoneHealthy = healthy;
     microphoneErrors = errors;
+    
+    // MediaStream状態の詳細ログ
+    console.log('🔍 [ContinuousMode] マイク健康状態変化:', {
+      healthy,
+      errors,
+      details,
+      trainingPhase,
+      currentTime: new Date().toISOString()
+    });
+    
+    // 不健康状態が検出された場合の予防的処理
+    if (!healthy && errors.length > 0) {
+      console.warn('🚨 [ContinuousMode] マイク健康状態不良検出');
+      
+      // MediaStreamTrack関連エラーの場合は積極的復旧
+      const hasMediaStreamError = errors.some(error => 
+        error.includes('MediaStream') || error.includes('mediastream') || error.includes('ended')
+      );
+      
+      if (hasMediaStreamError && trainingPhase === 'training') {
+        console.log('⚡ [ContinuousMode] MediaStreamエラー予防的復旧開始');
+        setTimeout(async () => {
+          try {
+            await checkMicrophonePermission();
+            console.log('✅ [ContinuousMode] 予防的マイク復旧完了');
+          } catch (error) {
+            console.error('❌ [ContinuousMode] 予防的復旧失敗:', error);
+          }
+        }, 500);
+      }
+    }
     
     if (!healthy) {
       console.warn('⚠️ マイクの健康状態が悪化:', errors);
