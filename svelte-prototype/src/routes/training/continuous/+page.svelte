@@ -47,6 +47,7 @@
     remainingSessions,
     latestSessionResult,
     unifiedScoreData,
+    usedBaseNotes,
     loadProgress,
     saveSessionResult,
     resetProgress,
